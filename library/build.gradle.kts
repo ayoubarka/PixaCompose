@@ -74,6 +74,9 @@ kotlin {
             implementation(libs.material3.adaptive.layout)
             implementation(libs.material3.adaptive.navigation)
 
+            // Kotlinx libraries
+            implementation(libs.kotlinx.datetime)
+
             // UI Components
             implementation(libs.cmp.datetime.picker)
             implementation(libs.cmp.constraintlayout)

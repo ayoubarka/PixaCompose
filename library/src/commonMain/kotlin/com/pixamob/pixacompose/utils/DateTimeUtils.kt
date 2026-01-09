@@ -1,7 +1,18 @@
 package com.pixamob.pixacompose.utils
 
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.Month
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atStartOfDayIn
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
+import kotlinx.datetime.toLocalDateTime
 import kotlin.time.Clock
-import kotlinx.datetime.*
+import kotlin.time.Instant
 
 /**
  * Utility functions for date and time operations
@@ -41,7 +52,7 @@ object DateTimeUtils {
      * Convert timestamp to LocalDate
      */
     fun Long.toLocalDate(): LocalDate {
-        return kotlinx.datetime.Instant.fromEpochMilliseconds(this)
+        return Instant.fromEpochMilliseconds(this)
             .toLocalDateTime(TimeZone.currentSystemDefault()).date
     }
 
@@ -49,7 +60,7 @@ object DateTimeUtils {
      * Convert timestamp to LocalDateTime
      */
     fun Long.toLocalDateTime(): LocalDateTime {
-        return kotlinx.datetime.Instant.fromEpochMilliseconds(this)
+        return Instant.fromEpochMilliseconds(this)
             .toLocalDateTime(TimeZone.currentSystemDefault())
     }
 

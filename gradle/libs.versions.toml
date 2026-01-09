@@ -2,17 +2,19 @@
 android-minSdk = "24"
 android-compileSdk = "36"
 android-targetSdk = "36"
-appVersionCode = "1"
-appVersionName = "0.0.1"
+appVersionCode = "2"
+appVersionName = "0.0.2"
 
 agp = "8.13.2"
 kotlin = "2.3.0"
 compose = "1.9.3"
 vanniktechMavenPublish = "0.35.0"
 material3-adaptive = "1.2.0"
+kotlinx-datetime = "0.7.1"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
+kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 
 # UI Components
 cmp-datetime-picker = { module = "network.chaintech:kmp-date-time-picker", version = "1.1.1" }

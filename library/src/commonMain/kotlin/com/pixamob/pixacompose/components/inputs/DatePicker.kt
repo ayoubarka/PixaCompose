@@ -24,12 +24,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
+// import androidx.compose.material.icons.Icons
+// import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+// import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+// import androidx.compose.material.icons.filled.Add
+// import androidx.compose.material.icons.filled.Remove
 import com.pixamob.pixacompose.components.actions.Chip
 import com.pixamob.pixacompose.components.actions.ChipType
 import com.pixamob.pixacompose.components.actions.ChipVariant
@@ -549,11 +550,14 @@ private fun CalendarDatePickerImpl(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowLeft,
-                contentDescription = strings.previousMonthLabel,
-                tint = colors.unselectedText,
-                modifier = Modifier.size(IconSize.Medium).clickable {
+            // TODO: Replace with custom icon painters
+            Text(
+                text = "‹",
+                style = androidx.compose.ui.text.TextStyle(
+                    fontSize = 24.sp,
+                    color = colors.unselectedText
+                ),
+                modifier = Modifier.clickable {
                     currentMonth = currentMonth.minus(1, DateTimeUnit.MONTH)
                 }
             )
@@ -563,11 +567,13 @@ private fun CalendarDatePickerImpl(
                 color = colors.title,
                 fontWeight = FontWeight.SemiBold
             )
-            Icon(
-                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-                contentDescription = strings.nextMonthLabel,
-                tint = colors.unselectedText,
-                modifier = Modifier.size(IconSize.Medium).clickable {
+            Text(
+                text = "›",
+                style = androidx.compose.ui.text.TextStyle(
+                    fontSize = 24.sp,
+                    color = colors.unselectedText
+                ),
+                modifier = Modifier.clickable {
                     currentMonth = currentMonth.plus(1, DateTimeUnit.MONTH)
                 }
             )
@@ -917,11 +923,13 @@ private fun DayCountPickerImpl(
                     .semantics { contentDescription = strings.decreaseLabel },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Remove,
-                    contentDescription = null,
-                    tint = if (dayCount > minDays) colors.unselectedText else colors.disabledText,
-                    modifier = Modifier.size(IconSize.Medium)
+                // TODO: Replace with custom icon painter
+                Text(
+                    text = "−",
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontSize = 24.sp,
+                        color = if (dayCount > minDays) colors.unselectedText else colors.disabledText
+                    )
                 )
             }
 
@@ -942,15 +950,17 @@ private fun DayCountPickerImpl(
                     .semantics { contentDescription = strings.increaseLabel },
                 contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    imageVector = Icons.Default.Add,
-                    contentDescription = null,
-                    tint = if (dayCount < maxDays) colors.unselectedText else colors.disabledText,
-                    modifier = Modifier.size(IconSize.Medium)
+                // TODO: Replace with custom icon painter
+                Text(
+                    text = "+",
+                    style = androidx.compose.ui.text.TextStyle(
+                        fontSize = 24.sp,
+                        color = if (dayCount < maxDays) colors.unselectedText else colors.disabledText
+                    )
                 )
             }
         }
-    }
+        }
 }
 
 // ============================================================================

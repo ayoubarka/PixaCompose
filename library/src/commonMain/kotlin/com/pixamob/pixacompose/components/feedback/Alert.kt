@@ -22,10 +22,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.display.Card
-import com.pixamob.pixacompose.components.display.CardElevation
-import com.pixamob.pixacompose.components.display.CardPadding
-import com.pixamob.pixacompose.components.display.CardVariant
+import com.pixamob.pixacompose.components.display.BaseCard
+import com.pixamob.pixacompose.components.display.BaseCardElevation
+import com.pixamob.pixacompose.components.display.BaseCardPadding
+import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.Icon
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
@@ -374,14 +374,14 @@ fun Alert(
                     }
                 )
         ) {
-            Card(
+            BaseCard(
                 modifier = Modifier.fillMaxWidth(),
                 variant = when (style) {
-                    AlertStyle.Outlined -> CardVariant.Outlined
-                    else -> CardVariant.Filled
+                    AlertStyle.Outlined -> BaseCardVariant.Outlined
+                    else -> BaseCardVariant.Filled
                 },
-                elevation = CardElevation.None,
-                padding = CardPadding.None,
+                elevation = BaseCardElevation.None,
+                padding = BaseCardPadding.None,
                 backgroundColor = colors.background
             ) {
                 Row(

@@ -33,10 +33,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.display.Card
-import com.pixamob.pixacompose.components.display.CardElevation
-import com.pixamob.pixacompose.components.display.CardPadding
-import com.pixamob.pixacompose.components.display.CardVariant
+import com.pixamob.pixacompose.components.display.BaseCard
+import com.pixamob.pixacompose.components.display.BaseCardElevation
+import com.pixamob.pixacompose.components.display.BaseCardPadding
+import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.Icon
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
@@ -806,11 +806,11 @@ private fun StepContent(
 
     when (contentStyle) {
         StepContentStyle.Card -> {
-            Card(
+            BaseCard(
                 modifier = modifier,
-                variant = if (isCurrentStep) CardVariant.Elevated else CardVariant.Ghost,
-                elevation = if (isCurrentStep) CardElevation.Low else CardElevation.None,
-                padding = CardPadding.Small
+                variant = if (isCurrentStep) BaseCardVariant.Elevated else BaseCardVariant.Ghost,
+                elevation = if (isCurrentStep) BaseCardElevation.Low else BaseCardElevation.None,
+                padding = BaseCardPadding.Small
             ) {
                 content()
             }
