@@ -10,7 +10,7 @@ plugins {
 }
 
 group = "com.pixamob.pixacompose"
-version = "0.0.1"
+version = libs.versions.appVersionName.get()
 
 kotlin {
     androidLibrary {
@@ -99,7 +99,7 @@ mavenPublishing {
         name = "PixaCompose"
         description = "A comprehensive UI component library for Compose Multiplatform mobile applications using Material 3 design principles."
         inceptionYear = "2026"
-        url = "https://github.com/pixamob/pixacompose/"
+        url = "https://github.com/ayoubarka/PixaCompose/"
         licenses {
             license {
                 name = "The Apache License, Version 2.0"
@@ -109,15 +109,15 @@ mavenPublishing {
         }
         developers {
             developer {
-                id = "pixamob"
-                name = "Pixamob Team"
-                url = "https://github.com/pixamob/"
+                id = "ayoubarka"
+                name = "Ayoub Arka"
+                url = "https://github.com/ayoubarka/"
             }
         }
         scm {
-            url = "https://github.com/pixamob/pixacompose/"
-            connection = "scm:git:git://github.com/pixamob/pixacompose.git"
-            developerConnection = "scm:git:ssh://git@github.com/pixamob/pixacompose.git"
+            url = "https://github.com/ayoubarka/PixaCompose/"
+            connection = "scm:git:git://github.com/ayoubarka/PixaCompose.git"
+            developerConnection = "scm:git:ssh://git@github.com/ayoubarka/PixaCompose.git"
         }
     }
 }
