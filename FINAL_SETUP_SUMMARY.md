@@ -68,17 +68,20 @@ vanniktech {
 You need to configure 4 secrets in GitHub:
 **https://github.com/ayoubarka/PixaCompose/settings/secrets/actions**
 
-1. **SONATYPE_USERNAME**: `pixamob@gmail.com`
+1. **SONATYPE_USERNAME**: Your Sonatype email
 2. **SONATYPE_PASSWORD**: Your Sonatype Central Portal password
 3. **GPG_PRIVATE_KEY**: Base64-encoded GPG private key (see instructions below)
-4. **GPG_PASSPHRASE**: `khraila3ra/@2EWQ1992Xpgxa`
+4. **GPG_PASSPHRASE**: Your GPG key passphrase
+
+⚠️ **Never commit actual credentials to Git!**
 
 ### 4. How to Export GPG Key for GitHub
 
 Run this command on your local machine:
 
 ```bash
-gpg --armor --export-secret-keys BC4E150B189FE436 | base64 | pbcopy
+# Replace YOUR_KEY_ID with your actual GPG key ID
+gpg --armor --export-secret-keys YOUR_KEY_ID | base64 | pbcopy
 ```
 
 This will copy the base64-encoded key to your clipboard. Then:
@@ -87,6 +90,8 @@ This will copy the base64-encoded key to your clipboard. Then:
 3. Name: `GPG_PRIVATE_KEY`
 4. Value: Paste the base64 string from your clipboard
 5. Click "Add secret"
+
+⚠️ **Security:** Delete any local key files after copying to GitHub Secrets!
 
 **Important:** The base64 string should be one continuous line with no newlines or spaces.
 

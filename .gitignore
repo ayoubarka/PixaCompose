@@ -75,3 +75,10 @@ release.keystore
 */.DS_Store
 **/.DS_Store
 
+# Sensitive documentation (contains credentials/keys)
+GITHUB_SECRETS.md
+GITHUB_SECRETS*.md
+**/secrets*.md
+gpg-key-base64.txt
+private.key
+
