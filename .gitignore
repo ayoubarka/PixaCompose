@@ -1,13 +1,77 @@
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+
+# Kotlin
+.kotlin/
+*.hprof
+
+# IntelliJ IDEA
+.idea/
 *.iml
-.gradle
-.idea
+*.ipr
+*.iws
+out/
+.idea_modules/
+
+# Android
+*.apk
+*.aab
+*.ap_
+*.dex
 .DS_Store
-build
-captures
+/captures
 .externalNativeBuild
 .cxx
 local.properties
-xcuserdata
-.kotlin
-#So we don't accidentally commit our private keys
+*.log
+
+# iOS
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+DerivedData/
+build/
+*.moved-aside
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+
+# Mac
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Publishing - Never commit these!
 *.gpg
+*.key
+secring.gpg
+private-key.txt
+
+# Signing keys and credentials
+signing.properties
+keystore.properties
+release.keystore
+*.jks
+*.keystore
+
+# Local Gradle properties (may contain sensitive data)
+# Uncomment if you want to ignore local.properties completely
+# local.properties
+
+# Ignore everything in .gradle/configuration-cache
+.gradle/configuration-cache/
+
+# MacOS Files
+*/.DS_Store
+**/.DS_Store
+

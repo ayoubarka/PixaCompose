@@ -6,10 +6,10 @@ plugins {
     alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.vanniktech.mavenPublish)
+     alias(libs.plugins.vanniktech.mavenPublish)
 }
 
-group = "com.pixamob.pixacompose"
+group = "com.pixamob"
 version = libs.versions.appVersionName.get()
 
 kotlin {
@@ -92,35 +92,47 @@ kotlin {
 }
 
 mavenPublishing {
+    // Publish to Sonatype Central Portal
     publishToMavenCentral()
 
+    // Sign all publications
     signAllPublications()
 
+    // Configure POM metadata
     coordinates(group.toString(), "pixacompose", version.toString())
 
     pom {
-        name = "PixaCompose"
-        description = "A comprehensive UI component library for Compose Multiplatform mobile applications using Material 3 design principles."
-        inceptionYear = "2026"
-        url = "https://github.com/ayoubarka/PixaCompose/"
+        name.set("PixaCompose")
+        description.set("A comprehensive UI component library for Compose Multiplatform mobile applications (Android & iOS) using Material 3 design principles. Features include TextField, TextArea, SearchBar, Buttons, Cards, and a complete theming system.")
+        inceptionYear.set("2025")
+        url.set("https://github.com/ayoubarka/PixaCompose")
+
         licenses {
             license {
-                name = "The Apache License, Version 2.0"
-                url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
-                distribution = "repo"
+                name.set("The Apache License, Version 2.0")
+                url.set("https://www.apache.org/licenses/LICENSE-2.0.txt")
+                distribution.set("repo")
             }
         }
+
         developers {
             developer {
-                id = "ayoubarka"
-                name = "Ayoub Arka"
-                url = "https://github.com/ayoubarka/"
+                id.set("ayoubarka")
+                name.set("Ayoub Arka")
+                url.set("https://github.com/ayoubarka")
+                email.set("ayoub@pixamob.com")
             }
         }
+
         scm {
-            url = "https://github.com/ayoubarka/PixaCompose/"
-            connection = "scm:git:git://github.com/ayoubarka/PixaCompose.git"
-            developerConnection = "scm:git:ssh://git@github.com/ayoubarka/PixaCompose.git"
+            url.set("https://github.com/ayoubarka/PixaCompose")
+            connection.set("scm:git:git://github.com/ayoubarka/PixaCompose.git")
+            developerConnection.set("scm:git:ssh://git@github.com/ayoubarka/PixaCompose.git")
+        }
+
+        issueManagement {
+            system.set("GitHub Issues")
+            url.set("https://github.com/ayoubarka/PixaCompose/issues")
         }
     }
 }

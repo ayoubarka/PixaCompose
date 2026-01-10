@@ -57,19 +57,128 @@ object IconSize {
     val Massive = 48.dp  // Massive icons
 }
 
-// Component Sizes - Heights for buttons, inputs, etc.
+// Component Sizes - Comprehensive sizing system for all UI components
 object ComponentSize {
-    val Minimal = 24.dp  // Minimal
-    val Tiny = 28.dp   // Tiny
-    val VerySmall = 32.dp    // Very small
-    val ExtraSmall = 36.dp     // Extra small
-    val Small = 40.dp      // Small (compact mode)
-    val Medium = 44.dp      // Medium (touch-friendly)
-    val Large = 48.dp      // Large (comfortable)
-    val ExtraLarge = 56.dp     // Extra large
-    val Huge = 64.dp    // Huge
-    val VeryLarge = 72.dp   // Very large
-    val Massive = 80.dp  // Massive
+    // Base Component Sizes
+    val Minimal = 24.dp       // Minimal height for compact components
+    val Tiny = 28.dp          // Tiny components
+    val VerySmall = 32.dp     // Very small components
+    val ExtraSmall = 36.dp    // Extra small components
+    val Small = 40.dp         // Small (compact mode)
+    val Medium = 44.dp        // Medium (touch-friendly default)
+    val Large = 48.dp         // Large (comfortable)
+    val ExtraLarge = 56.dp    // Extra large
+    val Huge = 64.dp          // Huge
+    val VeryLarge = 72.dp     // Very large
+    val Massive = 80.dp       // Massive
+
+    // Button Sizes
+    val ButtonSmall = 36.dp   // Small button height
+    val ButtonMedium = 44.dp  // Medium button height (default)
+    val ButtonLarge = 52.dp   // Large button height
+
+    // Input Field Sizes (TextField, TextArea, etc.)
+    val InputSmall = 36.dp    // Small text input height
+    val InputMedium = 44.dp   // Medium text input height (default)
+    val InputLarge = 52.dp    // Large text input height
+
+    // Chip Sizes
+    val ChipSmall = 24.dp     // Small chip height
+    val ChipMedium = 32.dp    // Medium chip height (default)
+    val ChipLarge = 40.dp     // Large chip height
+
+    // Badge Sizes
+    val BadgeSmall = 16.dp    // Small badge size
+    val BadgeMedium = 20.dp   // Medium badge size
+    val BadgeLarge = 24.dp    // Large badge size
+
+    // Toggle/Switch Sizes
+    val ToggleSmall = 20.dp   // Small toggle height
+    val ToggleMedium = 24.dp  // Medium toggle height
+    val ToggleLarge = 28.dp   // Large toggle height
+
+    // Checkbox/Radio Sizes
+    val CheckboxSmall = 18.dp   // Small checkbox size
+    val CheckboxMedium = 20.dp  // Medium checkbox size
+    val CheckboxLarge = 24.dp   // Large checkbox size
+
+    // Slider Sizes
+    val SliderTrackSmall = 2.dp    // Small slider track height
+    val SliderTrackMedium = 4.dp   // Medium slider track height
+    val SliderTrackLarge = 6.dp    // Large slider track height
+    val SliderThumbSmall = 16.dp   // Small slider thumb size
+    val SliderThumbMedium = 20.dp  // Medium slider thumb size
+    val SliderThumbLarge = 24.dp   // Large slider thumb size
+
+    // Progress Indicator Sizes
+    val ProgressSmall = 2.dp     // Small progress bar height
+    val ProgressMedium = 4.dp    // Medium progress bar height
+    val ProgressLarge = 8.dp     // Large progress bar height
+    val ProgressCircularSmall = 16.dp   // Small circular progress diameter
+    val ProgressCircularMedium = 24.dp  // Medium circular progress diameter
+    val ProgressCircularLarge = 32.dp   // Large circular progress diameter
+
+    // Card Sizes (min heights)
+    val CardSmall = 120.dp    // Small card minimum height
+    val CardMedium = 160.dp   // Medium card minimum height
+    val CardLarge = 200.dp    // Large card minimum height
+
+    // List Item Sizes
+    val ListItemSmall = 40.dp     // Small list item height
+    val ListItemMedium = 56.dp    // Medium list item height (default)
+    val ListItemLarge = 72.dp     // Large list item height
+    val ListItemExtraLarge = 88.dp // Extra large list item height
+
+    // Tab Sizes
+    val TabSmall = 36.dp      // Small tab height
+    val TabMedium = 48.dp     // Medium tab height (default)
+    val TabLarge = 56.dp      // Large tab height
+
+    // Bottom Navigation Sizes
+    val BottomNavSmall = 56.dp    // Small bottom nav height
+    val BottomNavMedium = 64.dp   // Medium bottom nav height
+    val BottomNavLarge = 72.dp    // Large bottom nav height
+
+    // Top App Bar Sizes
+    val AppBarSmall = 48.dp       // Small app bar height
+    val AppBarMedium = 56.dp      // Medium app bar height (default)
+    val AppBarLarge = 64.dp       // Large app bar height
+    val AppBarExtraLarge = 72.dp  // Extra large app bar height
+
+    // Dialog Sizes
+    val DialogMinWidth = 280.dp   // Minimum dialog width
+    val DialogMaxWidth = 560.dp   // Maximum dialog width
+    val DialogMinHeight = 120.dp  // Minimum dialog height
+
+    // Bottom Sheet Sizes
+    val BottomSheetPeek = 56.dp   // Bottom sheet peek height
+    val BottomSheetSmall = 200.dp // Small bottom sheet height
+    val BottomSheetMedium = 400.dp // Medium bottom sheet height
+    val BottomSheetLarge = 600.dp  // Large bottom sheet height
+
+    // Snackbar Sizes
+    val SnackbarSingleLine = 48.dp  // Single-line snackbar height
+    val SnackbarMultiLine = 68.dp   // Multi-line snackbar height
+
+    // Tooltip Sizes
+    val TooltipMinHeight = 24.dp  // Minimum tooltip height
+    val TooltipMaxWidth = 200.dp  // Maximum tooltip width
+
+    // Menu Item Sizes
+    val MenuItemSmall = 32.dp     // Small menu item height
+    val MenuItemMedium = 48.dp    // Medium menu item height (default)
+    val MenuItemLarge = 56.dp     // Large menu item height
+
+    // Divider Sizes (heights for horizontal, widths for vertical)
+    val DividerThin = 1.dp        // Thin divider
+    val DividerMedium = 2.dp      // Medium divider
+    val DividerThick = 4.dp       // Thick divider
+
+    // Image Placeholder Sizes
+    val ImageSmall = 80.dp        // Small image placeholder
+    val ImageMedium = 120.dp      // Medium image placeholder
+    val ImageLarge = 200.dp       // Large image placeholder
+    val ImageExtraLarge = 300.dp  // Extra large image placeholder
 }
 
 // Avatar Sizes - For profile pictures and avatars
@@ -147,6 +256,35 @@ object DividerSize {
     val Default = 1.5.dp
     val Thick = 2.dp
     val ExtraThick = 4.dp
+}
+
+// Border Width - For borders and outlines
+object BorderWidth {
+    val None = 0.dp
+    val Hairline = 0.5.dp
+    val Thin = 1.dp
+    val Medium = 1.5.dp
+    val Thick = 2.dp
+    val ExtraThick = 3.dp
+}
+
+// Corner Radius - For rounded corners
+object CornerRadius {
+    val None = 0.dp
+    val Small = 6.dp
+    val Medium = 8.dp
+    val Large = 12.dp
+    val ExtraLarge = 16.dp
+    val Full = 9999.dp
+}
+
+// Elevation - For shadows and elevation
+object Elevation {
+    val None = 0.dp
+    val Small = 2.dp
+    val Medium = 4.dp
+    val Large = 8.dp
+    val ExtraLarge = 16.dp
 }
 
 // Elevation/Shadow System - Material Design 3 inspired

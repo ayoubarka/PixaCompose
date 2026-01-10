@@ -17,8 +17,10 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.*
 import androidx.compose.ui.text.TextStyle
@@ -27,11 +29,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.pixamob.pixacompose.components.display.Icon
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
+import kotlin.math.roundToInt
 
 // ============================================================================
 // Configuration
@@ -79,37 +83,37 @@ private fun TextFieldSize.config(): TextFieldConfig {
     val typography = AppTheme.typography
     return when (this) {
         TextFieldSize.Small -> TextFieldConfig(
-            height = ComponentSize.Small,
+            height = ComponentSize.InputSmall,
             horizontalPadding = Spacing.Medium,
             verticalPadding = Spacing.ExtraSmall,
             textStyle = typography.bodySmall,
             labelTextStyle = typography.labelSmall,
-            helperTextStyle = typography.labelSmall,
+            helperTextStyle = typography.captionSmall,
             iconSize = IconSize.Small,
-            borderWidth = BorderSize.Tiny,
-            cornerRadius = RadiusSize.Small
+            borderWidth = BorderWidth.Thin,
+            cornerRadius = CornerRadius.Small
         )
         TextFieldSize.Medium -> TextFieldConfig(
-            height = ComponentSize.Medium,
+            height = ComponentSize.InputMedium,
             horizontalPadding = Spacing.Large,
             verticalPadding = Spacing.Small,
-            textStyle = typography.bodyRegular,
+            textStyle = typography.bodyMedium,
             labelTextStyle = typography.labelMedium,
-            helperTextStyle = typography.labelMedium,
+            helperTextStyle = typography.captionMedium,
             iconSize = IconSize.Medium,
-            borderWidth = BorderSize.Standard,
-            cornerRadius = RadiusSize.Medium
+            borderWidth = BorderWidth.Medium,
+            cornerRadius = CornerRadius.Medium
         )
         TextFieldSize.Large -> TextFieldConfig(
-            height = ComponentSize.Large,
+            height = ComponentSize.InputLarge,
             horizontalPadding = Spacing.ExtraLarge,
             verticalPadding = Spacing.Medium,
             textStyle = typography.bodyLarge,
             labelTextStyle = typography.labelLarge,
-            helperTextStyle = typography.labelLarge,
+            helperTextStyle = typography.captionLarge,
             iconSize = IconSize.Large,
-            borderWidth = BorderSize.Thick,
-            cornerRadius = RadiusSize.Large
+            borderWidth = BorderWidth.Thick,
+            cornerRadius = CornerRadius.Large
         )
     }
 }
@@ -122,7 +126,7 @@ private fun TextFieldSize.config(): TextFieldConfig {
  * Colors for TextField states
  */
 @Stable
-data class TextFieldColors(
+private data class TextFieldColors(
     val background: Color,
     val border: Color,
     val focusedBorder: Color,
@@ -152,12 +156,12 @@ private fun TextFieldVariant.colors(
             background = if (enabled) colors.baseSurfaceDefault else colors.baseSurfaceDisabled,
             border = Color.Transparent,
             focusedBorder = colors.brandBorderDefault.copy(alpha = 0.2f),
-            errorBorder = colors.errorBorderDefault,
-            text = if (enabled) colors.baseContentTitle else colors.baseContentDisabled,
+            errorBorder = colors.utilityErrorBorder,
+            text = if (enabled) colors.baseContentDefault else colors.baseContentDisabled,
             placeholder = colors.baseContentBody.copy(alpha = 0.5f),
             label = if (isFocused) colors.brandContentDefault else colors.baseContentBody,
             helperText = colors.baseContentBody,
-            errorText = colors.errorContentDefault,
+            errorText = colors.utilityErrorDefault,
             disabledBackground = colors.baseSurfaceDisabled,
             disabledBorder = Color.Transparent,
             disabledText = colors.baseContentDisabled
@@ -166,12 +170,12 @@ private fun TextFieldVariant.colors(
             background = Color.Transparent,
             border = colors.baseBorderDefault,
             focusedBorder = colors.brandBorderDefault,
-            errorBorder = colors.errorBorderDefault,
-            text = if (enabled) colors.baseContentTitle else colors.baseContentDisabled,
+            errorBorder = colors.utilityErrorBorder,
+            text = if (enabled) colors.baseContentDefault else colors.baseContentDisabled,
             placeholder = colors.baseContentBody.copy(alpha = 0.5f),
             label = if (isFocused) colors.brandContentDefault else colors.baseContentBody,
             helperText = colors.baseContentBody,
-            errorText = colors.errorContentDefault,
+            errorText = colors.utilityErrorDefault,
             disabledBackground = Color.Transparent,
             disabledBorder = colors.baseBorderDisabled,
             disabledText = colors.baseContentDisabled
@@ -180,12 +184,12 @@ private fun TextFieldVariant.colors(
             background = Color.Transparent,
             border = Color.Transparent,
             focusedBorder = colors.baseBorderDefault.copy(alpha = 0.3f),
-            errorBorder = colors.errorBorderDefault.copy(alpha = 0.3f),
-            text = if (enabled) colors.baseContentTitle else colors.baseContentDisabled,
+            errorBorder = colors.utilityErrorBorder.copy(alpha = 0.3f),
+            text = if (enabled) colors.baseContentDefault else colors.baseContentDisabled,
             placeholder = colors.baseContentBody.copy(alpha = 0.4f),
             label = if (isFocused) colors.brandContentDefault else colors.baseContentBody,
             helperText = colors.baseContentBody,
-            errorText = colors.errorContentDefault,
+            errorText = colors.utilityErrorDefault,
             disabledBackground = Color.Transparent,
             disabledBorder = Color.Transparent,
             disabledText = colors.baseContentDisabled
@@ -200,7 +204,7 @@ private fun TextFieldVariant.colors(
 /**
  * BaseTextField - Core text input component
  *
- * Single/multi-line text input with variants, sizes, floating labels, and full customization.
+ * Single-line text input with variants, sizes, and full customization.
  * Follows Material 3 design with theme integration.
  *
  * @param value Current text value
@@ -211,24 +215,17 @@ private fun TextFieldVariant.colors(
  * @param enabled Whether the field is enabled
  * @param readOnly Whether the field is read-only
  * @param isError Whether to show error state
- * @param label Optional label text (floats when focused/filled)
+ * @param label Optional label text
  * @param placeholder Optional placeholder text
  * @param helperText Optional helper text below field
  * @param errorText Optional error text (shown when isError=true)
  * @param leadingIcon Optional leading icon
  * @param trailingIcon Optional trailing icon
- * @param onTrailingIconClick Optional click handler for trailing icon
- * @param showClearButton Show clear button when text is not empty
  * @param visualTransformation Visual transformation (e.g., password)
  * @param keyboardOptions Keyboard configuration
  * @param keyboardActions Keyboard actions
  * @param singleLine Whether to limit to single line
- * @param maxLines Maximum lines (for multi-line)
  * @param maxLength Optional maximum character length
- * @param showCharacterCount Show character counter
- * @param characterCountThreshold Show counter when length > (maxLength * threshold)
- * @param customColors Optional color overrides
- * @param floatingLabel Enable floating label animation
  * @param interactionSource Interaction source for state
  * @param contentDescription Accessibility description
  *
@@ -240,9 +237,7 @@ private fun TextFieldVariant.colors(
  *     onValueChange = { text = it },
  *     label = "Email",
  *     placeholder = "Enter your email",
- *     variant = TextFieldVariant.Outlined,
- *     floatingLabel = true,
- *     showClearButton = true
+ *     variant = TextFieldVariant.Outlined
  * )
  * ```
  */
@@ -262,30 +257,19 @@ fun BaseTextField(
     errorText: String? = null,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
-    onTrailingIconClick: (() -> Unit)? = null,
-    showClearButton: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
-    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
     maxLength: Int? = null,
-    showCharacterCount: Boolean = maxLength != null,
-    characterCountThreshold: Float = 0.7f,
-    customColors: TextFieldColors? = null,
-    floatingLabel: Boolean = true,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     contentDescription: String? = null
 ) {
     val config = size.config()
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val defaultColors = variant.colors(isFocused, enabled)
-    val colors = customColors ?: defaultColors
+    val colors = variant.colors(isError, isFocused, enabled)
 
-    val hasValue = value.isNotEmpty()
-    val labelShouldFloat = floatingLabel && (isFocused || hasValue)
-
-    // Animations
+    // Animated colors
     val animatedBorderColor by animateColorAsState(
         targetValue = when {
             !enabled -> colors.disabledBorder
@@ -293,12 +277,12 @@ fun BaseTextField(
             isFocused -> colors.focusedBorder
             else -> colors.border
         },
-        animationSpec = AnimationUtils.standardSpring()
+        animationSpec = AnimationUtils.smoothTransition()
     )
 
     val animatedBackgroundColor by animateColorAsState(
         targetValue = if (!enabled) colors.disabledBackground else colors.background,
-        animationSpec = AnimationUtils.standardSpring()
+        animationSpec = AnimationUtils.smoothTransition()
     )
 
     val animatedBorderWidth by animateDpAsState(
@@ -306,35 +290,18 @@ fun BaseTextField(
         animationSpec = tween(durationMillis = 200)
     )
 
-    // Floating label animation
-    val labelScale by animateFloatAsState(
-        targetValue = if (labelShouldFloat) 0.85f else 1f,
-        animationSpec = tween(durationMillis = 200)
-    )
-
-    val labelOffsetY by animateDpAsState(
-        targetValue = if (labelShouldFloat) -(config.labelTextStyle.fontSize.value * 1.2).dp else 0.dp,
-        animationSpec = tween(durationMillis = 200)
-    )
-
     Column(
         modifier = modifier.semantics {
             contentDescription?.let { this.contentDescription = it }
-            if (isError) {
-                error("Error: ${errorText ?: "Invalid input"}")
-            }
         }
     ) {
-        // Floating label (above field when floating)
-        if (label != null && floatingLabel && labelShouldFloat) {
+        // Label
+        if (label != null) {
             Text(
                 text = label,
-                style = config.labelTextStyle.copy(fontSize = (config.labelTextStyle.fontSize.value * 0.85f).sp),
+                style = config.labelTextStyle,
                 color = if (isError) colors.errorText else colors.label,
-                modifier = Modifier.padding(
-                    start = config.horizontalPadding,
-                    bottom = Spacing.ExtraSmall
-                )
+                modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
             )
         }
 
@@ -358,7 +325,6 @@ fun BaseTextField(
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             singleLine = singleLine,
-            maxLines = maxLines,
             visualTransformation = visualTransformation,
             interactionSource = interactionSource,
             cursorBrush = SolidColor(colors.label),
@@ -384,7 +350,7 @@ fun BaseTextField(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top,
+                        verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
                     ) {
                         // Leading icon
@@ -393,27 +359,17 @@ fun BaseTextField(
                                 painter = leadingIcon,
                                 contentDescription = null,
                                 tint = colors.label,
-                                modifier = Modifier
-                                    .size(config.iconSize)
-                                    .then(if (!singleLine) Modifier.padding(top = Spacing.ExtraSmall) else Modifier)
+                                modifier = Modifier.size(config.iconSize)
                             )
                         }
 
-                        // Text input area with inline label or placeholder
+                        // Text input area
                         Box(
                             modifier = Modifier.weight(1f),
-                            contentAlignment = if (singleLine) Alignment.CenterStart else Alignment.TopStart
+                            contentAlignment = Alignment.CenterStart
                         ) {
-                            // Inline label (when not floating)
-                            if (label != null && !floatingLabel && value.isEmpty() && !isFocused) {
-                                Text(
-                                    text = label,
-                                    style = config.labelTextStyle,
-                                    color = colors.placeholder
-                                )
-                            }
-                            // Placeholder (shown when no label or label is floating)
-                            else if (value.isEmpty() && placeholder != null && (label == null || labelShouldFloat)) {
+                            // Placeholder
+                            if (value.isEmpty() && placeholder != null) {
                                 Text(
                                     text = placeholder,
                                     style = config.textStyle,
@@ -423,42 +379,13 @@ fun BaseTextField(
                             innerTextField()
                         }
 
-                        // Clear button or trailing icon
-                        val showClear = showClearButton && hasValue && enabled
-                        val effectiveTrailingIcon = if (showClear) null else trailingIcon
-
-                        if (showClear) {
-                            // Clear button (×)
-                            Box(
-                                modifier = Modifier
-                                    .size(config.iconSize)
-                                    .clickable { onValueChange("") }
-                                    .then(if (!singleLine) Modifier.padding(top = Spacing.ExtraSmall) else Modifier),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "×",
-                                    style = TextStyle(
-                                        fontSize = (config.iconSize.value * 1.2f).sp,
-                                        color = colors.label
-                                    )
-                                )
-                            }
-                        } else if (effectiveTrailingIcon != null) {
-                            val iconModifier = Modifier
-                                .size(config.iconSize)
-                                .then(if (!singleLine) Modifier.padding(top = Spacing.ExtraSmall) else Modifier)
-                                .then(
-                                    if (onTrailingIconClick != null) {
-                                        Modifier.clickable { onTrailingIconClick() }
-                                    } else Modifier
-                                )
-
+                        // Trailing icon
+                        if (trailingIcon != null) {
                             Icon(
-                                painter = effectiveTrailingIcon,
+                                painter = trailingIcon,
                                 contentDescription = null,
                                 tint = colors.label,
-                                modifier = iconModifier
+                                modifier = Modifier.size(config.iconSize)
                             )
                         }
                     }
@@ -466,39 +393,33 @@ fun BaseTextField(
             }
         )
 
-        // Helper/Error text and character counter row
+        // Helper/Error text
         val bottomText = if (isError && errorText != null) errorText else helperText
-        val shouldShowCounter = showCharacterCount && maxLength != null && value.length > (maxLength * characterCountThreshold).toInt()
+        if (bottomText != null) {
+            Text(
+                text = bottomText,
+                style = config.helperTextStyle,
+                color = if (isError) colors.errorText else colors.helperText,
+                modifier = Modifier.padding(
+                    start = config.horizontalPadding,
+                    top = Spacing.ExtraSmall
+                )
+            )
+        }
 
-        if (bottomText != null || shouldShowCounter) {
-            Row(
+        // Character counter
+        if (maxLength != null && value.length > maxLength * 0.8) {
+            Text(
+                text = "${value.length}/$maxLength",
+                style = config.helperTextStyle,
+                color = if (value.length >= maxLength) colors.errorText else colors.helperText,
                 modifier = Modifier
-                    .fillMaxWidth()
+                    .align(Alignment.End)
                     .padding(
-                        start = config.horizontalPadding,
                         end = config.horizontalPadding,
                         top = Spacing.ExtraSmall
-                    ),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (bottomText != null) {
-                    Text(
-                        text = bottomText,
-                        style = config.helperTextStyle,
-                        color = if (isError) colors.errorText else colors.helperText,
-                        modifier = Modifier.weight(1f, fill = false)
                     )
-                }
-
-                if (shouldShowCounter && maxLength != null) {
-                    Text(
-                        text = "${value.length}/$maxLength",
-                        style = config.helperTextStyle,
-                        color = if (value.length >= maxLength) colors.errorText else colors.helperText
-                    )
-                }
-            }
+            )
         }
     }
 }
@@ -525,15 +446,11 @@ fun FilledTextField(
     errorText: String? = null,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
-    onTrailingIconClick: (() -> Unit)? = null,
-    showClearButton: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
-    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
-    maxLength: Int? = null,
-    floatingLabel: Boolean = true
+    maxLength: Int? = null
 ) {
     BaseTextField(
         value = value,
@@ -550,15 +467,11 @@ fun FilledTextField(
         errorText = errorText,
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
-        onTrailingIconClick = onTrailingIconClick,
-        showClearButton = showClearButton,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         singleLine = singleLine,
-        maxLines = maxLines,
-        maxLength = maxLength,
-        floatingLabel = floatingLabel
+        maxLength = maxLength
     )
 }
 
@@ -580,15 +493,11 @@ fun OutlinedTextField(
     errorText: String? = null,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
-    onTrailingIconClick: (() -> Unit)? = null,
-    showClearButton: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
-    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
-    maxLength: Int? = null,
-    floatingLabel: Boolean = true
+    maxLength: Int? = null
 ) {
     BaseTextField(
         value = value,
@@ -605,15 +514,11 @@ fun OutlinedTextField(
         errorText = errorText,
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
-        onTrailingIconClick = onTrailingIconClick,
-        showClearButton = showClearButton,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         singleLine = singleLine,
-        maxLines = maxLines,
-        maxLength = maxLength,
-        floatingLabel = floatingLabel
+        maxLength = maxLength
     )
 }
 
@@ -635,15 +540,11 @@ fun GhostTextField(
     errorText: String? = null,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
-    onTrailingIconClick: (() -> Unit)? = null,
-    showClearButton: Boolean = false,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
     singleLine: Boolean = true,
-    maxLines: Int = if (singleLine) 1 else Int.MAX_VALUE,
-    maxLength: Int? = null,
-    floatingLabel: Boolean = false
+    maxLength: Int? = null
 ) {
     BaseTextField(
         value = value,
@@ -660,15 +561,11 @@ fun GhostTextField(
         errorText = errorText,
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
-        onTrailingIconClick = onTrailingIconClick,
-        showClearButton = showClearButton,
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         keyboardActions = keyboardActions,
         singleLine = singleLine,
-        maxLines = maxLines,
-        maxLength = maxLength,
-        floatingLabel = floatingLabel
+        maxLength = maxLength
     )
 }
 
@@ -691,8 +588,7 @@ fun EmailTextField(
     label: String = "Email",
     placeholder: String = "Enter your email",
     helperText: String? = null,
-    errorText: String? = "Invalid email address",
-    showClearButton: Boolean = true
+    errorText: String? = "Invalid email address"
 ) {
     BaseTextField(
         value = value,
@@ -706,7 +602,6 @@ fun EmailTextField(
         placeholder = placeholder,
         helperText = helperText,
         errorText = if (isError) errorText else null,
-        showClearButton = showClearButton,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Email,
             imeAction = ImeAction.Next
@@ -716,7 +611,7 @@ fun EmailTextField(
 }
 
 /**
- * PasswordTextField - Pre-configured for password input with visibility toggle
+ * PasswordTextField - Pre-configured for password input
  */
 @Composable
 fun PasswordTextField(
@@ -731,11 +626,8 @@ fun PasswordTextField(
     placeholder: String = "Enter your password",
     helperText: String? = null,
     errorText: String? = "Password is required",
-    showVisibilityToggle: Boolean = true,
-    trailingIcon: Painter? = null
+    visualTransformation: VisualTransformation = androidx.compose.ui.text.input.PasswordVisualTransformation()
 ) {
-    var passwordVisible by remember { mutableStateOf(false) }
-
     BaseTextField(
         value = value,
         onValueChange = onValueChange,
@@ -748,11 +640,7 @@ fun PasswordTextField(
         placeholder = placeholder,
         helperText = helperText,
         errorText = if (isError) errorText else null,
-        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-        trailingIcon = if (showVisibilityToggle) null else trailingIcon,
-        onTrailingIconClick = if (showVisibilityToggle) {
-            { passwordVisible = !passwordVisible }
-        } else null,
+        visualTransformation = visualTransformation,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Password,
             imeAction = ImeAction.Done
@@ -763,7 +651,6 @@ fun PasswordTextField(
 
 /**
  * SearchTextField - Pre-configured for search input
- * Note: leadingIcon param should be provided with a search icon painter
  */
 @Composable
 fun SearchTextField(
@@ -774,8 +661,6 @@ fun SearchTextField(
     size: TextFieldSize = TextFieldSize.Medium,
     enabled: Boolean = true,
     placeholder: String = "Search...",
-    leadingIcon: Painter? = null,
-    showClearButton: Boolean = true,
     onSearch: (() -> Unit)? = null
 ) {
     BaseTextField(
@@ -786,9 +671,6 @@ fun SearchTextField(
         size = size,
         enabled = enabled,
         placeholder = placeholder,
-        leadingIcon = leadingIcon, // Caller should provide search icon
-        showClearButton = showClearButton,
-        floatingLabel = false,
         keyboardOptions = KeyboardOptions(
             keyboardType = KeyboardType.Text,
             imeAction = ImeAction.Search
