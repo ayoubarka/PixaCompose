@@ -36,7 +36,7 @@ jobs:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
           echo "$GPG_PRIVATE_KEY" | base64 -d > private.key
-          gpg --batch --import private.key
+          gpg --batch --passphrase="$GPG_PASSPHRASE" --import private.key
           rm private.key
           # Export key ID
           echo "GPG_KEY_ID=$(gpg --list-secret-keys --keyid-format LONG | grep sec | awk '{print $2}' | cut -d'/' -f2 | head -n1)" >> $GITHUB_ENV
