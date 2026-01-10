@@ -35,7 +35,7 @@ jobs:
           GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
         run: |
-          echo "$GPG_PRIVATE_KEY" | base64 --decode > private.key
+          echo "$GPG_PRIVATE_KEY" | base64 -d > private.key
           gpg --batch --import private.key
           rm private.key
           # Export key ID
