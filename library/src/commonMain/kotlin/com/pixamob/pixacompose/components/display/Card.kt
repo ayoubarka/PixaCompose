@@ -440,7 +440,7 @@ fun PixaCard(
  * Best for: Content cards, product cards, list items
  */
 @Composable
-fun ElevatedPixaCard(
+fun ElevatedCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -464,7 +464,7 @@ fun ElevatedPixaCard(
  * Best for: Forms, settings sections, subtle containers
  */
 @Composable
-fun OutlinedPixaCard(
+fun OutlinedCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -486,7 +486,7 @@ fun OutlinedPixaCard(
  * Best for: Promotional banners, highlighted sections, info boxes
  */
 @Composable
-fun FilledPixaCard(
+fun FilledCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -510,7 +510,7 @@ fun FilledPixaCard(
  * Best for: Overlays, grouped content, minimal containers
  */
 @Composable
-fun GhostPixaCard(
+fun GhostCard(
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
@@ -532,7 +532,7 @@ fun GhostPixaCard(
  * Best for: List items, feed items, selectable cards
  */
 @Composable
-fun InteractivePixaCard(
+fun InteractiveCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
@@ -552,7 +552,7 @@ fun InteractivePixaCard(
  * Best for: Dense layouts, small info boxes, chips-like cards
  */
 @Composable
-fun CompactPixaCard(
+fun CompactCard(
     modifier: Modifier = Modifier,
     variant: BaseCardVariant = BaseCardVariant.Outlined,
     onClick: (() -> Unit)? = null,
@@ -581,7 +581,7 @@ fun CompactPixaCard(
  *
  * 2. Interactive card with click:
  * ```
- * InteractivePixaCard(onClick = { /* navigate */ }) {
+ * InteractiveCard(onClick = { /* navigate */ }) {
  *     Text("Tap me", style = AppTheme.typography.titleMedium)
  *     Spacer(modifier = Modifier.height(4.dp))
  *     Text("Card description", style = AppTheme.typography.bodySmall)
@@ -590,7 +590,7 @@ fun CompactPixaCard(
  *
  * 3. Outlined form section:
  * ```
- * OutlinedPixaCard(padding = BaseCardPadding.Large) {
+ * OutlinedCard(padding = BaseCardPadding.Large) {
  *     Text("Form Section", style = AppTheme.typography.titleLarge)
  *     Spacer(modifier = Modifier.height(16.dp))
  *     // Form fields here
@@ -599,7 +599,7 @@ fun CompactPixaCard(
  *
  * 4. Filled promotional card:
  * ```
- * FilledPixaCard(
+ * FilledCard(
  *     backgroundColor = AppTheme.colors.brandSurfaceSubtle,
  *     onClick = { /* action */ }
  * ) {
@@ -618,7 +618,7 @@ fun CompactPixaCard(
  *
  * 6. Compact card for dense layout:
  * ```
- * CompactPixaCard(variant = BaseCardVariant.Filled) {
+ * CompactCard(variant = BaseCardVariant.Filled) {
  *     Text("Tag: Kotlin", style = AppTheme.typography.captionRegular)
  * }
  * ```
@@ -642,5 +642,3 @@ fun CompactPixaCard(
  * }
  * ```
  */
-
-

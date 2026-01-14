@@ -41,7 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.actions.BaseButton
+import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.theme.*
 
@@ -728,14 +728,14 @@ fun ConfirmationBottomSheet(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
         ) {
-            BaseButton(
+            PixaButton(
                 text = cancelText,
                 onClick = onDismiss,
                 variant = ButtonVariant.Outlined,
                 modifier = Modifier.weight(1f)
             )
 
-            BaseButton(
+            PixaButton(
                 text = confirmText,
                 onClick = {
                     onConfirm()

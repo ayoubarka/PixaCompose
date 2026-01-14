@@ -30,6 +30,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
@@ -346,6 +347,11 @@ private fun InternalButton(
     CompositionLocalProvider(LocalContentColor provides contentColor) {
         Box(
             modifier = buttonModifier
+                .shadow(
+                    elevation = if (enabled) elevation else 0.dp,
+                    shape = buttonShape,
+                    clip = false
+                )
                 .clip(buttonShape)
                 .background(backgroundColor)
                 .then(
@@ -616,7 +622,7 @@ private fun RowScope.ButtonContent(
  * Solid base button - High emphasis with filled background
  */
 @Composable
-fun SolidPixaButton(
+fun SolidButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
@@ -647,7 +653,7 @@ fun SolidPixaButton(
  * Tonal base button - Medium emphasis with subtle background
  */
 @Composable
-fun TonalPixaButton(
+fun TonalButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
@@ -678,7 +684,7 @@ fun TonalPixaButton(
  * Outlined base button - Medium emphasis with border
  */
 @Composable
-fun OutlinedPixaButton(
+fun OutlinedButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
@@ -709,7 +715,7 @@ fun OutlinedPixaButton(
  * Ghost base button - Low emphasis, transparent background
  */
 @Composable
-fun GhostPixaButton(
+fun GhostButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
@@ -739,7 +745,7 @@ fun GhostPixaButton(
  * Destructive base button - For critical/dangerous actions (Solid variant)
  */
 @Composable
-fun DestructivePixaButton(
+fun DestructiveButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
@@ -764,4 +770,3 @@ fun DestructivePixaButton(
     trailingIcon = trailingIcon,
     contentDescription = contentDescription
 )
-

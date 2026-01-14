@@ -22,7 +22,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.display.BaseCard
+import com.pixamob.pixacompose.components.display.PixaCard
 import com.pixamob.pixacompose.components.display.BaseCardElevation
 import com.pixamob.pixacompose.components.display.BaseCardPadding
 import com.pixamob.pixacompose.components.display.BaseCardVariant
@@ -374,7 +374,7 @@ fun Alert(
                     }
                 )
         ) {
-            BaseCard(
+            PixaCard(
                 modifier = Modifier.fillMaxWidth(),
                 variant = when (style) {
                     AlertStyle.Outlined -> BaseCardVariant.Outlined

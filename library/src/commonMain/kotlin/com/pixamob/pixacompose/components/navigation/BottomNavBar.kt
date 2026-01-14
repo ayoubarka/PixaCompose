@@ -29,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -42,8 +41,8 @@ import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.pixamob.pixacompose.components.actions.ButtonShape
 import com.pixamob.pixacompose.components.actions.ButtonSize
-import com.pixamob.pixacompose.components.actions.SolidBaseButton
-import com.pixamob.pixacompose.components.display.BaseCard
+import com.pixamob.pixacompose.components.actions.SolidButton
+import com.pixamob.pixacompose.components.display.PixaCard
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.BaseCardElevation
 import com.pixamob.pixacompose.components.display.BaseCardPadding
@@ -270,7 +269,7 @@ private fun CenterActionButton(
     modifier: Modifier = Modifier
 ) {
     if (centerIcon != null) {
-        SolidBaseButton(
+        SolidButton(
             onClick = onCenterAction,
             modifier = modifier
                 .zIndex(1f)
@@ -542,7 +541,7 @@ fun BottomNavBar(
     }
 
     if (showBackground) {
-        BaseCard(
+        PixaCard(
             modifier = modifier
                 .padding(horizontal = sizeConfig.horizontalPadding)
                 .padding(bottom = sizeConfig.verticalPadding)
