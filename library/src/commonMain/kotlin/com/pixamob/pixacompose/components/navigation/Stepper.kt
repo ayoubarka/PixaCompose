@@ -258,9 +258,9 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             iconSize = 14.dp,
             connectorWidth = 40.dp,
             connectorThickness = 2.dp,
-            titleStyle = { typography.bodySmall },
+            titleStyle = { typography.bodyLight },
             subTitleStyle = { typography.captionRegular },
-            numberStyle = { typography.bodySmall.copy(fontWeight = FontWeight.SemiBold) },
+            numberStyle = { typography.bodyLight.copy(fontWeight = FontWeight.SemiBold) },
             spacing = Spacing.Small
         )
         StepperSize.Medium -> StepperConfig(
@@ -269,7 +269,7 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             connectorWidth = 48.dp,
             connectorThickness = 2.dp,
             titleStyle = { typography.bodyRegular },
-            subTitleStyle = { typography.bodySmall },
+            subTitleStyle = { typography.bodyLight },
             numberStyle = { typography.bodyRegular.copy(fontWeight = FontWeight.Bold) },
             spacing = Spacing.Medium
         )
@@ -278,9 +278,9 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             iconSize = 22.dp,
             connectorWidth = 56.dp,
             connectorThickness = 3.dp,
-            titleStyle = { typography.bodyLarge },
+            titleStyle = { typography.bodyBold },
             subTitleStyle = { typography.bodyRegular },
-            numberStyle = { typography.bodyLarge.copy(fontWeight = FontWeight.Bold) },
+            numberStyle = { typography.bodyBold.copy(fontWeight = FontWeight.Bold) },
             spacing = Spacing.Medium
         )
     }

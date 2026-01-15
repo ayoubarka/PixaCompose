@@ -64,29 +64,6 @@ import com.valentinilk.shimmer.shimmer
 // CONFIGURATION
 // ============================================================================
 
-/**
- * Skeleton variant types
- */
-enum class SkeletonVariant {
-    /** Rectangular skeleton with rounded corners */
-    Rectangle,
-    /** Circular skeleton */
-    Circle,
-    /** Text line skeleton */
-    Text,
-    /** Image skeleton (rectangle or circle) */
-    Image,
-    /** Button skeleton */
-    Button,
-    /** Card skeleton with header and content */
-    Card,
-    /** List item skeleton */
-    ListItem,
-    /** Avatar with text skeleton */
-    AvatarWithText,
-    /** Custom composable skeleton */
-    Custom
-}
 
 /**
  * Skeleton size presets

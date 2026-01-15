@@ -155,16 +155,15 @@ class ColorPickerState(
                 )
             },
             restore = { saved ->
-                @Suppress("UNCHECKED_CAST")
+                @Suppress("UNCHECKED_CAST", "USELESS_CAST")
                 val list = saved as List<Any>
                 val state = ColorPickerState(
                     initialColor = Color((list[0] as Long).toULong())
                 )
                 state._previousColor.value = Color((list[1] as Long).toULong())
                 state._mode.value = ColorPickerMode.entries[list[2] as Int]
-                @Suppress("UNCHECKED_CAST")
-                (list[3] as List<Long>).forEach { colorValue ->
-                    state._colorHistory.add(Color(colorValue.toULong()))
+                (list[3] as List<*>).forEach { colorValue ->
+                    state._colorHistory.add(Color(colorValue as Long))
                 }
                 state
             }

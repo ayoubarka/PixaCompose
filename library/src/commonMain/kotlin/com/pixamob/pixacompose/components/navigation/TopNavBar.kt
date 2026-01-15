@@ -2,7 +2,6 @@ package com.pixamob.pixacompose.components.navigation
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -46,7 +45,7 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.Avatar
 import com.pixamob.pixacompose.components.display.AvatarSize
 import com.pixamob.pixacompose.components.display.Icon
-import com.pixamob.pixacompose.components.feedback.Badge
+import com.pixamob.pixacompose.components.feedback.PixaBadge
 import com.pixamob.pixacompose.components.feedback.BadgeSize
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.theme.*
@@ -209,7 +208,7 @@ private fun AnimatedActionButton(
 
         // Badge overlay
         if (action.badge != null && action.badge > 0) {
-            Badge(
+            PixaBadge(
                 content = action.badge.toString(),
                 variant = BadgeVariant.Error,
                 size = BadgeSize.Small,

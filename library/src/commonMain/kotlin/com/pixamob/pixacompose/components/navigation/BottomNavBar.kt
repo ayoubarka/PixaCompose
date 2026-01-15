@@ -524,7 +524,7 @@ fun BottomNavBar(
             // Center action button (FAB) - only shown if conditions are met
             if (showCenterActionButton) {
                 CenterActionButton(
-                    centerIcon = centerIcon!!,
+                    centerIcon = centerIcon,
                     centerContentDescription = centerContentDescription,
                     buttonSize = sizeConfig.buttonSize,
                     enabled = centerEnabled,

@@ -267,6 +267,50 @@ data class HSL(
 )
 
 // ============================================================================
+// Color Manipulation Extensions
+// ============================================================================
+
+/**
+ * Get color with alpha transparency
+ */
+fun Color.withAlpha(alpha: Float): Color = this.copy(alpha = alpha)
+
+/**
+ * Blend two colors
+ */
+fun Color.blend(other: Color, ratio: Float = 0.5f): Color {
+    val inverseRatio = 1 - ratio
+    return Color(
+        red = this.red * inverseRatio + other.red * ratio,
+        green = this.green * inverseRatio + other.green * ratio,
+        blue = this.blue * inverseRatio + other.blue * ratio,
+        alpha = this.alpha * inverseRatio + other.alpha * ratio
+    )
+}
+
+/**
+ * Lighten a color by a percentage
+ */
+fun Color.lighten(percentage: Float = 0.1f): Color {
+    return this.blend(Color.White, percentage)
+}
+
+/**
+ * Darken a color by a percentage
+ */
+fun Color.darken(percentage: Float = 0.1f): Color {
+    return this.blend(Color.Black, percentage)
+}
+
+/**
+ * Get contrasting color (black or white) based on luminance
+ */
+fun Color.contrastColor(): Color {
+    val luminance = (0.299 * red + 0.587 * green + 0.114 * blue)
+    return if (luminance > 0.5) Color.Black else Color.White
+}
+
+// ============================================================================
 // Material Color Palettes
 // ============================================================================
 

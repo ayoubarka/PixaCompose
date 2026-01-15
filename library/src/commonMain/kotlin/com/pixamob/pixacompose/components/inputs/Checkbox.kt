@@ -132,7 +132,7 @@ private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
             borderWidth = BorderSize.Tiny,
             checkmarkStroke = 1.5.dp,
             labelSpacing = Spacing.Micro,
-            labelStyle = { typography.bodySmall }
+            labelStyle = { typography.bodyBold }
         )
         CheckboxSize.Medium -> CheckboxSizeConfig(
             boxSize = 20.dp,
@@ -148,7 +148,7 @@ private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
             borderWidth = BorderSize.Thick,
             checkmarkStroke = 2.5.dp,
             labelSpacing = Spacing.Small,
-            labelStyle = { typography.bodyLarge }
+            labelStyle = { typography.bodyLight }
         )
     }
 }
@@ -471,7 +471,7 @@ enum class CheckboxLabelPosition {
  * ```
  */
 @Composable
-fun Checkbox(
+fun PixaCheckbox(
     checked: Boolean,
     onCheckedChange: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,
@@ -550,7 +550,7 @@ fun OutlinedCheckbox(
     label: String? = null,
     size: CheckboxSize = CheckboxSize.Medium
 ) {
-    Checkbox(
+    PixaCheckbox(
         checked = checked,
         onCheckedChange = onCheckedChange,
         modifier = modifier,
@@ -575,7 +575,7 @@ fun LabeledCheckbox(
     variant: CheckboxVariant = CheckboxVariant.Filled,
     size: CheckboxSize = CheckboxSize.Medium
 ) {
-    Checkbox(
+    PixaCheckbox(
         checked = checked,
         onCheckedChange = onCheckedChange,
         modifier = modifier,

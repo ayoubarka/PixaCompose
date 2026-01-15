@@ -125,13 +125,6 @@ fun provideTextTypography(customFontFamily: FontFamily? = null): TextTypography 
         ),
 
         // Body styles - for main content
-        bodyLarge = TextStyle(
-            fontSize = 16.sp,
-            lineHeight = 24.sp,
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.W400,
-            letterSpacing = 0.5.sp
-        ),
         bodyBold = TextStyle(
             fontSize = 15.sp,
             lineHeight = 20.sp,
@@ -152,13 +145,6 @@ fun provideTextTypography(customFontFamily: FontFamily? = null): TextTypography 
             fontFamily = fontFamily,
             fontWeight = FontWeight.W300,
             letterSpacing = 0.25.sp
-        ),
-        bodySmall = TextStyle(
-            fontSize = 14.sp,
-            lineHeight = 20.sp,
-            fontFamily = fontFamily,
-            fontWeight = FontWeight.W400,
-            letterSpacing = 0.4.sp
         ),
 
         // Caption styles - for supporting text
@@ -322,11 +308,9 @@ data class TextTypography(
     val subtitleLight: TextStyle = TextStyle(),
 
     // Body styles
-    val bodyLarge: TextStyle = TextStyle(),
     val bodyBold: TextStyle = TextStyle(),
     val bodyRegular: TextStyle = TextStyle(),
     val bodyLight: TextStyle = TextStyle(),
-    val bodySmall: TextStyle = TextStyle(),
 
     // Caption styles
     val captionBold: TextStyle = TextStyle(),

@@ -1,7 +1,5 @@
 import com.android.build.api.dsl.androidLibrary
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import groovyjarjarantlr.build.ANTLR.compiler
-import org.jetbrains.kotlin.gradle.plugin.KotlinJsCompilerType
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -47,6 +45,11 @@ kotlin {
         it.binaries.framework {
             baseName = "pixacompose"
             isStatic = true
+            freeCompilerArgs += listOf(
+                "-Xallocator=custom",
+                "-XXLanguage:+ImplicitSignedToUnsignedIntegerConversion",
+                "-Xruntime-logs=gc=info"
+            )
         }
     }
 

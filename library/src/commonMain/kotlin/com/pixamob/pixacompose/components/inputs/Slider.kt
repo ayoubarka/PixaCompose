@@ -73,7 +73,7 @@ private fun SliderSize.config(): SliderConfig {
             thumbSize = 16.dp,
             thumbElevation = 2.dp,
             labelStyle = typography.labelSmall,
-            valueStyle = typography.bodySmall
+            valueStyle = typography.bodyBold
         )
         SliderSize.Medium -> SliderConfig(
             trackHeight = 6.dp,
@@ -87,7 +87,7 @@ private fun SliderSize.config(): SliderConfig {
             thumbSize = 24.dp,
             thumbElevation = 6.dp,
             labelStyle = typography.labelLarge,
-            valueStyle = typography.bodyLarge
+            valueStyle = typography.bodyLight
         )
     }
 }

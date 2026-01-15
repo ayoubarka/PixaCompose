@@ -175,16 +175,16 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
             height = 240.dp,
             padding = Spacing.Medium,
             cornerRadius = RadiusSize.Medium,
-            titleTextStyle = typography.bodySmall,
-            itemTextStyle = typography.bodySmall,
+            titleTextStyle = typography.bodyLight,
+            itemTextStyle = typography.bodyLight,
             dayTextStyle = typography.labelSmall
         )
         DatePickerSize.Medium -> DatePickerSizeConfig(
             height = 280.dp,
             padding = Spacing.Large,
             cornerRadius = RadiusSize.Medium,
-            titleTextStyle = typography.bodyLarge,
-            itemTextStyle = typography.bodyLarge,
+            titleTextStyle = typography.bodyBold,
+            itemTextStyle = typography.bodyBold,
             dayTextStyle = typography.labelMedium
         )
         DatePickerSize.Large -> DatePickerSizeConfig(
@@ -332,7 +332,7 @@ fun DatePicker(
                     minDate = minDate,
                     maxDate = maxDate,
                     onDateSelected = { date ->
-                        onDateSelected?.invoke(date.toEpochDays().toLong() * 86400000)
+                        onDateSelected?.invoke(date.toEpochDays() * 86400000)
                     }
                 )
             }

@@ -207,22 +207,22 @@ private fun getProgressConfig(size: ProgressSize): ProgressConfig {
         ProgressSize.Small -> ProgressConfig(
             size = 16.dp,
             strokeWidth = BorderSize.Tiny,
-            labelStyle = { typography.captionRegular }
+            labelStyle = { typography.footnoteBold }
         )
         ProgressSize.Medium -> ProgressConfig(
             size = 24.dp,
             strokeWidth = BorderSize.Standard,
-            labelStyle = { typography.bodySmall }
+            labelStyle = { typography.captionBold }
         )
         ProgressSize.Large -> ProgressConfig(
             size = 40.dp,
             strokeWidth = BorderSize.Thick,
-            labelStyle = { typography.bodyRegular }
+            labelStyle = { typography.bodyBold }
         )
         ProgressSize.ExtraLarge -> ProgressConfig(
             size = 48.dp,
             strokeWidth = BorderSize.ExtraThick,
-            labelStyle = { typography.bodyLarge }
+            labelStyle = { typography.subtitleBold }
         )
     }
 }
@@ -451,7 +451,7 @@ fun LinearProgressIndicator(
 
                     Text(
                         text = displayLabel,
-                        style = typography.bodySmall,
+                        style = typography.bodyLight,
                         color = colors.label,
                         modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
                     )
@@ -566,7 +566,7 @@ fun LinearProgressIndicator(
 
                     Text(
                         text = displayLabel,
-                        style = typography.bodySmall,
+                        style = typography.bodyRegular,
                         color = colors.label
                     )
                 }
@@ -649,7 +649,7 @@ fun SegmentedProgressIndicator(
         if (showLabel) {
             Text(
                 text = "${(totalProgress * 100).toInt()}%",
-                style = typography.bodySmall,
+                style = typography.bodyRegular,
                 color = colors.baseContentBody,
                 modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
             )

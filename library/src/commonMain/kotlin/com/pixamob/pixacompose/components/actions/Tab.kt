@@ -45,7 +45,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.feedback.Badge
+import com.pixamob.pixacompose.components.feedback.PixaBadge
 import com.pixamob.pixacompose.components.feedback.BadgeSize
 import com.pixamob.pixacompose.components.feedback.BadgeStyle
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
@@ -796,7 +796,7 @@ private fun RowScope.RenderTabContentRow(
 
     // Badge using Badge component
     badge?.let {
-        Badge(
+        PixaBadge(
             content = it,
             variant = badgeVariant,
             size = badgeSize,
@@ -846,7 +846,7 @@ private fun ColumnScope.RenderTabContentColumn(
                 )
                 // Badge positioned at top-right
                 badge?.let {
-                    Badge(
+                    PixaBadge(
                         content = it,
                         variant = badgeVariant,
                         size = badgeSize,
@@ -868,7 +868,7 @@ private fun ColumnScope.RenderTabContentColumn(
                 )
                 // Badge positioned at top-right
                 badge?.let {
-                    Badge(
+                    PixaBadge(
                         content = it,
                         variant = badgeVariant,
                         size = badgeSize,
@@ -890,7 +890,7 @@ private fun ColumnScope.RenderTabContentColumn(
                 )
                 // Badge positioned at top-right
                 badge?.let {
-                    Badge(
+                    PixaBadge(
                         content = it,
                         variant = badgeVariant,
                         size = badgeSize,
@@ -921,7 +921,7 @@ private fun ColumnScope.RenderTabContentColumn(
                 )
                 // Badge positioned at top-right
                 badge?.let {
-                    Badge(
+                    PixaBadge(
                         content = it,
                         variant = badgeVariant,
                         size = badgeSize,

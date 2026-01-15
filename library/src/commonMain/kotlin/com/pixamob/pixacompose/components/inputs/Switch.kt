@@ -78,7 +78,7 @@ private fun SwitchSize.config(): SwitchConfig {
             thumbPadding = 2.dp,
             thumbElevation = 2.dp,
             borderWidth = 1.dp,
-            labelStyle = typography.bodySmall,
+            labelStyle = typography.bodyLight,
             labelSpacing = Spacing.Small
         )
         SwitchSize.Medium -> SwitchConfig(
@@ -98,7 +98,7 @@ private fun SwitchSize.config(): SwitchConfig {
             thumbPadding = 2.dp,
             thumbElevation = 6.dp,
             borderWidth = 2.dp,
-            labelStyle = typography.bodyLarge,
+            labelStyle = typography.bodyBold,
             labelSpacing = Spacing.Large
         )
     }

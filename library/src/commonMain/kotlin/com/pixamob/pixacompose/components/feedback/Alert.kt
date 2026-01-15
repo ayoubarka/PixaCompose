@@ -309,7 +309,7 @@ private fun getAlertConfig(): AlertConfig {
  * @param contentDescription Accessibility description
  */
 @Composable
-fun Alert(
+fun PixaAlert(
     title: String,
     message: String? = null,
     variant: AlertVariant = AlertVariant.Info,
@@ -525,7 +525,7 @@ fun InfoAlert(
     actionText: String? = null,
     onAction: (() -> Unit)? = null
 ) {
-    Alert(
+    PixaAlert(
         title = title,
         message = message,
         variant = AlertVariant.Info,
@@ -554,7 +554,7 @@ fun SuccessAlert(
     actionText: String? = null,
     onAction: (() -> Unit)? = null
 ) {
-    Alert(
+    PixaAlert(
         title = title,
         message = message,
         variant = AlertVariant.Success,
@@ -583,7 +583,7 @@ fun WarningAlert(
     actionText: String? = null,
     onAction: (() -> Unit)? = null
 ) {
-    Alert(
+    PixaAlert(
         title = title,
         message = message,
         variant = AlertVariant.Warning,
@@ -612,7 +612,7 @@ fun ErrorAlert(
     actionText: String? = null,
     onAction: (() -> Unit)? = null
 ) {
-    Alert(
+    PixaAlert(
         title = title,
         message = message,
         variant = AlertVariant.Error,

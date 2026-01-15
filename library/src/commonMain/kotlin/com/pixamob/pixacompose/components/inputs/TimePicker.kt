@@ -178,15 +178,15 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
             height = 240.dp,
             padding = Spacing.Medium,
             cornerRadius = RadiusSize.Medium,
-            titleTextStyle = typography.bodySmall,
-            itemTextStyle = typography.bodySmall
+            titleTextStyle = typography.bodyLight,
+            itemTextStyle = typography.bodyLight
         )
         TimePickerSize.Medium -> TimePickerSizeConfig(
             height = 280.dp,
             padding = Spacing.Large,
             cornerRadius = RadiusSize.Medium,
-            titleTextStyle = typography.bodyLarge,
-            itemTextStyle = typography.bodyLarge
+            titleTextStyle = typography.bodyBold,
+            itemTextStyle = typography.bodyBold
         )
         TimePickerSize.Large -> TimePickerSizeConfig(
             height = 320.dp,

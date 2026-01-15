@@ -113,7 +113,7 @@ private fun getRadioButtonSizeConfig(size: RadioButtonSize): RadioButtonSizeConf
             innerCircleSize = 8.dp,
             borderWidth = BorderSize.Tiny,
             labelSpacing = Spacing.Micro,
-            labelStyle = { typography.bodySmall }
+            labelStyle = { typography.bodyBold }
         )
         RadioButtonSize.Medium -> RadioButtonSizeConfig(
             outerCircleSize = 20.dp,
@@ -127,7 +127,7 @@ private fun getRadioButtonSizeConfig(size: RadioButtonSize): RadioButtonSizeConf
             innerCircleSize = 12.dp,
             borderWidth = BorderSize.Thick,
             labelSpacing = Spacing.Small,
-            labelStyle = { typography.bodyLarge }
+            labelStyle = { typography.bodyLight }
         )
     }
 }
