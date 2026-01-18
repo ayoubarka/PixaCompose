@@ -1,6 +1,6 @@
 # PixaCompose
 
-**A comprehensive Compose Multiplatform UI library** with 20+ production-ready components for Android and iOS applications.
+**A comprehensive Compose Multiplatform UI library** with 30+ production-ready components for Android and iOS applications.
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.pixamob/pixacompose)](https://central.sonatype.com/artifact/com.pixamob/pixacompose)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -8,15 +8,16 @@
 
 ## ✨ Features
 
-- 🎨 **20+ Components** - TextField, Slider, Switch, Button, DatePicker, and more
+- 🎨 **30+ Components** - Cards, TextField, Slider, Switch, Button, DatePicker, Icons, Images, and more
 - 🌗 **Theme Support** - Built-in light and dark themes with customizable colors
 - 📱 **Multiplatform** - Android and iOS support via Compose Multiplatform
-- ♿ **Accessible** - Full accessibility support with semantic roles
-- 🎭 **Variants** - Multiple style variants (Filled, Outlined, Minimal) for each component
-- 📏 **Sizes** - Three size presets (Small, Medium, Large) for all components
+- ♿ **Accessible** - Full accessibility support with semantic roles and descriptions
+- 🎭 **Variants** - Multiple style variants for each component
+- 📏 **Flexible** - Customizable sizes, colors, and styling
 - 🎬 **Animated** - Smooth animations and transitions
 - 🎯 **Type-Safe** - 100% Kotlin with full type safety
 - 📖 **Documented** - Comprehensive KDoc documentation
+- 🔄 **Loading States** - Built-in skeleton loading for all components
 
 ## 📦 Installation
 
@@ -24,7 +25,7 @@
 
 ```kotlin
 commonMain.dependencies {
-    implementation("com.pixamob:pixacompose:1.0.0")
+    implementation("com.pixamob:pixacompose:1.0.5")
 }
 ```
 
@@ -32,7 +33,7 @@ commonMain.dependencies {
 
 ```kotlin
 dependencies {
-    implementation("com.pixamob:pixacompose:1.0.0")
+    implementation("com.pixamob:pixacompose:1.0.5")
 }
 ```
 
@@ -47,7 +48,19 @@ import com.pixamob.pixacompose.theme.AppTheme
 @Composable
 fun MyApp() {
     AppTheme {
-        Column {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(Spacing.Medium),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+        ) {
+            // Card Components
+            InfoCard(
+                title = "Welcome to PixaCompose",
+                description = "Build beautiful UIs with ready-to-use components",
+                icon = Icons.Default.Info
+            )
+            
             // Text Input
             var text by remember { mutableStateOf("") }
             OutlinedTextField(
@@ -57,27 +70,9 @@ fun MyApp() {
                 placeholder = "Enter your email"
             )
             
-            // Slider
-            var volume by remember { mutableStateOf(50f) }
-            FilledSlider(
-                value = volume,
-                onValueChange = { volume = it },
-                label = "Volume",
-                valueRange = 0f..100f,
-                showValue = true
-            )
-            
-            // Switch
-            var isEnabled by remember { mutableStateOf(false) }
-            FilledSwitch(
-                checked = isEnabled,
-                onCheckedChange = { isEnabled = it },
-                label = "Enable Notifications"
-            )
-            
-            // Button
+            // Action Button
             PrimaryButton(
-                text = "Submit",
+                text = "Get Started",
                 onClick = { /* Handle click */ }
             )
         }
@@ -87,165 +82,399 @@ fun MyApp() {
 
 ## 📚 Components
 
-PixaCompose includes 20+ components organized in three categories:
-
-### Input Components
-- **TextField** - Single-line text input
-- **TextArea** - Multi-line text input
-- **SearchBar** - Search-specific input with icon
-- **Slider** - Value selection (continuous/discrete)
-- **Switch** - Binary toggle (on/off)
-- **Checkbox** - Multi-select options
-- **RadioButton** - Single-select from group
-- **DatePicker** - Date selection with calendar
+PixaCompose includes 30+ components organized in categories:
 
 ### Display Components
-- **Button** - Primary/secondary/ghost buttons
-- **Icon** - Vector graphics with sizes
-- **Avatar** - User images (circular/rounded)
-- **Badge** - Notification indicators
-- **Chip** - Compact selectable elements
-- **Divider** - Content separation
-- **Loader** - Loading states (spinner/progress)
 
-### Navigation Components
-- **BottomNavBar** - Bottom navigation
-- **TopAppBar** - Top app bar with actions
-- **NavigationDrawer** - Side drawer menu
-- **Tabs** - Tabbed navigation
+#### Cards (9 Types)
+- **PixaCard** - Base card component with variants (Elevated, Outlined, Filled, Ghost)
+- **InfoCard** - Display static information with icon and description
+- **ActionCard** - Clickable cards for navigation and actions
+- **SelectCard** ⭐ - Flexible selection cards (single/multi-select, supports remote icons)
+- **MediaCard** - Cards with prominent media content
+- **StatCard** - Display metrics and statistics with trends
+- **ListItemCard** - List entries for settings and navigation
+- **FeatureCard** - Showcase features with centered icon
+- **CompactCard** - Small cards for tags and chips
+- **SummaryCard** - Display grouped summary data
 
-👉 **See [COMPONENTS.md](./COMPONENTS.md) for detailed documentation and parameters**
+#### Other Display Components
+- **PixaIcon** - Unified icon component (Vector, Painter, URL sources)
+- **PixaImage** - Advanced image loading with Coil3 (crossfade, placeholder, error handling)
+- **PixaBadge** - Notification badges and labels
+- **Skeleton** - Loading placeholder with shimmer effect
 
-## 🎨 Theming
+### Input Components
+- **TextField** - Single-line text input (Filled, Outlined, Minimal variants)
+- **TextArea** - Multi-line text input
+- **SearchBar** - Search-specific input with icon
+- **Slider** - Value selection (continuous/discrete, with label and value display)
+- **Switch** - Binary toggle (Filled, Outlined, Minimal variants)
+- **Checkbox** - Multi-select options (with indeterminate state)
+- **RadioButton** - Single-select from group
+- **DatePicker** - Date selection with calendar popup
 
-All components integrate with the `AppTheme` for consistent styling:
+### Feedback Components
+- **Button** - Primary, Secondary, Tertiary, Minimal variants
+- **PixaBadge** - Notification count and status indicators
+
+## 🎨 Card Components - Quick Reference
+
+### InfoCard - Static Information
+```kotlin
+InfoCard(
+    title = "Welcome",
+    description = "Get started with PixaCompose",
+    icon = Icons.Default.Info,
+    variant = BaseCardVariant.Elevated
+)
+```
+
+### ActionCard - Clickable Actions
+```kotlin
+ActionCard(
+    title = "Settings",
+    description = "Manage your preferences",
+    icon = Icons.Default.Settings,
+    trailingIcon = Icons.Default.ChevronRight,
+    onClick = { /* navigate */ }
+)
+```
+
+### SelectCard ⭐ - Flexible Selection
+Perfect for settings, choices, and options with full flexibility.
+
+```kotlin
+// With remote icon (perfect for profile settings)
+SelectCard(
+    title = "7-8 hours",
+    description = "Recommended sleep",
+    iconUrl = "https://example.com/sleep-icon.png",
+    isSelected = selected == 0,
+    onClick = { selected = 0 }
+)
+
+// With vector icon
+SelectCard(
+    title = "Dark Mode",
+    icon = Icons.Default.DarkMode,
+    isSelected = selected == 1,
+    onClick = { selected = 1 }
+)
+
+// Icon only mode
+SelectCard(
+    icon = Icons.Default.Favorite,
+    isSelected = isLiked,
+    onClick = { isLiked = !isLiked }
+)
+```
+
+### MediaCard - Image Content
+```kotlin
+MediaCard(
+    imageUrl = "https://example.com/image.jpg",
+    title = "Article Title",
+    subtitle = "Category",
+    description = "Article preview text",
+    onClick = { /* open article */ }
+)
+```
+
+### StatCard - Metrics Display
+```kotlin
+Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
+    StatCard(
+        modifier = Modifier.weight(1f),
+        value = "42",
+        label = "Active",
+        trend = "+12%",
+        trendPositive = true
+    )
+    
+    StatCard(
+        modifier = Modifier.weight(1f),
+        value = "85%",
+        label = "Success Rate"
+    )
+}
+```
+
+### ListItemCard - Settings & Navigation
+```kotlin
+ListItemCard(
+    title = "Notifications",
+    subtitle = "Push, Email, SMS",
+    leadingIcon = Icons.Default.Notifications,
+    trailingIcon = Icons.Default.ChevronRight,
+    onClick = { /* navigate */ }
+)
+```
+
+### FeatureCard - Feature Showcase
+```kotlin
+FeatureCard(
+    title = "Fast Setup",
+    description = "Get started in minutes",
+    icon = Icons.Default.Speed,
+    iconBackgroundColor = AppTheme.colors.brandSurfaceSubtle
+)
+```
+
+### CompactCard - Tags & Chips
+```kotlin
+Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
+    CompactCard(title = "Health", icon = Icons.Default.FavoriteBorder)
+    CompactCard(title = "Fitness", icon = Icons.Default.FitnessCenter)
+}
+```
+
+### SummaryCard - Grouped Data
+```kotlin
+SummaryCard(
+    title = "Weekly Summary",
+    icon = Icons.Default.CalendarMonth,
+    items = listOf(
+        "Total" to "12",
+        "Completed" to "10",
+        "Success Rate" to "83%"
+    )
+)
+```
+
+## 🎨 Card Styling
+
+All cards support customization:
+
+### Variants
+```kotlin
+variant = BaseCardVariant.Elevated    // Shadow (default for info)
+variant = BaseCardVariant.Outlined    // Border only
+variant = BaseCardVariant.Filled      // Solid background
+variant = BaseCardVariant.Ghost       // Subtle (default for list items)
+```
+
+### Padding
+```kotlin
+padding = BaseCardPadding.Compact     // 8dp
+padding = BaseCardPadding.Small       // 12dp  
+padding = BaseCardPadding.Medium      // 16dp (default)
+padding = BaseCardPadding.Large       // 24dp
+```
+
+### Custom Colors
+```kotlin
+InfoCard(
+    title = "Custom",
+    backgroundColor = Color.Blue,      // Optional override
+    variant = BaseCardVariant.Filled
+)
+```
+
+## 🎨 Theme Customization
+
+### Using AppTheme
 
 ```kotlin
 @Composable
 fun App() {
     AppTheme(
-        useDarkTheme = false,
-        colors = myCustomColors, // Optional
-        typography = myCustomTypography // Optional
+        isDarkTheme = isSystemInDarkTheme()
     ) {
         // Your app content
+        MyScreen()
     }
 }
-```
-
-### Custom Colors
-
-```kotlin
-val myCustomColors = ColorPalette(
-    brandContentDefault = Color(0xFF007AFF),
-    brandSurfaceDefault = Color(0xFFE3F2FD),
-    // ... customize any color
-)
 ```
 
 ### Custom Typography
 
 ```kotlin
-val myCustomTypography = provideTextTypography(
-    customFontFamily = myFontFamily
+@Composable
+fun App() {
+    val customFont = FontFamily(/* your font */)
+    
+    AppTheme(
+        customFontFamily = customFont
+    ) {
+        // Your app content with custom font
+    }
+}
+```
+
+### Accessing Theme Values
+
+```kotlin
+@Composable
+fun MyComponent() {
+    // Colors
+    val brandColor = AppTheme.colors.brandContentDefault
+    val backgroundColor = AppTheme.colors.baseSurfaceDefault
+    
+    // Typography
+    val titleStyle = AppTheme.typography.titleBold
+    val bodyStyle = AppTheme.typography.bodyRegular
+    
+    // Spacing
+    val padding = Spacing.Medium
+    val gap = Spacing.Small
+}
+```
+
+## 🔄 Loading States
+
+All components support skeleton loading:
+
+```kotlin
+InfoCard(
+    title = "Loading...",
+    isLoading = true  // Shows skeleton loader
+)
+
+PixaImage(
+    source = PixaImageSource.Url(imageUrl),
+    contentDescription = "Image",
+    isLoading = isImageLoading
 )
 ```
 
-## 🎯 Component Variants
+## 🌐 Icons & Images
 
-Most components support three visual variants:
-
-- **Filled** - Solid background (primary style)
-- **Outlined** - Border with transparent background
-- **Minimal** - Subtle, minimal design
+### PixaIcon - Unified Icon Component
 
 ```kotlin
-// Filled variant (default)
-FilledTextField(value, onValueChange, label = "Name")
+// Vector icon
+PixaIcon(
+    source = IconSource.Vector(Icons.Default.Home),
+    contentDescription = "Home",
+    size = IconSize.Large,
+    tint = AppTheme.colors.brandContentDefault
+)
 
-// Outlined variant
-OutlinedTextField(value, onValueChange, label = "Name")
+// Remote URL icon
+PixaIcon(
+    source = IconSource.Url("https://example.com/icon.png"),
+    contentDescription = "Logo",
+    size = 48.dp
+)
 
-// Ghost/Minimal variant
-GhostTextField(value, onValueChange, label = "Name")
-```
-
-## 📏 Component Sizes
-
-Three size presets are available for all components:
-
-- **Small** - Compact UI (36dp height for inputs)
-- **Medium** - Standard size (44dp) - Default
-- **Large** - Touch-friendly (52dp)
-
-```kotlin
-FilledButton(
-    text = "Click Me",
-    onClick = { },
-    size = ButtonSize.Large
+// Painter icon
+PixaIcon(
+    source = IconSource.Resource(painterResource(R.drawable.logo)),
+    contentDescription = "App Logo"
 )
 ```
 
-## ♿ Accessibility
-
-All components include full accessibility support:
+### PixaImage - Advanced Image Loading
 
 ```kotlin
-FilledSwitch(
-    checked = isEnabled,
-    onCheckedChange = { isEnabled = it },
-    label = "Enable Feature",
-    contentDescription = "Toggle to enable or disable the feature"
+PixaImage(
+    source = PixaImageSource.Url("https://example.com/image.jpg"),
+    contentDescription = "Product Image",
+    modifier = Modifier.size(200.dp),
+    contentScale = ContentScale.Crop,
+    shape = RoundedCornerShape(12.dp),
+    enableCrossfade = true,
+    placeholder = painterResource(R.drawable.placeholder),
+    error = painterResource(R.drawable.error)
 )
 ```
 
-## 🎬 Animations
+## 📱 Examples
 
-Components include smooth, built-in animations:
+### Dashboard Screen
+```kotlin
+@Composable
+fun DashboardScreen() {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(Spacing.Medium),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+    ) {
+        // Stats Row
+        Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
+            StatCard(
+                modifier = Modifier.weight(1f),
+                value = "42",
+                label = "Total",
+                icon = Icons.Default.CheckCircle
+            )
+            StatCard(
+                modifier = Modifier.weight(1f),
+                value = "85%",
+                label = "Success",
+                trend = "+5%",
+                trendPositive = true
+            )
+        }
+        
+        // Info Card
+        InfoCard(
+            title = "New Features",
+            description = "Check out the latest updates",
+            icon = Icons.Default.Info
+        )
+        
+        // Action Card
+        ActionCard(
+            title = "Settings",
+            description = "Manage preferences",
+            icon = Icons.Default.Settings,
+            trailingIcon = Icons.Default.ChevronRight,
+            onClick = { /* navigate */ }
+        )
+    }
+}
+```
 
-- Color transitions
-- Size changes
-- Opacity fading
-- Slide/scale effects
-
-All animations use Material Motion principles for natural feel.
-
-## 📱 Platform Support
-
-| Platform | Supported |
-|----------|-----------|
-| Android  | ✅ API 24+ |
-| iOS      | ✅ iOS 14+ |
-| Desktop  | ⏳ Coming soon |
-| Web      | ⏳ Coming soon |
-
-## 🛠️ Requirements
-
-- **Kotlin**: 2.3.0+
-- **Compose Multiplatform**: 1.8.0+
-- **Android**: API 24+ (Android 7.0)
-- **iOS**: 14.0+
+### Settings Screen
+```kotlin
+@Composable
+fun SettingsScreen() {
+    Column(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+    ) {
+        ListItemCard(
+            title = "Profile",
+            subtitle = "Manage your account",
+            leadingIcon = Icons.Default.Person,
+            trailingIcon = Icons.Default.ChevronRight,
+            onClick = { }
+        )
+        
+        ListItemCard(
+            title = "Notifications",
+            subtitle = "Push, Email, SMS",
+            leadingIcon = Icons.Default.Notifications,
+            trailingIcon = Icons.Default.ChevronRight,
+            onClick = { }
+        )
+        
+        ListItemCard(
+            title = "Privacy",
+            subtitle = "Data and security",
+            leadingIcon = Icons.Default.Lock,
+            trailingIcon = Icons.Default.ChevronRight,
+            onClick = { }
+        )
+    }
+}
+```
 
 ## 📖 Documentation
 
-- **[COMPONENTS.md](./COMPONENTS.md)** - Detailed component documentation with all parameters
-- **[PUBLISHING_GUIDE.md](./PUBLISHING_GUIDE.md)** - Guide for contributors to publish updates
-- **[CHANGELOG.md](./CHANGELOG.md)** - Version history and changes
+For detailed documentation on each component, see [COMPONENTS.md](COMPONENTS.md)
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please read our [Contributing Guidelines](./CONTRIBUTING.md) first.
+Contributions are welcome! See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
-
-## 📝 License
+## 📄 License
 
 ```
-Copyright 2026 Pixamob
+Copyright 2025 PixaMob
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -262,40 +491,11 @@ limitations under the License.
 
 ## 🔗 Links
 
-- **Maven Central**: https://central.sonatype.com/artifact/com.pixamob/pixacompose
-- **GitHub**: https://github.com/ayoubarka/PixaCompose
-- **Issues**: https://github.com/ayoubarka/PixaCompose/issues
-- **Releases**: https://github.com/ayoubarka/PixaCompose/releases
-
-## 💡 Use Cases
-
-PixaCompose is perfect for:
-
-- ✅ **Multiplatform Apps** - Share UI code between Android and iOS
-- ✅ **Design Systems** - Build consistent UIs with reusable components
-- ✅ **Rapid Prototyping** - Quickly build beautiful interfaces
-- ✅ **Enterprise Apps** - Production-ready components with accessibility
-- ✅ **Startups** - Focus on features, not UI boilerplate
-
-## 🎯 Examples
-
-Check out the sample app in the repository:
-
-```bash
-git clone https://github.com/ayoubarka/PixaCompose.git
-cd PixaCompose
-./gradlew :app:installDebug  # Android
-./gradlew :app:iosApp         # iOS
-```
-
-## 🙏 Acknowledgments
-
-Built with:
-- [Compose Multiplatform](https://www.jetbrains.com/lp/compose-multiplatform/) - JetBrains
-- [Material 3](https://m3.material.io/) - Google
-- [Kotlin](https://kotlinlang.org/) - JetBrains
+- [Maven Central Repository](https://central.sonatype.com/artifact/com.pixamob/pixacompose)
+- [Issue Tracker](https://github.com/pixamob/pixacompose/issues)
+- [Changelog](CHANGELOG.md)
 
 ---
 
-Made with ❤️ by [Pixamob](https://github.com/ayoubarka)
+**Made with ❤️ by PixaMob**
 

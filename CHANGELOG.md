@@ -11,10 +11,44 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dialog component
 - BottomSheet component
 - Snackbar component
-- DatePicker integration
 - Navigation components
 - Menu components
-- Additional specialized input variants
+
+## [1.0.5] - 2026-01-18
+
+### Added
+- **9 Purpose-Built Card Components**:
+  - `InfoCard` - Static information display with icon and description
+  - `ActionCard` - Clickable cards for navigation and actions
+  - `SelectCard` ⭐ - Flexible selection cards (single/multi-select, supports remote icon URLs)
+  - `MediaCard` - Cards with prominent media content (image + text)
+  - `StatCard` - Display metrics and statistics with trend indicators
+  - `ListItemCard` - List entries for settings and navigation menus
+  - `FeatureCard` - Showcase features with centered icon and description
+  - `CompactCard` - Small cards for tags and chips
+  - `SummaryCard` - Display grouped summary data with label-value pairs
+
+### Improved
+- **PixaCard**: Base card component now supports all parameters properly
+- **Theme Integration**: All card components fully integrated with AppTheme
+- **Accessibility**: Proper semantic roles (Role.Button, Role.Checkbox) and content descriptions
+- **SelectCard Flexibility**:
+  - Supports both ImageVector icons and remote URL icons
+  - Auto-styles based on selection state
+  - Three modes: Full content, Icon+Title, Icon-only
+  - Perfect for settings and profile configuration screens
+
+### Fixed
+- Color theme references (baseContentSubtle → baseContentCaption)
+- Typography references (displayBold → displayLarge)
+- Removed redundant qualifiers from PixaBadge calls
+- All compilation errors resolved
+
+### Documentation
+- Updated README with all 9 card component examples
+- Comprehensive card styling guide (variants, padding, colors)
+- Quick reference for all card types with usage examples
+- Removed outdated implementation documentation files
 
 ## [1.0.2] - 2026-01-15
 

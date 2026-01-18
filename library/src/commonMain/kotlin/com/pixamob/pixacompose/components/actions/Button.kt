@@ -41,7 +41,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.components.feedback.CircularProgressIndicator
+import com.pixamob.pixacompose.components.feedback.ProgressColors
 import com.pixamob.pixacompose.components.feedback.ProgressSize
+import com.pixamob.pixacompose.components.feedback.Skeleton
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.BorderSize
 import com.pixamob.pixacompose.theme.ColorPalette
@@ -397,7 +399,7 @@ private fun InternalButton(
                             progress = null, // Indeterminate
                             modifier = Modifier.size(sizeConfig.iconSize),
                             sizePreset = ProgressSize.Small,
-                            customColors = com.pixamob.pixacompose.components.feedback.ProgressColors(
+                            customColors = ProgressColors(
                                 progress = contentColor,
                                 track = contentColor.copy(alpha = 0.2f),
                                 label = contentColor
@@ -536,7 +538,7 @@ fun PixaButton(
                 .widthIn(min = sizeConfig.minWidth)
         }
 
-        com.pixamob.pixacompose.components.feedback.Skeleton(
+        Skeleton(
             modifier = buttonModifier,
             height = sizeConfig.height,
             shape = skeletonShape ?: RoundedCornerShape(cornerRadius),

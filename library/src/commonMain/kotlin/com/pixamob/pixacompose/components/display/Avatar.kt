@@ -36,6 +36,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
+import com.pixamob.pixacompose.components.feedback.SkeletonCircle
 import com.pixamob.pixacompose.theme.AppTheme
 
 /**
@@ -259,7 +260,7 @@ fun PixaAvatar(
 
     // Show skeleton when isLoading = true
     if (isLoading) {
-        com.pixamob.pixacompose.components.feedback.SkeletonCircle(
+        SkeletonCircle(
             size = config.size,
             modifier = modifier,
             shimmerEnabled = true

@@ -27,7 +27,6 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
 import com.pixamob.pixacompose.components.display.PixaIcon
-import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlin.math.roundToInt

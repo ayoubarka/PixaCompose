@@ -38,6 +38,9 @@ import com.pixamob.pixacompose.components.display.BaseCardElevation
 import com.pixamob.pixacompose.components.display.BaseCardPadding
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
+import com.pixamob.pixacompose.components.feedback.SkeletonCircle
+import com.pixamob.pixacompose.components.feedback.SkeletonSize
+import com.pixamob.pixacompose.components.feedback.SkeletonText
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 
@@ -877,7 +880,7 @@ fun Stepper(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     // Step indicator skeleton
-                    com.pixamob.pixacompose.components.feedback.SkeletonCircle(
+                    SkeletonCircle(
                         size = config.indicatorSize,
                         shimmerEnabled = true
                     )
@@ -886,15 +889,15 @@ fun Stepper(
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
-                        com.pixamob.pixacompose.components.feedback.SkeletonText(
+                        SkeletonText(
                             width = 120.dp,
-                            size = com.pixamob.pixacompose.components.feedback.SkeletonSize.Medium
+                            size = SkeletonSize.Medium
                         )
                         if (showSubLabels) {
                             Spacer(modifier = Modifier.height(4.dp))
-                            com.pixamob.pixacompose.components.feedback.SkeletonText(
+                            SkeletonText(
                                 width = 80.dp,
-                                size = com.pixamob.pixacompose.components.feedback.SkeletonSize.Small
+                                size = SkeletonSize.Small
                             )
                         }
                     }
