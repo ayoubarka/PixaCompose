@@ -482,7 +482,7 @@ private fun SuggestionDropdown(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(1.dp)
+                        .height(DividerSize.Thin)
                         .background(colors.divider)
                 )
             }

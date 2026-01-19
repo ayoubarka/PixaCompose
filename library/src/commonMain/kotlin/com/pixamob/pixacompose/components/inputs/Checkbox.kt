@@ -127,26 +127,26 @@ private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
         CheckboxSize.Small -> CheckboxSizeConfig(
-            boxSize = 16.dp,
+            boxSize = IconSize.VerySmall,
             cornerRadius = RadiusSize.Tiny,
             borderWidth = BorderSize.Tiny,
-            checkmarkStroke = 1.5.dp,
+            checkmarkStroke = BorderSize.SlightlyThicker,
             labelSpacing = Spacing.Micro,
             labelStyle = { typography.bodyBold }
         )
         CheckboxSize.Medium -> CheckboxSizeConfig(
-            boxSize = 20.dp,
+            boxSize = IconSize.Small,
             cornerRadius = RadiusSize.Small,
             borderWidth = BorderSize.Standard,
-            checkmarkStroke = 2.dp,
+            checkmarkStroke = BorderSize.Standard,
             labelSpacing = Spacing.Small,
             labelStyle = { typography.bodyRegular }
         )
         CheckboxSize.Large -> CheckboxSizeConfig(
-            boxSize = 24.dp,
+            boxSize = IconSize.Medium,
             cornerRadius = RadiusSize.Small,
             borderWidth = BorderSize.Thick,
-            checkmarkStroke = 2.5.dp,
+            checkmarkStroke = BorderSize.Medium,
             labelSpacing = Spacing.Small,
             labelStyle = { typography.bodyLight }
         )

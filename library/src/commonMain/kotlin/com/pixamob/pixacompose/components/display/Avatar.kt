@@ -38,6 +38,9 @@ import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import com.pixamob.pixacompose.components.feedback.SkeletonCircle
 import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.ComponentSize
+import com.pixamob.pixacompose.theme.IconSize
+import com.pixamob.pixacompose.theme.Spacing
 
 /**
  * Avatar Component
@@ -108,46 +111,46 @@ private fun getAvatarConfig(size: AvatarSize): AvatarConfig {
     val typography = AppTheme.typography
     return when (size) {
         AvatarSize.Tiny -> AvatarConfig(
-            size = 24.dp,
+            size = com.pixamob.pixacompose.theme.AvatarSize.ExtraSmall,
             textStyle = typography.captionRegular,
-            iconSize = 14.dp,
-            statusSize = 8.dp
+            iconSize = IconSize.Tiny,
+            statusSize = Spacing.ExtraSmall
         )
         AvatarSize.ExtraSmall -> AvatarConfig(
-            size = 32.dp,
+            size = com.pixamob.pixacompose.theme.AvatarSize.Small,
             textStyle = typography.captionBold,
-            iconSize = 18.dp,
-            statusSize = 10.dp
+            iconSize = IconSize.ExtraSmall,
+            statusSize = IconSize.Tiny - Spacing.Tiny
         )
         AvatarSize.Small -> AvatarConfig(
-            size = 40.dp,
+            size = com.pixamob.pixacompose.theme.AvatarSize.Medium,
             textStyle = typography.bodyRegular,
-            iconSize = 22.dp,
-            statusSize = 12.dp
+            iconSize = IconSize.Small + Spacing.Micro,
+            statusSize = Spacing.Small
         )
         AvatarSize.Medium -> AvatarConfig(
-            size = 48.dp,
+            size = com.pixamob.pixacompose.theme.AvatarSize.Large,
             textStyle = typography.bodyBold,
-            iconSize = 26.dp,
-            statusSize = 14.dp
+            iconSize = IconSize.Large - Spacing.Micro,
+            statusSize = IconSize.Tiny + Spacing.Micro
         )
         AvatarSize.Large -> AvatarConfig(
-            size = 64.dp,
+            size = com.pixamob.pixacompose.theme.AvatarSize.ExtraLarge,
             textStyle = typography.subtitleRegular,
-            iconSize = 34.dp,
-            statusSize = 16.dp
+            iconSize = IconSize.Huge - Spacing.Tiny,
+            statusSize = IconSize.VerySmall
         )
         AvatarSize.ExtraLarge -> AvatarConfig(
-            size = 80.dp,
+            size = com.pixamob.pixacompose.theme.AvatarSize.Huge,
             textStyle = typography.subtitleBold,
-            iconSize = 42.dp,
-            statusSize = 18.dp
+            iconSize = IconSize.VeryLarge + Spacing.Micro,
+            statusSize = IconSize.ExtraSmall
         )
         AvatarSize.Huge -> AvatarConfig(
-            size = 120.dp,
+            size = com.pixamob.pixacompose.theme.AvatarSize.Massive,
             textStyle = typography.displaySmall,
-            iconSize = 64.dp,
-            statusSize = 24.dp
+            iconSize = ComponentSize.Huge,
+            statusSize = IconSize.Medium
         )
     }
 }

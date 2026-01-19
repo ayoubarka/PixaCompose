@@ -72,32 +72,32 @@ private fun SwitchSize.config(): SwitchConfig {
     val typography = AppTheme.typography
     return when (this) {
         SwitchSize.Small -> SwitchConfig(
-            width = 32.dp,
-            height = 18.dp,
-            thumbSize = 14.dp,
-            thumbPadding = 2.dp,
-            thumbElevation = 2.dp,
-            borderWidth = 1.dp,
+            width = ComponentSize.VerySmall,
+            height = ComponentSize.Minimal - Spacing.Small,
+            thumbSize = IconSize.Tiny,
+            thumbPadding = Spacing.Micro,
+            thumbElevation = ShadowSize.Medium,
+            borderWidth = BorderSize.Tiny,
             labelStyle = typography.bodyLight,
             labelSpacing = Spacing.Small
         )
         SwitchSize.Medium -> SwitchConfig(
-            width = 44.dp,
-            height = 24.dp,
-            thumbSize = 20.dp,
-            thumbPadding = 2.dp,
-            thumbElevation = 4.dp,
-            borderWidth = 1.5.dp,
+            width = ComponentSize.Medium,
+            height = IconSize.Medium,
+            thumbSize = IconSize.Small,
+            thumbPadding = Spacing.Micro,
+            thumbElevation = ShadowSize.Large,
+            borderWidth = BorderSize.SlightlyThicker,
             labelStyle = typography.bodyRegular,
             labelSpacing = Spacing.Medium
         )
         SwitchSize.Large -> SwitchConfig(
-            width = 56.dp,
-            height = 30.dp,
-            thumbSize = 26.dp,
-            thumbPadding = 2.dp,
-            thumbElevation = 6.dp,
-            borderWidth = 2.dp,
+            width = ComponentSize.ExtraLarge,
+            height = ComponentSize.ButtonSmall - Spacing.Small,
+            thumbSize = IconSize.Large,
+            thumbPadding = Spacing.Micro,
+            thumbElevation = ShadowSize.Huge,
+            borderWidth = BorderSize.Standard,
             labelStyle = typography.bodyBold,
             labelSpacing = Spacing.Large
         )

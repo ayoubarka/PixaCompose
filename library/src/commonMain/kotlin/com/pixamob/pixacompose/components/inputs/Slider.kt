@@ -69,23 +69,23 @@ private fun SliderSize.config(): SliderConfig {
     val typography = AppTheme.typography
     return when (this) {
         SliderSize.Small -> SliderConfig(
-            trackHeight = 4.dp,
-            thumbSize = 16.dp,
-            thumbElevation = 2.dp,
+            trackHeight = ComponentSize.SliderTrackMedium,
+            thumbSize = IconSize.VerySmall,
+            thumbElevation = ShadowSize.Medium,
             labelStyle = typography.labelSmall,
             valueStyle = typography.bodyBold
         )
         SliderSize.Medium -> SliderConfig(
-            trackHeight = 6.dp,
-            thumbSize = 20.dp,
-            thumbElevation = 4.dp,
+            trackHeight = ComponentSize.SliderTrackLarge,
+            thumbSize = IconSize.Small,
+            thumbElevation = ShadowSize.Large,
             labelStyle = typography.labelMedium,
             valueStyle = typography.bodyRegular
         )
         SliderSize.Large -> SliderConfig(
-            trackHeight = 8.dp,
-            thumbSize = 24.dp,
-            thumbElevation = 6.dp,
+            trackHeight = ComponentSize.SliderTrackLarge + Spacing.Micro,
+            thumbSize = IconSize.Medium,
+            thumbElevation = ShadowSize.Huge,
             labelStyle = typography.labelLarge,
             valueStyle = typography.bodyLight
         )
@@ -374,7 +374,7 @@ fun PixaSlider(
                         .background(thumbColor)
                         .then(
                             if (variant == SliderVariant.Outlined) {
-                                Modifier.padding(2.dp).background(Color.White, CircleShape)
+                                Modifier.padding(Spacing.Micro).background(Color.White, CircleShape)
                             } else Modifier
                         )
                 )

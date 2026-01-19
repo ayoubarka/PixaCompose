@@ -51,6 +51,7 @@ import com.pixamob.pixacompose.components.feedback.BadgeStyle
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.BorderSize
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.ComponentSize
 import com.pixamob.pixacompose.theme.IconSize
@@ -210,29 +211,29 @@ private fun getTabConfig(size: TabSize): TabConfig {
     return when (size) {
         TabSize.Mini -> TabConfig(
             height = ComponentSize.Minimal,
-            minWidth = 48.dp,
+            minWidth = ComponentSize.Medium,
             horizontalPadding = Spacing.Small,
             verticalPadding = Spacing.Micro,
             iconSize = IconSize.Tiny,
             cornerRadius = RadiusSize.Tiny,
             textStyle = typography.actionMini,
-            indicatorHeight = 2.dp,
-            borderWidth = 1.dp
+            indicatorHeight = BorderSize.Standard,
+            borderWidth = BorderSize.Tiny
         )
         TabSize.Compact -> TabConfig(
             height = ComponentSize.VerySmall,
-            minWidth = 56.dp,
+            minWidth = ComponentSize.ExtraLarge,
             horizontalPadding = Spacing.Medium,
             verticalPadding = Spacing.Tiny,
             iconSize = IconSize.VerySmall,
             cornerRadius = RadiusSize.Tiny,
             textStyle = typography.actionExtraSmall,
-            indicatorHeight = 2.dp,
-            borderWidth = 1.dp
+            indicatorHeight = BorderSize.Standard,
+            borderWidth = BorderSize.Tiny
         )
         TabSize.Small -> TabConfig(
             height = ComponentSize.ExtraSmall,
-            minWidth = 64.dp,
+            minWidth = ComponentSize.Huge,
             horizontalPadding = Spacing.Medium,
             verticalPadding = Spacing.Small,
             iconSize = IconSize.ExtraSmall,

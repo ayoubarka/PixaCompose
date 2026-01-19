@@ -1,11 +1,33 @@
 package com.pixamob.pixacompose.components.inputs
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
-import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.*
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
@@ -21,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -34,8 +57,13 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.BorderSize
+import com.pixamob.pixacompose.theme.ComponentSize
+import com.pixamob.pixacompose.theme.IconSize
+import com.pixamob.pixacompose.theme.RadiusSize
+import com.pixamob.pixacompose.theme.ShadowSize
+import com.pixamob.pixacompose.theme.Spacing
 import com.pixamob.pixacompose.utils.*
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -274,7 +302,7 @@ fun rememberColorPickerState(
  */
 @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
 @Composable
-fun ColorPicker(
+fun PixaColorPicker(
     modifier: Modifier = Modifier,
     state: ColorPickerState = rememberColorPickerState(),
     mode: ColorPickerMode = ColorPickerMode.Grid,
@@ -302,13 +330,13 @@ fun ColorPicker(
             }
     }
 
-    Column(
+    Column (
         modifier = modifier
             .semantics {
                 this.contentDescription = contentDescription
             }
             .then(if (!enabled) Modifier.graphicsLayer(alpha = 0.5f) else Modifier),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
     ) {
         // Color preview
         ColorPreview(
@@ -440,18 +468,18 @@ private fun ColorPreview(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.height(80.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        modifier = modifier.height(ComponentSize.Huge),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)
     ) {
         // Previous color
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(RadiusSize.Medium))
                 .drawCheckerboard()
                 .background(previousColor)
-                .border(1.dp, AppTheme.colors.baseContentDisabled, RoundedCornerShape(8.dp)),
+                .border(BorderSize.Tiny, AppTheme.colors.baseContentDisabled, RoundedCornerShape(RadiusSize.Medium)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -466,10 +494,10 @@ private fun ColorPreview(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(8.dp))
+                .clip(RoundedCornerShape(RadiusSize.Medium))
                 .drawCheckerboard()
                 .background(currentColor)
-                .border(1.dp, AppTheme.colors.baseContentDisabled, RoundedCornerShape(8.dp)),
+                .border(BorderSize.Tiny, AppTheme.colors.baseContentDisabled, RoundedCornerShape(RadiusSize.Medium)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -494,19 +522,19 @@ private fun ModeSelector(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
     ) {
         ColorPickerMode.entries.forEach { mode ->
             val isSelected = currentMode == mode
             Surface(
                 modifier = Modifier
                     .weight(1f)
-                    .height(36.dp)
+                    .height(ComponentSize.ExtraSmall)
                     .clickable(enabled = enabled) { onModeChange(mode) },
-                shape = RoundedCornerShape(6.dp),
+                shape = RoundedCornerShape(RadiusSize.Small),
                 color = if (isSelected) AppTheme.colors.brandSurfaceDefault else Color.Transparent,
                 border = BorderStroke(
-                    1.dp,
+                    BorderSize.Tiny,
                     if (isSelected) AppTheme.colors.brandBorderDefault else AppTheme.colors.baseBorderDefault
                 )
             ) {
@@ -535,11 +563,11 @@ private fun GridColorPicker(
     modifier: Modifier = Modifier
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 48.dp),
-        modifier = modifier.heightIn(max = 300.dp),
-        contentPadding = PaddingValues(4.dp),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        columns = GridCells.Adaptive(minSize = ComponentSize.Medium),
+        modifier = modifier.heightIn(max = ComponentSize.Massive * 3.75f),
+        contentPadding = PaddingValues(Spacing.Tiny),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+        verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
         userScrollEnabled = enabled
     ) {
         items(palette) { color ->
@@ -547,7 +575,7 @@ private fun GridColorPicker(
             Box(
                 modifier = Modifier
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(RoundedCornerShape(RadiusSize.Medium))
                     .clickable(
                         enabled = enabled,
                         onClick = { onColorSelected(color) },
@@ -558,9 +586,9 @@ private fun GridColorPicker(
                     .background(color)
                     .then(
                         if (isSelected) {
-                            Modifier.border(3.dp, AppTheme.colors.brandBorderDefault, RoundedCornerShape(8.dp))
+                            Modifier.border(BorderSize.Thick, AppTheme.colors.brandBorderDefault, RoundedCornerShape(RadiusSize.Medium))
                         } else {
-                            Modifier.border(1.dp, AppTheme.colors.baseBorderDefault, RoundedCornerShape(8.dp))
+                            Modifier.border(BorderSize.Tiny, AppTheme.colors.baseBorderDefault, RoundedCornerShape(RadiusSize.Medium))
                         }
                     )
                     .semantics {
@@ -569,23 +597,23 @@ private fun GridColorPicker(
                 contentAlignment = Alignment.Center
             ) {
                 if (isSelected) {
-                    Canvas(modifier = Modifier.size(16.dp)) {
+                    Canvas(modifier = Modifier.size(IconSize.Small)) {
                         drawCircle(
                             color = if (color.luminance() > 0.5f) Color.Black else Color.White,
                             radius = size.minDimension / 2,
-                            style = Stroke(width = 2.dp.toPx())
+                            style = Stroke(width = BorderSize.Standard.toPx())
                         )
                         drawLine(
                             color = if (color.luminance() > 0.5f) Color.Black else Color.White,
                             start = Offset(size.width * 0.3f, size.height * 0.5f),
                             end = Offset(size.width * 0.45f, size.height * 0.65f),
-                            strokeWidth = 2.dp.toPx()
+                            strokeWidth = BorderSize.Standard.toPx()
                         )
                         drawLine(
                             color = if (color.luminance() > 0.5f) Color.Black else Color.White,
                             start = Offset(size.width * 0.45f, size.height * 0.65f),
                             end = Offset(size.width * 0.7f, size.height * 0.35f),
-                            strokeWidth = 2.dp.toPx()
+                            strokeWidth = BorderSize.Standard.toPx()
                         )
                     }
                 }
@@ -670,14 +698,14 @@ private fun WheelColorPicker(
             // Outer ring
             drawCircle(
                 color = Color.White,
-                radius = 12.dp.toPx(),
+                radius = Spacing.Small.toPx(),
                 center = selectorPos,
-                style = Stroke(width = 3.dp.toPx())
+                style = Stroke(width = BorderSize.Thick.toPx())
             )
             // Inner ring
             drawCircle(
                 color = state.currentColor,
-                radius = 8.dp.toPx(),
+                radius = Spacing.ExtraSmall.toPx(),
                 center = selectorPos
             )
         }
@@ -724,7 +752,7 @@ private fun RGBSliders(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
     ) {
         // Red slider
         ColorChannelSlider(
@@ -787,7 +815,7 @@ private fun HSVSliders(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
     ) {
         // Hue slider
         HueSlider(
@@ -854,7 +882,7 @@ private fun HSLSliders(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
     ) {
         // Hue slider
         HueSlider(
@@ -957,19 +985,19 @@ private fun ColorChannelSlider(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(12.dp),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             style = AppTheme.typography.bodyBold,
-            modifier = Modifier.width(24.dp)
+            modifier = Modifier.width(IconSize.Medium)
         )
 
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(32.dp)
+                .height(ComponentSize.VerySmall)
         ) {
             var sliderWidth by remember { mutableStateOf(0f) }
 
@@ -977,7 +1005,7 @@ private fun ColorChannelSlider(
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(RadiusSize.ExtraLarge))
                     .then(if (showCheckerboard) Modifier.drawCheckerboard() else Modifier)
             ) {
                 sliderWidth = size.width
@@ -995,19 +1023,19 @@ private fun ColorChannelSlider(
 
                 drawRoundRect(
                     brush = brush,
-                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(16.dp.toPx())
+                    cornerRadius = CornerRadius(RadiusSize.ExtraLarge.toPx())
                 )
             }
 
             // Thumb
             Box(
                 modifier = Modifier
-                    .offset(x = with(LocalDensity.current) { ((sliderWidth * value) - 12.dp.toPx()).toDp() })
-                    .size(24.dp)
+                    .offset(x = with(LocalDensity.current) { ((sliderWidth * value) - Spacing.Small.toPx()).toDp() })
+                    .size(IconSize.Medium)
                     .align(Alignment.CenterStart)
-                    .shadow(4.dp, CircleShape)
+                    .shadow(ShadowSize.Large, CircleShape)
                     .background(Color.White, CircleShape)
-                    .border(2.dp, AppTheme.colors.baseBorderDefault, CircleShape)
+                    .border(BorderSize.Standard, AppTheme.colors.baseBorderDefault, CircleShape)
                     .then(
                         if (enabled) {
                             Modifier
@@ -1031,7 +1059,7 @@ private fun ColorChannelSlider(
         Text(
             text = (value * 255).roundToInt().toString(),
             style = AppTheme.typography.bodyRegular,
-            modifier = Modifier.width(40.dp),
+            modifier = Modifier.width(ComponentSize.Small),
             textAlign = TextAlign.End
         )
     }
@@ -1133,22 +1161,22 @@ private fun ColorHistory(
         Text(
             "Recent Colors",
             style = AppTheme.typography.captionBold,
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)
         ) {
             colors.take(8).forEach { color ->
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
-                        .clip(RoundedCornerShape(6.dp))
+                        .size(ComponentSize.Small)
+                        .clip(RoundedCornerShape(RadiusSize.Small))
                         .clickable(enabled = enabled) { onColorSelected(color) }
                         .drawCheckerboard()
                         .background(color)
-                        .border(1.dp, AppTheme.colors.baseBorderDefault, RoundedCornerShape(6.dp))
+                        .border(BorderSize.Tiny, AppTheme.colors.baseBorderDefault, RoundedCornerShape(RadiusSize.Small))
                         .semantics {
                             contentDescription = "Recent color ${color.toHexString(false)}"
                         }
@@ -1166,7 +1194,7 @@ private fun ColorHistory(
  * Draws a checkerboard pattern for transparency preview
  */
 private fun Modifier.drawCheckerboard(
-    tileSize: Dp = 8.dp,
+    tileSize: Dp = Spacing.ExtraSmall,
     colorLight: Color = Color(0xFFFFFFFF),
     colorDark: Color = Color(0xFFCCCCCC)
 ): Modifier = this.drawBehind {

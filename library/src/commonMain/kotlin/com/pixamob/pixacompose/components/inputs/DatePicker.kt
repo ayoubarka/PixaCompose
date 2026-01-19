@@ -1,6 +1,5 @@
 package com.pixamob.pixacompose.components.inputs
 
-import androidx.compose.animation.*
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -166,7 +165,7 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
     val typography = AppTheme.typography
     return when (size) {
         DatePickerSize.Small -> DatePickerSizeConfig(
-            height = 240.dp,
+            height = ComponentSize.Massive * 3f,
             padding = Spacing.Medium,
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyLight,
@@ -174,7 +173,7 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
             dayTextStyle = typography.labelSmall
         )
         DatePickerSize.Medium -> DatePickerSizeConfig(
-            height = 280.dp,
+            height = ComponentSize.Massive * 3.5f,
             padding = Spacing.Large,
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyBold,
@@ -182,7 +181,7 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
             dayTextStyle = typography.labelMedium
         )
         DatePickerSize.Large -> DatePickerSizeConfig(
-            height = 320.dp,
+            height = ComponentSize.Massive * 4f,
             padding = Spacing.ExtraLarge,
             cornerRadius = RadiusSize.Large,
             titleTextStyle = typography.titleBold,
@@ -258,7 +257,7 @@ private fun getDayOfWeekIndex(dayOfWeek: DayOfWeek): Int {
  * ```
  */
 @Composable
-fun DatePicker(
+fun PixaDatePicker(
     variant: DatePickerVariant,
     modifier: Modifier = Modifier,
     mode: DateSelectionMode = DateSelectionMode.Single,
@@ -615,7 +614,7 @@ private fun CalendarDatePickerImpl(
                             )
 
                             Box(
-                                modifier = Modifier.weight(1f).aspectRatio(1f).padding(2.dp)
+                                modifier = Modifier.weight(1f).aspectRatio(1f).padding(Spacing.Micro)
                                     .scale(scale)
                                     .clip(CircleShape)
                                     .background(when {
@@ -780,7 +779,7 @@ private fun MonthDayPickerImpl(
                         .clip(CircleShape)
                         .background(if (isSelected) colors.selectedBackground else colors.surface)
                         .border(
-                            width = if (isSelected) 2.dp else 1.dp,
+                            width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
                             color = if (isSelected) colors.selectedBackground else colors.divider,
                             shape = CircleShape
                         )
@@ -908,7 +907,7 @@ private fun DayCountPickerImpl(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
-                modifier = Modifier.size(56.dp).clip(CircleShape)
+                modifier = Modifier.size(ComponentSize.ExtraLarge).clip(CircleShape)
                     .background(if (dayCount > minDays) colors.surface else colors.surface.copy(alpha = 0.3f))
                     .clickable(enabled = dayCount > minDays) {
                         dayCount = (dayCount - 1).coerceAtLeast(minDays)
@@ -935,7 +934,7 @@ private fun DayCountPickerImpl(
             )
 
             Box(
-                modifier = Modifier.size(56.dp).clip(CircleShape)
+                modifier = Modifier.size(ComponentSize.ExtraLarge).clip(CircleShape)
                     .background(if (dayCount < maxDays) colors.surface else colors.surface.copy(alpha = 0.3f))
                     .clickable(enabled = dayCount < maxDays) {
                         dayCount = (dayCount + 1).coerceAtMost(maxDays)

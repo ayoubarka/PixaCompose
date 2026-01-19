@@ -41,13 +41,15 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.components.display.PixaIcon
+import com.pixamob.pixacompose.theme.BorderSize
 import com.pixamob.pixacompose.theme.ColorPalette
+import com.pixamob.pixacompose.theme.ComponentSize
 import com.pixamob.pixacompose.theme.IconSize
 import com.pixamob.pixacompose.theme.RadiusSize
 import com.pixamob.pixacompose.theme.Spacing
+import com.pixamob.pixacompose.theme.TouchTarget
 
 // ============================================================================
 // CONFIGURATION
@@ -143,7 +145,7 @@ private fun getChipSizeConfig(size: ChipSize): ChipSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
         ChipSize.Small -> ChipSizeConfig(
-            height = 24.dp,
+            height = ComponentSize.ChipSmall,
             horizontalPadding = Spacing.Small,
             iconSize = IconSize.Tiny,
             iconSpacing = Spacing.Micro,
@@ -151,7 +153,7 @@ private fun getChipSizeConfig(size: ChipSize): ChipSizeConfig {
             textStyle = { typography.labelSmall }
         )
         ChipSize.Medium -> ChipSizeConfig(
-            height = 32.dp,
+            height = ComponentSize.ChipMedium,
             horizontalPadding = Spacing.Medium,
             iconSize = IconSize.Small,
             iconSpacing = Spacing.Small,
@@ -159,7 +161,7 @@ private fun getChipSizeConfig(size: ChipSize): ChipSizeConfig {
             textStyle = { typography.labelMedium }
         )
         ChipSize.Large -> ChipSizeConfig(
-            height = 40.dp,
+            height = ComponentSize.ChipLarge,
             horizontalPadding = Spacing.Large,
             iconSize = IconSize.Medium,
             iconSpacing = Spacing.Small,
@@ -324,13 +326,13 @@ private fun PixaChip(
 
     Box(
         modifier = modifier
-            .sizeIn(minHeight = if (isClickable) 44.dp else config.height)
+            .sizeIn(minHeight = if (isClickable) TouchTarget.Minimum else config.height)
             .height(config.height)
             .clip(RoundedCornerShape(config.cornerRadius))
             .then(
                 if (borderColor != Color.Transparent) {
                     Modifier.border(
-                        width = 1.dp,
+                        width = BorderSize.Tiny,
                         color = borderColor,
                         shape = RoundedCornerShape(config.cornerRadius)
                     )
@@ -386,7 +388,7 @@ private fun PixaChip(
                     textAlign = TextAlign.Center,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
-                    modifier = Modifier.widthIn(max = 200.dp)
+                    modifier = Modifier.widthIn(max = ComponentSize.ImageMedium + ComponentSize.Massive)
                 )
 
                 // Trailing icon
