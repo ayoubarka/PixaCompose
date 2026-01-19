@@ -14,6 +14,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Navigation components
 - Menu components
 
+## [1.0.7] - 2026-01-19
+
+### Added
+- **Optimized PixaTheme Color System**:
+  - New `ColorScales` data class for simplified color customization
+  - `DefaultColorScales` constant for easy partial customization
+  - Automatic light/dark palette derivation from color scales
+  - Support for partial color customization (modify only specific color groups)
+  - Smart color merging: user colors override defaults, missing values fall back to defaults
+  
+- **Enhanced Typography System**:
+  - New `FontFamilyConfig` data class requiring all 9 font weights (W100-W900)
+  - Complete font weight validation and clear documentation
+  - Full Moko Resources support for multiplatform font loading
+  - Improved `provideTextTypography()` function accepting `FontFamilyConfig`
+
+### Improved
+- **PixaTheme API**: Simplified from 7 parameters to 3 (useDarkTheme, colorScales, fontFamily)
+- **Color Customization**: Users can now copy `DefaultColorScales` and modify only specific weights or color groups
+- **Type Safety**: FontFamilyConfig ensures all required font weights are provided
+- **Documentation**: Comprehensive KDoc with multiple usage examples for both color and typography customization
+
+### Changed
+- **Breaking**: Removed legacy `lightColorPalette`, `darkColorPalette`, `brandColorOverride`, `baseColorOverride`, `accentColorOverride` parameters
+- **Breaking**: `fontFamily` parameter now accepts `FontFamilyConfig?` instead of `FontFamily?`
+- Refactored `buildColorPaletteWithOverrides` → `buildColorPaletteFromScales` with support for all 7 color groups
+
+### Migration Guide
+**Old API:**
+```kotlin
+PixaTheme(
+    brandColorOverride = mapOf(500 to Color(0xFFFF6B35)),
+    fontFamily = myFontFamily
+) { }
+```
+
+**New API:**
+```kotlin
+PixaTheme(
+    colorScales = ColorScales(
+        brand = DefaultColorScales.brand!! + mapOf(500 to Color(0xFFFF6B35))
+    ),
+    fontFamily = FontFamilyConfig(
+        thin = Font(...),
+        // ... all 9 weights required
+    )
+) { }
+```
+
 ## [1.0.5] - 2026-01-18
 
 ### Added

@@ -4,23 +4,79 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 
 /**
- * Provides text typography with optional custom font family
+ * Font family configuration requiring all 9 font weights.
  *
- * @param customFontFamily Optional custom font family to use.
- * If provided, it should contain all font weights (Thin to Black: W100-W900).
- * Font files should be named: font_thin.ttf, font_light.ttf, font_regular.ttf,
- * font_medium.ttf, font_semi_bold.ttf, font_bold.ttf, font_extra_bold.ttf, font_black.ttf
+ * This ensures complete typography support across all text styles.
+ * Use with Moko Resources or platform-specific font loading.
  *
+ * Example with Moko Resources:
+ * ```
+ * val customFont = FontFamilyConfig(
+ *     thin = Font(MR.fonts.inter_thin.font),
+ *     extraLight = Font(MR.fonts.inter_extra_light.font),
+ *     light = Font(MR.fonts.inter_light.font),
+ *     regular = Font(MR.fonts.inter_regular.font),
+ *     medium = Font(MR.fonts.inter_medium.font),
+ *     semiBold = Font(MR.fonts.inter_semi_bold.font),
+ *     bold = Font(MR.fonts.inter_bold.font),
+ *     extraBold = Font(MR.fonts.inter_extra_bold.font),
+ *     black = Font(MR.fonts.inter_black.font)
+ * )
+ * ```
+ *
+ * @param thin Font with weight 100 (W100/Thin)
+ * @param extraLight Font with weight 200 (W200/ExtraLight)
+ * @param light Font with weight 300 (W300/Light)
+ * @param regular Font with weight 400 (W400/Regular)
+ * @param medium Font with weight 500 (W500/Medium)
+ * @param semiBold Font with weight 600 (W600/SemiBold)
+ * @param bold Font with weight 700 (W700/Bold)
+ * @param extraBold Font with weight 800 (W800/ExtraBold)
+ * @param black Font with weight 900 (W900/Black)
+ */
+@Immutable
+data class FontFamilyConfig(
+    val thin: Font,        // W100
+    val extraLight: Font,  // W200
+    val light: Font,       // W300
+    val regular: Font,     // W400
+    val medium: Font,      // W500
+    val semiBold: Font,    // W600
+    val bold: Font,        // W700
+    val extraBold: Font,   // W800
+    val black: Font        // W900
+) {
+    /**
+     * Converts the font configuration to a FontFamily with proper weight assignments.
+     */
+    fun toFontFamily(): FontFamily = FontFamily(
+        thin,
+        extraLight,
+        light,
+        regular,
+        medium,
+        semiBold,
+        bold,
+        extraBold,
+        black
+    )
+}
+
+/**
+ * Provides text typography with optional custom font family configuration.
+ *
+ * @param fontConfig Optional font family configuration with all 9 weights.
  * If null, system default font will be used.
  */
 @Composable
-fun provideTextTypography(customFontFamily: FontFamily? = null): TextTypography {
-    val fontFamily = customFontFamily ?: FontFamily.Default
+fun provideTextTypography(fontConfig: FontFamilyConfig? = null): TextTypography {
+    val fontFamily = fontConfig?.toFontFamily() ?: FontFamily.Default
 
     return TextTypography(
         // Display styles - for hero sections and large headings

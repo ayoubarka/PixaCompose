@@ -404,15 +404,15 @@ fun PixaTopNavBar(
     startActions: List<TopNavAction> = emptyList(),
     endActions: List<TopNavAction> = emptyList(),
     profileImageUrl: String? = null,
-    onAvatarClick: (() -> Unit)? = null,
     containerColor: Color = AppTheme.colors.baseSurfaceDefault,
     contentColor: Color = AppTheme.colors.baseContentTitle,
     size: TopNavSize = TopNavSize.Medium,
     elevation: Dp = 0.dp,
     bottomDivider: Boolean = false,
     includeSafeAreaPadding: Boolean = true,
-    enableScrolling: Boolean = false
-) {
+    enableScrolling: Boolean = false,
+    onAvatarClick: (() -> Unit)? = null,
+    ) {
     // Validation
     if (profileImageUrl != null) {
         require(onAvatarClick != null) {

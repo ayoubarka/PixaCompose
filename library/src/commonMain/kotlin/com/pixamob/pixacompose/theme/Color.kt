@@ -558,3 +558,59 @@ val localDarkColorScheme = ColorPalette(
 )
 
 val LocalColorPalette = staticCompositionLocalOf { ColorPalette() }
+
+/**
+ * OPTIMIZED COLOR CUSTOMIZATION SYSTEM
+ *
+ * ColorScales allows you to provide base color scales and have light/dark palettes
+ * automatically derived. You can customize all color groups or just specific ones.
+ *
+ * Each color group should provide weights from 50 (lightest) to 950 (darkest).
+ * Standard weights: 50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950
+ *
+ * @param brand Brand/primary color scale (optional, defaults to built-in brand colors)
+ * @param accent Accent/secondary color scale (optional, defaults to built-in accent colors)
+ * @param base Neutral/gray color scale (optional, defaults to built-in base colors)
+ * @param info Info/informational color scale (optional, defaults to built-in info colors)
+ * @param success Success/positive color scale (optional, defaults to built-in success colors)
+ * @param warning Warning/caution color scale (optional, defaults to built-in warning colors)
+ * @param error Error/danger color scale (optional, defaults to built-in error colors)
+ */
+data class ColorScales(
+    val brand: Map<Int, Color>? = null,
+    val accent: Map<Int, Color>? = null,
+    val base: Map<Int, Color>? = null,
+    val info: Map<Int, Color>? = null,
+    val success: Map<Int, Color>? = null,
+    val warning: Map<Int, Color>? = null,
+    val error: Map<Int, Color>? = null
+)
+
+/**
+ * Default color scales that you can copy and modify for partial customization.
+ *
+ * Example - Modify only brand color 500:
+ * ```
+ * val customScales = ColorScales(
+ *     brand = DefaultColorScales.brand!! + mapOf(500 to Color(0xFFFF6B35))
+ * )
+ * ```
+ *
+ * Example - Customize multiple groups:
+ * ```
+ * val customScales = ColorScales(
+ *     brand = myCustomBrandColors,
+ *     accent = DefaultColorScales.accent!! + mapOf(500 to Color(0xFF4ECDC4))
+ * )
+ * ```
+ */
+val DefaultColorScales = ColorScales(
+    brand = brandColor,
+    accent = accentColor,
+    base = baseColor,
+    info = infoColor,
+    success = successColor,
+    warning = warningColor,
+    error = errorColor
+)
+

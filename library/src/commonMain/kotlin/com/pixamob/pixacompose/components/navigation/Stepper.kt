@@ -100,6 +100,7 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 enum class StepperOrientation {
     /** Vertical layout - default for mobile */
     Vertical,
+
     /** Horizontal layout - for wide screens or few steps */
     Horizontal
 }
@@ -110,14 +111,19 @@ enum class StepperOrientation {
 enum class StepIndicatorType {
     /** Simple dot indicator */
     Dot,
+
     /** Numbered indicator (1, 2, 3...) */
     Number,
+
     /** Icon-based indicator */
     Icon,
+
     /** Checkmark for completed, number for others */
     CheckmarkNumber,
+
     /** Horizontal segmented bar (filled/empty rectangles) */
     Bar,
+
     /** Mixed: Icon + Number overlay */
     IconNumber
 }
@@ -128,16 +134,22 @@ enum class StepIndicatorType {
 enum class StepConnectorStyle {
     /** Solid line connector */
     Line,
+
     /** Dashed line connector */
     Dashed,
+
     /** Dashed line with short segments */
     DashedShort,
+
     /** Dashed line with long segments */
     DashedLong,
+
     /** Arrow connector */
     Arrow,
+
     /** No connector */
     None,
+
     /** Thin gray separator line */
     Separator
 }
@@ -148,8 +160,10 @@ enum class StepConnectorStyle {
 enum class StepContentStyle {
     /** Simple text labels */
     Simple,
+
     /** Card-wrapped content */
     Card,
+
     /** Compact inline */
     Compact
 }
@@ -160,8 +174,10 @@ enum class StepContentStyle {
 enum class StepCardShape {
     /** Rounded corners (default) */
     Rounded,
+
     /** Arrow/pointer at bottom (vertical) or right (horizontal) */
     Arrow,
+
     /** Pointed/triangular bottom/right */
     Pointy
 }
@@ -172,8 +188,10 @@ enum class StepCardShape {
 enum class StepperSize {
     /** Small - 24dp indicator */
     Small,
+
     /** Medium - 32dp indicator (default) */
     Medium,
+
     /** Large - 40dp indicator */
     Large
 }
@@ -266,6 +284,7 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             numberStyle = { typography.bodyLight.copy(fontWeight = FontWeight.SemiBold) },
             spacing = Spacing.Small
         )
+
         StepperSize.Medium -> StepperConfig(
             indicatorSize = 32.dp,
             iconSize = 18.dp,
@@ -276,6 +295,7 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             numberStyle = { typography.bodyRegular.copy(fontWeight = FontWeight.Bold) },
             spacing = Spacing.Medium
         )
+
         StepperSize.Large -> StepperConfig(
             indicatorSize = 40.dp,
             iconSize = 22.dp,
@@ -445,6 +465,7 @@ private fun StepIndicator(
             StepIndicatorType.Dot -> {
                 // Empty - background color shows
             }
+
             StepIndicatorType.Number -> {
                 Text(
                     text = stepNumber.toString(),
@@ -453,6 +474,7 @@ private fun StepIndicator(
                     textAlign = TextAlign.Center
                 )
             }
+
             StepIndicatorType.Icon -> {
                 stepData.icon?.let { icon ->
                     PixaIcon(
@@ -463,6 +485,7 @@ private fun StepIndicator(
                     )
                 }
             }
+
             StepIndicatorType.CheckmarkNumber -> {
                 if (stepData.isCompleted) {
                     // Animated checkmark
@@ -479,6 +502,7 @@ private fun StepIndicator(
                     )
                 }
             }
+
             StepIndicatorType.IconNumber -> {
                 // Mixed: Show icon with number overlay
                 Box(
@@ -494,13 +518,15 @@ private fun StepIndicator(
                     }
                     Text(
                         text = stepNumber.toString(),
-                        style = config.numberStyle().copy(fontSize = config.numberStyle().fontSize * 0.7f),
+                        style = config.numberStyle()
+                            .copy(fontSize = config.numberStyle().fontSize * 0.7f),
                         color = contentColor,
                         textAlign = TextAlign.Center,
                         fontWeight = FontWeight.Bold
                     )
                 }
             }
+
             StepIndicatorType.Bar -> {
                 // Bar is handled differently in horizontal layout - show dot here
             }
@@ -616,6 +642,7 @@ private fun StepConnector(
                         }
                     }
                 }
+
                 StepConnectorStyle.Dashed, StepConnectorStyle.DashedShort, StepConnectorStyle.DashedLong -> {
                     val dashInterval = when (style) {
                         StepConnectorStyle.DashedShort -> floatArrayOf(8f, 4f)
@@ -646,6 +673,7 @@ private fun StepConnector(
                         )
                     }
                 }
+
                 StepConnectorStyle.Arrow -> {
                     // Arrow connector for vertical
                     Canvas(
@@ -673,9 +701,11 @@ private fun StepConnector(
                         )
                     }
                 }
+
                 StepConnectorStyle.None -> {} // Already handled above
             }
         }
+
         StepperOrientation.Horizontal -> {
             when (style) {
                 StepConnectorStyle.Line, StepConnectorStyle.Separator -> {
@@ -702,6 +732,7 @@ private fun StepConnector(
                         }
                     }
                 }
+
                 StepConnectorStyle.Dashed, StepConnectorStyle.DashedShort, StepConnectorStyle.DashedLong -> {
                     val dashInterval = when (style) {
                         StepConnectorStyle.DashedShort -> floatArrayOf(8f, 4f)
@@ -732,6 +763,7 @@ private fun StepConnector(
                         )
                     }
                 }
+
                 StepConnectorStyle.Arrow -> {
                     // Arrow connector for horizontal
                     Canvas(
@@ -759,6 +791,7 @@ private fun StepConnector(
                         )
                     }
                 }
+
                 StepConnectorStyle.None -> {} // Already handled above
             }
         }
@@ -818,6 +851,7 @@ private fun StepContent(
                 content()
             }
         }
+
         else -> {
             Box(modifier = modifier) {
                 content()
@@ -850,7 +884,7 @@ private fun StepContent(
  * @param strings Localization strings
  */
 @Composable
-fun Stepper(
+fun PixaStepper(
     steps: List<StepData>,
     currentStep: Int,
     modifier: Modifier = Modifier,
@@ -864,9 +898,9 @@ fun Stepper(
     showLabels: Boolean = true,
     showSubLabels: Boolean = true,
     showHeader: Boolean = false,
-    onStepClick: ((Int) -> Unit)? = null,
     isStepClickable: ((Int) -> Boolean)? = null,
-    strings: StepperStrings = StepperStrings()
+    strings: StepperStrings = StepperStrings(),
+    onStepClick: ((Int) -> Unit)? = null,
 ) {
     val config = getStepperConfig(size)
     val colors = getStepColors(AppTheme.colors)
@@ -941,6 +975,7 @@ fun Stepper(
                     strings = strings
                 )
             }
+
             StepperOrientation.Horizontal -> {
                 HorizontalStepper(
                     steps = steps,
@@ -1163,7 +1198,7 @@ fun VerticalStepper(
     indicatorType: StepIndicatorType = StepIndicatorType.CheckmarkNumber,
     onStepClick: ((Int) -> Unit)? = null
 ) {
-    Stepper(
+    PixaStepper(
         steps = steps,
         currentStep = currentStep,
         modifier = modifier,
@@ -1184,7 +1219,7 @@ fun HorizontalStepper(
     indicatorType: StepIndicatorType = StepIndicatorType.Number,
     onStepClick: ((Int) -> Unit)? = null
 ) {
-    Stepper(
+    PixaStepper(
         steps = steps,
         currentStep = currentStep,
         modifier = modifier,

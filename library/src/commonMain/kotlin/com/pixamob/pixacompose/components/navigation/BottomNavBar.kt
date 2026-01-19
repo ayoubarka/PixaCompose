@@ -408,15 +408,13 @@ private fun CenterActionButton(
  * @param enableAutoScroll If true, auto-scrolls to selected item when scrolling is enabled
  */
 @Composable
-fun BottomNavBar(
+fun PixaBottomNavBar(
     items: List<NavItem>,
     selectedIndex: Int,
-    onItemSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     withCenterAction: Boolean = false,
     centerIcon: Painter? = null,
     centerContentDescription: String? = null,
-    onCenterAction: () -> Unit = {},
     centerEnabled: Boolean = true,
     size: BottomNavBarSize = BottomNavBarSize.Medium,
     iconStyle: NavIconStyle = NavIconStyle.BoldLine,
@@ -425,7 +423,9 @@ fun BottomNavBar(
     cardVariant: BaseCardVariant = BaseCardVariant.Elevated,
     tabDisplayStyle: TabDisplayStyle = TabDisplayStyle.IconWithText,
     enableScrolling: Boolean = true,
-    enableAutoScroll: Boolean = true
+    enableAutoScroll: Boolean = true,
+    onItemSelected: (Int) -> Unit,
+    onCenterAction: () -> Unit = {},
 ) {
     // Validation with helpful error messages
     require(items.size >= 2) {
