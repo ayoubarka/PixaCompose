@@ -10,9 +10,103 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Planning
 - Dialog component
 - BottomSheet component
-- Snackbar component
 - Navigation components
 - Menu components
+
+## [1.0.7] - 2026-01-21
+
+### Added
+- **Global Toast & Snackbar Manager System**:
+  - `PixaToastManager` singleton for global toast access from anywhere
+  - `PixaSnackbarManager` singleton for global snackbar access from anywhere
+  - `GlobalToastHost()` and `GlobalSnackbarHost()` root-level composables
+  - `LocalToastManager` and `LocalSnackbarManager` composition locals for testing
+  - Thread-safe implementation with Mutex synchronization
+  - Full support for ViewModel, UseCase, Repository, and Composable contexts
+
+- **AnimationUtils Integration in Toast & Snackbar**:
+  - Replaced inline animation specs with centralized `AnimationUtils` calls
+  - `standardSpring()` for smooth bouncy enter animations
+  - `fastSpring()` for quick exit animations
+  - `standardTween()` for fade in (300ms)
+  - `fastTween()` for fade out (200ms)
+  - Consistent animations across all feedback components
+
+- **Documentation & Guides**:
+  - New `QUICK_START_GUIDE.md` with 15+ real-world examples
+  - New `IMPLEMENTATION_SUMMARY.md` with technical details
+  - Enhanced `AI_COMPONENTS_GUIDE.md` with global manager patterns
+  - Comprehensive KDoc in Toast.kt and Snackbar.kt
+
+### Changed
+- **Toast System**:
+  - Refactored to use global manager pattern
+  - Maintained backward compatibility with local `PixaToastHostState`
+  - Added extension functions: `rememberToastScope()`, `launchToast()`
+  - Added convenience methods: `showSuccess()`, `showError()`, `showWarning()`, `showInfo()`
+
+- **Snackbar System**:
+  - Refactored to use global manager pattern
+  - Maintained backward compatibility with local `PixaSnackbarHostState`
+  - Added extension functions: `rememberSnackbarScope()`, `launchSnackbar()`
+  - Added convenience methods: `showSuccess()`, `showError()`, `showWarning()`, `showInfo()`
+
+- **Divider Component**:
+  - Simplified by removing `DividerVariant` enum (Subtle, Default, Strong)
+  - Now uses single unified divider with configurable thickness
+  - Maintains `HorizontalDivider()` and `VerticalDivider()` convenience functions
+  - Uses default theme color with optional custom color support
+
+### Removed
+- ❌ `DividerVariant` enum and related theme function
+- ❌ `SubtleDivider()` and `StrongDivider()` convenience functions
+- ❌ Variant parameter from `PixaDivider()`, `HorizontalDivider()`, `VerticalDivider()`
+- ❌ Unused `spring()` and `tween()` imports from Snackbar.kt
+
+### Fixed
+- Consistent animation behavior across Toast and Snackbar
+- Unused import warnings in Snackbar.kt
+
+### Migration Guide
+
+**Toast Migration (if using old local state)**:
+```kotlin
+// Old way (still works but not recommended)
+val toastState = rememberToastHostState()
+ToastHost(hostState = toastState)
+toastState.showToast(...)
+
+// New way (recommended)
+GlobalToastHost()  // Once at app root
+PixaToastManager.showToast(...)  // From anywhere
+```
+
+**Snackbar Migration (if using old local state)**:
+```kotlin
+// Old way (still works but not recommended)
+val snackbarState = rememberSnackbarHostState()
+SnackbarHost(hostState = snackbarState)
+snackbarState.showSnackbar(...)
+
+// New way (recommended)
+GlobalSnackbarHost()  // Once at app root
+PixaSnackbarManager.showSnackbar(...)  // From anywhere
+```
+
+**Divider Migration**:
+```kotlin
+// Old way (no longer available)
+Divider(variant = DividerVariant.Subtle)
+SubtleDivider()
+StrongDivider(thickness = DividerThickness.Heavy)
+
+// New way
+Divider(thickness = DividerThickness.Thin)
+Divider(thickness = DividerThickness.Heavy)
+Divider(color = customColor)
+```
+
+---
 
 ## [1.0.7] - 2026-01-19
 
