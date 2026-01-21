@@ -1,15 +1,40 @@
 package com.pixamob.pixacompose.components.feedback
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -28,9 +53,20 @@ import com.pixamob.pixacompose.components.display.BaseCardElevation
 import com.pixamob.pixacompose.components.display.BaseCardPadding
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
-import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.elevationShadow
+import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.ColorPalette
+import com.pixamob.pixacompose.theme.ComponentSize
+import com.pixamob.pixacompose.theme.IconSize
+import com.pixamob.pixacompose.theme.Inset
+import com.pixamob.pixacompose.theme.RadiusSize
+import com.pixamob.pixacompose.theme.Spacing
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -90,10 +126,13 @@ import kotlin.random.Random
 enum class ToastVariant {
     /** Informational message - blue */
     Info,
+
     /** Success/positive message - green */
     Success,
+
     /** Warning/caution message - orange */
     Warning,
+
     /** Error/critical message - red */
     Error
 }
@@ -104,8 +143,10 @@ enum class ToastVariant {
 enum class ToastDuration(val milliseconds: Long) {
     /** Short duration - 2 seconds */
     Short(2000L),
+
     /** Long duration - 4 seconds */
     Long(4000L),
+
     /** Unlimited - must be manually dismissed */
     Unlimited(-1L)
 }
@@ -116,16 +157,22 @@ enum class ToastDuration(val milliseconds: Long) {
 enum class ToastPosition {
     /** Top center of screen */
     Top,
+
     /** Bottom center of screen */
     Bottom,
+
     /** Top start (left in LTR) */
     TopStart,
+
     /** Top end (right in LTR) */
     TopEnd,
+
     /** Bottom start (left in LTR) */
     BottomStart,
+
     /** Bottom end (right in LTR) */
     BottomEnd,
+
     /** Center of screen */
     Center
 }
@@ -136,8 +183,10 @@ enum class ToastPosition {
 enum class ToastStyle {
     /** Filled background with semantic color */
     Filled,
+
     /** Outlined border with white/transparent background */
     Outlined,
+
     /** Subtle background tint */
     Subtle
 }
@@ -385,6 +434,7 @@ private fun getToastColors(
                 action = colors.infoContentDefault,
                 close = colors.baseContentBody
             )
+
             ToastStyle.Outlined -> ToastColors(
                 background = colors.baseSurfaceDefault,
                 border = colors.infoBorderDefault,
@@ -393,6 +443,7 @@ private fun getToastColors(
                 action = colors.infoContentDefault,
                 close = colors.baseContentBody
             )
+
             ToastStyle.Subtle -> ToastColors(
                 background = colors.infoSurfaceSubtle,
                 border = Color.Transparent,
@@ -402,6 +453,7 @@ private fun getToastColors(
                 close = colors.baseContentBody
             )
         }
+
         ToastVariant.Success -> when (style) {
             ToastStyle.Filled -> ToastColors(
                 background = colors.successSurfaceDefault,
@@ -411,6 +463,7 @@ private fun getToastColors(
                 action = colors.successContentDefault,
                 close = colors.baseContentBody
             )
+
             ToastStyle.Outlined -> ToastColors(
                 background = colors.baseSurfaceDefault,
                 border = colors.successBorderDefault,
@@ -419,6 +472,7 @@ private fun getToastColors(
                 action = colors.successContentDefault,
                 close = colors.baseContentBody
             )
+
             ToastStyle.Subtle -> ToastColors(
                 background = colors.successSurfaceSubtle,
                 border = Color.Transparent,
@@ -428,6 +482,7 @@ private fun getToastColors(
                 close = colors.baseContentBody
             )
         }
+
         ToastVariant.Warning -> when (style) {
             ToastStyle.Filled -> ToastColors(
                 background = colors.warningSurfaceDefault,
@@ -437,6 +492,7 @@ private fun getToastColors(
                 action = colors.warningContentDefault,
                 close = colors.baseContentBody
             )
+
             ToastStyle.Outlined -> ToastColors(
                 background = colors.baseSurfaceDefault,
                 border = colors.warningBorderDefault,
@@ -445,6 +501,7 @@ private fun getToastColors(
                 action = colors.warningContentDefault,
                 close = colors.baseContentBody
             )
+
             ToastStyle.Subtle -> ToastColors(
                 background = colors.warningSurfaceSubtle,
                 border = Color.Transparent,
@@ -454,6 +511,7 @@ private fun getToastColors(
                 close = colors.baseContentBody
             )
         }
+
         ToastVariant.Error -> when (style) {
             ToastStyle.Filled -> ToastColors(
                 background = colors.errorSurfaceDefault,
@@ -463,6 +521,7 @@ private fun getToastColors(
                 action = colors.errorContentDefault,
                 close = colors.baseContentBody
             )
+
             ToastStyle.Outlined -> ToastColors(
                 background = colors.baseSurfaceDefault,
                 border = colors.errorBorderDefault,
@@ -471,6 +530,7 @@ private fun getToastColors(
                 action = colors.errorContentDefault,
                 close = colors.baseContentBody
             )
+
             ToastStyle.Subtle -> ToastColors(
                 background = colors.errorSurfaceSubtle,
                 border = Color.Transparent,
@@ -505,28 +565,24 @@ private fun getToastConfig(): ToastConfig {
 private fun getEnterTransition(position: ToastPosition): EnterTransition {
     return when (position) {
         ToastPosition.Top, ToastPosition.TopStart, ToastPosition.TopEnd -> {
-            slideInVertically(
+            slideInVertically (
                 initialOffsetY = { -it },
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ) + fadeIn(animationSpec = tween(300))
+                animationSpec = AnimationUtils.standardSpring()
+            ) + fadeIn(animationSpec = AnimationUtils.standardTween())
         }
+
         ToastPosition.Bottom, ToastPosition.BottomStart, ToastPosition.BottomEnd -> {
             slideInVertically(
                 initialOffsetY = { it },
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ) + fadeIn(animationSpec = tween(300))
+                animationSpec = AnimationUtils.standardSpring()
+            ) + fadeIn(animationSpec = AnimationUtils.standardTween())
         }
+
         ToastPosition.Center -> {
             scaleIn(
                 initialScale = 0.8f,
-                animationSpec = spring()
-            ) + fadeIn(animationSpec = tween(300))
+                animationSpec = AnimationUtils.standardSpring()
+            ) + fadeIn(animationSpec = AnimationUtils.standardTween())
         }
     }
 }
@@ -537,28 +593,24 @@ private fun getEnterTransition(position: ToastPosition): EnterTransition {
 private fun getExitTransition(position: ToastPosition): ExitTransition {
     return when (position) {
         ToastPosition.Top, ToastPosition.TopStart, ToastPosition.TopEnd -> {
-            slideOutVertically(
+            slideOutVertically (
                 targetOffsetY = { -it },
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ) + fadeOut(animationSpec = tween(200))
+                animationSpec = AnimationUtils.fastSpring()
+            ) + fadeOut(animationSpec = AnimationUtils.fastTween())
         }
+
         ToastPosition.Bottom, ToastPosition.BottomStart, ToastPosition.BottomEnd -> {
             slideOutVertically(
                 targetOffsetY = { it },
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ) + fadeOut(animationSpec = tween(200))
+                animationSpec = AnimationUtils.fastSpring()
+            ) + fadeOut(animationSpec = AnimationUtils.fastTween())
         }
+
         ToastPosition.Center -> {
             scaleOut(
                 targetScale = 0.8f,
-                animationSpec = spring()
-            ) + fadeOut(animationSpec = tween(200))
+                animationSpec = AnimationUtils.fastSpring()
+            ) + fadeOut(animationSpec = AnimationUtils.fastTween())
         }
     }
 }
@@ -731,13 +783,13 @@ fun ToastHost(
     position: ToastPosition = ToastPosition.Bottom,
     modifier: Modifier = Modifier
 ) {
-    val coroutineScope = rememberCoroutineScope()
+    val coroutineScope = rememberCoroutineScope ()
 
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = getAlignment(position)
     ) {
-        Column(
+        Column  (
             verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall), // 8.dp spacing between toasts
             horizontalAlignment = when (position) {
                 ToastPosition.TopStart, ToastPosition.BottomStart -> Alignment.Start
@@ -745,9 +797,19 @@ fun ToastHost(
                 else -> Alignment.CenterHorizontally
             },
             modifier = Modifier.padding(
-                top = if (position in listOf(ToastPosition.Top, ToastPosition.TopStart, ToastPosition.TopEnd))
+                top = if (position in listOf(
+                        ToastPosition.Top,
+                        ToastPosition.TopStart,
+                        ToastPosition.TopEnd
+                    )
+                )
                     Spacing.Large else Spacing.None, // 24.dp for status bar clearance
-                bottom = if (position in listOf(ToastPosition.Bottom, ToastPosition.BottomStart, ToastPosition.BottomEnd))
+                bottom = if (position in listOf(
+                        ToastPosition.Bottom,
+                        ToastPosition.BottomStart,
+                        ToastPosition.BottomEnd
+                    )
+                )
                     Spacing.Large else Spacing.None, // 24.dp for navigation bar clearance
                 start = if (position in listOf(ToastPosition.TopStart, ToastPosition.BottomStart))
                     Spacing.Medium else Spacing.None,
@@ -778,11 +840,568 @@ fun ToastHost(
 }
 
 // ============================================================================
+// GLOBAL TOAST SYSTEM
+// ============================================================================
+
+/**
+ * Global singleton toast manager for application-wide toast access
+ *
+ * This manager allows showing toasts from anywhere in your application:
+ * - ViewModels
+ * - UseCases
+ * - Repositories
+ * - Composables
+ * - Regular Kotlin code
+ *
+ * Features:
+ * - Thread-safe singleton implementation
+ * - Coroutine-based API
+ * - Support for all toast variants and configurations
+ * - Error handling helpers
+ * - No composition tree dependency
+ *
+ * @sample
+ * ```
+ * // In ViewModel
+ * class MyViewModel : ViewModel() {
+ *     fun saveData() {
+ *         viewModelScope.launch {
+ *             try {
+ *                 repository.save()
+ *                 PixaToastManager.showSuccess("Data saved!")
+ *             } catch (e: Exception) {
+ *                 PixaToastManager.showError("Failed to save: ${e.message}")
+ *             }
+ *         }
+ *     }
+ * }
+ *
+ * // In Composable
+ * Button(onClick = {
+ *     PixaToastManager.launch {
+ *         showInfo("Button clicked")
+ *     }
+ * })
+ * ```
+ */
+object PixaToastManager {
+    private var _state: PixaToastHostState? = null
+    private val mutex = Mutex()
+
+    /**
+     * Internal: Initialize the global toast state
+     * Called automatically by GlobalToastHost
+     */
+    internal fun initialize(state: PixaToastHostState) {
+        _state = state
+    }
+
+    /**
+     * Internal: Clear the global toast state
+     */
+    internal fun clear() {
+        _state = null
+    }
+
+    /**
+     * Internal: Get the current state (for composition local access)
+     */
+    internal fun getState(): PixaToastHostState? = _state
+
+    /**
+     * Get the current toast state
+     * @throws IllegalStateException if GlobalToastHost is not initialized
+     */
+    private fun requireState(): PixaToastHostState {
+        return _state ?: error(
+            "PixaToastManager is not initialized. " +
+                    "Make sure to add GlobalToastHost() at your app root composable."
+        )
+    }
+
+    /**
+     * Check if the toast manager is initialized
+     */
+    val isInitialized: Boolean
+        get() = _state != null
+
+    /**
+     * Launch a coroutine in the appropriate scope for toast operations
+     */
+    fun launch(block: suspend PixaToastHostState.() -> Unit) {
+        @OptIn(DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.Main) {
+            mutex.withLock {
+                requireState().block()
+            }
+        }
+    }
+
+    /**
+     * Show a toast message
+     */
+    suspend fun showToast(
+        message: String,
+        variant: ToastVariant = ToastVariant.Info,
+        duration: ToastDuration = ToastDuration.Short,
+        style: ToastStyle = ToastStyle.Filled,
+        icon: Painter? = null,
+        showIcon: Boolean = true,
+        dismissible: Boolean = true,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null,
+        onDismiss: (() -> Unit)? = null,
+        customColors: ToastColors? = null
+    ) {
+        requireState().showToast(
+            message = message,
+            variant = variant,
+            duration = duration,
+            style = style,
+            icon = icon,
+            showIcon = showIcon,
+            dismissible = dismissible,
+            actionText = actionText,
+            onAction = onAction,
+            onDismiss = onDismiss,
+            customColors = customColors
+        )
+    }
+
+    /**
+     * Show success toast (convenience method)
+     */
+    suspend fun showSuccess(
+        message: String,
+        duration: ToastDuration = ToastDuration.Short,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        requireState().showSuccessToast(
+            message = message,
+            duration = duration,
+            actionText = actionText,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Show error toast (convenience method)
+     */
+    suspend fun showError(
+        message: String,
+        duration: ToastDuration = ToastDuration.Long,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        requireState().showErrorToast(
+            message = message,
+            duration = duration,
+            actionText = actionText,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Show warning toast (convenience method)
+     */
+    suspend fun showWarning(
+        message: String,
+        duration: ToastDuration = ToastDuration.Long,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        requireState().showWarningToast(
+            message = message,
+            duration = duration,
+            actionText = actionText,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Show info toast (convenience method)
+     */
+    suspend fun showInfo(
+        message: String,
+        duration: ToastDuration = ToastDuration.Short,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        requireState().showInfoToast(
+            message = message,
+            duration = duration,
+            actionText = actionText,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Show error toast from exception
+     */
+    suspend fun showErrorFromException(
+        exception: Throwable,
+        message: String? = null,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        val errorMessage = message ?: exception.message ?: "An error occurred"
+        showError(
+            message = errorMessage,
+            actionText = actionText,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Dismiss a specific toast by ID
+     */
+    suspend fun dismissToast(id: Long) {
+        requireState().dismissToast(id)
+    }
+
+    /**
+     * Dismiss all toasts
+     */
+    suspend fun dismissAll() {
+        requireState().dismissAll()
+    }
+}
+
+/**
+ * CompositionLocal for accessing toast manager in composition tree
+ * Provides an alternative to the singleton for better testability
+ */
+val LocalToastManager = staticCompositionLocalOf<PixaToastHostState?> { null }
+
+/**
+ * Get the current toast manager from composition
+ * Falls back to global singleton if not provided locally
+ */
+@Composable
+fun currentToastManager(): PixaToastHostState {
+    return LocalToastManager.current ?: run {
+        PixaToastManager.getState() ?: error(
+            "Toast manager is not available. " +
+                    "Make sure to add GlobalToastHost() at your app root or provide LocalToastManager."
+        )
+    }
+}
+
+/**
+ * GlobalToastHost - Root-level composable for global toast management
+ *
+ * Add this once at your application root to enable global toast access.
+ * It initializes the PixaToastManager singleton and displays toasts.
+ *
+ * @param position Screen position for toasts (default: Bottom)
+ * @param maxToasts Maximum number of toasts to show simultaneously (default: 3)
+ * @param modifier Modifier for the host container
+ *
+ * @sample
+ * ```
+ * @Composable
+ * fun App() {
+ *     AppTheme {
+ *         GlobalToastHost()  // Initialize once here
+ *
+ *         Scaffold {
+ *             // Your app content
+ *         }
+ *     }
+ * }
+ * ```
+ */
+@Composable
+fun GlobalToastHost(
+    position: ToastPosition = ToastPosition.Bottom,
+    maxToasts: Int = 3,
+    modifier: Modifier = Modifier
+) {
+    val hostState = remember { PixaToastHostState(maxToasts) }
+
+    // Initialize global manager
+    DisposableEffect(hostState) {
+        PixaToastManager.initialize(hostState)
+        onDispose {
+            PixaToastManager.clear()
+        }
+    }
+
+    // Provide local composition access
+    CompositionLocalProvider(LocalToastManager provides hostState) {
+        ToastHost(
+            hostState = hostState,
+            position = position,
+            modifier = modifier
+        )
+    }
+}
+
+// ============================================================================
+// EXTENSION FUNCTIONS
+// ============================================================================
+
+/**
+ * Extension functions for easier toast access in composables
+ */
+
+/**
+ * Remember a coroutine scope and show a toast
+ */
+@Composable
+fun rememberToastScope(): ToastScope {
+    val scope = rememberCoroutineScope()
+    val manager = currentToastManager()
+    return remember(scope, manager) {
+        ToastScope(scope, manager)
+    }
+}
+
+/**
+ * Toast scope for convenient toast operations in composables
+ */
+class ToastScope(
+    private val scope: CoroutineScope,
+    private val manager: PixaToastHostState
+) {
+    fun showToast(
+        message: String,
+        variant: ToastVariant = ToastVariant.Info,
+        duration: ToastDuration = ToastDuration.Short,
+        style: ToastStyle = ToastStyle.Filled,
+        icon: Painter? = null,
+        showIcon: Boolean = true,
+        dismissible: Boolean = true,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null,
+        onDismiss: (() -> Unit)? = null,
+        customColors: ToastColors? = null
+    ) {
+        scope.launch {
+            manager.showToast(
+                message = message,
+                variant = variant,
+                duration = duration,
+                style = style,
+                icon = icon,
+                showIcon = showIcon,
+                dismissible = dismissible,
+                actionText = actionText,
+                onAction = onAction,
+                onDismiss = onDismiss,
+                customColors = customColors
+            )
+        }
+    }
+
+    fun showSuccess(
+        message: String,
+        duration: ToastDuration = ToastDuration.Short,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            manager.showSuccessToast(message, duration, actionText, onAction)
+        }
+    }
+
+    fun showError(
+        message: String,
+        duration: ToastDuration = ToastDuration.Long,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            manager.showErrorToast(message, duration, actionText, onAction)
+        }
+    }
+
+    fun showWarning(
+        message: String,
+        duration: ToastDuration = ToastDuration.Long,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            manager.showWarningToast(message, duration, actionText, onAction)
+        }
+    }
+
+    fun showInfo(
+        message: String,
+        duration: ToastDuration = ToastDuration.Short,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            manager.showInfoToast(message, duration, actionText, onAction)
+        }
+    }
+
+    fun showErrorFromException(
+        exception: Throwable,
+        message: String? = null,
+        actionText: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            val errorMessage = message ?: exception.message ?: "An error occurred"
+            manager.showErrorToast(errorMessage, ToastDuration.Long, actionText, onAction)
+        }
+    }
+
+    fun dismissAll() {
+        scope.launch {
+            manager.dismissAll()
+        }
+    }
+}
+
+/**
+ * Extension function for launching toast from global manager
+ * Useful for non-composable contexts
+ */
+fun launchToast(block: suspend PixaToastHostState.() -> Unit) {
+    PixaToastManager.launch(block)
+}
+
+// ============================================================================
 // USAGE EXAMPLES
 // ============================================================================
 
 /**
  * USAGE EXAMPLES:
+ *
+ * ============================================================================
+ * GLOBAL TOAST SYSTEM (NEW - Recommended)
+ * ============================================================================
+ *
+ * 1. Setup GlobalToastHost at app root (ONE TIME):
+ * ```
+ * @Composable
+ * fun App() {
+ *     AppTheme {
+ *         GlobalToastHost(position = ToastPosition.Bottom)
+ *
+ *         Scaffold {
+ *             // Your navigation and content
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * 2. Show toast from ViewModel:
+ * ```
+ * class HabitViewModel : ViewModel() {
+ *     fun createHabit(habit: Habit) {
+ *         viewModelScope.launch {
+ *             try {
+ *                 repository.createHabit(habit)
+ *                 PixaToastManager.showSuccess("Habit created successfully!")
+ *             } catch (e: Exception) {
+ *                 PixaToastManager.showError("Failed to create habit: ${e.message}")
+ *             }
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * 3. Show toast from UseCase or Repository:
+ * ```
+ * class SyncDataUseCase {
+ *     suspend operator fun invoke() {
+ *         try {
+ *             syncData()
+ *             PixaToastManager.showSuccess("Data synced successfully")
+ *         } catch (e: NetworkException) {
+ *             PixaToastManager.showError("Network error: ${e.message}")
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * 4. Show toast from Composable (using rememberToastScope):
+ * ```
+ * @Composable
+ * fun MyScreen() {
+ *     val toastScope = rememberToastScope()
+ *
+ *     Button(onClick = {
+ *         toastScope.showSuccess("Button clicked!")
+ *     }) {
+ *         Text("Click Me")
+ *     }
+ * }
+ * ```
+ *
+ * 5. Quick toast from anywhere (using launchToast):
+ * ```
+ * fun onButtonClick() {
+ *     launchToast {
+ *         showInfo("Action completed")
+ *     }
+ * }
+ * ```
+ *
+ * 6. Error handling with exceptions:
+ * ```
+ * viewModelScope.launch {
+ *     try {
+ *         performAction()
+ *     } catch (e: Exception) {
+ *         PixaToastManager.showErrorFromException(
+ *             exception = e,
+ *             message = "Operation failed",
+ *             actionText = "Retry",
+ *             onAction = { retryAction() }
+ *         )
+ *     }
+ * }
+ * ```
+ *
+ * 7. Toast with action from ViewModel:
+ * ```
+ * PixaToastManager.launch {
+ *     showWarning(
+ *         message = "Low storage space",
+ *         actionText = "Manage",
+ *         onAction = { navigateToStorage() }
+ *     )
+ * }
+ * ```
+ *
+ * 8. Custom toast configuration:
+ * ```
+ * GlobalToastHost(
+ *     position = ToastPosition.TopEnd,
+ *     maxToasts = 5
+ * )
+ * ```
+ *
+ * 9. Dismiss all toasts programmatically:
+ * ```
+ * viewModelScope.launch {
+ *     PixaToastManager.dismissAll()
+ * }
+ * ```
+ *
+ * 10. Using CompositionLocal for testing:
+ * ```
+ * @Composable
+ * fun TestableScreen() {
+ *     val localToast = rememberToastHostState()
+ *
+ *     CompositionLocalProvider(LocalToastManager provides localToast) {
+ *         // Your screen content
+ *         // This screen will use localToast instead of global
+ *     }
+ * }
+ * ```
+ *
+ * ============================================================================
+ * LOCAL TOAST SYSTEM (Legacy - Still Supported)
+ * ============================================================================
  *
  * 1. Basic toast host setup:
  * ```
@@ -803,7 +1422,6 @@ fun ToastHost(
  *
  * 2. Show simple toast:
  * ```
- * val scope = rememberCoroutineScope()
  * Button(onClick = {
  *     scope.launch {
  *         toastState.showToast(

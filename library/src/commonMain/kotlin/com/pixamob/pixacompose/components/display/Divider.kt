@@ -12,7 +12,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.*
 
 // ============================================================================
@@ -29,17 +28,6 @@ enum class DividerOrientation {
     Vertical
 }
 
-/**
- * Divider Variant - Visual emphasis level
- */
-enum class DividerVariant {
-    /** Subtle border - Minimal separation (List items, cards) */
-    Subtle,
-    /** Default border - Standard separation (Sections, groups) */
-    Default,
-    /** Strong border - Clear separation (Major sections) */
-    Strong
-}
 
 /**
  * Divider Thickness - Line weight
@@ -64,30 +52,6 @@ data class DividerColors(
     val line: Color
 )
 
-// ============================================================================
-// THEME PROVIDER
-// ============================================================================
-
-/**
- * Get divider colors based on variant
- */
-@Composable
-private fun getDividerTheme(
-    variant: DividerVariant,
-    colors: ColorPalette
-): DividerColors {
-    return when (variant) {
-        DividerVariant.Subtle -> DividerColors(
-            line = colors.baseBorderSubtle
-        )
-        DividerVariant.Default -> DividerColors(
-            line = colors.baseBorderDefault
-        )
-        DividerVariant.Strong -> DividerColors(
-            line = colors.baseBorderFocus
-        )
-    }
-}
 
 /**
  * Get thickness in Dp
@@ -109,7 +73,7 @@ private fun getDividerThicknessDp(thickness: DividerThickness): Dp {
  * Base Divider implementation
  */
 @Composable
-private fun PixaDivider(
+private fun PixaDividerImpl(
     modifier: Modifier = Modifier,
     orientation: DividerOrientation,
     thickness: Dp,
@@ -134,48 +98,44 @@ private fun PixaDivider(
 // ============================================================================
 
 /**
- * Divider - Visual separator between content
+ * PixaDivider - Visual separator between content
  *
  * A simple line component for separating content sections horizontally or vertically.
  * Commonly used in lists, cards, toolbars, and layouts to create visual hierarchy.
  *
  * @param modifier Modifier for the divider
  * @param orientation Direction of the divider (Horizontal or Vertical)
- * @param variant Visual emphasis level (Subtle, Default, Strong)
  * @param thickness Line weight (Thin, Standard, Thick, Heavy)
- * @param color Optional custom color (overrides variant color)
+ * @param color Optional custom color (overrides default color)
  *
  * @sample
  * ```
  * // Horizontal divider (most common)
- * Divider()
- *
- * // Subtle divider for list items
- * Divider(variant = DividerVariant.Subtle)
- *
- * // Strong divider for major sections
- * Divider(variant = DividerVariant.Strong, thickness = DividerThickness.Thick)
+ * PixaDivider()
  *
  * // Vertical divider in toolbar
- * Divider(orientation = DividerOrientation.Vertical)
+ * PixaDivider(orientation = DividerOrientation.Vertical)
+ *
+ * // Custom thickness
+ * PixaDivider(thickness = DividerThickness.Heavy)
  *
  * // Custom color divider
- * Divider(color = Color.Red)
+ * PixaDivider(color = Color.Red)
  * ```
  */
 @Composable
-fun Divider(
+fun PixaDivider(
     modifier: Modifier = Modifier,
     orientation: DividerOrientation = DividerOrientation.Horizontal,
-    variant: DividerVariant = DividerVariant.Default,
     thickness: DividerThickness = DividerThickness.Standard,
     color: Color? = null
 ) {
-    val themeColors = getDividerTheme(variant, AppTheme.colors)
-    val finalColors = color?.let { DividerColors(it) } ?: themeColors
+    val defaultColor = AppTheme.colors.baseBorderDefault
+    val finalColor = color ?: defaultColor
+    val finalColors = DividerColors(finalColor)
     val thicknessDp = getDividerThicknessDp(thickness)
 
-    PixaDivider(
+    PixaDividerImpl(
         modifier = modifier,
         orientation = orientation,
         thickness = thicknessDp,
@@ -184,7 +144,7 @@ fun Divider(
 }
 
 // ============================================================================
-// CONVENIENCE VARIANTS
+// CONVENIENCE FUNCTIONS
 // ============================================================================
 
 /**
@@ -193,14 +153,12 @@ fun Divider(
 @Composable
 fun HorizontalDivider(
     modifier: Modifier = Modifier,
-    variant: DividerVariant = DividerVariant.Default,
     thickness: DividerThickness = DividerThickness.Standard,
     color: Color? = null
 ) {
-    Divider(
+    PixaDivider(
         modifier = modifier,
         orientation = DividerOrientation.Horizontal,
-        variant = variant,
         thickness = thickness,
         color = color
     )
@@ -212,52 +170,17 @@ fun HorizontalDivider(
 @Composable
 fun VerticalDivider(
     modifier: Modifier = Modifier,
-    variant: DividerVariant = DividerVariant.Default,
     thickness: DividerThickness = DividerThickness.Standard,
     color: Color? = null
 ) {
-    Divider(
+    PixaDivider(
         modifier = modifier,
         orientation = DividerOrientation.Vertical,
-        variant = variant,
         thickness = thickness,
         color = color
     )
 }
 
-/**
- * Subtle Divider - Minimal visual separation
- */
-@Composable
-fun SubtleDivider(
-    modifier: Modifier = Modifier,
-    orientation: DividerOrientation = DividerOrientation.Horizontal,
-    thickness: DividerThickness = DividerThickness.Thin
-) {
-    Divider(
-        modifier = modifier,
-        orientation = orientation,
-        variant = DividerVariant.Subtle,
-        thickness = thickness
-    )
-}
-
-/**
- * Strong Divider - Clear visual separation
- */
-@Composable
-fun StrongDivider(
-    modifier: Modifier = Modifier,
-    orientation: DividerOrientation = DividerOrientation.Horizontal,
-    thickness: DividerThickness = DividerThickness.Thick
-) {
-    Divider(
-        modifier = modifier,
-        orientation = orientation,
-        variant = DividerVariant.Strong,
-        thickness = thickness
-    )
-}
 
 // ============================================================================
 // USAGE EXAMPLES
@@ -270,26 +193,26 @@ fun StrongDivider(
  * ```
  * Column {
  *     Text("Section 1")
- *     Divider()
+ *     PixaDivider()
  *     Text("Section 2")
  * }
  * ```
  *
- * 2. Subtle divider in list:
+ * 2. Horizontal divider in list:
  * ```
  * LazyColumn {
  *     items(items) { item ->
  *         ListItem(item)
- *         SubtleDivider()
+ *         HorizontalDivider()
  *     }
  * }
  * ```
  *
- * 3. Strong section divider:
+ * 3. Thick section divider:
  * ```
  * Column {
  *     HeaderSection()
- *     StrongDivider(thickness = DividerThickness.Heavy)
+ *     PixaDivider(thickness = DividerThickness.Heavy)
  *     ContentSection()
  * }
  * ```
@@ -305,8 +228,8 @@ fun StrongDivider(
  *
  * 5. Custom colored divider:
  * ```
- * Divider(
- *     color = MaterialTheme.colorScheme.primary,
+ * PixaDivider(
+ *     color = Color.Red,
  *     thickness = DividerThickness.Thick
  * )
  * ```
@@ -315,10 +238,7 @@ fun StrongDivider(
  * ```
  * Row {
  *     Sidebar()
- *     VerticalDivider(
- *         modifier = Modifier.fillMaxHeight(),
- *         variant = DividerVariant.Default
- *     )
+ *     VerticalDivider(modifier = Modifier.fillMaxHeight())
  *     MainContent()
  * }
  * ```

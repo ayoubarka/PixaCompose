@@ -2,13 +2,13 @@
 android-minSdk = "24"
 android-compileSdk = "36"
 android-targetSdk = "36"
-appVersionCode = "7"
-appVersionName = "1.0.6"
+appVersionCode = "8"
+appVersionName = "1.0.7"
 
 agp = "8.13.2"
 kotlin = "2.3.0"
 compose = "1.10.0"
-vanniktechMavenPublish = "0.35.0"
+vanniktechMavenPublish = "0.36.0"
 material3-adaptive = "1.2.0"
 kotlinx-datetime = "0.7.1"
 

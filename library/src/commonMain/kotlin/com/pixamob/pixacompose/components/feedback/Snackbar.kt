@@ -1,16 +1,37 @@
 package com.pixamob.pixacompose.components.feedback
 
-import androidx.compose.animation.*
-import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -26,9 +47,20 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import com.pixamob.pixacompose.components.display.PixaIcon
-import com.pixamob.pixacompose.theme.*
+import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.ColorPalette
+import com.pixamob.pixacompose.theme.ComponentSize
+import com.pixamob.pixacompose.theme.IconSize
+import com.pixamob.pixacompose.theme.Inset
+import com.pixamob.pixacompose.theme.RadiusSize
+import com.pixamob.pixacompose.theme.Spacing
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.elevationShadow
+import com.pixamob.pixacompose.utils.AnimationUtils
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.DelicateCoroutinesApi
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
@@ -348,6 +380,400 @@ fun rememberSnackbarHostState(): PixaSnackbarHostState {
 }
 
 // ============================================================================
+// GLOBAL SNACKBAR MANAGER
+// ============================================================================
+
+/**
+ * Global singleton for showing snackbars from anywhere in the app.
+ * Thread-safe and compatible with coroutines.
+ *
+ * Usage:
+ * ```
+ * // From ViewModel
+ * viewModelScope.launch {
+ *     PixaSnackbarManager.showSuccess("Data saved!")
+ * }
+ *
+ * // From UseCase/Repository
+ * suspend fun saveData() {
+ *     PixaSnackbarManager.showError("Failed to save")
+ * }
+ *
+ * // Quick launch from anywhere
+ * PixaSnackbarManager.launch {
+ *     showInfo("Operation completed")
+ * }
+ * ```
+ */
+object PixaSnackbarManager {
+    private var _state: PixaSnackbarHostState? = null
+    private val mutex = Mutex()
+
+    /**
+     * Internal: Initialize the global snackbar state
+     * Called automatically by GlobalSnackbarHost
+     */
+    internal fun initialize(state: PixaSnackbarHostState) {
+        _state = state
+    }
+
+    /**
+     * Internal: Clear the global snackbar state
+     */
+    internal fun clear() {
+        _state = null
+    }
+
+    /**
+     * Internal: Get the current state (for composition local access)
+     */
+    internal fun getState(): PixaSnackbarHostState? = _state
+
+    /**
+     * Get the current snackbar state
+     * @throws IllegalStateException if GlobalSnackbarHost is not initialized
+     */
+    private fun requireState(): PixaSnackbarHostState {
+        return _state ?: error(
+            "PixaSnackbarManager is not initialized. " +
+            "Make sure to add GlobalSnackbarHost() at your app root composable."
+        )
+    }
+
+    /**
+     * Check if the snackbar manager is initialized
+     */
+    val isInitialized: Boolean
+        get() = _state != null
+
+    /**
+     * Launch a coroutine in the appropriate scope for snackbar operations
+     */
+    fun launch(block: suspend PixaSnackbarHostState.() -> Unit) {
+        @OptIn(DelicateCoroutinesApi::class)
+        GlobalScope.launch(Dispatchers.Main) {
+            mutex.withLock {
+                requireState().block()
+            }
+        }
+    }
+
+    /**
+     * Show a snackbar message
+     */
+    suspend fun showSnackbar(
+        message: String,
+        actionLabel: String? = null,
+        variant: SnackbarVariant = SnackbarVariant.Default,
+        duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Indefinite,
+        withDismissAction: Boolean = false,
+        icon: Painter? = null,
+        showIcon: Boolean = false,
+        onAction: (() -> Unit)? = null,
+        onDismiss: (() -> Unit)? = null,
+        customColors: SnackbarColors? = null
+    ): SnackbarResult {
+        return requireState().showSnackbar(
+            message = message,
+            actionLabel = actionLabel,
+            variant = variant,
+            duration = duration,
+            withDismissAction = withDismissAction,
+            icon = icon,
+            showIcon = showIcon,
+            onAction = onAction,
+            onDismiss = onDismiss,
+            customColors = customColors
+        )
+    }
+
+    /**
+     * Show success snackbar (convenience method)
+     */
+    suspend fun showSuccess(
+        message: String,
+        actionLabel: String? = null,
+        duration: SnackbarDuration = SnackbarDuration.Short,
+        onAction: (() -> Unit)? = null
+    ): SnackbarResult {
+        return requireState().showSuccessSnackbar(
+            message = message,
+            actionLabel = actionLabel,
+            duration = duration,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Show error snackbar (convenience method)
+     */
+    suspend fun showError(
+        message: String,
+        actionLabel: String? = null,
+        duration: SnackbarDuration = SnackbarDuration.Long,
+        onAction: (() -> Unit)? = null
+    ): SnackbarResult {
+        return requireState().showErrorSnackbar(
+            message = message,
+            actionLabel = actionLabel,
+            duration = duration,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Show warning snackbar (convenience method)
+     */
+    suspend fun showWarning(
+        message: String,
+        actionLabel: String? = null,
+        duration: SnackbarDuration = SnackbarDuration.Long,
+        onAction: (() -> Unit)? = null
+    ): SnackbarResult {
+        return requireState().showWarningSnackbar(
+            message = message,
+            actionLabel = actionLabel,
+            duration = duration,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Show info snackbar (convenience method)
+     */
+    suspend fun showInfo(
+        message: String,
+        actionLabel: String? = null,
+        duration: SnackbarDuration = SnackbarDuration.Short,
+        onAction: (() -> Unit)? = null
+    ): SnackbarResult {
+        return requireState().showInfoSnackbar(
+            message = message,
+            actionLabel = actionLabel,
+            duration = duration,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Show error snackbar from exception
+     */
+    suspend fun showErrorFromException(
+        exception: Throwable,
+        message: String? = null,
+        actionLabel: String? = null,
+        onAction: (() -> Unit)? = null
+    ): SnackbarResult {
+        val errorMessage = message ?: exception.message ?: "An error occurred"
+        return showError(
+            message = errorMessage,
+            actionLabel = actionLabel,
+            onAction = onAction
+        )
+    }
+
+    /**
+     * Dismiss current snackbar
+     */
+    suspend fun dismissCurrent() {
+        requireState().dismissCurrentSnackbar()
+    }
+}
+
+/**
+ * CompositionLocal for accessing snackbar manager in composition tree
+ * Provides an alternative to the singleton for better testability
+ */
+val LocalSnackbarManager = staticCompositionLocalOf<PixaSnackbarHostState?> { null }
+
+/**
+ * Get the current snackbar manager from composition
+ * Falls back to global singleton if not provided locally
+ */
+@Composable
+fun currentSnackbarManager(): PixaSnackbarHostState {
+    return LocalSnackbarManager.current ?: run {
+        PixaSnackbarManager.getState() ?: error(
+            "Snackbar manager is not available. " +
+            "Make sure to add GlobalSnackbarHost() at your app root or provide LocalSnackbarManager."
+        )
+    }
+}
+
+/**
+ * GlobalSnackbarHost - Root-level composable for global snackbar management
+ *
+ * Add this once at your application root to enable global snackbar access.
+ * It initializes the PixaSnackbarManager singleton and displays snackbars.
+ *
+ * @param modifier Modifier for the host container
+ *
+ * @sample
+ * ```
+ * @Composable
+ * fun App() {
+ *     AppTheme {
+ *         Box(modifier = Modifier.fillMaxSize()) {
+ *             GlobalSnackbarHost()  // Initialize once here
+ *
+ *             Scaffold {
+ *                 // Your app content
+ *             }
+ *         }
+ *     }
+ * }
+ * ```
+ */
+@Composable
+fun GlobalSnackbarHost(
+    modifier: Modifier = Modifier
+) {
+    val hostState = remember { PixaSnackbarHostState() }
+
+    // Initialize global manager
+    DisposableEffect(hostState) {
+        PixaSnackbarManager.initialize(hostState)
+        onDispose {
+            PixaSnackbarManager.clear()
+        }
+    }
+
+    // Provide local composition access
+    CompositionLocalProvider(LocalSnackbarManager provides hostState) {
+        SnackbarHost(
+            hostState = hostState,
+            modifier = modifier
+        )
+    }
+}
+
+// ============================================================================
+// EXTENSION FUNCTIONS
+// ============================================================================
+
+/**
+ * Extension functions for easier snackbar access in composables
+ */
+
+/**
+ * Remember a coroutine scope and show a snackbar
+ */
+@Composable
+fun rememberSnackbarScope(): SnackbarScope {
+    val scope = rememberCoroutineScope()
+    val manager = currentSnackbarManager()
+    return remember(scope, manager) {
+        SnackbarScope(scope, manager)
+    }
+}
+
+/**
+ * Snackbar scope for convenient snackbar operations in composables
+ */
+class SnackbarScope(
+    private val scope: CoroutineScope,
+    private val manager: PixaSnackbarHostState
+) {
+    fun showSnackbar(
+        message: String,
+        actionLabel: String? = null,
+        variant: SnackbarVariant = SnackbarVariant.Default,
+        duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Indefinite,
+        withDismissAction: Boolean = false,
+        icon: Painter? = null,
+        showIcon: Boolean = false,
+        onAction: (() -> Unit)? = null,
+        onDismiss: (() -> Unit)? = null,
+        customColors: SnackbarColors? = null
+    ) {
+        scope.launch {
+            manager.showSnackbar(
+                message = message,
+                actionLabel = actionLabel,
+                variant = variant,
+                duration = duration,
+                withDismissAction = withDismissAction,
+                icon = icon,
+                showIcon = showIcon,
+                onAction = onAction,
+                onDismiss = onDismiss,
+                customColors = customColors
+            )
+        }
+    }
+
+    fun showSuccess(
+        message: String,
+        actionLabel: String? = null,
+        duration: SnackbarDuration = SnackbarDuration.Short,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            manager.showSuccessSnackbar(message, actionLabel, duration, onAction)
+        }
+    }
+
+    fun showError(
+        message: String,
+        actionLabel: String? = null,
+        duration: SnackbarDuration = SnackbarDuration.Long,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            manager.showErrorSnackbar(message, actionLabel, duration, onAction)
+        }
+    }
+
+    fun showWarning(
+        message: String,
+        actionLabel: String? = null,
+        duration: SnackbarDuration = SnackbarDuration.Long,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            manager.showWarningSnackbar(message, actionLabel, duration, onAction)
+        }
+    }
+
+    fun showInfo(
+        message: String,
+        actionLabel: String? = null,
+        duration: SnackbarDuration = SnackbarDuration.Short,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            manager.showInfoSnackbar(message, actionLabel, duration, onAction)
+        }
+    }
+
+    fun showErrorFromException(
+        exception: Throwable,
+        message: String? = null,
+        actionLabel: String? = null,
+        onAction: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            val errorMessage = message ?: exception.message ?: "An error occurred"
+            manager.showErrorSnackbar(errorMessage, actionLabel, SnackbarDuration.Long, onAction)
+        }
+    }
+
+    fun dismissCurrent() {
+        scope.launch {
+            manager.dismissCurrentSnackbar()
+        }
+    }
+}
+
+/**
+ * Extension function for launching snackbar from global manager
+ * Useful for non-composable contexts
+ */
+fun launchSnackbar(block: suspend PixaSnackbarHostState.() -> Unit) {
+    PixaSnackbarManager.launch(block)
+}
+
+// ============================================================================
 // THEME PROVIDER
 // ============================================================================
 
@@ -579,18 +1005,12 @@ fun SnackbarHost(
             visible = currentSnackbar != null,
             enter = slideInVertically(
                 initialOffsetY = { it },
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioMediumBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ) + fadeIn(animationSpec = tween(300)),
+                animationSpec = AnimationUtils.standardSpring()
+            ) + fadeIn(animationSpec = AnimationUtils.standardTween()),
             exit = slideOutVertically(
                 targetOffsetY = { it },
-                animationSpec = spring(
-                    dampingRatio = Spring.DampingRatioNoBouncy,
-                    stiffness = Spring.StiffnessMedium
-                )
-            ) + fadeOut(animationSpec = tween(200))
+                animationSpec = AnimationUtils.fastSpring()
+            ) + fadeOut(animationSpec = AnimationUtils.fastTween())
         ) {
             currentSnackbar?.let { snackbar ->
                 Snackbar(
@@ -617,6 +1037,155 @@ fun SnackbarHost(
 
 /**
  * USAGE EXAMPLES:
+ *
+ * ============================================================================
+ * GLOBAL SNACKBAR SYSTEM (NEW - Recommended)
+ * ============================================================================
+ *
+ * 1. Setup GlobalSnackbarHost at app root (ONE TIME):
+ * ```
+ * @Composable
+ * fun App() {
+ *     AppTheme {
+ *         Box(modifier = Modifier.fillMaxSize()) {
+ *             GlobalSnackbarHost()  // Initialize once here
+ *
+ *             Scaffold {
+ *                 // Your navigation and content
+ *             }
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * 2. Show snackbar from ViewModel:
+ * ```
+ * class HabitViewModel : ViewModel() {
+ *     fun deleteHabit(habitId: String) {
+ *         viewModelScope.launch {
+ *             try {
+ *                 repository.deleteHabit(habitId)
+ *                 PixaSnackbarManager.showSuccess(
+ *                     message = "Habit deleted",
+ *                     actionLabel = "Undo",
+ *                     onAction = { restoreHabit(habitId) }
+ *                 )
+ *             } catch (e: Exception) {
+ *                 PixaSnackbarManager.showError("Failed to delete habit")
+ *             }
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * 3. Show snackbar from UseCase or Repository:
+ * ```
+ * class SyncDataUseCase {
+ *     suspend operator fun invoke() {
+ *         try {
+ *             syncData()
+ *             PixaSnackbarManager.showSuccess("Data synced successfully")
+ *         } catch (e: NetworkException) {
+ *             PixaSnackbarManager.showError(
+ *                 message = "Network error: ${e.message}",
+ *                 actionLabel = "Retry",
+ *                 onAction = { /* retry logic */ }
+ *             )
+ *         }
+ *     }
+ * }
+ * ```
+ *
+ * 4. Show snackbar from Composable (using rememberSnackbarScope):
+ * ```
+ * @Composable
+ * fun MyScreen() {
+ *     val snackbarScope = rememberSnackbarScope()
+ *
+ *     Button(onClick = {
+ *         snackbarScope.showSuccess(
+ *             message = "Settings saved",
+ *             actionLabel = "View",
+ *             onAction = { navigateToSettings() }
+ *         )
+ *     }) {
+ *         Text("Save Settings")
+ *     }
+ * }
+ * ```
+ *
+ * 5. Quick snackbar from anywhere (using launchSnackbar):
+ * ```
+ * fun onDataUpdated() {
+ *     launchSnackbar {
+ *         showInfo("Data updated successfully")
+ *     }
+ * }
+ * ```
+ *
+ * 6. Error handling with exceptions:
+ * ```
+ * viewModelScope.launch {
+ *     try {
+ *         performAction()
+ *     } catch (e: Exception) {
+ *         PixaSnackbarManager.showErrorFromException(
+ *             exception = e,
+ *             message = "Operation failed",
+ *             actionLabel = "Retry",
+ *             onAction = { retryAction() }
+ *         )
+ *     }
+ * }
+ * ```
+ *
+ * 7. Snackbar with action from ViewModel:
+ * ```
+ * PixaSnackbarManager.launch {
+ *     showWarning(
+ *         message = "Low storage space",
+ *         actionLabel = "Manage",
+ *         onAction = { navigateToStorage() }
+ *     )
+ * }
+ * ```
+ *
+ * 8. Indefinite snackbar (until action/dismiss):
+ * ```
+ * viewModelScope.launch {
+ *     PixaSnackbarManager.showSnackbar(
+ *         message = "No internet connection",
+ *         actionLabel = "Retry",
+ *         duration = SnackbarDuration.Indefinite,
+ *         withDismissAction = true,
+ *         onAction = { checkConnection() }
+ *     )
+ * }
+ * ```
+ *
+ * 9. Dismiss current snackbar programmatically:
+ * ```
+ * viewModelScope.launch {
+ *     PixaSnackbarManager.dismissCurrent()
+ * }
+ * ```
+ *
+ * 10. Using CompositionLocal for testing:
+ * ```
+ * @Composable
+ * fun TestableScreen() {
+ *     val localSnackbar = rememberSnackbarHostState()
+ *
+ *     CompositionLocalProvider(LocalSnackbarManager provides localSnackbar) {
+ *         // Your screen content
+ *         // This screen will use localSnackbar instead of global
+ *     }
+ * }
+ * ```
+ *
+ * ============================================================================
+ * LOCAL SNACKBAR SYSTEM (Legacy - Still Supported)
+ * ============================================================================
  *
  * 1. Basic snackbar host setup:
  * ```
@@ -792,3 +1361,5 @@ fun SnackbarHost(
  * }
  * ```
  */
+
+
