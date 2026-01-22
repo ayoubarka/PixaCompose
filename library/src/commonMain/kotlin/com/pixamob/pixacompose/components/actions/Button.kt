@@ -40,7 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
-import com.pixamob.pixacompose.components.feedback.CircularProgressIndicator
+import com.pixamob.pixacompose.components.feedback.PixaCircularIndicator
 import com.pixamob.pixacompose.components.feedback.ProgressColors
 import com.pixamob.pixacompose.components.feedback.ProgressSize
 import com.pixamob.pixacompose.components.feedback.Skeleton
@@ -63,10 +63,13 @@ import com.pixamob.pixacompose.theme.Spacing
 enum class ButtonVariant {
     /** Solid background with high emphasis (Primary actions: Submit, Save, Continue) */
     Solid,
+
     /** Subtle tonal background with medium emphasis (Featured secondary actions) */
     Tonal,
+
     /** Border only with medium emphasis (Secondary actions: Cancel, Back, Edit) */
     Outlined,
+
     /** Transparent background with low emphasis (Tertiary actions: Learn More, Details) */
     Ghost
 }
@@ -77,14 +80,19 @@ enum class ButtonVariant {
 enum class ButtonSize {
     /** 24dp height - Compact spaces, inline actions */
     Mini,
+
     /** 32dp height - Dense UIs, toolbars */
     Compact,
+
     /** 36dp height - Forms, cards */
     Small,
+
     /** 44dp height - DEFAULT, primary touch target */
     Medium,
+
     /** 48dp height - Prominent actions */
     Large,
+
     /** 64dp height - Hero sections, landing pages */
     Huge
 }
@@ -95,8 +103,10 @@ enum class ButtonSize {
 enum class ButtonShape {
     /** Rounded corners based on size */
     Default,
+
     /** Fully rounded (height / 2 radius) */
     Pill,
+
     /** Perfect circle (width = height, for icon-only buttons) */
     Circle
 }
@@ -159,6 +169,7 @@ private fun getButtonSizeConfig(size: ButtonSize): ButtonSizeConfig {
             cornerRadius = RadiusSize.Tiny,
             textStyle = { typography.labelSmall }
         )
+
         ButtonSize.Compact -> ButtonSizeConfig(
             height = ComponentSize.VerySmall,
             horizontalPadding = Spacing.Small,
@@ -168,6 +179,7 @@ private fun getButtonSizeConfig(size: ButtonSize): ButtonSizeConfig {
             cornerRadius = RadiusSize.ExtraSmall,
             textStyle = { typography.labelMedium }
         )
+
         ButtonSize.Small -> ButtonSizeConfig(
             height = ComponentSize.ExtraSmall,
             horizontalPadding = Spacing.Medium,
@@ -177,6 +189,7 @@ private fun getButtonSizeConfig(size: ButtonSize): ButtonSizeConfig {
             cornerRadius = RadiusSize.Small,
             textStyle = { typography.actionSmall }
         )
+
         ButtonSize.Medium -> ButtonSizeConfig(
             height = ComponentSize.Medium,
             horizontalPadding = Spacing.Large,
@@ -186,6 +199,7 @@ private fun getButtonSizeConfig(size: ButtonSize): ButtonSizeConfig {
             cornerRadius = RadiusSize.Medium,
             textStyle = { typography.actionMedium }
         )
+
         ButtonSize.Large -> ButtonSizeConfig(
             height = ComponentSize.ExtraLarge,
             horizontalPadding = Spacing.Large,
@@ -195,6 +209,7 @@ private fun getButtonSizeConfig(size: ButtonSize): ButtonSizeConfig {
             cornerRadius = RadiusSize.Large,
             textStyle = { typography.actionLarge }
         )
+
         ButtonSize.Huge -> ButtonSizeConfig(
             height = ComponentSize.Huge,
             horizontalPadding = Spacing.ExtraLarge,
@@ -221,9 +236,12 @@ private fun getButtonTheme(
     isDestructive: Boolean = false
 ): ButtonStateColors {
     // If destructive, use error colors instead of brand colors
-    val brandOrErrorContent = if (isDestructive) colors.errorContentDefault else colors.brandContentDefault
-    val brandOrErrorSurface = if (isDestructive) colors.errorSurfaceDefault else colors.brandSurfaceDefault
-    val brandOrErrorBorder = if (isDestructive) colors.errorBorderDefault else colors.brandBorderDefault
+    val brandOrErrorContent =
+        if (isDestructive) colors.errorContentDefault else colors.brandContentDefault
+    val brandOrErrorSurface =
+        if (isDestructive) colors.errorSurfaceDefault else colors.brandSurfaceDefault
+    val brandOrErrorBorder =
+        if (isDestructive) colors.errorBorderDefault else colors.brandBorderDefault
 
     return when (variant) {
         ButtonVariant.Solid -> ButtonStateColors(
@@ -238,6 +256,7 @@ private fun getButtonTheme(
                 ripple = Color.Transparent
             )
         )
+
         ButtonVariant.Tonal -> ButtonStateColors(
             default = ButtonColors(
                 background = brandOrErrorSurface,
@@ -250,6 +269,7 @@ private fun getButtonTheme(
                 ripple = Color.Transparent
             )
         )
+
         ButtonVariant.Outlined -> ButtonStateColors(
             default = ButtonColors(
                 background = Color.Transparent,
@@ -264,6 +284,7 @@ private fun getButtonTheme(
                 ripple = Color.Transparent
             )
         )
+
         ButtonVariant.Ghost -> ButtonStateColors(
             default = ButtonColors(
                 background = Color.Transparent,
@@ -298,7 +319,8 @@ private fun InternalButton(
     colors: ButtonStateColors,
     elevation: Dp = 0.dp,
     contentAlignment: Alignment = Alignment.Center,
-    contentDescription: String? = null,
+    arrangement: Arrangement.Horizontal = Arrangement.Center,
+    description: String? = null,
     content: @Composable RowScope.() -> Unit
 ) {
     val sizeConfig = getButtonSizeConfig(size)
@@ -371,7 +393,7 @@ private fun InternalButton(
                     enabled = enabled && !loading,
                     role = Role.Button,
                     onClick = onClick,
-                    onClickLabel = contentDescription
+                    onClickLabel = description
                 ),
             contentAlignment = contentAlignment
         ) {
@@ -383,7 +405,7 @@ private fun InternalButton(
                         sizeConfig.horizontalPadding
                     }
                 ),
-                horizontalArrangement = Arrangement.Center,
+                horizontalArrangement = arrangement,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 if (loading) {
@@ -395,7 +417,7 @@ private fun InternalButton(
                             tint = contentColor
                         )
                     } else {
-                        CircularProgressIndicator(
+                        PixaCircularIndicator(
                             progress = null, // Indeterminate
                             modifier = Modifier.size(sizeConfig.iconSize),
                             sizePreset = ProgressSize.Small,
@@ -434,6 +456,8 @@ private fun InternalButton(
  * - Full theme integration
  * - Elevation support
  * - Accessibility support with contentDescription
+ * - Content alignment and spacing control
+ * - Custom colors via ButtonColors
  *
  * @param onClick Callback when button is clicked
  * @param modifier Modifier for styling
@@ -447,10 +471,12 @@ private fun InternalButton(
  * @param leadingIcon Optional icon before text
  * @param trailingIcon Optional icon after text
  * @param elevation Shadow elevation (Default: 0dp, 1dp for Solid/Tonal)
- * @param contentDescription Accessibility description (recommended for icon-only buttons)
- * @param customColors Optional custom colors to override theme
+ * @param description Accessibility description (recommended for icon-only buttons)
+ * @param customColors Optional custom ButtonStateColors to override theme defaults
  * @param customIconSize Optional custom icon size to override size config
  * @param customTextStyle Optional custom text style to override size config
+ * @param arrangement Content arrangement in the Row (Default: Center)
+ * @param spaceBetween Optional fixed spacing between content items, overrides horizontalArrangement
  *
  * @sample
  * ```
@@ -460,40 +486,28 @@ private fun InternalButton(
  *     onClick = { }
  * )
  *
- * // Icon-only button
+ * // Button with custom colors
  * PixaButton(
- *     onClick = { },
- *     shape = ButtonShape.Circle,
- *     leadingIcon = painterResource(R.drawable.ic_add),
- *     contentDescription = "Add item"
- * )
- *
- * // Destructive button
- * PixaButton(
- *     text = "Delete",
- *     isDestructive = true,
+ *     text = "Custom",
+ *     variant = ButtonVariant.Solid,
+ *     customColors = ButtonStateColors(
+ *         default = ButtonColors(
+ *             background = Color.Magenta,
+ *             content = Color.White
+ *         ),
+ *         disabled = ButtonColors(
+ *             background = Color.Gray,
+ *             content = Color.LightGray
+ *         )
+ *     ),
  *     onClick = { }
  * )
  *
- * // Button with icon
+ * // Button with space between content
  * PixaButton(
- *     text = "Save",
- *     leadingIcon = painterResource(R.drawable.ic_save),
- *     onClick = { }
- * )
- *
- * // Loading button
- * PixaButton(
- *     text = "Processing...",
- *     loading = true,
- *     onClick = { }
- * )
- *
- * // Outlined destructive button
- * PixaButton(
- *     text = "Remove",
- *     variant = ButtonVariant.Outlined,
- *     isDestructive = true,
+ *     text = "Options",
+ *     trailingIcon = painterResource(R.drawable.ic_arrow),
+ *     horizontalArrangement = Arrangement.SpaceBetween,
  *     onClick = { }
  * )
  * ```
@@ -514,11 +528,11 @@ fun PixaButton(
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
     elevation: Dp? = null,
-    contentDescription: String? = null,
     customColors: ButtonStateColors? = null,
     customIconSize: Dp? = null,
     customTextStyle: TextStyle? = null,
-    skeletonShape: androidx.compose.ui.graphics.Shape? = null
+    arrangement: Arrangement.Horizontal = Arrangement.Center,
+    description: String? = null,
 ) {
     val sizeConfig = getButtonSizeConfig(size)
 
@@ -541,12 +555,13 @@ fun PixaButton(
         Skeleton(
             modifier = buttonModifier,
             height = sizeConfig.height,
-            shape = skeletonShape ?: RoundedCornerShape(cornerRadius),
+            shape = RoundedCornerShape(cornerRadius),
             shimmerEnabled = true
         )
         return
     }
 
+    // Use custom colors if provided, otherwise use theme defaults
     val colors = customColors ?: getButtonTheme(variant, AppTheme.colors, isDestructive)
 
     // Auto-elevation for Solid and Tonal variants (Material 3 style)
@@ -576,7 +591,8 @@ fun PixaButton(
         shape = effectiveShape,
         colors = colors,
         elevation = buttonElevation,
-        contentDescription = contentDescription
+        arrangement = arrangement,
+        description = description
     ) {
         ButtonContent(
             text = text,
@@ -651,160 +667,3 @@ private fun RowScope.ButtonContent(
         )
     }
 }
-
-// ============================================================================
-// CONVENIENCE VARIANTS
-// ============================================================================
-
-/**
- * Solid base button - High emphasis with filled background
- */
-@Composable
-fun SolidButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    text: String? = null,
-    enabled: Boolean = true,
-    loading: Boolean = false,
-    size: ButtonSize = ButtonSize.Medium,
-    shape: ButtonShape = ButtonShape.Default,
-    leadingIcon: Painter? = null,
-    trailingIcon: Painter? = null,
-    isDestructive: Boolean = false,
-    contentDescription: String? = null
-) = PixaButton(
-    onClick = onClick,
-    modifier = modifier,
-    text = text,
-    variant = ButtonVariant.Solid,
-    isDestructive = isDestructive,
-    enabled = enabled,
-    loading = loading,
-    size = size,
-    shape = shape,
-    leadingIcon = leadingIcon,
-    trailingIcon = trailingIcon,
-    contentDescription = contentDescription
-)
-
-/**
- * Tonal base button - Medium emphasis with subtle background
- */
-@Composable
-fun TonalButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    text: String? = null,
-    enabled: Boolean = true,
-    loading: Boolean = false,
-    size: ButtonSize = ButtonSize.Medium,
-    shape: ButtonShape = ButtonShape.Default,
-    leadingIcon: Painter? = null,
-    trailingIcon: Painter? = null,
-    isDestructive: Boolean = false,
-    contentDescription: String? = null
-) = PixaButton(
-    onClick = onClick,
-    modifier = modifier,
-    text = text,
-    variant = ButtonVariant.Tonal,
-    isDestructive = isDestructive,
-    enabled = enabled,
-    loading = loading,
-    size = size,
-    shape = shape,
-    leadingIcon = leadingIcon,
-    trailingIcon = trailingIcon,
-    contentDescription = contentDescription
-)
-
-/**
- * Outlined base button - Medium emphasis with border
- */
-@Composable
-fun OutlinedButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    text: String? = null,
-    enabled: Boolean = true,
-    loading: Boolean = false,
-    size: ButtonSize = ButtonSize.Medium,
-    shape: ButtonShape = ButtonShape.Default,
-    leadingIcon: Painter? = null,
-    trailingIcon: Painter? = null,
-    isDestructive: Boolean = false,
-    contentDescription: String? = null
-) = PixaButton(
-    onClick = onClick,
-    modifier = modifier,
-    text = text,
-    variant = ButtonVariant.Outlined,
-    isDestructive = isDestructive,
-    enabled = enabled,
-    loading = loading,
-    size = size,
-    shape = shape,
-    leadingIcon = leadingIcon,
-    trailingIcon = trailingIcon,
-    contentDescription = contentDescription
-)
-
-/**
- * Ghost base button - Low emphasis, transparent background
- */
-@Composable
-fun GhostButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    text: String? = null,
-    enabled: Boolean = true,
-    size: ButtonSize = ButtonSize.Medium,
-    shape: ButtonShape = ButtonShape.Default,
-    leadingIcon: Painter? = null,
-    trailingIcon: Painter? = null,
-    isDestructive: Boolean = false,
-    contentDescription: String? = null
-) = PixaButton(
-    onClick = onClick,
-    modifier = modifier,
-    text = text,
-    variant = ButtonVariant.Ghost,
-    isDestructive = isDestructive,
-    enabled = enabled,
-    loading = false,
-    size = size,
-    shape = shape,
-    leadingIcon = leadingIcon,
-    trailingIcon = trailingIcon,
-    contentDescription = contentDescription
-)
-
-/**
- * Destructive base button - For critical/dangerous actions (Solid variant)
- */
-@Composable
-fun DestructiveButton(
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    text: String? = null,
-    enabled: Boolean = true,
-    loading: Boolean = false,
-    size: ButtonSize = ButtonSize.Medium,
-    shape: ButtonShape = ButtonShape.Default,
-    leadingIcon: Painter? = null,
-    trailingIcon: Painter? = null,
-    contentDescription: String? = null
-) = PixaButton(
-    onClick = onClick,
-    modifier = modifier,
-    text = text,
-    variant = ButtonVariant.Solid,
-    isDestructive = true,
-    enabled = enabled,
-    loading = loading,
-    size = size,
-    shape = shape,
-    leadingIcon = leadingIcon,
-    trailingIcon = trailingIcon,
-    contentDescription = contentDescription
-)
