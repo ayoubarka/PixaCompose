@@ -1,10 +1,18 @@
 package com.pixamob.pixacompose.components.feedback
 
-import androidx.compose.animation.core.*
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.progressSemantics
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -31,6 +39,7 @@ import com.pixamob.pixacompose.theme.BorderSize
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.Spacing
 import com.pixamob.pixacompose.utils.AnimationUtils
+import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.math.min
 
 /**
@@ -117,6 +126,26 @@ enum class ProgressOrientation {
 }
 
 /**
+ * Pager indicator style
+ */
+enum class PagerIndicatorStyle {
+    /** Circular dots */
+    Circle,
+    /** Dash/line indicators */
+    Dash
+}
+
+/**
+ * Pager indicator width mode
+ */
+enum class PagerIndicatorWidthMode {
+    /** All indicators have same width */
+    Uniform,
+    /** Selected indicator is wider than others */
+    ExpandSelected
+}
+
+/**
  * Progress segment for multi-part progress bars
  */
 @Immutable
@@ -149,6 +178,20 @@ data class ProgressConfig(
     val trackOpacity: Float = 0.2f,
     val labelStyle: @Composable () -> TextStyle,
     val percentageFormat: String = "%d%%"
+)
+
+/**
+ * Pager indicator configuration
+ */
+@Immutable
+@Stable
+data class PagerIndicatorConfig(
+    val indicatorSize: Dp = 8.dp,
+    val selectedIndicatorSize: Dp = 8.dp,
+    val spacing: Dp = 8.dp,
+    val selectedColor: Color,
+    val unselectedColor: Color,
+    val cornerRadius: Dp = 4.dp
 )
 
 // ============================================================================
@@ -243,7 +286,7 @@ private fun getProgressConfig(size: ProgressSize): ProgressConfig {
  * @param contentDescription Accessibility description
  */
 @Composable
-fun CircularProgressIndicator(
+fun PixaCircularIndicator(
     progress: Float? = null,
     modifier: Modifier = Modifier,
     variant: ProgressVariant = ProgressVariant.Primary,
@@ -395,7 +438,7 @@ fun CircularProgressIndicator(
  * @param contentDescription Accessibility description
  */
 @Composable
-fun LinearProgressIndicator(
+fun PixaLinearIndicator(
     progress: Float? = null,
     modifier: Modifier = Modifier,
     variant: ProgressVariant = ProgressVariant.Primary,
@@ -588,7 +631,7 @@ fun LoadingIndicator(
     sizePreset: ProgressSize = ProgressSize.Medium,
     variant: ProgressVariant = ProgressVariant.Primary
 ) {
-    CircularProgressIndicator(
+    PixaCircularIndicator(
         progress = null,
         modifier = modifier,
         variant = variant,
@@ -606,7 +649,7 @@ fun ProgressBar(
     variant: ProgressVariant = ProgressVariant.Primary,
     label: String? = null
 ) {
-    LinearProgressIndicator(
+    PixaLinearIndicator(
         progress = progress,
         modifier = modifier,
         variant = variant,
@@ -684,6 +727,121 @@ fun SegmentedProgressIndicator(
             }
         }
     }
+}
+
+// ============================================================================
+// PAGER INDICATOR
+// ============================================================================
+
+/**
+ * Pager Indicator - Shows current page position in a pager/carousel
+ *
+ * Supports both circle and dash styles with customizable widths.
+ * Selected indicator can be the same width as others or expanded.
+ *
+ * @param pageCount Total number of pages
+ * @param currentPage Current page index (0-based)
+ * @param modifier Modifier for the indicator
+ * @param style Visual style (Circle or Dash)
+ * @param widthMode Width mode (Uniform or ExpandSelected)
+ * @param config Configuration for sizes and colors
+ * @param contentDescription Accessibility description
+ */
+@Composable
+fun PixaPagerIndicator(
+    pageCount: Int,
+    currentPage: Int,
+    modifier: Modifier = Modifier,
+    style: PagerIndicatorStyle = PagerIndicatorStyle.Circle,
+    widthMode: PagerIndicatorWidthMode = PagerIndicatorWidthMode.Uniform,
+    config: PagerIndicatorConfig? = null,
+    contentDescription: String? = null
+) {
+    val colors = AppTheme.colors
+    val defaultConfig = PagerIndicatorConfig(
+        indicatorSize = if (style == PagerIndicatorStyle.Dash) 4.dp else 8.dp,
+        selectedIndicatorSize = when {
+            style == PagerIndicatorStyle.Dash && widthMode == PagerIndicatorWidthMode.ExpandSelected -> 24.dp
+            style == PagerIndicatorStyle.Dash -> 12.dp
+            else -> 8.dp
+        },
+        spacing = 8.dp,
+        selectedColor = colors.brandContentDefault,
+        unselectedColor = colors.baseBorderDefault,
+        cornerRadius = if (style == PagerIndicatorStyle.Dash) 2.dp else 4.dp
+    )
+
+    val indicatorConfig = config ?: defaultConfig
+    val safeCurrentPage = currentPage.coerceIn(0, pageCount - 1)
+
+    Row(
+        modifier = modifier
+            .semantics {
+                this.contentDescription = contentDescription ?: "Page ${safeCurrentPage + 1} of $pageCount"
+            },
+        horizontalArrangement = Arrangement.spacedBy(indicatorConfig.spacing),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        repeat(pageCount) { index ->
+            val isSelected = index == safeCurrentPage
+
+            // Animate color transition
+            val indicatorColor by animateColorAsState(
+                targetValue = if (isSelected) indicatorConfig.selectedColor else indicatorConfig.unselectedColor,
+                animationSpec = AnimationUtils.standardTween(),
+                label = "indicator_color_$index"
+            )
+
+            // Determine size based on style and mode
+            val indicatorWidth = when {
+                style == PagerIndicatorStyle.Circle -> indicatorConfig.indicatorSize
+                widthMode == PagerIndicatorWidthMode.ExpandSelected && isSelected -> indicatorConfig.selectedIndicatorSize
+                widthMode == PagerIndicatorWidthMode.ExpandSelected -> indicatorConfig.indicatorSize
+                else -> indicatorConfig.selectedIndicatorSize
+            }
+
+            // Animate size transition
+            val animatedWidth by animateDpAsState(
+                targetValue = indicatorWidth,
+                animationSpec = AnimationUtils.standardSpring(),
+                label = "indicator_width_$index"
+            )
+
+            // Shape based on style
+            val shape = when (style) {
+                PagerIndicatorStyle.Circle -> CircleShape
+                PagerIndicatorStyle.Dash -> RoundedCornerShape(indicatorConfig.cornerRadius)
+            }
+
+            Box(
+                modifier = Modifier
+                    .width(animatedWidth)
+                    .height(indicatorConfig.indicatorSize)
+                    .background(
+                        color = indicatorColor,
+                        shape = shape
+                    )
+            )
+        }
+    }
+}
+
+/**
+ * Simple Pager Indicator - Convenience function with default settings
+ */
+@Composable
+fun PagerIndicator(
+    pageCount: Int,
+    currentPage: Int,
+    modifier: Modifier = Modifier,
+    style: PagerIndicatorStyle = PagerIndicatorStyle.Circle
+) {
+    PixaPagerIndicator(
+        pageCount = pageCount,
+        currentPage = currentPage,
+        modifier = modifier,
+        style = style
+    )
 }
 
 // ============================================================================
@@ -790,5 +948,49 @@ fun SegmentedProgressIndicator(
  *         variant = ProgressVariant.Primary
  *     )
  * }
+ * ```
+ *
+ * 10. Pager indicator (circle style):
+ * ```
+ * PagerIndicator(
+ *     pageCount = 5,
+ *     currentPage = currentPageIndex,
+ *     style = PagerIndicatorStyle.Circle
+ * )
+ * ```
+ *
+ * 11. Pager indicator (dash style with uniform width):
+ * ```
+ * PixaPagerIndicator(
+ *     pageCount = 4,
+ *     currentPage = currentPageIndex,
+ *     style = PagerIndicatorStyle.Dash,
+ *     widthMode = PagerIndicatorWidthMode.Uniform
+ * )
+ * ```
+ *
+ * 12. Pager indicator (dash style with expanded selected):
+ * ```
+ * PixaPagerIndicator(
+ *     pageCount = 3,
+ *     currentPage = currentPageIndex,
+ *     style = PagerIndicatorStyle.Dash,
+ *     widthMode = PagerIndicatorWidthMode.ExpandSelected
+ * )
+ * ```
+ *
+ * 13. Custom pager indicator colors:
+ * ```
+ * PixaPagerIndicator(
+ *     pageCount = 5,
+ *     currentPage = currentPageIndex,
+ *     style = PagerIndicatorStyle.Circle,
+ *     config = PagerIndicatorConfig(
+ *         indicatorSize = 10.dp,
+ *         spacing = 12.dp,
+ *         selectedColor = Color.Blue,
+ *         unselectedColor = Color.Gray.copy(alpha = 0.4f)
+ *     )
+ * )
  * ```
  */

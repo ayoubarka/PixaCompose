@@ -319,6 +319,7 @@ fun SkeletonButton(
 
 /**
  * Card Skeleton - Simulates a card with image and text content
+ * Note: The skeleton inherits the parent card's shape (RadiusSize.Large)
  *
  * @param modifier Modifier for the skeleton
  * @param showImage Whether to show image placeholder
@@ -338,6 +339,8 @@ fun SkeletonCard(
     lastLineFraction: Float = 0.6f,
     shimmerEnabled: Boolean = true
 ) {
+    val cardShape = RoundedCornerShape(RadiusSize.Large)
+
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -351,14 +354,14 @@ fun SkeletonCard(
             )
             .background(
                 AppTheme.colors.baseSurfaceDefault,
-                RoundedCornerShape(RadiusSize.Large)
+                cardShape
             )
-            .clip(RoundedCornerShape(RadiusSize.Large))
+            .clip(cardShape)
     ) {
         if (showImage) {
             val shape = when (imageShape) {
                 SkeletonImageShape.Circle -> CircleShape
-                SkeletonImageShape.Rectangle -> RoundedCornerShape(RadiusSize.Large)
+                SkeletonImageShape.Rectangle -> cardShape
             }
 
             Box(
