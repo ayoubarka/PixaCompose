@@ -41,7 +41,8 @@ import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.pixamob.pixacompose.components.actions.ButtonShape
 import com.pixamob.pixacompose.components.actions.ButtonSize
-import com.pixamob.pixacompose.components.actions.SolidButton
+import com.pixamob.pixacompose.components.actions.ButtonVariant
+import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.display.PixaCard
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.BaseCardElevation
@@ -269,7 +270,8 @@ private fun CenterActionButton(
     modifier: Modifier = Modifier
 ) {
     if (centerIcon != null) {
-        SolidButton(
+        PixaButton(
+            variant = ButtonVariant.Solid,
             onClick = onCenterAction,
             modifier = modifier
                 .zIndex(1f)
@@ -283,7 +285,7 @@ private fun CenterActionButton(
             enabled = enabled,
             size = buttonSize,
             leadingIcon = centerIcon,
-            contentDescription = centerContentDescription
+            description = centerContentDescription
         )
     }
 }

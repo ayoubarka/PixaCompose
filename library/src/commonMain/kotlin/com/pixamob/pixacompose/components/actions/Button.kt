@@ -63,13 +63,10 @@ import com.pixamob.pixacompose.theme.Spacing
 enum class ButtonVariant {
     /** Solid background with high emphasis (Primary actions: Submit, Save, Continue) */
     Solid,
-
     /** Subtle tonal background with medium emphasis (Featured secondary actions) */
     Tonal,
-
     /** Border only with medium emphasis (Secondary actions: Cancel, Back, Edit) */
     Outlined,
-
     /** Transparent background with low emphasis (Tertiary actions: Learn More, Details) */
     Ghost
 }
@@ -80,19 +77,14 @@ enum class ButtonVariant {
 enum class ButtonSize {
     /** 24dp height - Compact spaces, inline actions */
     Mini,
-
     /** 32dp height - Dense UIs, toolbars */
     Compact,
-
     /** 36dp height - Forms, cards */
     Small,
-
     /** 44dp height - DEFAULT, primary touch target */
     Medium,
-
     /** 48dp height - Prominent actions */
     Large,
-
     /** 64dp height - Hero sections, landing pages */
     Huge
 }
@@ -103,10 +95,8 @@ enum class ButtonSize {
 enum class ButtonShape {
     /** Rounded corners based on size */
     Default,
-
     /** Fully rounded (height / 2 radius) */
     Pill,
-
     /** Perfect circle (width = height, for icon-only buttons) */
     Circle
 }
@@ -562,7 +552,12 @@ fun PixaButton(
     }
 
     // Use custom colors if provided, otherwise use theme defaults
-    val colors = customColors ?: getButtonTheme(variant, AppTheme.colors, isDestructive)
+    // If customColors provided but isDestructive=true, still apply destructive styling
+    val colors = if (customColors != null && !isDestructive) {
+        customColors
+    } else {
+        getButtonTheme(variant, AppTheme.colors, isDestructive)
+    }
 
     // Auto-elevation for Solid and Tonal variants (Material 3 style)
     val buttonElevation = elevation ?: when (variant) {
