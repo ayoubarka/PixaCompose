@@ -13,6 +13,76 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Navigation components
 - Menu components
 
+## [1.1.0] - 2026-01-24
+
+### Added
+- **Unified Hierarchical Sizing System**:
+  - `HierarchicalSize` object with consistent size naming across all components
+  - Standard size variants: `ExtraSmall`, `Small`, `Medium`, `Large`, `ExtraLarge`
+  - Additional granular sizes: `None`, `Tiny`, `Hairline`, `Huge`, `VeryLarge`, `Full`, `Micro`, `Massive`
+  - Component-specific size objects: `Container`, `Button`, `Icon`, `Input`, `Chip`, `ListItem`, `Card`, `Avatar`, `Badge`, `Toggle`, `Checkbox`, `AppBar`, `Tab`, `BottomNav`
+  - Spacing and layout sizes: `Spacing`, `Padding`, `Radius`, `Border`, `Shadow`, `TouchTarget`, `Divider`, `Stroke`, `SliderTrack`
+  - `forVariant()` helper functions for programmatic size selection
+  - `getSizesFor(variant)` helper function to get all component sizes for a variant
+  - `ComponentSizes` data class with unified size access
+
+- **Comprehensive Shape Customization System**:
+  - `ConcaveShape` - inward-dipping curves (Top, Bottom, Left, Right positions)
+  - `ConvexShape` - outward-bulging curves with configurable depth
+  - `WaveShape` - smooth wave patterns with adjustable wavelength and amplitude
+  - `ArchShape` - dome/arch curves with curvature control
+  - `TabShape` - browser tab-like shapes with customizable width
+  - `NotchShape` - notch cutouts with rounded or sharp styles
+  - `BubbleShape` - chat bubble shapes with tail (RTL-aware)
+  - `ShapePosition` enum for directional configuration
+  - `NotchStyle` enum for notch appearance
+  - `CustomShapes` data class for size variant collections
+  - Updated `ShapeStyles` with all new shape families
+  - New shape documentation in `SHAPE_CUSTOMIZATION_GUIDE.md`
+
+### Changed
+- **Button Component**:
+  - Fixed `customColors` to respect `isDestructive` flag
+  - `isDestructive` now takes precedence even when custom colors are provided
+  - Destructive styling always applied for destructive actions
+
+- **Size System Refactoring**:
+  - All legacy size objects (`BorderSize`, `ComponentSize`, `RadiusSize`, etc.) now marked as `@Deprecated`
+  - Legacy aliases maintained for backward compatibility with migration guides
+  - Consistent naming: all size categories now use `ExtraSmall`, `Small`, `Medium`, `Large`, `ExtraLarge`
+  - Removed inconsistent size names (`Minimal`, `ButtonSmall`, `InputSmall`, `SlightlyThicker`, etc.)
+
+### Improved
+- **Type Safety**: `SizeVariant` enum ensures compile-time safety for size selection
+- **Consistency**: All components now use unified sizing terminology
+- **Accessibility**: `TouchTarget` sizes comply with WCAG guidelines (48dp minimum)
+- **Documentation**: Comprehensive guides for sizing and shape customization
+- **RTL Support**: `BubbleShape` automatically adapts to RTL layouts
+- **Performance**: Shape path creation optimized for common use cases
+
+### Migration Guide
+```kotlin
+// Old approach (deprecated)
+val size = ComponentSize.Medium
+val radius = RadiusSize.Large
+val border = BorderSize.Default
+
+// New unified approach
+val size = HierarchicalSize.Container.Medium
+val radius = HierarchicalSize.Radius.Large
+val border = HierarchicalSize.Border.Small
+
+// Using variant helpers
+val sizes = getSizesFor(SizeVariant.Large)
+val buttonSize = HierarchicalSize.Button.forVariant(SizeVariant.Medium)
+```
+
+### Documentation
+- Added `SHAPE_CUSTOMIZATION_GUIDE.md` with comprehensive shape usage examples
+- Updated `AI_COMPONENTS_GUIDE.md` with unified sizing examples
+- Added KDoc comments to all size objects with usage examples
+- Migration guides for legacy size objects
+
 ## [1.0.7] - 2026-01-21
 
 ### Added
