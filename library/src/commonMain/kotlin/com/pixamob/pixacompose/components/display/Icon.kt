@@ -26,6 +26,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
+import com.pixamob.pixacompose.theme.HierarchicalSize
 
 /**
  * PixaIcon - A unified, powerful icon component for Compose Multiplatform
@@ -88,7 +89,7 @@ fun PixaIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color? = LocalContentColor.current,
-    size: Dp = 24.dp,
+    size: Dp = HierarchicalSize.Icon.Small,
     animation: Boolean = false,
     placeholder: Painter? = null,
     error: Painter? = null,
@@ -285,7 +286,7 @@ fun PixaIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color? = LocalContentColor.current,
-    size: Dp = 24.dp,
+    size: Dp = HierarchicalSize.Icon.Small,
     animation: Boolean = false
 ) {
     PixaIcon(
@@ -307,7 +308,7 @@ fun PixaIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color? = LocalContentColor.current,
-    size: Dp = 24.dp,
+    size: Dp = HierarchicalSize.Icon.Small,
     animation: Boolean = false
 ) {
     PixaIcon(
@@ -329,7 +330,7 @@ fun PixaIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color? = null,
-    size: Dp = 24.dp,
+    size: Dp = HierarchicalSize.Icon.Small,
     animation: Boolean = false,
     placeholder: Painter? = null,
     error: Painter? = null

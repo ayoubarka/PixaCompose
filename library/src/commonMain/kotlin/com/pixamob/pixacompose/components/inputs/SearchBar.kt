@@ -81,8 +81,8 @@ private fun SearchBarSize.config(): SearchBarConfig {
     return when (this) {
         SearchBarSize.Small -> SearchBarConfig(
             height = ComponentSize.InputSmall,
-            horizontalPadding = Spacing.Medium,
-            verticalPadding = Spacing.ExtraSmall,
+            horizontalPadding = HierarchicalSize.Spacing.Medium,
+            verticalPadding = HierarchicalSize.Spacing.Compact,
             textStyle = typography.bodyLight,
             suggestionTextStyle = typography.bodyLight,
             iconSize = IconSize.Small,
@@ -92,8 +92,8 @@ private fun SearchBarSize.config(): SearchBarConfig {
         )
         SearchBarSize.Medium -> SearchBarConfig(
             height = ComponentSize.InputMedium,
-            horizontalPadding = Spacing.Large,
-            verticalPadding = Spacing.Small,
+            horizontalPadding = HierarchicalSize.Spacing.Large,
+            verticalPadding = HierarchicalSize.Spacing.Small,
             textStyle = typography.bodyRegular,
             suggestionTextStyle = typography.bodyRegular,
             iconSize = IconSize.Medium,
@@ -103,8 +103,8 @@ private fun SearchBarSize.config(): SearchBarConfig {
         )
         SearchBarSize.Large -> SearchBarConfig(
             height = ComponentSize.InputLarge,
-            horizontalPadding = Spacing.ExtraLarge,
-            verticalPadding = Spacing.Medium,
+            horizontalPadding = HierarchicalSize.Spacing.Huge,
+            verticalPadding = HierarchicalSize.Spacing.Medium,
             textStyle = typography.bodyBold,
             suggestionTextStyle = typography.bodyBold,
             iconSize = IconSize.Large,
@@ -357,7 +357,7 @@ fun PixaSearchBar(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+                        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
                     ) {
                         // Search icon
                         if (searchIcon != null) {
@@ -510,7 +510,7 @@ private fun SuggestionItem(
                 vertical = config.verticalPadding
             ),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
     ) {
         // Icon
         if (suggestion.icon != null) {

@@ -33,13 +33,10 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.theme.AppTheme
-import com.pixamob.pixacompose.theme.BorderSize
+import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.theme.ColorPalette
-import com.pixamob.pixacompose.theme.Spacing
+import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.utils.AnimationUtils
-import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.math.min
 
 /**
@@ -186,12 +183,12 @@ data class ProgressConfig(
 @Immutable
 @Stable
 data class PagerIndicatorConfig(
-    val indicatorSize: Dp = 8.dp,
-    val selectedIndicatorSize: Dp = 8.dp,
-    val spacing: Dp = 8.dp,
+    val indicatorSize: Dp = HierarchicalSize.Border.Nano,
+    val selectedIndicatorSize: Dp = HierarchicalSize.Border.Nano,
+    val spacing: Dp = HierarchicalSize.Border.Nano,
     val selectedColor: Color,
     val unselectedColor: Color,
-    val cornerRadius: Dp = 4.dp
+    val cornerRadius: Dp = HierarchicalSize.Radius.Compact
 )
 
 // ============================================================================
@@ -248,23 +245,23 @@ private fun getProgressConfig(size: ProgressSize): ProgressConfig {
     val typography = AppTheme.typography
     return when (size) {
         ProgressSize.Small -> ProgressConfig(
-            size = 16.dp,
-            strokeWidth = BorderSize.Tiny,
+            size = HierarchicalSize.Icon.Compact,
+            strokeWidth = HierarchicalSize.Border.Nano,
             labelStyle = { typography.footnoteBold }
         )
         ProgressSize.Medium -> ProgressConfig(
-            size = 24.dp,
-            strokeWidth = BorderSize.Standard,
+            size = HierarchicalSize.Icon.Small,
+            strokeWidth = HierarchicalSize.Border.Nano,
             labelStyle = { typography.captionBold }
         )
         ProgressSize.Large -> ProgressConfig(
-            size = 40.dp,
-            strokeWidth = BorderSize.Thick,
+            size = HierarchicalSize.Icon.Medium,
+            strokeWidth = HierarchicalSize.Border.Nano,
             labelStyle = { typography.bodyBold }
         )
         ProgressSize.ExtraLarge -> ProgressConfig(
-            size = 48.dp,
-            strokeWidth = BorderSize.ExtraThick,
+            size = HierarchicalSize.Icon.Large,
+            strokeWidth = HierarchicalSize.Border.Nano,
             labelStyle = { typography.subtitleBold }
         )
     }
@@ -443,7 +440,7 @@ fun PixaLinearIndicator(
     modifier: Modifier = Modifier,
     variant: ProgressVariant = ProgressVariant.Primary,
     orientation: ProgressOrientation = ProgressOrientation.Horizontal,
-    height: Dp = 4.dp,
+    height: Dp = HierarchicalSize.Border.Nano,
     showLabel: Boolean = false,
     label: String? = null,
     customColors: ProgressColors? = null,
@@ -496,7 +493,7 @@ fun PixaLinearIndicator(
                         text = displayLabel,
                         style = typography.bodyLight,
                         color = colors.label,
-                        modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
+                        modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
                     )
                 }
 
@@ -554,7 +551,7 @@ fun PixaLinearIndicator(
                     .semantics {
                         this.contentDescription = description
                     },
-                horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)
+                horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
             ) {
                 // Progress bar (vertical)
                 Box(
@@ -671,7 +668,7 @@ fun ProgressBar(
 fun SegmentedProgressIndicator(
     segments: List<ProgressSegment>,
     modifier: Modifier = Modifier,
-    height: Dp = 4.dp,
+    height: Dp = HierarchicalSize.Border.Nano,
     showLabel: Boolean = false,
     contentDescription: String? = null
 ) {
@@ -694,7 +691,7 @@ fun SegmentedProgressIndicator(
                 text = "${(totalProgress * 100).toInt()}%",
                 style = typography.bodyRegular,
                 color = colors.baseContentBody,
-                modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
             )
         }
 
@@ -759,16 +756,16 @@ fun PixaPagerIndicator(
 ) {
     val colors = AppTheme.colors
     val defaultConfig = PagerIndicatorConfig(
-        indicatorSize = if (style == PagerIndicatorStyle.Dash) 4.dp else 8.dp,
+        indicatorSize = if (style == PagerIndicatorStyle.Dash) HierarchicalSize.Radius.Compact else HierarchicalSize.Border.Nano,
         selectedIndicatorSize = when {
-            style == PagerIndicatorStyle.Dash && widthMode == PagerIndicatorWidthMode.ExpandSelected -> 24.dp
-            style == PagerIndicatorStyle.Dash -> 12.dp
-            else -> 8.dp
+            style == PagerIndicatorStyle.Dash && widthMode == PagerIndicatorWidthMode.ExpandSelected -> HierarchicalSize.Icon.Compact
+            style == PagerIndicatorStyle.Dash -> HierarchicalSize.Icon.Nano
+            else -> HierarchicalSize.Border.Nano
         },
-        spacing = 8.dp,
+        spacing = HierarchicalSize.Border.Nano,
         selectedColor = colors.brandContentDefault,
         unselectedColor = colors.baseBorderDefault,
-        cornerRadius = if (style == PagerIndicatorStyle.Dash) 2.dp else 4.dp
+        cornerRadius = if (style == PagerIndicatorStyle.Dash) HierarchicalSize.Radius.Nano else HierarchicalSize.Radius.Compact
     )
 
     val indicatorConfig = config ?: defaultConfig

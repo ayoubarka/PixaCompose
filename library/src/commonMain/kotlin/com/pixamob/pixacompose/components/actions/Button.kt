@@ -45,13 +45,9 @@ import com.pixamob.pixacompose.components.feedback.ProgressColors
 import com.pixamob.pixacompose.components.feedback.ProgressSize
 import com.pixamob.pixacompose.components.feedback.Skeleton
 import com.pixamob.pixacompose.theme.AppTheme
-import com.pixamob.pixacompose.theme.BorderSize
 import com.pixamob.pixacompose.theme.ColorPalette
-import com.pixamob.pixacompose.theme.ComponentSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
-import com.pixamob.pixacompose.theme.ShadowSize
-import com.pixamob.pixacompose.theme.Spacing
+import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 
 // ============================================================================
 // CONFIGURATION
@@ -71,23 +67,6 @@ enum class ButtonVariant {
     Ghost
 }
 
-/**
- * Button Size - Height and padding variants
- */
-enum class ButtonSize {
-    /** 24dp height - Compact spaces, inline actions */
-    Mini,
-    /** 32dp height - Dense UIs, toolbars */
-    Compact,
-    /** 36dp height - Forms, cards */
-    Small,
-    /** 44dp height - DEFAULT, primary touch target */
-    Medium,
-    /** 48dp height - Prominent actions */
-    Large,
-    /** 64dp height - Hero sections, landing pages */
-    Huge
-}
 
 /**
  * Button Shape - Corner radius variants
@@ -147,66 +126,86 @@ data class ButtonStateColors(
  * Get size configuration for a button size variant
  */
 @Composable
-private fun getButtonSizeConfig(size: ButtonSize): ButtonSizeConfig {
+private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        ButtonSize.Mini -> ButtonSizeConfig(
-            height = ComponentSize.Minimal,
-            horizontalPadding = Spacing.Small,
-            iconSize = IconSize.Tiny,
-            iconSpacing = Spacing.Micro,
+        SizeVariant.None -> ButtonSizeConfig(
+            height = 0.dp,
+            horizontalPadding = 0.dp,
+            iconSize = 0.dp,
+            iconSpacing = 0.dp,
             minWidth = 0.dp,
-            cornerRadius = RadiusSize.Tiny,
+            cornerRadius = 0.dp,
             textStyle = { typography.labelSmall }
         )
 
-        ButtonSize.Compact -> ButtonSizeConfig(
-            height = ComponentSize.VerySmall,
-            horizontalPadding = Spacing.Small,
-            iconSize = IconSize.VerySmall,
-            iconSpacing = Spacing.Tiny,
+        SizeVariant.Nano -> ButtonSizeConfig(
+            height = HierarchicalSize.Button.Nano,  // 24dp
+            horizontalPadding = HierarchicalSize.Padding.Nano,  // 2dp
+            iconSize = HierarchicalSize.Icon.Nano,  // 12dp
+            iconSpacing = HierarchicalSize.Spacing.Nano,  // 2dp
             minWidth = 0.dp,
-            cornerRadius = RadiusSize.ExtraSmall,
+            cornerRadius = HierarchicalSize.Radius.Nano,  // 2dp
+            textStyle = { typography.labelSmall }
+        )
+
+        SizeVariant.Compact -> ButtonSizeConfig(
+            height = HierarchicalSize.Button.Compact,  // 32dp
+            horizontalPadding = HierarchicalSize.Padding.Small,  // 8dp
+            iconSize = HierarchicalSize.Icon.Compact,  // 16dp
+            iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
+            minWidth = 0.dp,
+            cornerRadius = HierarchicalSize.Radius.Compact,  // 4dp
             textStyle = { typography.labelMedium }
         )
 
-        ButtonSize.Small -> ButtonSizeConfig(
-            height = ComponentSize.ExtraSmall,
-            horizontalPadding = Spacing.Medium,
-            iconSize = IconSize.ExtraSmall,
-            iconSpacing = Spacing.Tiny,
+        SizeVariant.Small -> ButtonSizeConfig(
+            height = HierarchicalSize.Button.Small,  // 36dp
+            horizontalPadding = HierarchicalSize.Padding.Medium,  // 12dp
+            iconSize = HierarchicalSize.Icon.Small,  // 20dp
+            iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
             minWidth = 0.dp,
-            cornerRadius = RadiusSize.Small,
+            cornerRadius = HierarchicalSize.Radius.Small,  // 6dp
             textStyle = { typography.actionSmall }
         )
 
-        ButtonSize.Medium -> ButtonSizeConfig(
-            height = ComponentSize.Medium,
-            horizontalPadding = Spacing.Large,
-            iconSize = IconSize.Medium,
-            iconSpacing = Spacing.ExtraSmall,
-            minWidth = ComponentSize.Massive,
-            cornerRadius = RadiusSize.Medium,
+        SizeVariant.Medium -> ButtonSizeConfig(
+            height = HierarchicalSize.Button.Medium,  // 44dp
+            horizontalPadding = HierarchicalSize.Padding.Large,  // 16dp
+            iconSize = HierarchicalSize.Icon.Medium,  // 24dp
+            iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
+            minWidth = HierarchicalSize.Spacing.Massive,  // 48dp
+            cornerRadius = HierarchicalSize.Radius.Medium,  // 8dp
             textStyle = { typography.actionMedium }
         )
 
-        ButtonSize.Large -> ButtonSizeConfig(
-            height = ComponentSize.ExtraLarge,
-            horizontalPadding = Spacing.Large,
-            iconSize = IconSize.Large,
-            iconSpacing = Spacing.ExtraSmall,
-            minWidth = ComponentSize.VeryLarge * 1.5f,
-            cornerRadius = RadiusSize.Large,
+        SizeVariant.Large -> ButtonSizeConfig(
+            height = HierarchicalSize.Button.Large,  // 48dp
+            horizontalPadding = HierarchicalSize.Padding.Large,  // 16dp
+            iconSize = HierarchicalSize.Icon.Large,  // 28dp
+            iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
+            minWidth = 120.dp,
+            cornerRadius = HierarchicalSize.Radius.Large,  // 12dp
             textStyle = { typography.actionLarge }
         )
 
-        ButtonSize.Huge -> ButtonSizeConfig(
-            height = ComponentSize.Huge,
-            horizontalPadding = Spacing.ExtraLarge,
-            iconSize = IconSize.Huge,
-            iconSpacing = Spacing.Small,
-            minWidth = ComponentSize.Massive * 2,
-            cornerRadius = RadiusSize.ExtraLarge,
+        SizeVariant.Huge -> ButtonSizeConfig(
+            height = HierarchicalSize.Button.Huge,  // 56dp
+            horizontalPadding = HierarchicalSize.Padding.Huge,  // 20dp
+            iconSize = HierarchicalSize.Icon.Huge,  // 32dp
+            iconSpacing = HierarchicalSize.Spacing.Small,  // 8dp
+            minWidth = 160.dp,
+            cornerRadius = HierarchicalSize.Radius.Huge,  // 16dp
+            textStyle = { typography.actionLarge }
+        )
+
+        SizeVariant.Massive -> ButtonSizeConfig(
+            height = HierarchicalSize.Button.Massive,  // 64dp
+            horizontalPadding = HierarchicalSize.Padding.Massive,  // 24dp
+            iconSize = HierarchicalSize.Icon.Massive,  // 48dp
+            iconSpacing = HierarchicalSize.Spacing.Medium,  // 12dp
+            minWidth = 200.dp,
+            cornerRadius = HierarchicalSize.Radius.Massive,  // 24dp
             textStyle = { typography.actionHuge }
         )
     }
@@ -304,7 +303,7 @@ private fun InternalButton(
     enabled: Boolean = true,
     loading: Boolean = false,
     loadingIcon: Painter? = null,
-    size: ButtonSize = ButtonSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     shape: ButtonShape = ButtonShape.Default,
     colors: ButtonStateColors,
     elevation: Dp = 0.dp,
@@ -372,7 +371,7 @@ private fun InternalButton(
                 .then(
                     if (currentColors.border != Color.Transparent) {
                         Modifier.border(
-                            BorderStroke(BorderSize.Tiny, borderColor),
+                            BorderStroke(HierarchicalSize.Border.Compact, borderColor),  // 1dp
                             buttonShape
                         )
                     } else Modifier
@@ -466,7 +465,6 @@ private fun InternalButton(
  * @param customIconSize Optional custom icon size to override size config
  * @param customTextStyle Optional custom text style to override size config
  * @param arrangement Content arrangement in the Row (Default: Center)
- * @param spaceBetween Optional fixed spacing between content items, overrides horizontalArrangement
  *
  * @sample
  * ```
@@ -513,7 +511,7 @@ fun PixaButton(
     loading: Boolean = false,
     loadingIcon: Painter? = null,
     isLoading: Boolean = false,
-    size: ButtonSize = ButtonSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     shape: ButtonShape = ButtonShape.Default,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
@@ -561,7 +559,7 @@ fun PixaButton(
 
     // Auto-elevation for Solid and Tonal variants (Material 3 style)
     val buttonElevation = elevation ?: when (variant) {
-        ButtonVariant.Solid, ButtonVariant.Tonal -> ShadowSize.Tiny
+        ButtonVariant.Solid, ButtonVariant.Tonal -> HierarchicalSize.Shadow.Nano  // 1dp
         else -> 0.dp
     }
 

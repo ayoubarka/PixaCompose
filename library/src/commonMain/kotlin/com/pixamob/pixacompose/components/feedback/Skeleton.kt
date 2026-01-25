@@ -116,20 +116,20 @@ data class SkeletonConfig(
 private fun getSkeletonConfig(size: SkeletonSize): SkeletonConfig {
     return when (size) {
         SkeletonSize.Small -> SkeletonConfig(
-            height = 16.dp,
-            cornerRadius = RadiusSize.Small
+            height = HierarchicalSize.Icon.Compact,
+            cornerRadius = HierarchicalSize.Radius.Compact
         )
         SkeletonSize.Medium -> SkeletonConfig(
-            height = 24.dp,
-            cornerRadius = RadiusSize.Medium
+            height = HierarchicalSize.Icon.Small,
+            cornerRadius = HierarchicalSize.Radius.Medium
         )
         SkeletonSize.Large -> SkeletonConfig(
-            height = 48.dp,
-            cornerRadius = RadiusSize.Medium
+            height = HierarchicalSize.Icon.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium
         )
         SkeletonSize.ExtraLarge -> SkeletonConfig(
-            height = 96.dp, // Mobile-optimized (was 120dp)
-            cornerRadius = RadiusSize.Large
+            height = HierarchicalSize.Container.Massive,
+            cornerRadius = HierarchicalSize.Radius.Large
         )
     }
 }
@@ -152,8 +152,8 @@ private fun getSkeletonConfig(size: SkeletonSize): SkeletonConfig {
 fun Skeleton(
     modifier: Modifier = Modifier,
     width: Dp? = null,
-    height: Dp = 24.dp,
-    shape: Shape = RoundedCornerShape(RadiusSize.Medium),
+    height: Dp = HierarchicalSize.Icon.Small,
+    shape: Shape = RoundedCornerShape(HierarchicalSize.Radius.Medium),
     shimmerEnabled: Boolean = true,
     baseColor: Color = AppTheme.colors.baseSurfaceSubtle
 ) {
@@ -189,7 +189,7 @@ fun Skeleton(
  */
 @Composable
 fun SkeletonCircle(
-    size: Dp = 48.dp,
+    size: Dp = HierarchicalSize.Container.Medium,
     modifier: Modifier = Modifier,
     shimmerEnabled: Boolean = true
 ) {
@@ -270,8 +270,8 @@ fun SkeletonImage(
 @Composable
 fun SkeletonButton(
     modifier: Modifier = Modifier,
-    width: Dp? = 120.dp,
-    height: Dp = 44.dp,
+    width: Dp? = HierarchicalSize.Icon.Small,
+    height: Dp = HierarchicalSize.Container.Medium,
     withIcon: Boolean = false,
     shimmerEnabled: Boolean = true
 ) {
@@ -285,7 +285,7 @@ fun SkeletonButton(
                 }
             )
             .height(height)
-            .clip(RoundedCornerShape(RadiusSize.Medium))
+            .clip(RoundedCornerShape(HierarchicalSize.Radius.Medium))
             .then(
                 if (shimmerEnabled) {
                     Modifier.shimmer()
@@ -294,24 +294,24 @@ fun SkeletonButton(
                 }
             )
             .background(AppTheme.colors.baseSurfaceSubtle)
-            .padding(horizontal = Spacing.Medium),
+            .padding(horizontal = HierarchicalSize.Spacing.Medium),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (withIcon) {
             Box(
                 modifier = Modifier
-                    .size(20.dp)
+                    .size(HierarchicalSize.Border.Compact)
                     .clip(CircleShape)
                     .background(AppTheme.colors.baseSurfaceDefault)
             )
-            Spacer(modifier = Modifier.width(Spacing.Small))
+            Spacer(modifier = Modifier.width(HierarchicalSize.Spacing.Small))
         }
         Box(
             modifier = Modifier
-                .width(60.dp)
-                .height(16.dp)
-                .clip(RoundedCornerShape(RadiusSize.Small))
+                .width(HierarchicalSize.Icon.Small)
+                .height(HierarchicalSize.Icon.Compact)
+                .clip(RoundedCornerShape(HierarchicalSize.Radius.Compact))
                 .background(AppTheme.colors.baseSurfaceDefault)
         )
     }
@@ -374,8 +374,8 @@ fun SkeletonCard(
         }
 
         Column(
-            modifier = Modifier.padding(Inset.Medium),
-            verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+            modifier = Modifier.padding(HierarchicalSize.Spacing.Medium),
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
         ) {
             repeat(textLines) { index ->
                 val width = when {
@@ -430,8 +430,8 @@ fun SkeletonListItem(
                         Modifier
                     }
                 )
-                .padding(Inset.Medium),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium),
+                .padding(HierarchicalSize.Spacing.Medium),
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (showAvatar) {
@@ -445,7 +445,7 @@ fun SkeletonListItem(
 
             Column(
                 modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+                verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
             ) {
                 repeat(textLines) { index ->
                     val width = when {
@@ -501,7 +501,7 @@ fun SkeletonAvatarWithText(
                     Modifier
                 }
             ),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -548,8 +548,8 @@ fun SkeletonGrid(
     rows: Int = 3,
     itemHeight: Dp = 120.dp,
     itemShape: Shape = RoundedCornerShape(RadiusSize.Medium),
-    horizontalSpacing: Dp = Spacing.Medium,
-    verticalSpacing: Dp = Spacing.Medium,
+    horizontalSpacing: Dp = HierarchicalSize.Spacing.Medium,
+    verticalSpacing: Dp = HierarchicalSize.Spacing.Medium,
     shimmerEnabled: Boolean = true
 ) {
     Column(
@@ -724,8 +724,8 @@ fun SkeletonCustom(
  *     columns = 3,
  *     rows = 4,
  *     itemHeight = 120.dp,
- *     horizontalSpacing = Spacing.Small,
- *     verticalSpacing = Spacing.Small
+ *     horizontalSpacing = HierarchicalSize.Spacing.Small,
+ *     verticalSpacing = HierarchicalSize.Spacing.Small
  * )
  * ```
  *

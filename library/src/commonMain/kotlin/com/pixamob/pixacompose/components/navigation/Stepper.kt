@@ -282,7 +282,7 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             titleStyle = { typography.bodyLight },
             subTitleStyle = { typography.captionRegular },
             numberStyle = { typography.bodyLight.copy(fontWeight = FontWeight.SemiBold) },
-            spacing = Spacing.Small
+            spacing = HierarchicalSize.Spacing.Small
         )
 
         StepperSize.Medium -> StepperConfig(
@@ -293,7 +293,7 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             titleStyle = { typography.bodyRegular },
             subTitleStyle = { typography.bodyLight },
             numberStyle = { typography.bodyRegular.copy(fontWeight = FontWeight.Bold) },
-            spacing = Spacing.Medium
+            spacing = HierarchicalSize.Spacing.Medium
         )
 
         StepperSize.Large -> StepperConfig(
@@ -304,7 +304,7 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             titleStyle = { typography.bodyBold },
             subTitleStyle = { typography.bodyRegular },
             numberStyle = { typography.bodyBold.copy(fontWeight = FontWeight.Bold) },
-            spacing = Spacing.Medium
+            spacing = HierarchicalSize.Spacing.Medium
         )
     }
 }
@@ -353,7 +353,7 @@ private fun StepperHeader(
 
     Column(
         modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)
+        verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
     ) {
         Text(
             text = strings.headerFormat.replace("%d", (currentStep + 1).toString())

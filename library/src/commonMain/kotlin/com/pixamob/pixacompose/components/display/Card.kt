@@ -41,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintLayoutScope
 import androidx.constraintlayout.compose.Dimension
-import com.pixamob.pixacompose.components.actions.ButtonSize
 import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.feedback.BadgeStyle
@@ -245,10 +244,10 @@ private fun getBaseCardPaddingDp(padding: BaseCardPadding): Dp {
     return when (padding) {
         BaseCardPadding.None -> Spacing.None
         BaseCardPadding.Compact -> Spacing.Tiny
-        BaseCardPadding.Small -> Spacing.Small
-        BaseCardPadding.Medium -> Spacing.Medium
-        BaseCardPadding.Large -> Spacing.Large
-        BaseCardPadding.ExtraLarge -> Spacing.ExtraLarge
+        BaseCardPadding.Small -> HierarchicalSize.Spacing.Small
+        BaseCardPadding.Medium -> HierarchicalSize.Spacing.Medium
+        BaseCardPadding.Large -> HierarchicalSize.Spacing.Large
+        BaseCardPadding.ExtraLarge -> HierarchicalSize.Spacing.Huge
     }
 }
 
@@ -748,17 +747,17 @@ fun ProductCard(
                 variant = BadgeVariant.Error,
                 style = BadgeStyle.Solid,
                 modifier = Modifier.constrainAs(badge) {
-                    top.linkTo(image.top, margin = Spacing.Small)
-                    end.linkTo(image.end, margin = Spacing.Small)
+                    top.linkTo(image.top, margin = HierarchicalSize.Spacing.Small)
+                    end.linkTo(image.end, margin = HierarchicalSize.Spacing.Small)
                 }
             )
         }
 
         // Content section
-       Column(
+        Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Spacing.Medium)
+                .padding(HierarchicalSize.Spacing.Medium)
                 .constrainAs(content) {
                     top.linkTo(image.bottom)
                     start.linkTo(parent.start)
@@ -871,8 +870,8 @@ fun ArticleCard(
             variant = BadgeVariant.Primary,
             style = BadgeStyle.Solid,
             modifier = Modifier.constrainAs(badge) {
-                top.linkTo(image.top, margin = Spacing.Small)
-                start.linkTo(image.start, margin = Spacing.Small)
+                top.linkTo(image.top, margin = HierarchicalSize.Spacing.Small)
+                start.linkTo(image.start, margin = HierarchicalSize.Spacing.Small)
             }
         )
 
@@ -880,7 +879,7 @@ fun ArticleCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Spacing.Medium)
+                .padding(HierarchicalSize.Spacing.Medium)
                 .constrainAs(content) {
                     top.linkTo(image.bottom)
                     start.linkTo(parent.start)
@@ -908,7 +907,7 @@ fun ArticleCard(
             )
 
             if (author != null || date != null) {
-                Spacer(modifier = Modifier.height(Spacing.Small))
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
 
                 // Metadata Row
                 Row(
@@ -984,7 +983,7 @@ fun ProfileCard(
         PixaAvatar(
             imageUrl = avatarUrl,
             contentDescription = name,
-            size = AvatarSize.ExtraLarge,
+            size = SizeVariant.Huge,
             modifier = Modifier.constrainAs(avatar) {
                 top.linkTo(parent.top)
                 start.linkTo(parent.start)
@@ -999,7 +998,7 @@ fun ProfileCard(
             color = AppTheme.colors.baseContentTitle,
             textAlign = TextAlign.Center,
             modifier = Modifier.constrainAs(nameText) {
-                top.linkTo(avatar.bottom, margin = Spacing.Small)
+                top.linkTo(avatar.bottom, margin = HierarchicalSize.Spacing.Small)
                 start.linkTo(parent.start)
                 end.linkTo(parent.end)
             }
@@ -1024,7 +1023,7 @@ fun ProfileCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .constrainAs(statsRow) {
-                        top.linkTo(roleText.bottom, margin = Spacing.Medium)
+                        top.linkTo(roleText.bottom, margin = HierarchicalSize.Spacing.Medium)
                         start.linkTo(parent.start)
                         end.linkTo(parent.end)
                     },
@@ -1055,18 +1054,21 @@ fun ProfileCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .constrainAs(actionsRow) {
-                        top.linkTo(if (stats != null) statsRow.bottom else roleText.bottom, margin = Spacing.Medium)
+                        top.linkTo(
+                            if (stats != null) statsRow.bottom else roleText.bottom,
+                            margin = HierarchicalSize.Spacing.Medium
+                        )
                         start.linkTo(parent.start)
                         end.linkTo(parent.end)
                     },
-                horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+                horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
             ) {
                 onFollowClick?.let {
                     PixaButton(
                         text = if (isFollowing) "Following" else "Follow",
                         onClick = it,
                         variant = if (isFollowing) ButtonVariant.Outlined else ButtonVariant.Solid,
-                        size = ButtonSize.Small,
+                        size = SizeVariant.Small,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -1075,7 +1077,7 @@ fun ProfileCard(
                         text = "Message",
                         onClick = it,
                         variant = ButtonVariant.Outlined,
-                        size = ButtonSize.Small,
+                        size = SizeVariant.Small,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -1152,7 +1154,7 @@ fun NotificationCard(
             modifier = Modifier
                 .constrainAs(contentCol) {
                     top.linkTo(parent.top)
-                    start.linkTo(iconRef.end, margin = Spacing.Small)
+                    start.linkTo(iconRef.end, margin = HierarchicalSize.Spacing.Small)
                     end.linkTo(parent.end)
                     width = Dimension.fillToConstraints
                 }
@@ -1241,7 +1243,7 @@ fun StatsCard(
             style = AppTheme.typography.bodyRegular,
             color = AppTheme.colors.baseContentCaption,
             modifier = Modifier.constrainAs(labelText) {
-                top.linkTo(iconRef.bottom, margin = Spacing.Small)
+                top.linkTo(iconRef.bottom, margin = HierarchicalSize.Spacing.Small)
                 start.linkTo(parent.start)
             }
         )
@@ -1324,7 +1326,7 @@ fun ActionCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .constrainAs(content) {
-                    top.linkTo(iconRef.bottom, margin = Spacing.Small)
+                    top.linkTo(iconRef.bottom, margin = HierarchicalSize.Spacing.Small)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
@@ -1354,11 +1356,11 @@ fun ActionCard(
             text = ctaText,
             onClick = onCtaClick,
             variant = ButtonVariant.Solid,
-            size = ButtonSize.Medium,
+            size = SizeVariant.Medium,
             modifier = Modifier
                 .fillMaxWidth()
                 .constrainAs(button) {
-                    top.linkTo(content.bottom, margin = Spacing.Medium)
+                    top.linkTo(content.bottom, margin = HierarchicalSize.Spacing.Medium)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
@@ -1464,15 +1466,15 @@ fun MediaCard(
         if (duration != null) {
             Box(
                 modifier = Modifier
-                    .padding(Spacing.Small)
+                    .padding(HierarchicalSize.Spacing.Small)
                     .background(
                         Color.Black.copy(alpha = 0.8f),
                         shape = RoundedCornerShape(RadiusSize.Small)
                     )
                     .padding(horizontal = Spacing.Tiny, vertical = 4.dp)
                     .constrainAs(durationBadge) {
-                        bottom.linkTo(image.bottom, margin = Spacing.Small)
-                        end.linkTo(image.end, margin = Spacing.Small)
+                        bottom.linkTo(image.bottom, margin = HierarchicalSize.Spacing.Small)
+                        end.linkTo(image.end, margin = HierarchicalSize.Spacing.Small)
                     }
             ) {
                 Text(
@@ -1487,7 +1489,7 @@ fun MediaCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(Spacing.Medium)
+                .padding(HierarchicalSize.Spacing.Medium)
                 .constrainAs(textContent) {
                     bottom.linkTo(image.bottom)
                     start.linkTo(parent.start)
@@ -1569,7 +1571,7 @@ fun TestimonialCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .constrainAs(quoteText) {
-                    top.linkTo(quoteIcon.bottom, margin = Spacing.Small)
+                    top.linkTo(quoteIcon.bottom, margin = HierarchicalSize.Spacing.Small)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
@@ -1580,7 +1582,7 @@ fun TestimonialCard(
             Row(
                 modifier = Modifier
                     .constrainAs(ratingRow) {
-                        top.linkTo(quoteText.bottom, margin = Spacing.Small)
+                        top.linkTo(quoteText.bottom, margin = HierarchicalSize.Spacing.Small)
                         start.linkTo(parent.start)
                     },
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
@@ -1599,9 +1601,12 @@ fun TestimonialCard(
         PixaAvatar(
             imageUrl = avatarUrl,
             contentDescription = authorName,
-            size = AvatarSize.Medium,
+            size = SizeVariant.Medium,
             modifier = Modifier.constrainAs(avatarRef) {
-                top.linkTo(if (rating != null) ratingRow.bottom else quoteText.bottom, margin = Spacing.Medium)
+                top.linkTo(
+                    if (rating != null) ratingRow.bottom else quoteText.bottom,
+                    margin = HierarchicalSize.Spacing.Medium
+                )
                 start.linkTo(parent.start)
             }
         )
@@ -1611,7 +1616,7 @@ fun TestimonialCard(
             modifier = Modifier.constrainAs(authorInfo) {
                 top.linkTo(avatarRef.top)
                 bottom.linkTo(avatarRef.bottom)
-                start.linkTo(avatarRef.end, margin = Spacing.Small)
+                start.linkTo(avatarRef.end, margin = HierarchicalSize.Spacing.Small)
             }
         ) {
             Text(
@@ -1688,7 +1693,10 @@ fun PricingCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .constrainAs(planText) {
-                    top.linkTo(if (isPopular) popularBadge.bottom else parent.top, margin = if (isPopular) Spacing.Small else 0.dp)
+                    top.linkTo(
+                        if (isPopular) popularBadge.bottom else parent.top,
+                        margin = if (isPopular) HierarchicalSize.Spacing.Small else 0.dp
+                    )
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
@@ -1714,11 +1722,11 @@ fun PricingCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .constrainAs(featuresList) {
-                    top.linkTo(priceText.bottom, margin = Spacing.Medium)
+                    top.linkTo(priceText.bottom, margin = HierarchicalSize.Spacing.Medium)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 },
-            verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
         ) {
             features.forEach { feature ->
                 Row(
@@ -1744,11 +1752,11 @@ fun PricingCard(
             text = ctaText,
             onClick = onCtaClick,
             variant = if (isPopular) ButtonVariant.Solid else ButtonVariant.Outlined,
-            size = ButtonSize.Medium,
+            size = SizeVariant.Medium,
             modifier = Modifier
                 .fillMaxWidth()
                 .constrainAs(ctaButton) {
-                    top.linkTo(featuresList.bottom, margin = Spacing.Medium)
+                    top.linkTo(featuresList.bottom, margin = HierarchicalSize.Spacing.Medium)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
@@ -1820,6 +1828,7 @@ fun InfoCard(
                         size = IconSize.Large,
                         tint = AppTheme.colors.brandContentDefault
                     )
+
                     iconUrl != null -> PixaIcon(
                         source = IconSource.Url(iconUrl),
                         contentDescription = title,
@@ -1833,10 +1842,14 @@ fun InfoCard(
         Column(
             modifier = Modifier.constrainAs(content) {
                 top.linkTo(parent.top)
-                start.linkTo(if (icon != null || iconUrl != null) leadingIcon.end else parent.start,
-                    margin = if (icon != null || iconUrl != null) Spacing.Small else 0.dp)
-                end.linkTo(if (trailingIcon != null) trailing.start else parent.end,
-                    margin = if (trailingIcon != null) Spacing.Small else 0.dp)
+                start.linkTo(
+                    if (icon != null || iconUrl != null) leadingIcon.end else parent.start,
+                    margin = if (icon != null || iconUrl != null) HierarchicalSize.Spacing.Small else 0.dp
+                )
+                end.linkTo(
+                    if (trailingIcon != null) trailing.start else parent.end,
+                    margin = if (trailingIcon != null) HierarchicalSize.Spacing.Small else 0.dp
+                )
                 width = Dimension.fillToConstraints
             }
         ) {
@@ -1956,6 +1969,7 @@ fun ActionCard(
                         size = IconSize.Large,
                         tint = if (enabled) AppTheme.colors.brandContentDefault else AppTheme.colors.baseContentDisabled
                     )
+
                     iconUrl != null -> PixaIcon(
                         source = IconSource.Url(iconUrl),
                         contentDescription = title,
@@ -1969,10 +1983,14 @@ fun ActionCard(
         Column(
             modifier = Modifier.constrainAs(content) {
                 top.linkTo(parent.top)
-                start.linkTo(if (icon != null || iconUrl != null) leadingIcon.end else parent.start,
-                    margin = if (icon != null || iconUrl != null) Spacing.Small else 0.dp)
-                end.linkTo(if (trailingIcon != null) trailing.start else parent.end,
-                    margin = if (trailingIcon != null) Spacing.Small else 0.dp)
+                start.linkTo(
+                    if (icon != null || iconUrl != null) leadingIcon.end else parent.start,
+                    margin = if (icon != null || iconUrl != null) HierarchicalSize.Spacing.Small else 0.dp
+                )
+                end.linkTo(
+                    if (trailingIcon != null) trailing.start else parent.end,
+                    margin = if (trailingIcon != null) HierarchicalSize.Spacing.Small else 0.dp
+                )
                 width = Dimension.fillToConstraints
             }
         ) {
@@ -2095,7 +2113,8 @@ fun SelectCard(
     isLoading: Boolean = false
 ) {
     // Auto-style based on selection state if variant not provided
-    val cardVariant = variant ?: if (isSelected) BaseCardVariant.Filled else BaseCardVariant.Outlined
+    val cardVariant =
+        variant ?: if (isSelected) BaseCardVariant.Filled else BaseCardVariant.Outlined
 
     // Custom border color for selected state
     val borderModifier = if (isSelected && variant == null) {
@@ -2143,6 +2162,7 @@ fun SelectCard(
                             else
                                 AppTheme.colors.baseContentBody
                         )
+
                         iconUrl != null -> PixaIcon(
                             source = IconSource.Url(iconUrl),
                             contentDescription = title,
@@ -2157,8 +2177,10 @@ fun SelectCard(
             Column(
                 modifier = Modifier.constrainAs(content) {
                     top.linkTo(parent.top)
-                    start.linkTo(if (icon != null || iconUrl != null) leadingIcon.end else parent.start,
-                        margin = if (icon != null || iconUrl != null) Spacing.Small else 0.dp)
+                    start.linkTo(
+                        if (icon != null || iconUrl != null) leadingIcon.end else parent.start,
+                        margin = if (icon != null || iconUrl != null) HierarchicalSize.Spacing.Small else 0.dp
+                    )
                     end.linkTo(parent.end)
                     width = Dimension.fillToConstraints
                 }
@@ -2202,6 +2224,7 @@ fun SelectCard(
                         else
                             AppTheme.colors.baseContentBody
                     )
+
                     iconUrl != null -> PixaIcon(
                         source = IconSource.Url(iconUrl),
                         contentDescription = "Option",
@@ -2249,7 +2272,7 @@ fun MediaCard(
     title: String? = null,
     subtitle: String? = null,
     description: String? = null,
-    imageHeight: Dp = ComponentSize.Massive,
+    imageHeight: Dp = HierarchicalSize.Container.Massive,
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
@@ -2291,7 +2314,7 @@ fun MediaCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(Spacing.Medium)
+                    .padding(HierarchicalSize.Spacing.Medium)
                     .constrainAs(content) {
                         top.linkTo(image.bottom)
                         start.linkTo(parent.start)
@@ -2351,7 +2374,7 @@ fun MediaCard(
  *
  * @sample
  * ```
- * Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
+ * Row(horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)) {
  *     StatCard(
  *         modifier = Modifier.weight(1f),
  *         value = "42",
@@ -2423,7 +2446,7 @@ fun StatCard(
                         )
                     }
                 }
-                Spacer(modifier = Modifier.height(Spacing.Small))
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
             }
 
             // Value
@@ -2528,10 +2551,14 @@ fun ListItemCard(
             modifier = Modifier.constrainAs(content) {
                 top.linkTo(parent.top)
                 bottom.linkTo(parent.bottom)
-                start.linkTo(if (leadingContent != null || leadingIcon != null) leading.end else parent.start,
-                    margin = if (leadingContent != null || leadingIcon != null) Spacing.Small else 0.dp)
-                end.linkTo(if (trailingContent != null || trailingIcon != null) trailing.start else parent.end,
-                    margin = if (trailingContent != null || trailingIcon != null) Spacing.Small else 0.dp)
+                start.linkTo(
+                    if (leadingContent != null || leadingIcon != null) leading.end else parent.start,
+                    margin = if (leadingContent != null || leadingIcon != null) HierarchicalSize.Spacing.Small else 0.dp
+                )
+                end.linkTo(
+                    if (trailingContent != null || trailingIcon != null) trailing.start else parent.end,
+                    margin = if (trailingContent != null || trailingIcon != null) HierarchicalSize.Spacing.Small else 0.dp
+                )
                 width = Dimension.fillToConstraints
             }
         ) {
@@ -2593,7 +2620,7 @@ fun ListItemCard(
  *
  * @sample
  * ```
- * Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
+ * Row(horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)) {
  *     FeatureCard(
  *         modifier = Modifier.weight(1f),
  *         title = "Fast Setup",
@@ -2654,7 +2681,7 @@ fun FeatureCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(Spacing.Medium))
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
 
             // Title
             Text(
@@ -2693,7 +2720,7 @@ fun FeatureCard(
  *
  * @sample
  * ```
- * Row(horizontalArrangement = Arrangement.spacedBy(Spacing.Small)) {
+ * Row(horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)) {
  *     CompactCard(
  *         title = "Health",
  *         icon = Icons.Default.FavoriteBorder
@@ -2802,7 +2829,7 @@ fun SummaryCard(
             // Header Row
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+                horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
             ) {
                 if (icon != null) {
                     PixaIcon(
@@ -2820,11 +2847,11 @@ fun SummaryCard(
                 )
             }
 
-            Spacer(modifier = Modifier.height(Spacing.Medium))
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
 
             // Items List
             Column(
-                verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+                verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
             ) {
                 items.forEach { (label, value) ->
                     Row(

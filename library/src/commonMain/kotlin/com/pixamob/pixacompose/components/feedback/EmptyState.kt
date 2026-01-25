@@ -15,7 +15,6 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import com.pixamob.pixacompose.components.actions.PixaButton
-import com.pixamob.pixacompose.components.actions.ButtonSize
 import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
@@ -274,28 +273,28 @@ private fun getEmptyStateConfig(size: EmptyStateSize): EmptyStateConfig {
     val typography = AppTheme.typography
     return when (size) {
         EmptyStateSize.Compact -> EmptyStateConfig(
-            iconSize = IconSize.Massive, // 48dp
+            iconSize = HierarchicalSize.Icon.Massive, // 48dp
             titleStyle = { typography.bodyBold },
             descriptionStyle = { typography.captionRegular },
-            spacing = Spacing.Small,
-            contentSpacing = Spacing.ExtraSmall,
-            maxWidth = ComponentSize.DialogMaxWidth // 560.dp
+            spacing = HierarchicalSize.Spacing.Small,
+            contentSpacing = HierarchicalSize.Spacing.Compact,
+            maxWidth = HierarchicalSize.Container.DialogMaxWidth // 560.dp
         )
         EmptyStateSize.Medium -> EmptyStateConfig(
-            iconSize = ComponentSize.ImageSmall, // 80dp
+            iconSize = HierarchicalSize.Image.Small, // 80dp
             titleStyle = { typography.subtitleBold },
             descriptionStyle = { typography.bodyBold },
-            spacing = Spacing.Medium,
-            contentSpacing = Spacing.Small,
-            maxWidth = ComponentSize.DialogMaxWidth
+            spacing = HierarchicalSize.Spacing.Medium,
+            contentSpacing = HierarchicalSize.Spacing.Small,
+            maxWidth = HierarchicalSize.Container.DialogMaxWidth
         )
         EmptyStateSize.Large -> EmptyStateConfig(
-            iconSize = ComponentSize.ImageMedium, // 120dp
+            iconSize = HierarchicalSize.Image.Medium, // 120dp
             titleStyle = { typography.titleBold },
             descriptionStyle = { typography.bodyRegular },
-            spacing = Spacing.Large,
-            contentSpacing = Spacing.Medium,
-            maxWidth = ComponentSize.DialogMaxWidth
+            spacing = HierarchicalSize.Spacing.Large,
+            contentSpacing = HierarchicalSize.Spacing.Medium,
+            maxWidth = HierarchicalSize.Container.DialogMaxWidth
         )
     }
 }
@@ -434,7 +433,7 @@ fun PixaEmptyState(
         modifier = modifier
             .fillMaxWidth()
             .widthIn(max = config.maxWidth)
-            .padding(Inset.Large)
+            .padding(HierarchicalSize.Spacing.Large)
             .semantics {
                 this.contentDescription = semanticDescription
             },
@@ -493,8 +492,8 @@ fun PixaEmptyState(
         if (primaryActionText != null || secondaryActionText != null) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(Spacing.Small),
-                modifier = Modifier.padding(top = Spacing.Small)
+                verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
+                modifier = Modifier.padding(top = HierarchicalSize.Spacing.Small)
             ) {
                 // Primary action
                 primaryActionText?.let {
@@ -502,8 +501,8 @@ fun PixaEmptyState(
                         text = it,
                         onClick = { onPrimaryAction?.invoke() },
                         variant = ButtonVariant.Solid,
-                        size = ButtonSize.Medium,
-                        modifier = Modifier.widthIn(min = ComponentSize.ButtonMedium.times(3))
+                        size = SizeVariant.Medium,
+                        modifier = Modifier.widthIn(min = HierarchicalSize.Button.Medium.times(3))
                     )
                 }
 
@@ -513,8 +512,8 @@ fun PixaEmptyState(
                         text = it,
                         onClick = { onSecondaryAction?.invoke() },
                         variant = ButtonVariant.Ghost,
-                        size = ButtonSize.Medium,
-                        modifier = Modifier.widthIn(min = ComponentSize.ButtonMedium.times(3))
+                        size = SizeVariant.Medium,
+                        modifier = Modifier.widthIn(min = HierarchicalSize.Button.Medium.times(3))
                     )
                 }
             }
