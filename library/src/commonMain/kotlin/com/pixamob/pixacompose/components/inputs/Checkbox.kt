@@ -139,7 +139,7 @@ private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
             cornerRadius = RadiusSize.Small,
             borderWidth = BorderSize.Standard,
             checkmarkStroke = BorderSize.Standard,
-            labelSpacing = Spacing.Small,
+            labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyRegular }
         )
         CheckboxSize.Large -> CheckboxSizeConfig(
@@ -147,7 +147,7 @@ private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
             cornerRadius = RadiusSize.Small,
             borderWidth = BorderSize.Thick,
             checkmarkStroke = BorderSize.Medium,
-            labelSpacing = Spacing.Small,
+            labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyLight }
         )
     }

@@ -127,13 +127,13 @@ data class AlertColors(
 @Immutable
 @Stable
 data class AlertConfig(
-    val iconSize: Dp = 20.dp,
-    val minTouchTarget: Dp = 44.dp,
+    val iconSize: Dp = HierarchicalSize.Icon.Compact,
+    val minTouchTarget: Dp = HierarchicalSize.Container.Medium,
     val titleStyle: @Composable () -> TextStyle,
     val messageStyle: @Composable () -> TextStyle,
     val actionStyle: @Composable () -> TextStyle,
-    val spacing: Dp = Spacing.Small,
-    val padding: Dp = Spacing.Medium,
+    val spacing: Dp = HierarchicalSize.Spacing.Small,
+    val padding: Dp = HierarchicalSize.Spacing.Medium,
     val maxTitleLines: Int = 2,
     val maxMessageLines: Int = 4
 )
@@ -409,7 +409,7 @@ fun PixaAlert(
                                 // Fallback: colored circle indicator
                                 Box(
                                     modifier = Modifier
-                                        .size(8.dp)
+                                        .size(HierarchicalSize.Border.Nano)
                                         .clip(CircleShape)
                                         .background(colors.icon)
                                 )
@@ -421,7 +421,7 @@ fun PixaAlert(
                     Column(
                         modifier = Modifier
                             .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)
+                        verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
                     ) {
                         // Title
                         Text(
@@ -447,7 +447,7 @@ fun PixaAlert(
                         if (actions != null) {
                             Row(
                                 modifier = Modifier.padding(top = Spacing.Tiny),
-                                horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+                                horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
                             ) {
                                 actions()
                             }

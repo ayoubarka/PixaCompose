@@ -1,5 +1,8 @@
 package com.pixamob.pixacompose.components.display
 
+import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
+
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,9 +41,6 @@ import androidx.compose.ui.zIndex
 import coil3.compose.AsyncImage
 import com.pixamob.pixacompose.components.feedback.SkeletonCircle
 import com.pixamob.pixacompose.theme.AppTheme
-import com.pixamob.pixacompose.theme.ComponentSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.Spacing
 
 /**
  * Avatar Component
@@ -49,25 +49,6 @@ import com.pixamob.pixacompose.theme.Spacing
  * Supports images (with Coil), text initials, icons, and status badges.
  */
 
-/**
- * Avatar size variants
- */
-enum class AvatarSize {
-    /** 24dp - Tiny avatar */
-    Tiny,
-    /** 32dp - Extra small avatar */
-    ExtraSmall,
-    /** 40dp - Small avatar */
-    Small,
-    /** 48dp - Medium avatar (default) */
-    Medium,
-    /** 64dp - Large avatar */
-    Large,
-    /** 80dp - Extra large avatar */
-    ExtraLarge,
-    /** 120dp - Huge avatar */
-    Huge
-}
 
 /**
  * Avatar shape variants
@@ -107,50 +88,56 @@ data class AvatarConfig(
  * Get avatar configuration based on size
  */
 @Composable
-private fun getAvatarConfig(size: AvatarSize): AvatarConfig {
+private fun getAvatarConfig(size: SizeVariant): AvatarConfig {
     val typography = AppTheme.typography
     return when (size) {
-        AvatarSize.Tiny -> AvatarConfig(
-            size = com.pixamob.pixacompose.theme.AvatarSize.ExtraSmall,
+        SizeVariant.None -> AvatarConfig(
+            size = 0.dp,
             textStyle = typography.captionRegular,
-            iconSize = IconSize.Tiny,
-            statusSize = Spacing.ExtraSmall
+            iconSize = 0.dp,
+            statusSize = 0.dp
         )
-        AvatarSize.ExtraSmall -> AvatarConfig(
-            size = com.pixamob.pixacompose.theme.AvatarSize.Small,
+        SizeVariant.Nano -> AvatarConfig(
+            size = HierarchicalSize.Avatar.Nano,  // 16dp
+            textStyle = typography.captionRegular,
+            iconSize = HierarchicalSize.Icon.Nano,  // 12dp
+            statusSize = HierarchicalSize.Spacing.Compact  // 4dp
+        )
+        SizeVariant.Compact -> AvatarConfig(
+            size = HierarchicalSize.Avatar.Compact,  // 24dp
             textStyle = typography.captionBold,
-            iconSize = IconSize.ExtraSmall,
-            statusSize = IconSize.Tiny - Spacing.Tiny
+            iconSize = HierarchicalSize.Icon.Compact,  // 16dp
+            statusSize = HierarchicalSize.Spacing.Small  // 8dp
         )
-        AvatarSize.Small -> AvatarConfig(
-            size = com.pixamob.pixacompose.theme.AvatarSize.Medium,
+        SizeVariant.Small -> AvatarConfig(
+            size = HierarchicalSize.Avatar.Small,  // 32dp
             textStyle = typography.bodyRegular,
-            iconSize = IconSize.Small + Spacing.Micro,
-            statusSize = Spacing.Small
+            iconSize = HierarchicalSize.Icon.Small,  // 20dp
+            statusSize = HierarchicalSize.Spacing.Small  // 8dp
         )
-        AvatarSize.Medium -> AvatarConfig(
-            size = com.pixamob.pixacompose.theme.AvatarSize.Large,
+        SizeVariant.Medium -> AvatarConfig(
+            size = HierarchicalSize.Avatar.Medium,  // 40dp
             textStyle = typography.bodyBold,
-            iconSize = IconSize.Large - Spacing.Micro,
-            statusSize = IconSize.Tiny + Spacing.Micro
+            iconSize = HierarchicalSize.Icon.Medium,  // 24dp
+            statusSize = HierarchicalSize.Icon.Nano  // 12dp
         )
-        AvatarSize.Large -> AvatarConfig(
-            size = com.pixamob.pixacompose.theme.AvatarSize.ExtraLarge,
+        SizeVariant.Large -> AvatarConfig(
+            size = HierarchicalSize.Avatar.Large,  // 48dp
             textStyle = typography.subtitleRegular,
-            iconSize = IconSize.Huge - Spacing.Tiny,
-            statusSize = IconSize.VerySmall
+            iconSize = HierarchicalSize.Icon.Large,  // 28dp
+            statusSize = HierarchicalSize.Icon.Compact  // 16dp
         )
-        AvatarSize.ExtraLarge -> AvatarConfig(
-            size = com.pixamob.pixacompose.theme.AvatarSize.Huge,
+        SizeVariant.Huge -> AvatarConfig(
+            size = HierarchicalSize.Avatar.Huge,  // 64dp
             textStyle = typography.subtitleBold,
-            iconSize = IconSize.VeryLarge + Spacing.Micro,
-            statusSize = IconSize.ExtraSmall
+            iconSize = HierarchicalSize.Icon.Huge,  // 32dp
+            statusSize = HierarchicalSize.Icon.Compact  // 16dp
         )
-        AvatarSize.Huge -> AvatarConfig(
-            size = com.pixamob.pixacompose.theme.AvatarSize.Massive,
+        SizeVariant.Massive -> AvatarConfig(
+            size = HierarchicalSize.Avatar.Massive,  // 96dp
             textStyle = typography.displaySmall,
-            iconSize = ComponentSize.Huge,
-            statusSize = IconSize.Medium
+            iconSize = HierarchicalSize.Icon.Massive,  // 48dp
+            statusSize = HierarchicalSize.Icon.Medium  // 24dp
         )
     }
 }
@@ -241,7 +228,7 @@ private fun getInitials(name: String): String {
 @Composable
 fun PixaAvatar(
     modifier: Modifier = Modifier,
-    size: AvatarSize = AvatarSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     shape: AvatarShape = AvatarShape.Circle,
     isLoading: Boolean = false,
     imageUrl: String? = null,
@@ -431,7 +418,7 @@ fun PixaAvatar(
 fun PixaAvatarGroup(
     avatars: List<AvatarData>,
     maxVisible: Int = 5,
-    size: AvatarSize = AvatarSize.Small,
+    size: SizeVariant = SizeVariant.Small,
     modifier: Modifier = Modifier,
     spacing: Dp = (-8).dp,
     borderColor: Color = AppTheme.colors.baseSurfaceDefault,

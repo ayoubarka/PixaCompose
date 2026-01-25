@@ -77,8 +77,8 @@ private fun TextAreaSize.config(): TextAreaConfig {
     return when (this) {
         TextAreaSize.Small -> TextAreaConfig(
             minHeight = 96.dp,
-            horizontalPadding = Spacing.Medium,
-            verticalPadding = Spacing.Small,
+            horizontalPadding = HierarchicalSize.Spacing.Medium,
+            verticalPadding = HierarchicalSize.Spacing.Small,
             textStyle = typography.bodyLight,
             labelTextStyle = typography.labelSmall,
             helperTextStyle = typography.captionRegular,
@@ -88,8 +88,8 @@ private fun TextAreaSize.config(): TextAreaConfig {
         )
         TextAreaSize.Medium -> TextAreaConfig(
             minHeight = 128.dp,
-            horizontalPadding = Spacing.Large,
-            verticalPadding = Spacing.Medium,
+            horizontalPadding = HierarchicalSize.Spacing.Large,
+            verticalPadding = HierarchicalSize.Spacing.Medium,
             textStyle = typography.bodyRegular,
             labelTextStyle = typography.labelMedium,
             helperTextStyle = typography.captionRegular,
@@ -99,8 +99,8 @@ private fun TextAreaSize.config(): TextAreaConfig {
         )
         TextAreaSize.Large -> TextAreaConfig(
             minHeight = 160.dp,
-            horizontalPadding = Spacing.ExtraLarge,
-            verticalPadding = Spacing.Large,
+            horizontalPadding = HierarchicalSize.Spacing.Huge,
+            verticalPadding = HierarchicalSize.Spacing.Large,
             textStyle = typography.bodyBold,
             labelTextStyle = typography.labelLarge,
             helperTextStyle = typography.captionRegular,
@@ -296,7 +296,7 @@ fun PixaTextArea(
                 text = label,
                 style = config.labelTextStyle,
                 color = if (isError) colors.errorText else colors.label,
-                modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
             )
         }
 
@@ -346,7 +346,7 @@ fun PixaTextArea(
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
                         verticalAlignment = Alignment.Top
                     ) {
                         // Leading icon (top-aligned)
@@ -357,7 +357,7 @@ fun PixaTextArea(
                                 tint = colors.label,
                                 modifier = Modifier
                                     .size(config.iconSize)
-                                    .padding(top = Spacing.ExtraSmall)
+                                    .padding(top = HierarchicalSize.Spacing.Compact)
                             )
                         }
 
@@ -388,7 +388,7 @@ fun PixaTextArea(
                 .padding(
                     start = config.horizontalPadding,
                     end = config.horizontalPadding,
-                    top = Spacing.ExtraSmall
+                    top = HierarchicalSize.Spacing.Compact
                 ),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically

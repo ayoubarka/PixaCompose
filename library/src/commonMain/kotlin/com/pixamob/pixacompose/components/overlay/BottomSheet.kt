@@ -138,32 +138,32 @@ private data class BottomSheetSizeConfig(
 private fun BottomSheetSizeVariant.toSizeConfig(): BottomSheetSizeConfig = when (this) {
     BottomSheetSizeVariant.Compact -> BottomSheetSizeConfig(
         maxHeightFraction = 0.4f,
-        horizontalPadding = Spacing.Medium,
-        verticalPadding = Spacing.Medium,
+        horizontalPadding = HierarchicalSize.Spacing.Medium,
+        verticalPadding = HierarchicalSize.Spacing.Medium,
         cornerRadius = RadiusSize.Large,
         dragHandleHeight = 4.dp,
         dragHandleWidth = 32.dp
     )
     BottomSheetSizeVariant.Standard -> BottomSheetSizeConfig(
         maxHeightFraction = 0.6f,
-        horizontalPadding = Spacing.Large,
-        verticalPadding = Spacing.Large,
+        horizontalPadding = HierarchicalSize.Spacing.Large,
+        verticalPadding = HierarchicalSize.Spacing.Large,
         cornerRadius = RadiusSize.ExtraLarge,
         dragHandleHeight = 4.dp,
         dragHandleWidth = 40.dp
     )
     BottomSheetSizeVariant.Expanded -> BottomSheetSizeConfig(
         maxHeightFraction = 0.75f,
-        horizontalPadding = Spacing.ExtraLarge,
-        verticalPadding = Spacing.ExtraLarge,
+        horizontalPadding = HierarchicalSize.Spacing.Huge,
+        verticalPadding = HierarchicalSize.Spacing.Huge,
         cornerRadius = RadiusSize.ExtraLarge,
         dragHandleHeight = 4.dp,
         dragHandleWidth = 48.dp
     )
     BottomSheetSizeVariant.Full -> BottomSheetSizeConfig(
         maxHeightFraction = 0.95f,
-        horizontalPadding = Spacing.ExtraLarge,
-        verticalPadding = Spacing.ExtraLarge,
+        horizontalPadding = HierarchicalSize.Spacing.Huge,
+        verticalPadding = HierarchicalSize.Spacing.Huge,
         cornerRadius = RadiusSize.ExtraLarge,
         dragHandleHeight = 4.dp,
         dragHandleWidth = 48.dp
@@ -456,7 +456,7 @@ fun SelectOptionBottomSheet(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+        verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
     ) {
         trigger { isVisible = true }
 
@@ -634,17 +634,17 @@ fun <T> ListBottomSheet(
                 text = title,
                 style = AppTheme.typography.titleBold,
                 color = AppTheme.colors.baseContentTitle,
-                modifier = Modifier.padding(bottom = Spacing.Small)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
             )
 
             androidx.compose.material3.HorizontalDivider(
                 thickness = 1.dp,
                 color = AppTheme.colors.baseBorderSubtle.copy(alpha = 0.33f),
-                modifier = Modifier.padding(bottom = Spacing.Medium)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium)
             )
 
             LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+                verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
             ) {
                 items(items) { item ->
                     itemContent(item) { selectedItem ->
@@ -714,7 +714,7 @@ fun ConfirmationBottomSheet(
             color = AppTheme.colors.baseContentTitle
         )
 
-        Spacer(modifier = Modifier.height(Spacing.Small))
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
 
         Text(
             text = message,
@@ -722,11 +722,11 @@ fun ConfirmationBottomSheet(
             color = AppTheme.colors.baseContentBody
         )
 
-        Spacer(modifier = Modifier.height(Spacing.Large))
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)
         ) {
             PixaButton(
                 text = cancelText,

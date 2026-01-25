@@ -1,4 +1,6 @@
 package com.pixamob.pixacompose.components.actions
+import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
@@ -51,12 +53,12 @@ import com.pixamob.pixacompose.components.feedback.BadgeStyle
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
-import com.pixamob.pixacompose.theme.BorderSize
+
 import com.pixamob.pixacompose.theme.ColorPalette
-import com.pixamob.pixacompose.theme.ComponentSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
-import com.pixamob.pixacompose.theme.Spacing
+
+
+
+
 
 // ============================================================================
 // CONFIGURATION & MODELS
@@ -76,16 +78,6 @@ enum class TabVariant {
     Vertical
 }
 
-/**
- * Tab size variants (capped at Large for mobile-first design)
- */
-enum class TabSize {
-    Mini,       // 28dp height - Very compact
-    Compact,    // 32dp height - Compact
-    Small,      // 40dp height - Small
-    Medium,     // 48dp height - Default
-    Large       // 56dp height - Large
-}
 
 /**
  * Tab shape variants (simplified for mobile-first)
@@ -205,64 +197,97 @@ data class TabContentStyle(
  * Get tab configuration based on size
  */
 @Composable
-private fun getTabConfig(size: TabSize): TabConfig {
+private fun getTabConfig(size: SizeVariant): TabConfig {
     val typography = AppTheme.typography
 
     return when (size) {
-        TabSize.Mini -> TabConfig(
-            height = ComponentSize.Minimal,
-            minWidth = ComponentSize.Medium,
-            horizontalPadding = Spacing.Small,
-            verticalPadding = Spacing.Micro,
-            iconSize = IconSize.Tiny,
-            cornerRadius = RadiusSize.Tiny,
+        SizeVariant.None -> TabConfig(
+            height = 0.dp,
+            minWidth = 0.dp,
+            horizontalPadding = 0.dp,
+            verticalPadding = 0.dp,
+            iconSize = 0.dp,
+            cornerRadius = 0.dp,
             textStyle = typography.actionMini,
-            indicatorHeight = BorderSize.Standard,
-            borderWidth = BorderSize.Tiny
+            indicatorHeight = 0.dp,
+            borderWidth = 0.dp
         )
-        TabSize.Compact -> TabConfig(
-            height = ComponentSize.VerySmall,
-            minWidth = ComponentSize.ExtraLarge,
-            horizontalPadding = Spacing.Medium,
-            verticalPadding = Spacing.Tiny,
-            iconSize = IconSize.VerySmall,
-            cornerRadius = RadiusSize.Tiny,
-            textStyle = typography.actionExtraSmall,
-            indicatorHeight = BorderSize.Standard,
-            borderWidth = BorderSize.Tiny
+        SizeVariant.Nano -> TabConfig(
+            height = HierarchicalSize.Tab.Nano,  // 32dp
+            minWidth = HierarchicalSize.Container.Medium,  // 48dp
+            horizontalPadding = HierarchicalSize.Spacing.Small,  // 8dp
+            verticalPadding = HierarchicalSize.Spacing.Nano,  // 2dp
+            iconSize = HierarchicalSize.Icon.Nano,  // 12dp
+            cornerRadius = HierarchicalSize.Radius.Nano,  // 2dp
+            textStyle = typography.actionMini,
+            indicatorHeight = HierarchicalSize.Border.Medium,  // 2dp
+            borderWidth = HierarchicalSize.Border.Compact  // 1dp
         )
-        TabSize.Small -> TabConfig(
-            height = ComponentSize.ExtraSmall,
-            minWidth = ComponentSize.Huge,
-            horizontalPadding = Spacing.Medium,
-            verticalPadding = Spacing.Small,
-            iconSize = IconSize.ExtraSmall,
-            cornerRadius = RadiusSize.Small,
+        SizeVariant.Compact -> TabConfig(
+            height = HierarchicalSize.Tab.Compact,  // 36dp
+            minWidth = HierarchicalSize.Container.Huge,  // 64dp
+            horizontalPadding = HierarchicalSize.Spacing.Medium,  // 12dp
+            verticalPadding = HierarchicalSize.Spacing.Compact,  // 4dp
+            iconSize = HierarchicalSize.Icon.Compact,  // 16dp
+            cornerRadius = HierarchicalSize.Radius.Nano,  // 2dp
+            textStyle = typography.actionSmall,
+            indicatorHeight = HierarchicalSize.Border.Medium,  // 2dp
+            borderWidth = HierarchicalSize.Border.Compact  // 1dp
+        )
+        SizeVariant.Small -> TabConfig(
+            height = HierarchicalSize.Tab.Small,  // 40dp
+            minWidth = HierarchicalSize.Container.Massive,  // 80dp
+            horizontalPadding = HierarchicalSize.Spacing.Medium,  // 12dp
+            verticalPadding = HierarchicalSize.Spacing.Small,  // 8dp
+            iconSize = HierarchicalSize.Icon.Small,  // 20dp
+            cornerRadius = HierarchicalSize.Radius.Small,  // 6dp
             textStyle = typography.actionSmall,
             indicatorHeight = 2.dp,
             borderWidth = 1.dp
         )
-        TabSize.Medium -> TabConfig(
-            height = ComponentSize.Medium,
-            minWidth = 80.dp,
-            horizontalPadding = Spacing.Medium,
-            verticalPadding = Spacing.Medium,
-            iconSize = IconSize.Medium,
-            cornerRadius = RadiusSize.Medium,
+        SizeVariant.Medium -> TabConfig(
+            height = HierarchicalSize.Tab.Medium,  // 48dp
+            minWidth = 120.dp,
+            horizontalPadding = HierarchicalSize.Spacing.Large,  // 16dp
+            verticalPadding = HierarchicalSize.Spacing.Medium,  // 12dp
+            iconSize = HierarchicalSize.Icon.Medium,  // 24dp
+            cornerRadius = HierarchicalSize.Radius.Medium,  // 8dp
             textStyle = typography.actionMedium,
             indicatorHeight = 3.dp,
-            borderWidth = 1.dp
+            borderWidth = 1.5.dp
         )
-        TabSize.Large -> TabConfig(
-            height = ComponentSize.Large,
-            minWidth = 96.dp,
-            horizontalPadding = Spacing.Large,
-            verticalPadding = Spacing.Medium,
-            iconSize = IconSize.Large,
-            cornerRadius = RadiusSize.Large,
+        SizeVariant.Large -> TabConfig(
+            height = HierarchicalSize.Tab.Large,  // 56dp
+            minWidth = 140.dp,
+            horizontalPadding = HierarchicalSize.Spacing.Large,  // 16dp
+            verticalPadding = HierarchicalSize.Spacing.Large,  // 16dp
+            iconSize = HierarchicalSize.Icon.Large,  // 28dp
+            cornerRadius = HierarchicalSize.Radius.Large,  // 12dp
             textStyle = typography.actionLarge,
-            indicatorHeight = 3.dp,
-            borderWidth = 1.dp
+            indicatorHeight = 4.dp,
+            borderWidth = 2.dp
+        )
+        SizeVariant.Huge -> TabConfig(
+            height = HierarchicalSize.Tab.Huge,  // 64dp
+            minWidth = 160.dp,
+            horizontalPadding = HierarchicalSize.Spacing.Huge,  // 24dp
+            verticalPadding = HierarchicalSize.Spacing.Large,  // 16dp
+            iconSize = HierarchicalSize.Icon.Huge,  // 32dp
+            cornerRadius = HierarchicalSize.Radius.Huge,  // 16dp
+            textStyle = typography.actionLarge,
+            indicatorHeight = 4.dp,
+            borderWidth = 2.dp
+        )
+        SizeVariant.Massive -> TabConfig(
+            height = HierarchicalSize.Tab.Massive,  // 72dp
+            minWidth = 200.dp,
+            horizontalPadding = HierarchicalSize.Spacing.Massive,  // 48dp
+            verticalPadding = HierarchicalSize.Spacing.Huge,  // 24dp
+            iconSize = HierarchicalSize.Icon.Massive,  // 48dp
+            cornerRadius = HierarchicalSize.Radius.Massive,  // 24dp
+            textStyle = typography.actionHuge,
+            indicatorHeight = 6.dp,
+            borderWidth = 3.dp
         )
     }
 }
@@ -410,7 +435,7 @@ private fun PixaTab(
     content: TabContent,
     style: TabStyle,
     config: TabConfig,
-    size: TabSize = TabSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     shape: TabShape = TabShape.Default,
     orientation: TabOrientation = TabOrientation.Horizontal,
     contentAlignment: Alignment = Alignment.Center,
@@ -466,9 +491,10 @@ private fun PixaTab(
 
     // Determine badge size based on tab size
     val badgeSize = when (size) {
-        TabSize.Mini, TabSize.Compact -> BadgeSize.Small
-        TabSize.Small, TabSize.Medium -> BadgeSize.Medium
-        TabSize.Large -> BadgeSize.Large
+        SizeVariant.None -> BadgeSize.Small
+        SizeVariant.Nano, SizeVariant.Compact -> BadgeSize.Small
+        SizeVariant.Small, SizeVariant.Medium -> BadgeSize.Medium
+        SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> BadgeSize.Large
     }
 
     // Determine if indicator should show
@@ -996,7 +1022,7 @@ fun Tabs(
     tabs: List<TabItem>,
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    size: TabSize = TabSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     orientation: TabOrientation = TabOrientation.Horizontal,
     indicatorStyle: TabIndicatorStyle = TabIndicatorStyle.Underline,
     badgeVariant: BadgeVariant = BadgeVariant.Error,
@@ -1072,7 +1098,7 @@ fun SegmentedTabs(
     tabs: List<TabItem>,
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    size: TabSize = TabSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     orientation: TabOrientation = TabOrientation.Horizontal,
     customContentStyle: TabContentStyle? = null,
     customColors: TabColors? = null
@@ -1083,7 +1109,7 @@ fun SegmentedTabs(
     Row(
         modifier = modifier
             .background(AppTheme.colors.baseSurfaceSubtle, RoundedCornerShape(config.cornerRadius))
-            .padding(Spacing.Micro)
+            .padding(HierarchicalSize.Spacing.Nano)
     ) {
         tabs.forEachIndexed { index, tab ->
             PixaTab(
@@ -1147,7 +1173,7 @@ fun ScrollableTabs(
     tabs: List<TabItem>,
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    size: TabSize = TabSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     orientation: TabOrientation = TabOrientation.Horizontal,
     customContentStyle: TabContentStyle? = null,
     customColors: TabColors? = null
@@ -1163,8 +1189,8 @@ fun ScrollableTabs(
         Row(
             modifier = Modifier
                 .horizontalScroll(rememberScrollState())
-                .padding(horizontal = Spacing.Medium, vertical = Spacing.Small),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+                .padding(horizontal = HierarchicalSize.Spacing.Medium, vertical = HierarchicalSize.Spacing.Small),
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
         ) {
             tabs.forEachIndexed { index, tab ->
                 PixaTab(
@@ -1226,7 +1252,7 @@ fun VerticalTabs(
     tabs: List<TabItem>,
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
-    size: TabSize = TabSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     orientation: TabOrientation = TabOrientation.Horizontal,
     customContentStyle: TabContentStyle? = null,
     customColors: TabColors? = null

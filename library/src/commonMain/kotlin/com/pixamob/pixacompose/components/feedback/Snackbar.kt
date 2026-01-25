@@ -50,10 +50,9 @@ import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.ComponentSize
+import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.Inset
 import com.pixamob.pixacompose.theme.RadiusSize
-import com.pixamob.pixacompose.theme.Spacing
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.elevationShadow
 import com.pixamob.pixacompose.utils.AnimationUtils
@@ -161,11 +160,11 @@ data class SnackbarColors(
 data class SnackbarConfig(
     val messageStyle: @Composable () -> TextStyle,
     val actionStyle: @Composable () -> TextStyle,
-    val padding: Dp = Inset.Medium,
-    val actionSpacing: Dp = Spacing.Small,
+    val padding: Dp = HierarchicalSize.Spacing.Medium,
+    val actionSpacing: Dp = HierarchicalSize.Spacing.Small,
     val maxMessageLines: Int = 2,
     val minWidth: Dp = ComponentSize.DialogMinWidth, // 280.dp
-    val maxWidth: Dp = ComponentSize.DialogMaxWidth, // 560.dp
+    val maxWidth: Dp = HierarchicalSize.Container.DialogMaxWidth, // 560.dp
     val minHeight: Dp = ComponentSize.SnackbarSingleLine, // 48.dp
     val elevation: ComponentElevation = ComponentElevation.Highest, // 8dp for prominence
     val cornerRadius: Dp = RadiusSize.Small,
@@ -863,7 +862,7 @@ internal fun Snackbar(
         modifier = modifier
             .widthIn(min = config.minWidth, max = config.maxWidth)
             .heightIn(min = config.minHeight)
-            .padding(horizontal = Inset.Medium, vertical = Spacing.Small)
+            .padding(horizontal = HierarchicalSize.Spacing.Medium, vertical = HierarchicalSize.Spacing.Small)
             .graphicsLayer {
                 translationX = offsetX
                 alpha = 1f - (abs(offsetX) / 1000f).coerceIn(0f, 0.5f)
@@ -936,8 +935,8 @@ internal fun Snackbar(
                                 interactionSource = remember { MutableInteractionSource() }
                             )
                             .padding(
-                                horizontal = Inset.Small,
-                                vertical = Spacing.ExtraSmall
+                                horizontal = HierarchicalSize.Spacing.Small,
+                                vertical = HierarchicalSize.Spacing.Compact
                             )
                             .semantics {
                                 this.role = Role.Button
@@ -998,7 +997,7 @@ fun SnackbarHost(
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(bottom = Spacing.Medium), // Safe area padding for mobile
+            .padding(bottom = HierarchicalSize.Spacing.Medium), // Safe area padding for mobile
         contentAlignment = Alignment.BottomCenter
     ) {
         AnimatedVisibility(

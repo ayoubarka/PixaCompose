@@ -165,24 +165,24 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
     val typography = AppTheme.typography
     return when (size) {
         DatePickerSize.Small -> DatePickerSizeConfig(
-            height = ComponentSize.Massive * 3f,
-            padding = Spacing.Medium,
+            height = HierarchicalSize.Container.Massive * 3f,
+            padding = HierarchicalSize.Spacing.Medium,
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyLight,
             itemTextStyle = typography.bodyLight,
             dayTextStyle = typography.labelSmall
         )
         DatePickerSize.Medium -> DatePickerSizeConfig(
-            height = ComponentSize.Massive * 3.5f,
-            padding = Spacing.Large,
+            height = HierarchicalSize.Container.Massive * 3.5f,
+            padding = HierarchicalSize.Spacing.Large,
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyBold,
             itemTextStyle = typography.bodyBold,
             dayTextStyle = typography.labelMedium
         )
         DatePickerSize.Large -> DatePickerSizeConfig(
-            height = ComponentSize.Massive * 4f,
-            padding = Spacing.ExtraLarge,
+            height = HierarchicalSize.Container.Massive * 4f,
+            padding = HierarchicalSize.Spacing.Huge,
             cornerRadius = RadiusSize.Large,
             titleTextStyle = typography.titleBold,
             itemTextStyle = typography.titleRegular,
@@ -392,7 +392,7 @@ private fun WheelDatePickerImpl(
                 text = title,
                 style = sizeConfig.titleTextStyle,
                 color = colors.title,
-                modifier = Modifier.padding(bottom = Spacing.Medium)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium)
             )
         }
 
@@ -442,13 +442,13 @@ private fun RangeWheelDatePickerImpl(
                 text = title,
                 style = sizeConfig.titleTextStyle,
                 color = colors.title,
-                modifier = Modifier.padding(bottom = Spacing.Small)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
             )
         }
 
         // Range labels
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Small),
+            modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -461,7 +461,7 @@ private fun RangeWheelDatePickerImpl(
                     modifier = Modifier
                         .clip(RoundedCornerShape(RadiusSize.Small))
                         .background(if (selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(Spacing.Small)
+                        .padding(HierarchicalSize.Spacing.Small)
                         .clickable { selectingStart = true }
                 )
             }
@@ -475,13 +475,13 @@ private fun RangeWheelDatePickerImpl(
                     modifier = Modifier
                         .clip(RoundedCornerShape(RadiusSize.Small))
                         .background(if (!selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(Spacing.Small)
+                        .padding(HierarchicalSize.Spacing.Small)
                         .clickable { selectingStart = false }
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(Spacing.Small))
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
 
         // Wheel picker
         WheelDatePickerView(
@@ -534,12 +534,12 @@ private fun CalendarDatePickerImpl(
             .padding(sizeConfig.padding)
     ) {
         if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = Spacing.Small))
+            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small))
         }
 
         // Month navigation
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Small),
+            modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -572,7 +572,7 @@ private fun CalendarDatePickerImpl(
             )
         }
 
-        Spacer(modifier = Modifier.height(Spacing.Small))
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
 
         // Weekday headers
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
@@ -675,11 +675,11 @@ private fun RangeCalendarDatePickerImpl(
             .padding(sizeConfig.padding)
     ) {
         if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = Spacing.Small))
+            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small))
         }
 
         // Range labels
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Small), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = strings.startLabel, style = sizeConfig.dayTextStyle, color = colors.unselectedText.copy(alpha = 0.6f))
                 Text(
@@ -690,7 +690,7 @@ private fun RangeCalendarDatePickerImpl(
                     modifier = Modifier
                         .clip(RoundedCornerShape(RadiusSize.Small))
                         .background(if (selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(Spacing.Small)
+                        .padding(HierarchicalSize.Spacing.Small)
                         .clickable { selectingStart = true }
                 )
             }
@@ -704,13 +704,13 @@ private fun RangeCalendarDatePickerImpl(
                     modifier = Modifier
                         .clip(RoundedCornerShape(RadiusSize.Small))
                         .background(if (!selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(Spacing.Small)
+                        .padding(HierarchicalSize.Spacing.Small)
                         .clickable { selectingStart = false }
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(Spacing.Small))
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
 
         // Reuse calendar impl with adjusted callback
         CalendarDatePickerImpl(
@@ -756,7 +756,7 @@ private fun MonthDayPickerImpl(
             .padding(sizeConfig.padding)
     ) {
         if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = Spacing.Medium))
+            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium))
         }
 
         LazyVerticalGrid(
@@ -826,10 +826,10 @@ private fun WeekdayPickerImpl(
             .padding(sizeConfig.padding)
     ) {
         if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = Spacing.Medium))
+            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium))
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
+        Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)) {
             strings.weekdayNames.forEachIndexed { index, dayName ->
                 val isSelected = index in selectedDays
 
@@ -882,7 +882,7 @@ private fun DayCountPickerImpl(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = Spacing.Medium))
+            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium))
         }
 
         // Display
@@ -894,11 +894,11 @@ private fun DayCountPickerImpl(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(RadiusSize.Medium))
                 .background(colors.selectedBackground)
-                .padding(Spacing.Large),
+                .padding(HierarchicalSize.Spacing.Large),
             textAlign = TextAlign.Center
         )
 
-        Spacer(modifier = Modifier.height(Spacing.Large))
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
 
         // Stepper
         Row(
@@ -930,7 +930,7 @@ private fun DayCountPickerImpl(
                 text = dayCount.toString(),
                 style = sizeConfig.titleTextStyle.copy(fontWeight = FontWeight.Bold, fontSize = sizeConfig.titleTextStyle.fontSize * 1.5),
                 color = colors.title,
-                modifier = Modifier.padding(horizontal = Spacing.Large)
+                modifier = Modifier.padding(horizontal = HierarchicalSize.Spacing.Large)
             )
 
             Box(

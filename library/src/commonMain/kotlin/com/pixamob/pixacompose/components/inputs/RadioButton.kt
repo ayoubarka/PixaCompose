@@ -110,7 +110,7 @@ private fun getRadioButtonSizeConfig(size: RadioButtonSize): RadioButtonSizeConf
     return when (size) {
         RadioButtonSize.Small -> RadioButtonSizeConfig(
             outerCircleSize = IconSize.VerySmall,
-            innerCircleSize = Spacing.ExtraSmall,
+            innerCircleSize = HierarchicalSize.Spacing.Compact,
             borderWidth = BorderSize.Tiny,
             labelSpacing = Spacing.Micro,
             labelStyle = { typography.bodyBold }
@@ -119,14 +119,14 @@ private fun getRadioButtonSizeConfig(size: RadioButtonSize): RadioButtonSizeConf
             outerCircleSize = IconSize.Small,
             innerCircleSize = IconSize.Tiny / 1.2f,
             borderWidth = BorderSize.Standard,
-            labelSpacing = Spacing.Small,
+            labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyRegular }
         )
         RadioButtonSize.Large -> RadioButtonSizeConfig(
             outerCircleSize = IconSize.Medium,
-            innerCircleSize = Spacing.Small,
+            innerCircleSize = HierarchicalSize.Spacing.Small,
             borderWidth = BorderSize.Thick,
-            labelSpacing = Spacing.Small,
+            labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyLight }
         )
     }
@@ -433,7 +433,7 @@ fun <T> RadioGroup(
     optionLabel: (T) -> String = { it.toString() },
     variant: RadioButtonVariant = RadioButtonVariant.Filled,
     size: RadioButtonSize = RadioButtonSize.Medium,
-    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(Spacing.Small)
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
 ) {
     Column(
         modifier = modifier,
@@ -465,7 +465,7 @@ fun <T> HorizontalRadioGroup(
     optionLabel: (T) -> String = { it.toString() },
     variant: RadioButtonVariant = RadioButtonVariant.Filled,
     size: RadioButtonSize = RadioButtonSize.Medium,
-    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(Spacing.Medium)
+    horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)
 ) {
     Row(
         modifier = modifier,

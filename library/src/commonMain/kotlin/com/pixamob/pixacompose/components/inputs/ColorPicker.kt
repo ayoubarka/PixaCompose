@@ -1,4 +1,6 @@
 package com.pixamob.pixacompose.components.inputs
+import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.core.tween
@@ -58,12 +60,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import com.pixamob.pixacompose.theme.AppTheme
-import com.pixamob.pixacompose.theme.BorderSize
-import com.pixamob.pixacompose.theme.ComponentSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
-import com.pixamob.pixacompose.theme.ShadowSize
-import com.pixamob.pixacompose.theme.Spacing
+
+
+
+
+
+
 import com.pixamob.pixacompose.utils.*
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce
@@ -336,7 +338,7 @@ fun PixaColorPicker(
                 this.contentDescription = contentDescription
             }
             .then(if (!enabled) Modifier.graphicsLayer(alpha = 0.5f) else Modifier),
-        verticalArrangement = Arrangement.spacedBy(Spacing.Medium)
+        verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)
     ) {
         // Color preview
         ColorPreview(
@@ -468,18 +470,18 @@ private fun ColorPreview(
     modifier: Modifier = Modifier
 ) {
     Row(
-        modifier = modifier.height(ComponentSize.Huge),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)
+        modifier = modifier.height(HierarchicalSize.Container.Huge),
+        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
     ) {
         // Previous color
         Box(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(RadiusSize.Medium))
+                .clip(RoundedCornerShape(HierarchicalSize.Radius.Medium))
                 .drawCheckerboard()
                 .background(previousColor)
-                .border(BorderSize.Tiny, AppTheme.colors.baseContentDisabled, RoundedCornerShape(RadiusSize.Medium)),
+                .border(HierarchicalSize.Border.Nano, AppTheme.colors.baseContentDisabled, RoundedCornerShape(HierarchicalSize.Radius.Medium)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -494,10 +496,10 @@ private fun ColorPreview(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
-                .clip(RoundedCornerShape(RadiusSize.Medium))
+                .clip(RoundedCornerShape(HierarchicalSize.Radius.Medium))
                 .drawCheckerboard()
                 .background(currentColor)
-                .border(BorderSize.Tiny, AppTheme.colors.baseContentDisabled, RoundedCornerShape(RadiusSize.Medium)),
+                .border(HierarchicalSize.Border.Nano, AppTheme.colors.baseContentDisabled, RoundedCornerShape(HierarchicalSize.Radius.Medium)),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -522,19 +524,19 @@ private fun ModeSelector(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
     ) {
         ColorPickerMode.entries.forEach { mode ->
             val isSelected = currentMode == mode
             Surface(
                 modifier = Modifier
                     .weight(1f)
-                    .height(ComponentSize.ExtraSmall)
+                    .height(HierarchicalSize.Container.Compact)
                     .clickable(enabled = enabled) { onModeChange(mode) },
-                shape = RoundedCornerShape(RadiusSize.Small),
+                shape = RoundedCornerShape(HierarchicalSize.Radius.Small),
                 color = if (isSelected) AppTheme.colors.brandSurfaceDefault else Color.Transparent,
                 border = BorderStroke(
-                    BorderSize.Tiny,
+                    HierarchicalSize.Border.Nano,
                     if (isSelected) AppTheme.colors.brandBorderDefault else AppTheme.colors.baseBorderDefault
                 )
             ) {
@@ -563,11 +565,11 @@ private fun GridColorPicker(
     modifier: Modifier = Modifier
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = ComponentSize.Medium),
-        modifier = modifier.heightIn(max = ComponentSize.Massive * 3.75f),
-        contentPadding = PaddingValues(Spacing.Tiny),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
-        verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
+        columns = GridCells.Adaptive(minSize = HierarchicalSize.Container.Medium),
+        modifier = modifier.heightIn(max = HierarchicalSize.Container.Massive * 3.75f),
+        contentPadding = PaddingValues(HierarchicalSize.Spacing.Compact),
+        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact),
+        verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact),
         userScrollEnabled = enabled
     ) {
         items(palette) { color ->
@@ -575,7 +577,7 @@ private fun GridColorPicker(
             Box(
                 modifier = Modifier
                     .aspectRatio(1f)
-                    .clip(RoundedCornerShape(RadiusSize.Medium))
+                    .clip(RoundedCornerShape(HierarchicalSize.Radius.Medium))
                     .clickable(
                         enabled = enabled,
                         onClick = { onColorSelected(color) },
@@ -586,9 +588,9 @@ private fun GridColorPicker(
                     .background(color)
                     .then(
                         if (isSelected) {
-                            Modifier.border(BorderSize.Thick, AppTheme.colors.brandBorderDefault, RoundedCornerShape(RadiusSize.Medium))
+                            Modifier.border(HierarchicalSize.Border.Large, AppTheme.colors.brandBorderDefault, RoundedCornerShape(HierarchicalSize.Radius.Medium))
                         } else {
-                            Modifier.border(BorderSize.Tiny, AppTheme.colors.baseBorderDefault, RoundedCornerShape(RadiusSize.Medium))
+                            Modifier.border(HierarchicalSize.Border.Nano, AppTheme.colors.baseBorderDefault, RoundedCornerShape(HierarchicalSize.Radius.Medium))
                         }
                     )
                     .semantics {
@@ -597,23 +599,23 @@ private fun GridColorPicker(
                 contentAlignment = Alignment.Center
             ) {
                 if (isSelected) {
-                    Canvas(modifier = Modifier.size(IconSize.Small)) {
+                    Canvas(modifier = Modifier.size(HierarchicalSize.Icon.Small)) {
                         drawCircle(
                             color = if (color.luminance() > 0.5f) Color.Black else Color.White,
                             radius = size.minDimension / 2,
-                            style = Stroke(width = BorderSize.Standard.toPx())
+                            style = Stroke(width = HierarchicalSize.Border.Medium.toPx())
                         )
                         drawLine(
                             color = if (color.luminance() > 0.5f) Color.Black else Color.White,
                             start = Offset(size.width * 0.3f, size.height * 0.5f),
                             end = Offset(size.width * 0.45f, size.height * 0.65f),
-                            strokeWidth = BorderSize.Standard.toPx()
+                            strokeWidth = HierarchicalSize.Border.Medium.toPx()
                         )
                         drawLine(
                             color = if (color.luminance() > 0.5f) Color.Black else Color.White,
                             start = Offset(size.width * 0.45f, size.height * 0.65f),
                             end = Offset(size.width * 0.7f, size.height * 0.35f),
-                            strokeWidth = BorderSize.Standard.toPx()
+                            strokeWidth = HierarchicalSize.Border.Medium.toPx()
                         )
                     }
                 }
@@ -698,14 +700,14 @@ private fun WheelColorPicker(
             // Outer ring
             drawCircle(
                 color = Color.White,
-                radius = Spacing.Small.toPx(),
+                radius = HierarchicalSize.Spacing.Small.toPx(),
                 center = selectorPos,
-                style = Stroke(width = BorderSize.Thick.toPx())
+                style = Stroke(width = HierarchicalSize.Border.Large.toPx())
             )
             // Inner ring
             drawCircle(
                 color = state.currentColor,
-                radius = Spacing.ExtraSmall.toPx(),
+                radius = HierarchicalSize.Spacing.Compact.toPx(),
                 center = selectorPos
             )
         }
@@ -752,7 +754,7 @@ private fun RGBSliders(
 ) {
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+        verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
     ) {
         // Red slider
         ColorChannelSlider(
@@ -815,7 +817,7 @@ private fun HSVSliders(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+        verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
     ) {
         // Hue slider
         HueSlider(
@@ -882,7 +884,7 @@ private fun HSLSliders(
 
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(Spacing.Small)
+        verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
     ) {
         // Hue slider
         HueSlider(
@@ -985,19 +987,19 @@ private fun ColorChannelSlider(
 ) {
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = label,
             style = AppTheme.typography.bodyBold,
-            modifier = Modifier.width(IconSize.Medium)
+            modifier = Modifier.width(HierarchicalSize.Icon.Medium)
         )
 
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(ComponentSize.VerySmall)
+                .height(HierarchicalSize.Container.Compact)
         ) {
             var sliderWidth by remember { mutableStateOf(0f) }
 
@@ -1005,7 +1007,7 @@ private fun ColorChannelSlider(
             Canvas(
                 modifier = Modifier
                     .fillMaxSize()
-                    .clip(RoundedCornerShape(RadiusSize.ExtraLarge))
+                    .clip(RoundedCornerShape(HierarchicalSize.Radius.Huge))
                     .then(if (showCheckerboard) Modifier.drawCheckerboard() else Modifier)
             ) {
                 sliderWidth = size.width
@@ -1023,19 +1025,19 @@ private fun ColorChannelSlider(
 
                 drawRoundRect(
                     brush = brush,
-                    cornerRadius = CornerRadius(RadiusSize.ExtraLarge.toPx())
+                    cornerRadius = CornerRadius(HierarchicalSize.Radius.Huge.toPx())
                 )
             }
 
             // Thumb
             Box(
                 modifier = Modifier
-                    .offset(x = with(LocalDensity.current) { ((sliderWidth * value) - Spacing.Small.toPx()).toDp() })
-                    .size(IconSize.Medium)
+                    .offset(x = with(LocalDensity.current) { ((sliderWidth * value) - HierarchicalSize.Spacing.Small.toPx()).toDp() })
+                    .size(HierarchicalSize.Icon.Medium)
                     .align(Alignment.CenterStart)
-                    .shadow(ShadowSize.Large, CircleShape)
+                    .shadow(HierarchicalSize.Shadow.Large, CircleShape)
                     .background(Color.White, CircleShape)
-                    .border(BorderSize.Standard, AppTheme.colors.baseBorderDefault, CircleShape)
+                    .border(HierarchicalSize.Border.Medium, AppTheme.colors.baseBorderDefault, CircleShape)
                     .then(
                         if (enabled) {
                             Modifier
@@ -1059,7 +1061,7 @@ private fun ColorChannelSlider(
         Text(
             text = (value * 255).roundToInt().toString(),
             style = AppTheme.typography.bodyRegular,
-            modifier = Modifier.width(ComponentSize.Small),
+            modifier = Modifier.width(HierarchicalSize.Container.Small),
             textAlign = TextAlign.End
         )
     }
@@ -1161,22 +1163,22 @@ private fun ColorHistory(
         Text(
             "Recent Colors",
             style = AppTheme.typography.captionBold,
-            modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
+            modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
         )
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall)
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
         ) {
             colors.take(8).forEach { color ->
                 Box(
                     modifier = Modifier
-                        .size(ComponentSize.Small)
-                        .clip(RoundedCornerShape(RadiusSize.Small))
+                        .size(HierarchicalSize.Container.Small)
+                        .clip(RoundedCornerShape(HierarchicalSize.Radius.Small))
                         .clickable(enabled = enabled) { onColorSelected(color) }
                         .drawCheckerboard()
                         .background(color)
-                        .border(BorderSize.Tiny, AppTheme.colors.baseBorderDefault, RoundedCornerShape(RadiusSize.Small))
+                        .border(HierarchicalSize.Border.Nano, AppTheme.colors.baseBorderDefault, RoundedCornerShape(HierarchicalSize.Radius.Small))
                         .semantics {
                             contentDescription = "Recent color ${color.toHexString(false)}"
                         }
@@ -1194,7 +1196,7 @@ private fun ColorHistory(
  * Draws a checkerboard pattern for transparency preview
  */
 private fun Modifier.drawCheckerboard(
-    tileSize: Dp = Spacing.ExtraSmall,
+    tileSize: Dp = HierarchicalSize.Spacing.Compact,
     colorLight: Color = Color(0xFFFFFFFF),
     colorDark: Color = Color(0xFFCCCCCC)
 ): Modifier = this.drawBehind {

@@ -41,15 +41,12 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.components.display.PixaIcon
-import com.pixamob.pixacompose.theme.BorderSize
 import com.pixamob.pixacompose.theme.ColorPalette
-import com.pixamob.pixacompose.theme.ComponentSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
-import com.pixamob.pixacompose.theme.Spacing
-import com.pixamob.pixacompose.theme.TouchTarget
+import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 
 // ============================================================================
 // CONFIGURATION
@@ -70,17 +67,6 @@ enum class ChipVariant {
     Ghost
 }
 
-/**
- * Chip Size - Height and padding variants
- */
-enum class ChipSize {
-    /** 24dp height - Compact tags, dense lists */
-    Small,
-    /** 32dp height - DEFAULT, filters, tags */
-    Medium,
-    /** 40dp height - Prominent filters, interactive chips */
-    Large
-}
 
 /**
  * Chip Type - Behavior and interaction style
@@ -141,32 +127,72 @@ data class ChipStateColors(
  * Get size configuration for a chip size variant
  */
 @Composable
-private fun getChipSizeConfig(size: ChipSize): ChipSizeConfig {
+private fun getChipSizeConfig(size: SizeVariant): ChipSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        ChipSize.Small -> ChipSizeConfig(
-            height = ComponentSize.ChipSmall,
-            horizontalPadding = Spacing.Small,
-            iconSize = IconSize.Tiny,
-            iconSpacing = Spacing.Micro,
-            cornerRadius = RadiusSize.Small,
+        SizeVariant.None -> ChipSizeConfig(
+            height = 0.dp,
+            horizontalPadding = 0.dp,
+            iconSize = 0.dp,
+            iconSpacing = 0.dp,
+            cornerRadius = 0.dp,
             textStyle = { typography.labelSmall }
         )
-        ChipSize.Medium -> ChipSizeConfig(
-            height = ComponentSize.ChipMedium,
-            horizontalPadding = Spacing.Medium,
-            iconSize = IconSize.Small,
-            iconSpacing = Spacing.Small,
-            cornerRadius = RadiusSize.Medium,
+        SizeVariant.Nano -> ChipSizeConfig(
+            height = HierarchicalSize.Chip.Nano,  // 20dp
+            horizontalPadding = HierarchicalSize.Padding.Nano,  // 2dp
+            iconSize = HierarchicalSize.Icon.Nano,  // 12dp
+            iconSpacing = HierarchicalSize.Spacing.Nano,  // 2dp
+            cornerRadius = HierarchicalSize.Radius.Nano,  // 2dp
+            textStyle = { typography.labelSmall }
+        )
+        SizeVariant.Compact -> ChipSizeConfig(
+            height = HierarchicalSize.Chip.Compact,  // 24dp
+            horizontalPadding = HierarchicalSize.Padding.Small,  // 8dp
+            iconSize = HierarchicalSize.Icon.Nano,  // 12dp
+            iconSpacing = HierarchicalSize.Spacing.Nano,  // 2dp
+            cornerRadius = HierarchicalSize.Radius.Small,  // 6dp
+            textStyle = { typography.labelSmall }
+        )
+        SizeVariant.Small -> ChipSizeConfig(
+            height = HierarchicalSize.Chip.Small,  // 28dp
+            horizontalPadding = HierarchicalSize.Padding.Small,  // 8dp
+            iconSize = HierarchicalSize.Icon.Compact,  // 16dp
+            iconSpacing = HierarchicalSize.Spacing.Nano,  // 2dp
+            cornerRadius = HierarchicalSize.Radius.Small,  // 6dp
+            textStyle = { typography.labelSmall }
+        )
+        SizeVariant.Medium -> ChipSizeConfig(
+            height = HierarchicalSize.Chip.Medium,  // 32dp
+            horizontalPadding = HierarchicalSize.Padding.Medium,  // 12dp
+            iconSize = HierarchicalSize.Icon.Small,  // 20dp
+            iconSpacing = HierarchicalSize.Spacing.Small,  // 8dp
+            cornerRadius = HierarchicalSize.Radius.Medium,  // 8dp
             textStyle = { typography.labelMedium }
         )
-        ChipSize.Large -> ChipSizeConfig(
-            height = ComponentSize.ChipLarge,
-            horizontalPadding = Spacing.Large,
-            iconSize = IconSize.Medium,
-            iconSpacing = Spacing.Small,
-            cornerRadius = RadiusSize.Large,
+        SizeVariant.Large -> ChipSizeConfig(
+            height = HierarchicalSize.Chip.Large,  // 36dp
+            horizontalPadding = HierarchicalSize.Padding.Large,  // 16dp
+            iconSize = HierarchicalSize.Icon.Medium,  // 24dp
+            iconSpacing = HierarchicalSize.Spacing.Small,  // 8dp
+            cornerRadius = HierarchicalSize.Radius.Large,  // 12dp
             textStyle = { typography.labelLarge }
+        )
+        SizeVariant.Huge -> ChipSizeConfig(
+            height = HierarchicalSize.Chip.Huge,  // 40dp
+            horizontalPadding = HierarchicalSize.Padding.Large,  // 16dp
+            iconSize = HierarchicalSize.Icon.Large,  // 28dp
+            iconSpacing = HierarchicalSize.Spacing.Small,  // 8dp
+            cornerRadius = HierarchicalSize.Radius.Large,  // 12dp
+            textStyle = { typography.labelLarge }
+        )
+        SizeVariant.Massive -> ChipSizeConfig(
+            height = HierarchicalSize.Chip.Massive,  // 48dp
+            horizontalPadding = HierarchicalSize.Padding.Huge,  // 20dp
+            iconSize = HierarchicalSize.Icon.Huge,  // 32dp
+            iconSpacing = HierarchicalSize.Spacing.Medium,  // 12dp
+            cornerRadius = HierarchicalSize.Radius.Huge,  // 16dp
+            textStyle = { typography.actionMedium }
         )
     }
 }
@@ -269,7 +295,7 @@ private fun getChipTheme(
 private fun PixaChip(
     text: String,
     variant: ChipVariant,
-    size: ChipSize,
+    size: SizeVariant,
     type: ChipType,
     selected: Boolean,
     enabled: Boolean,
@@ -326,13 +352,13 @@ private fun PixaChip(
 
     Box(
         modifier = modifier
-            .sizeIn(minHeight = if (isClickable) TouchTarget.Minimum else config.height)
+            .sizeIn(minHeight = if (isClickable) HierarchicalSize.TouchTarget.Small else config.height)  // 48dp WCAG minimum
             .height(config.height)
             .clip(RoundedCornerShape(config.cornerRadius))
             .then(
                 if (borderColor != Color.Transparent) {
                     Modifier.border(
-                        width = BorderSize.Tiny,
+                        width = HierarchicalSize.Border.Compact,  // 1dp
                         color = borderColor,
                         shape = RoundedCornerShape(config.cornerRadius)
                     )
@@ -388,7 +414,7 @@ private fun PixaChip(
                     textAlign = TextAlign.Center,
                     overflow = TextOverflow.Ellipsis,
                     maxLines = 1,
-                    modifier = Modifier.widthIn(max = ComponentSize.ImageMedium + ComponentSize.Massive)
+                    modifier = Modifier.widthIn(max = HierarchicalSize.Image.Medium + HierarchicalSize.Spacing.Massive)  // 120dp + 48dp
                 )
 
                 // Trailing icon
@@ -408,7 +434,7 @@ private fun PixaChip(
                     Box(
                         modifier = Modifier
                             .size(config.iconSize)
-                            .clip(RoundedCornerShape(RadiusSize.Full))
+                            .clip(RoundedCornerShape(HierarchicalSize.Radius.Full))  // Circle
                             .clickable(
                                 onClick = onDismiss,
                                 indication = ripple(bounded = true, color = contentColor.copy(alpha = 0.2f)),
@@ -487,7 +513,7 @@ fun Chip(
     text: String,
     modifier: Modifier = Modifier,
     variant: ChipVariant = ChipVariant.Tonal,
-    size: ChipSize = ChipSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     type: ChipType = ChipType.Static,
     selected: Boolean = false,
     enabled: Boolean = true,
@@ -538,7 +564,7 @@ fun FilterChip(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    size: ChipSize = ChipSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
@@ -577,7 +603,7 @@ fun InputChip(
     text: String,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
-    size: ChipSize = ChipSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     leadingIcon: Painter? = null,
     customColors: ChipStateColors? = null,
@@ -614,7 +640,7 @@ fun SuggestionChip(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    size: ChipSize = ChipSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     leadingIcon: Painter? = null,
     customColors: ChipStateColors? = null,
@@ -650,7 +676,7 @@ fun SuggestionChip(
 fun TagChip(
     text: String,
     modifier: Modifier = Modifier,
-    size: ChipSize = ChipSize.Small,
+    size: SizeVariant = SizeVariant.Small,
     variant: ChipVariant = ChipVariant.Ghost,
     leadingIcon: Painter? = null,
     customColors: ChipStateColors? = null,

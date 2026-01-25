@@ -73,13 +73,13 @@ private fun SwitchSize.config(): SwitchConfig {
     return when (this) {
         SwitchSize.Small -> SwitchConfig(
             width = ComponentSize.VerySmall,
-            height = ComponentSize.Minimal - Spacing.Small,
+            height = ComponentSize.Minimal - HierarchicalSize.Spacing.Small,
             thumbSize = IconSize.Tiny,
             thumbPadding = Spacing.Micro,
             thumbElevation = ShadowSize.Medium,
             borderWidth = BorderSize.Tiny,
             labelStyle = typography.bodyLight,
-            labelSpacing = Spacing.Small
+            labelSpacing = HierarchicalSize.Spacing.Small
         )
         SwitchSize.Medium -> SwitchConfig(
             width = ComponentSize.Medium,
@@ -89,17 +89,17 @@ private fun SwitchSize.config(): SwitchConfig {
             thumbElevation = ShadowSize.Large,
             borderWidth = BorderSize.SlightlyThicker,
             labelStyle = typography.bodyRegular,
-            labelSpacing = Spacing.Medium
+            labelSpacing = HierarchicalSize.Spacing.Medium
         )
         SwitchSize.Large -> SwitchConfig(
             width = ComponentSize.ExtraLarge,
-            height = ComponentSize.ButtonSmall - Spacing.Small,
+            height = HierarchicalSize.Button.Small - HierarchicalSize.Spacing.Small,
             thumbSize = IconSize.Large,
             thumbPadding = Spacing.Micro,
-            thumbElevation = ShadowSize.Huge,
+            thumbElevation = HierarchicalSize.Shadow.Huge,
             borderWidth = BorderSize.Standard,
             labelStyle = typography.bodyBold,
-            labelSpacing = Spacing.Large
+            labelSpacing = HierarchicalSize.Spacing.Large
         )
     }
 }

@@ -1,5 +1,7 @@
 package com.pixamob.pixacompose.components.navigation
 
+import com.pixamob.pixacompose.theme.SizeVariant
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
@@ -40,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.constraintlayout.compose.ConstraintLayout
 import com.pixamob.pixacompose.components.actions.ButtonShape
-import com.pixamob.pixacompose.components.actions.ButtonSize
+
 import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.display.PixaCard
@@ -127,7 +129,7 @@ enum class NavOrientation {
 private data class NavBarSizeConfig(
     val height: Dp,
     val iconSize: Dp,
-    val buttonSize: ButtonSize,
+    val buttonSize: SizeVariant,
     val horizontalPadding: Dp,
     val verticalPadding: Dp
 )
@@ -139,23 +141,23 @@ private fun BottomNavBarSize.toSizeConfig(): NavBarSizeConfig = when (this) {
     BottomNavBarSize.Small -> NavBarSizeConfig(
         height = 48.dp,
         iconSize = 20.dp,
-        buttonSize = ButtonSize.Medium,
-        horizontalPadding = Spacing.Small,
-        verticalPadding = Spacing.ExtraSmall
+        buttonSize = SizeVariant.Medium,
+        horizontalPadding = HierarchicalSize.Spacing.Small,
+        verticalPadding = HierarchicalSize.Spacing.Compact
     )
     BottomNavBarSize.Medium -> NavBarSizeConfig(
         height = 56.dp,
         iconSize = 24.dp,
-        buttonSize = ButtonSize.Large,
-        horizontalPadding = Spacing.Medium,
-        verticalPadding = Spacing.Small
+        buttonSize = SizeVariant.Large,
+        horizontalPadding = HierarchicalSize.Spacing.Medium,
+        verticalPadding = HierarchicalSize.Spacing.Small
     )
     BottomNavBarSize.Large -> NavBarSizeConfig(
         height = 64.dp,
         iconSize = 28.dp,
-        buttonSize = ButtonSize.Large,
-        horizontalPadding = Spacing.Medium,
-        verticalPadding = Spacing.Medium
+        buttonSize = SizeVariant.Large,
+        horizontalPadding = HierarchicalSize.Spacing.Medium,
+        verticalPadding = HierarchicalSize.Spacing.Medium
     )
 }
 
@@ -264,7 +266,7 @@ private fun AnimatedNavItem(
 private fun CenterActionButton(
     centerIcon: Painter?,
     centerContentDescription: String?,
-    buttonSize: ButtonSize,
+    buttonSize: SizeVariant,
     enabled: Boolean,
     onCenterAction: () -> Unit,
     modifier: Modifier = Modifier
@@ -494,7 +496,7 @@ fun PixaBottomNavBar(
             if (shouldScroll) {
                 Row(
                     modifier = navBarModifier.horizontalScroll(scrollState),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.Small),
+                    horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     NavBarItems(

@@ -85,7 +85,7 @@ private fun SliderSize.config(): SliderConfig {
         SliderSize.Large -> SliderConfig(
             trackHeight = ComponentSize.SliderTrackLarge + Spacing.Micro,
             thumbSize = IconSize.Medium,
-            thumbElevation = ShadowSize.Huge,
+            thumbElevation = HierarchicalSize.Shadow.Huge,
             labelStyle = typography.labelLarge,
             valueStyle = typography.bodyLight
         )
@@ -256,7 +256,7 @@ fun PixaSlider(
                     )
                 }
             }
-            Spacer(modifier = Modifier.height(Spacing.Small))
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
         }
 
         // Slider track and thumb

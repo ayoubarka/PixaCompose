@@ -12,7 +12,8 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
-import com.pixamob.pixacompose.theme.*
+import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.HierarchicalSize
 
 // ============================================================================
 // CONFIGURATION
@@ -28,21 +29,6 @@ enum class DividerOrientation {
     Vertical
 }
 
-
-/**
- * Divider Thickness - Line weight
- */
-enum class DividerThickness {
-    /** 0.5dp - Hairline (Very subtle) */
-    Thin,
-    /** 1dp - Standard line */
-    Standard,
-    /** 2dp - Bold line */
-    Thick,
-    /** 4dp - Heavy separator */
-    Heavy
-}
-
 /**
  * Divider Colors
  */
@@ -52,18 +38,6 @@ data class DividerColors(
     val line: Color
 )
 
-
-/**
- * Get thickness in Dp
- */
-private fun getDividerThicknessDp(thickness: DividerThickness): Dp {
-    return when (thickness) {
-        DividerThickness.Thin -> DividerSize.Hairline
-        DividerThickness.Standard -> DividerSize.Thin
-        DividerThickness.Thick -> DividerSize.Thick
-        DividerThickness.Heavy -> DividerSize.ExtraThick
-    }
-}
 
 // ============================================================================
 // BASE COMPONENT (Internal)
@@ -105,7 +79,7 @@ private fun PixaDividerImpl(
  *
  * @param modifier Modifier for the divider
  * @param orientation Direction of the divider (Horizontal or Vertical)
- * @param thickness Line weight (Thin, Standard, Thick, Heavy)
+ * @param thickness Line thickness in Dp (default: HierarchicalSize.Divider.Compact = 1dp)
  * @param color Optional custom color (overrides default color)
  *
  * @sample
@@ -117,7 +91,7 @@ private fun PixaDividerImpl(
  * PixaDivider(orientation = DividerOrientation.Vertical)
  *
  * // Custom thickness
- * PixaDivider(thickness = DividerThickness.Heavy)
+ * PixaDivider(thickness = HierarchicalSize.Divider.Large)
  *
  * // Custom color divider
  * PixaDivider(color = Color.Red)
@@ -127,18 +101,17 @@ private fun PixaDividerImpl(
 fun PixaDivider(
     modifier: Modifier = Modifier,
     orientation: DividerOrientation = DividerOrientation.Horizontal,
-    thickness: DividerThickness = DividerThickness.Standard,
+    thickness: Dp = HierarchicalSize.Divider.Compact,  // 1dp standard
     color: Color? = null
 ) {
     val defaultColor = AppTheme.colors.baseBorderDefault
     val finalColor = color ?: defaultColor
     val finalColors = DividerColors(finalColor)
-    val thicknessDp = getDividerThicknessDp(thickness)
 
     PixaDividerImpl(
         modifier = modifier,
         orientation = orientation,
-        thickness = thicknessDp,
+        thickness = thickness,
         colors = finalColors
     )
 }
@@ -153,7 +126,7 @@ fun PixaDivider(
 @Composable
 fun HorizontalDivider(
     modifier: Modifier = Modifier,
-    thickness: DividerThickness = DividerThickness.Standard,
+    thickness: Dp = HierarchicalSize.Divider.Compact,  // 1dp standard
     color: Color? = null
 ) {
     PixaDivider(
@@ -170,7 +143,7 @@ fun HorizontalDivider(
 @Composable
 fun VerticalDivider(
     modifier: Modifier = Modifier,
-    thickness: DividerThickness = DividerThickness.Standard,
+    thickness: Dp = HierarchicalSize.Divider.Compact,  // 1dp standard
     color: Color? = null
 ) {
     PixaDivider(
@@ -212,7 +185,7 @@ fun VerticalDivider(
  * ```
  * Column {
  *     HeaderSection()
- *     PixaDivider(thickness = DividerThickness.Heavy)
+ *     PixaDivider(thickness = HierarchicalSize.Divider.Large)
  *     ContentSection()
  * }
  * ```
@@ -230,7 +203,7 @@ fun VerticalDivider(
  * ```
  * PixaDivider(
  *     color = Color.Red,
- *     thickness = DividerThickness.Thick
+ *     thickness = HierarchicalSize.Divider.Huge
  * )
  * ```
  *

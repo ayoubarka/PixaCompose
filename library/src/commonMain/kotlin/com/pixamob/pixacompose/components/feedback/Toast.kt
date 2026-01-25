@@ -59,8 +59,8 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.ComponentSize
+import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.Inset
 import com.pixamob.pixacompose.theme.RadiusSize
 import com.pixamob.pixacompose.theme.Spacing
 import kotlinx.coroutines.CoroutineScope
@@ -215,11 +215,11 @@ data class ToastConfig(
     val minTouchTarget: Dp = ComponentSize.Medium, // 44.dp touch target for mobile
     val messageStyle: @Composable () -> TextStyle,
     val actionStyle: @Composable () -> TextStyle,
-    val spacing: Dp = Spacing.Small,
-    val padding: Dp = Inset.Medium,
+    val spacing: Dp = HierarchicalSize.Spacing.Small,
+    val padding: Dp = HierarchicalSize.Spacing.Medium,
     val maxMessageLines: Int = 2,
     val minWidth: Dp = 200.dp, // Minimum for readability on mobile
-    val maxWidth: Dp = ComponentSize.DialogMaxWidth.minus(32.dp), // 528.dp (560-32 for margins)
+    val maxWidth: Dp = HierarchicalSize.Container.DialogMaxWidth.minus(32.dp), // 528.dp (560-32 for margins)
     val elevation: ComponentElevation = ComponentElevation.Medium, // 2dp standard elevation
     val cornerRadius: Dp = RadiusSize.Medium
 )
@@ -656,7 +656,7 @@ internal fun Toast(
     Box(
         modifier = modifier
             .widthIn(min = config.minWidth, max = config.maxWidth)
-            .padding(horizontal = Inset.Medium)
+            .padding(horizontal = HierarchicalSize.Spacing.Medium)
             .semantics {
                 this.contentDescription = description
             }
@@ -700,7 +700,7 @@ internal fun Toast(
                             // Fallback: colored circle indicator
                             Box(
                                 modifier = Modifier
-                                    .size(Spacing.ExtraSmall) // 8.dp
+                                    .size(HierarchicalSize.Spacing.Compact) // 8.dp
                                     .clip(CircleShape)
                                     .background(colors.icon)
                             )
@@ -734,7 +734,7 @@ internal fun Toast(
                                 indication = ripple(bounded = false),
                                 interactionSource = remember { MutableInteractionSource() }
                             )
-                            .padding(horizontal = Spacing.Small)
+                            .padding(horizontal = HierarchicalSize.Spacing.Small)
                             .semantics {
                                 this.role = Role.Button
                             }
@@ -790,7 +790,7 @@ fun ToastHost(
         contentAlignment = getAlignment(position)
     ) {
         Column  (
-            verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall), // 8.dp spacing between toasts
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact), // 8.dp spacing between toasts
             horizontalAlignment = when (position) {
                 ToastPosition.TopStart, ToastPosition.BottomStart -> Alignment.Start
                 ToastPosition.TopEnd, ToastPosition.BottomEnd -> Alignment.End
@@ -803,18 +803,18 @@ fun ToastHost(
                         ToastPosition.TopEnd
                     )
                 )
-                    Spacing.Large else Spacing.None, // 24.dp for status bar clearance
+                    HierarchicalSize.Spacing.Large else Spacing.None, // 24.dp for status bar clearance
                 bottom = if (position in listOf(
                         ToastPosition.Bottom,
                         ToastPosition.BottomStart,
                         ToastPosition.BottomEnd
                     )
                 )
-                    Spacing.Large else Spacing.None, // 24.dp for navigation bar clearance
+                    HierarchicalSize.Spacing.Large else Spacing.None, // 24.dp for navigation bar clearance
                 start = if (position in listOf(ToastPosition.TopStart, ToastPosition.BottomStart))
-                    Spacing.Medium else Spacing.None,
+                    HierarchicalSize.Spacing.Medium else Spacing.None,
                 end = if (position in listOf(ToastPosition.TopEnd, ToastPosition.BottomEnd))
-                    Spacing.Medium else Spacing.None
+                    HierarchicalSize.Spacing.Medium else Spacing.None
             )
         ) {
             hostState.currentToasts.forEach { toast ->

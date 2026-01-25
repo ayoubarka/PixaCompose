@@ -1,4 +1,5 @@
 package com.pixamob.pixacompose.components.navigation
+import com.pixamob.pixacompose.theme.SizeVariant
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
@@ -43,7 +44,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaAvatar
-import com.pixamob.pixacompose.components.display.AvatarSize
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.components.feedback.PixaBadge
 import com.pixamob.pixacompose.components.feedback.BadgeSize
@@ -108,7 +108,7 @@ enum class TopNavTitleAlignment {
 private data class TopNavSizeConfig(
     val height: Dp,
     val iconSize: Dp,
-    val avatarSize: AvatarSize,
+    val avatarSize: SizeVariant,
     val horizontalPadding: Dp,
     val verticalPadding: Dp,
     val actionSpacing: Dp,
@@ -122,28 +122,28 @@ private fun TopNavSize.toSizeConfig(): TopNavSizeConfig = when (this) {
     TopNavSize.Small -> TopNavSizeConfig(
         height = 48.dp,
         iconSize = 20.dp,
-        avatarSize = AvatarSize.Small,
-        horizontalPadding = Spacing.Small,
-        verticalPadding = Spacing.ExtraSmall,
-        actionSpacing = Spacing.ExtraSmall,
+        avatarSize = SizeVariant.Small,
+        horizontalPadding = HierarchicalSize.Spacing.Small,
+        verticalPadding = HierarchicalSize.Spacing.Compact,
+        actionSpacing = HierarchicalSize.Spacing.Compact,
         titleFontScale = 0.9f
     )
     TopNavSize.Medium -> TopNavSizeConfig(
         height = 56.dp,
         iconSize = 24.dp,
-        avatarSize = AvatarSize.Medium,
-        horizontalPadding = Spacing.Medium,
-        verticalPadding = Spacing.Small,
-        actionSpacing = Spacing.Small,
+        avatarSize = SizeVariant.Medium,
+        horizontalPadding = HierarchicalSize.Spacing.Medium,
+        verticalPadding = HierarchicalSize.Spacing.Small,
+        actionSpacing = HierarchicalSize.Spacing.Small,
         titleFontScale = 1.0f
     )
     TopNavSize.Large -> TopNavSizeConfig(
         height = 72.dp,
         iconSize = 28.dp,
-        avatarSize = AvatarSize.Large,
-        horizontalPadding = Spacing.Medium,
-        verticalPadding = Spacing.Medium,
-        actionSpacing = Spacing.Medium,
+        avatarSize = SizeVariant.Large,
+        horizontalPadding = HierarchicalSize.Spacing.Medium,
+        verticalPadding = HierarchicalSize.Spacing.Medium,
+        actionSpacing = HierarchicalSize.Spacing.Medium,
         titleFontScale = 1.15f
     )
 }
@@ -487,14 +487,14 @@ fun PixaTopNavBar(
                     }
                 }
 
-                Spacer(modifier = Modifier.width(Spacing.Small))
+                Spacer(modifier = Modifier.width(HierarchicalSize.Spacing.Small))
             }
 
             // Title section (flexible weight)
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .padding(horizontal = Spacing.ExtraSmall),
+                    .padding(horizontal = HierarchicalSize.Spacing.Compact),
                 contentAlignment = when (resolvedAlignment) {
                     TopNavTitleAlignment.Start -> Alignment.CenterStart
                     TopNavTitleAlignment.Center -> Alignment.Center
@@ -519,7 +519,7 @@ fun PixaTopNavBar(
 
             // End actions section
             if (endActions.isNotEmpty() || profileImageUrl != null) {
-                Spacer(modifier = Modifier.width(Spacing.Small))
+                Spacer(modifier = Modifier.width(HierarchicalSize.Spacing.Small))
 
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(sizeConfig.actionSpacing),
@@ -540,7 +540,7 @@ fun PixaTopNavBar(
 
                     // Profile avatar (if provided)
                     if (profileImageUrl != null && onAvatarClick != null) {
-                        Spacer(modifier = Modifier.width(Spacing.ExtraSmall))
+                        Spacer(modifier = Modifier.width(HierarchicalSize.Spacing.Compact))
                         PixaAvatar(
                             imageUrl = profileImageUrl,
                             size = sizeConfig.avatarSize,

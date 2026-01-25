@@ -40,7 +40,7 @@ import com.pixamob.pixacompose.components.actions.ChipVariant
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.RadiusSize
-import com.pixamob.pixacompose.theme.Spacing
+import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.utils.DateTimeUtils
 import network.chaintech.kmp_date_time_picker.ui.timepicker.WheelTimePickerView
 import network.chaintech.kmp_date_time_picker.utils.DateTimePickerView
@@ -176,21 +176,21 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
     return when (size) {
         TimePickerSize.Small -> TimePickerSizeConfig(
             height = 240.dp,
-            padding = Spacing.Medium,
+            padding = HierarchicalSize.Spacing.Medium,
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyLight,
             itemTextStyle = typography.bodyLight
         )
         TimePickerSize.Medium -> TimePickerSizeConfig(
             height = 280.dp,
-            padding = Spacing.Large,
+            padding = HierarchicalSize.Spacing.Large,
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyBold,
             itemTextStyle = typography.bodyBold
         )
         TimePickerSize.Large -> TimePickerSizeConfig(
             height = 320.dp,
-            padding = Spacing.ExtraLarge,
+            padding = HierarchicalSize.Spacing.Huge,
             cornerRadius = RadiusSize.Large,
             titleTextStyle = typography.titleBold,
             itemTextStyle = typography.titleRegular
@@ -380,7 +380,7 @@ private fun WheelTimePickerImpl(
                 text = title,
                 style = sizeConfig.titleTextStyle,
                 color = colors.title,
-                modifier = Modifier.padding(bottom = Spacing.Medium)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium)
             )
         }
 
@@ -442,13 +442,13 @@ private fun RangeWheelTimePickerImpl(
                 text = title,
                 style = sizeConfig.titleTextStyle,
                 color = colors.title,
-                modifier = Modifier.padding(bottom = Spacing.Small)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
             )
         }
 
         // Range labels
         Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Small),
+            modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Column(modifier = Modifier.weight(1f)) {
@@ -461,7 +461,7 @@ private fun RangeWheelTimePickerImpl(
                     modifier = Modifier
                         .clip(RoundedCornerShape(RadiusSize.Small))
                         .background(if (selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(Spacing.Small)
+                        .padding(HierarchicalSize.Spacing.Small)
                         .clickable { selectingStart = true }
                 )
             }
@@ -475,13 +475,13 @@ private fun RangeWheelTimePickerImpl(
                     modifier = Modifier
                         .clip(RoundedCornerShape(RadiusSize.Small))
                         .background(if (!selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(Spacing.Small)
+                        .padding(HierarchicalSize.Spacing.Small)
                         .clickable { selectingStart = false }
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(Spacing.Small))
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
 
         // Wheel picker
         WheelTimePickerView(
@@ -562,7 +562,7 @@ private fun ClockTimePickerImpl(
                 text = title,
                 style = sizeConfig.titleTextStyle,
                 color = colors.title,
-                modifier = Modifier.padding(bottom = Spacing.Small)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
             )
         }
 
@@ -624,11 +624,11 @@ private fun RangeClockTimePickerImpl(
             .padding(sizeConfig.padding)
     ) {
         if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = Spacing.Small))
+            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small))
         }
 
         // Range labels
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = Spacing.Small), horizontalArrangement = Arrangement.SpaceBetween) {
+        Row(modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(text = strings.startLabel, style = sizeConfig.itemTextStyle.copy(fontSize = sizeConfig.itemTextStyle.fontSize * 0.8f), color = colors.unselectedText.copy(alpha = 0.6f))
                 Text(
@@ -639,7 +639,7 @@ private fun RangeClockTimePickerImpl(
                     modifier = Modifier
                         .clip(RoundedCornerShape(RadiusSize.Small))
                         .background(if (selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(Spacing.Small)
+                        .padding(HierarchicalSize.Spacing.Small)
                         .clickable { selectingStart = true }
                 )
             }
@@ -653,13 +653,13 @@ private fun RangeClockTimePickerImpl(
                     modifier = Modifier
                         .clip(RoundedCornerShape(RadiusSize.Small))
                         .background(if (!selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(Spacing.Small)
+                        .padding(HierarchicalSize.Spacing.Small)
                         .clickable { selectingStart = false }
                 )
             }
         }
 
-        Spacer(modifier = Modifier.height(Spacing.Small))
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
 
         // Reuse clock impl
         ClockTimePickerImpl(
@@ -706,10 +706,10 @@ private fun TimeOfDayPickerImpl(
             .padding(sizeConfig.padding)
     ) {
         if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = Spacing.Medium))
+            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium))
         }
 
-        Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
+        Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)) {
             strings.timeOfDayLabels.forEach { (slotName, time) ->
                 val isSelected = slotName == selectedSlot
 

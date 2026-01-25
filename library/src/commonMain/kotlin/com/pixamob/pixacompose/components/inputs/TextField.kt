@@ -78,8 +78,8 @@ private fun TextFieldSize.config(): TextFieldConfig {
     return when (this) {
         TextFieldSize.Small -> TextFieldConfig(
             height = ComponentSize.InputSmall,
-            horizontalPadding = Spacing.Medium,
-            verticalPadding = Spacing.ExtraSmall,
+            horizontalPadding = HierarchicalSize.Spacing.Medium,
+            verticalPadding = HierarchicalSize.Spacing.Compact,
             textStyle = typography.bodyLight,
             labelTextStyle = typography.labelSmall,
             helperTextStyle = typography.captionLight,
@@ -90,8 +90,8 @@ private fun TextFieldSize.config(): TextFieldConfig {
 
         TextFieldSize.Medium -> TextFieldConfig(
             height = ComponentSize.InputMedium,
-            horizontalPadding = Spacing.Large,
-            verticalPadding = Spacing.Small,
+            horizontalPadding = HierarchicalSize.Spacing.Large,
+            verticalPadding = HierarchicalSize.Spacing.Small,
             textStyle = typography.bodyRegular,
             labelTextStyle = typography.labelMedium,
             helperTextStyle = typography.captionRegular,
@@ -102,8 +102,8 @@ private fun TextFieldSize.config(): TextFieldConfig {
 
         TextFieldSize.Large -> TextFieldConfig(
             height = ComponentSize.InputLarge,
-            horizontalPadding = Spacing.ExtraLarge,
-            verticalPadding = Spacing.Medium,
+            horizontalPadding = HierarchicalSize.Spacing.Huge,
+            verticalPadding = HierarchicalSize.Spacing.Medium,
             textStyle = typography.bodyBold,
             labelTextStyle = typography.labelLarge,
             helperTextStyle = typography.captionBold,
@@ -300,7 +300,7 @@ fun PixaTextField(
                 text = label,
                 style = config.labelTextStyle,
                 color = if (isError) colors.errorText else colors.label,
-                modifier = Modifier.padding(bottom = Spacing.ExtraSmall)
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
             )
         }
 
@@ -350,7 +350,7 @@ fun PixaTextField(
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(Spacing.Small)
+                        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
                     ) {
                         // Leading icon
                         if (leadingIcon != null) {
@@ -401,7 +401,7 @@ fun PixaTextField(
                 color = if (isError) colors.errorText else colors.helperText,
                 modifier = Modifier.padding(
                     start = config.horizontalPadding,
-                    top = Spacing.ExtraSmall
+                    top = HierarchicalSize.Spacing.Compact
                 )
             )
         }
@@ -416,7 +416,7 @@ fun PixaTextField(
                     .align(Alignment.End)
                     .padding(
                         end = config.horizontalPadding,
-                        top = Spacing.ExtraSmall
+                        top = HierarchicalSize.Spacing.Compact
                     )
             )
         }
