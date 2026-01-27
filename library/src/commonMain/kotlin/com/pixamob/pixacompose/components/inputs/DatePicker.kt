@@ -2,6 +2,7 @@ package com.pixamob.pixacompose.components.inputs
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -17,6 +18,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -32,10 +34,14 @@ import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.DateTimeUtils
 import com.pixamob.pixacompose.utils.DateTimeUtils.toEpochMillis
 import com.pixamob.pixacompose.utils.AnimationUtils.standardSpring
-import network.chaintech.kmp_date_time_picker.ui.datepicker.WheelDatePickerView
-import network.chaintech.kmp_date_time_picker.utils.DateTimePickerView
-import network.chaintech.kmp_date_time_picker.utils.WheelPickerDefaults
-import kotlinx.datetime.*
+import dev.darkokoa.datetimewheelpicker.WheelDatePicker
+import dev.darkokoa.datetimewheelpicker.core.WheelPickerDefaults
+import kotlinx.datetime.DateTimeUnit
+import kotlinx.datetime.DayOfWeek
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.Month
+import kotlinx.datetime.minus
+import kotlinx.datetime.plus
 
 // ============================================================================
 // CONFIGURATION
@@ -107,7 +113,9 @@ data class DatePickerSizeConfig(
     val cornerRadius: Dp,
     val titleTextStyle: TextStyle,
     val itemTextStyle: TextStyle,
-    val dayTextStyle: TextStyle
+    val dayTextStyle: TextStyle,
+    val selectorShape: Shape = RoundedCornerShape(16.dp),
+    val selectorBorder: BorderStroke? = null
 )
 
 /**
@@ -163,6 +171,7 @@ private fun getDatePickerTheme(colors: ColorPalette): DatePickerColors {
 @Composable
 private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig {
     val typography = AppTheme.typography
+    val colors = AppTheme.colors
     return when (size) {
         DatePickerSize.Small -> DatePickerSizeConfig(
             height = HierarchicalSize.Container.Massive * 3f,
@@ -170,7 +179,9 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyLight,
             itemTextStyle = typography.bodyLight,
-            dayTextStyle = typography.labelSmall
+            dayTextStyle = typography.labelSmall,
+            selectorShape = RoundedCornerShape(12.dp),
+            selectorBorder = BorderStroke(1.5.dp, colors.baseBorderDefault)
         )
         DatePickerSize.Medium -> DatePickerSizeConfig(
             height = HierarchicalSize.Container.Massive * 3.5f,
@@ -178,7 +189,9 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyBold,
             itemTextStyle = typography.bodyBold,
-            dayTextStyle = typography.labelMedium
+            dayTextStyle = typography.labelMedium,
+            selectorShape = RoundedCornerShape(16.dp),
+            selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
         DatePickerSize.Large -> DatePickerSizeConfig(
             height = HierarchicalSize.Container.Massive * 4f,
@@ -186,7 +199,9 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
             cornerRadius = RadiusSize.Large,
             titleTextStyle = typography.titleBold,
             itemTextStyle = typography.titleRegular,
-            dayTextStyle = typography.labelLarge
+            dayTextStyle = typography.labelLarge,
+            selectorShape = RoundedCornerShape(20.dp),
+            selectorBorder = BorderStroke(2.5.dp, colors.baseBorderDefault)
         )
     }
 }
@@ -396,25 +411,26 @@ private fun WheelDatePickerImpl(
             )
         }
 
-        WheelDatePickerView(
-            modifier = Modifier.fillMaxWidth(),
-            showDatePicker = false,
-            hideHeader = true,
-            startDate = selectedDate,
-            height = sizeConfig.height,
-            yearsRange = (1900..2100),
-            showMonthAsNumber = false,
-            selectedDateTextStyle = sizeConfig.itemTextStyle,
-            defaultDateTextStyle = sizeConfig.itemTextStyle.copy(color = colors.unselectedText),
-            dateTimePickerView = DateTimePickerView.BOTTOM_SHEET_VIEW,
-            selectorProperties = WheelPickerDefaults.selectorProperties(
-                borderColor = colors.divider
-            ),
-            onDateChangeListener = { date ->
+        Box(
+            modifier = Modifier.fillMaxWidth().height(sizeConfig.height),
+            contentAlignment = Alignment.Center
+        ) {
+            WheelDatePicker(
+                modifier = Modifier.fillMaxSize(),
+                startDate = selectedDate,
+                yearsRange = (1900..2100),
+                textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
+                textColor = colors.selectedText,
+                selectorProperties = WheelPickerDefaults.selectorProperties(
+                    color = colors.divider,
+                    shape = sizeConfig.selectorShape,
+                    border = sizeConfig.selectorBorder
+                )
+            ) { date ->
                 selectedDate = date
                 onDateSelected(date.toEpochMillis())
             }
-        )
+        }
     }
 }
 
@@ -484,19 +500,22 @@ private fun RangeWheelDatePickerImpl(
         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
 
         // Wheel picker
-        WheelDatePickerView(
-            modifier = Modifier.fillMaxWidth(),
-            showDatePicker = false,
-            hideHeader = true,
-            startDate = if (selectingStart) (startDate ?: DateTimeUtils.now()) else (endDate ?: DateTimeUtils.now()),
-            height = sizeConfig.height,
-            yearsRange = (1900..2100),
-            showMonthAsNumber = false,
-            selectedDateTextStyle = sizeConfig.itemTextStyle,
-            defaultDateTextStyle = sizeConfig.itemTextStyle.copy(color = colors.unselectedText),
-            dateTimePickerView = DateTimePickerView.BOTTOM_SHEET_VIEW,
-            selectorProperties = WheelPickerDefaults.selectorProperties(borderColor = colors.divider),
-            onDateChangeListener = { date ->
+        Box(
+            modifier = Modifier.fillMaxWidth().height(sizeConfig.height),
+            contentAlignment = Alignment.Center
+        ) {
+            WheelDatePicker(
+                modifier = Modifier.fillMaxSize(),
+                startDate = if (selectingStart) (startDate ?: DateTimeUtils.now()) else (endDate ?: DateTimeUtils.now()),
+                yearsRange = (1900..2100),
+                textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
+                textColor = colors.selectedText,
+                selectorProperties = WheelPickerDefaults.selectorProperties(
+                    color = colors.divider,
+                    shape = sizeConfig.selectorShape,
+                    border = sizeConfig.selectorBorder
+                )
+            ) { date ->
                 if (selectingStart) {
                     startDate = date
                     selectingStart = false
@@ -505,7 +524,7 @@ private fun RangeWheelDatePickerImpl(
                 }
                 onRangeSelected(startDate, endDate)
             }
-        )
+        }
     }
 }
 
@@ -761,8 +780,8 @@ private fun MonthDayPickerImpl(
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny),
-            verticalArrangement = Arrangement.spacedBy(Spacing.Tiny),
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
             modifier = Modifier.heightIn(max = sizeConfig.height)
         ) {
             items((1..31).toList()) { day ->

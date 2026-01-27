@@ -199,7 +199,7 @@ private fun AnimatedNavItem(
 
     Box(
         modifier = modifier
-            .scale(scale)
+           // .scale(scale)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(bounded = true),
@@ -225,7 +225,7 @@ private fun AnimatedNavItem(
             TabDisplayStyle.TextOnly -> {
                 Text(
                     text = item.title,
-                    style = AppTheme.typography.captionBold,
+                    style = AppTheme.typography.labelMedium,  // 12sp - proper nav label size
                     color = contentColor,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
@@ -234,8 +234,7 @@ private fun AnimatedNavItem(
             TabDisplayStyle.IconWithText -> {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
-                    modifier = Modifier.padding(vertical = Spacing.Tiny)
+                    verticalArrangement = Arrangement.Center
                 ) {
                     PixaIcon(
                         painter = iconPainter,
@@ -247,7 +246,7 @@ private fun AnimatedNavItem(
                         Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = item.title,
-                            style = AppTheme.typography.captionBold,
+                            style = AppTheme.typography.labelMedium,  // 12sp - proper nav label size
                             color = contentColor,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis

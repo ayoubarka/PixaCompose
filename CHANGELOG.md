@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Navigation components
 - Menu components
 
-## [1.1.0] - 2026-01-24
+## [1.0.9] - 2026-01-24
 
 ### Added
 - **Unified Hierarchical Sizing System**:
@@ -47,10 +47,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Destructive styling always applied for destructive actions
 
 - **Size System Refactoring**:
-  - All legacy size objects (`BorderSize`, `ComponentSize`, `RadiusSize`, etc.) now marked as `@Deprecated`
-  - Legacy aliases maintained for backward compatibility with migration guides
+  - All legacy size objects (`BorderSize`, `ComponentSize`, `RadiusSize`, etc.) maintained for compatibility
+  - Legacy aliases map to new `HierarchicalSize` system
   - Consistent naming: all size categories now use `ExtraSmall`, `Small`, `Medium`, `Large`, `ExtraLarge`
-  - Removed inconsistent size names (`Minimal`, `ButtonSmall`, `InputSmall`, `SlightlyThicker`, etc.)
+  - Removed inconsistent size names in favor of unified system
 
 ### Improved
 - **Type Safety**: `SizeVariant` enum ensures compile-time safety for size selection

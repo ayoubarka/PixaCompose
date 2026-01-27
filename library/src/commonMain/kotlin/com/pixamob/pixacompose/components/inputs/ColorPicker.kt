@@ -60,6 +60,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntSize
 import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.components.inputs.PixaSlider
+import com.pixamob.pixacompose.components.inputs.SliderVariant
 
 
 
@@ -314,6 +316,7 @@ fun PixaColorPicker(
     showHexInput: Boolean = true,
     showModeSelector: Boolean = true,
     customPalette: List<Color>? = null,
+    gridColumnsCount: Int = 6,
     enabled: Boolean = true,
     contentDescription: String = "Color picker",
     onColorChanged: (Color) -> Unit = {}
@@ -371,6 +374,7 @@ fun PixaColorPicker(
                     selectedColor = state.currentColor,
                     onColorSelected = { if (enabled) state.updateColor(it) },
                     palette = customPalette ?: MaterialColors.material3Colors,
+                    gridColumnsCount = gridColumnsCount,
                     enabled = enabled,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -561,11 +565,12 @@ private fun GridColorPicker(
     selectedColor: Color,
     onColorSelected: (Color) -> Unit,
     palette: List<Color>,
+    gridColumnsCount: Int = 6,
     enabled: Boolean,
     modifier: Modifier = Modifier
 ) {
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = HierarchicalSize.Container.Medium),
+        columns = GridCells.Fixed(gridColumnsCount),
         modifier = modifier.heightIn(max = HierarchicalSize.Container.Massive * 3.75f),
         contentPadding = PaddingValues(HierarchicalSize.Spacing.Compact),
         horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact),
@@ -970,7 +975,7 @@ private fun HueSlider(
 }
 
 // ============================================================================
-// Color Channel Slider
+// Color Channel Slider (using PixaSlider)
 // ============================================================================
 
 @Composable
@@ -999,67 +1004,47 @@ private fun ColorChannelSlider(
         Box(
             modifier = Modifier
                 .weight(1f)
-                .height(HierarchicalSize.Container.Compact)
+                .then(if (showCheckerboard) Modifier.drawCheckerboard() else Modifier)
         ) {
-            var sliderWidth by remember { mutableStateOf(0f) }
-
-            // Track
-            Canvas(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(RoundedCornerShape(HierarchicalSize.Radius.Huge))
-                    .then(if (showCheckerboard) Modifier.drawCheckerboard() else Modifier)
-            ) {
-                sliderWidth = size.width
-
-                val brush = when {
-                    gradientBrush != null -> gradientBrush
-                    gradientColors != null -> Brush.horizontalGradient(gradientColors)
-                    color != null -> Brush.horizontalGradient(
-                        listOf(Color.Transparent, color)
-                    )
-                    else -> Brush.horizontalGradient(
-                        listOf(Color.LightGray, Color.DarkGray)
-                    )
+            // Calculate thumb color based on current position in gradient
+            val thumbColor = when {
+                gradientBrush != null -> {
+                    // For gradient brushes, interpolate color at current position
+                    if (gradientColors != null && gradientColors.size > 1) {
+                        val index = (value * (gradientColors.size - 1)).toInt()
+                        gradientColors.getOrNull(index) ?: gradientColors.last()
+                    } else {
+                        Color.White
+                    }
                 }
-
-                drawRoundRect(
-                    brush = brush,
-                    cornerRadius = CornerRadius(HierarchicalSize.Radius.Huge.toPx())
-                )
+                color != null -> color
+                else -> Color.White
             }
 
-            // Thumb
-            Box(
-                modifier = Modifier
-                    .offset(x = with(LocalDensity.current) { ((sliderWidth * value) - HierarchicalSize.Spacing.Small.toPx()).toDp() })
-                    .size(HierarchicalSize.Icon.Medium)
-                    .align(Alignment.CenterStart)
-                    .shadow(HierarchicalSize.Shadow.Large, CircleShape)
-                    .background(Color.White, CircleShape)
-                    .border(HierarchicalSize.Border.Medium, AppTheme.colors.baseBorderDefault, CircleShape)
-                    .then(
-                        if (enabled) {
-                            Modifier
-                                .pointerInput(Unit) {
-                                    detectDragGestures { change, _ ->
-                                        val newValue = (change.position.x / sliderWidth).coerceIn(0f, 1f)
-                                        onValueChange(newValue)
-                                    }
-                                }
-                                .pointerInput(Unit) {
-                                    detectTapGestures { offset ->
-                                        val newValue = (offset.x / sliderWidth).coerceIn(0f, 1f)
-                                        onValueChange(newValue)
-                                    }
-                                }
-                        } else Modifier
-                    )
+            PixaSlider(
+                value = value,
+                onValueChange = onValueChange,
+                valueRange = 0f..1f,
+                enabled = enabled,
+                variant = when {
+                    label == "H" -> SliderVariant.Filled  // Hue slider - filled style
+                    gradientColors != null || gradientBrush != null -> SliderVariant.Outlined  // Gradient sliders - outlined
+                    else -> SliderVariant.Minimal  // Simple sliders - minimal
+                },
+                gradientBrush = gradientBrush ?: (gradientColors?.let { colors ->
+                    Brush.horizontalGradient(colors)
+                }),
+                thumbColorOverride = thumbColor,
+                modifier = Modifier.fillMaxWidth()
             )
         }
 
         Text(
-            text = (value * 255).roundToInt().toString(),
+            text = when (label) {
+                "H" -> "${(value * 360).roundToInt()}°"  // Hue in degrees
+                "A" -> "${(value * 100).roundToInt()}%"  // Alpha as percentage
+                else -> (value * 255).roundToInt().toString()  // RGB/S/V/L as 0-255
+            },
             style = AppTheme.typography.bodyRegular,
             modifier = Modifier.width(HierarchicalSize.Container.Small),
             textAlign = TextAlign.End

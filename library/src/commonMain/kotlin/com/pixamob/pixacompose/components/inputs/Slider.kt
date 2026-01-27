@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
@@ -14,8 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
@@ -191,7 +195,9 @@ fun PixaSlider(
     label: String? = null,
     showValue: Boolean = false,
     valueFormatter: (Float) -> String = { it.roundToInt().toString() },
-    onValueChangeFinished: (() -> Unit)? = null
+    onValueChangeFinished: (() -> Unit)? = null,
+    gradientBrush: androidx.compose.ui.graphics.Brush? = null,
+    thumbColorOverride: Color? = null
 ) {
     val config = size.config()
     val colors = variant.colors(enabled)
@@ -263,10 +269,10 @@ fun PixaSlider(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(config.thumbSize),
-            contentAlignment = Alignment.CenterStart
+                .height(config.thumbSize)
         ) {
             val trackWidth = constraints.maxWidth.toFloat()
+            val thumbRadius = config.thumbSize / 2
 
             Box(
                 modifier = Modifier
@@ -318,30 +324,51 @@ fun PixaSlider(
                             val newValue = valueRange.start + (newNormalizedValue * (valueRange.endInclusive - valueRange.start))
                             onValueChange(newValue.coerceIn(valueRange))
                         }
-                    }
+                    },
+                contentAlignment = Alignment.CenterStart
             ) {
-                // Track background (inactive)
+                // Track container - vertically centered
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(config.trackHeight)
-                        .clip(CircleShape)
-                        .background(inactiveTrackColor)
-                )
+                        .align(Alignment.Center)
+                ) {
+                    // Full width gradient background (for color sliders)
+                    if (gradientBrush != null) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(gradientBrush)
+                        )
+                    } else {
+                        // Track background (inactive)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .clip(CircleShape)
+                                .background(inactiveTrackColor)
+                        )
 
-                // Track progress (active)
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(normalizedValue)
-                        .height(config.trackHeight)
-                        .clip(CircleShape)
-                        .background(activeTrackColor)
-                )
+                        // Track progress (active)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth(normalizedValue)
+                                .fillMaxHeight()
+                                .clip(CircleShape)
+                                .background(activeTrackColor)
+                        )
+                    }
+                }
 
                 // Step indicators
                 if (steps > 0 && enabled) {
                     Canvas(
-                        modifier = Modifier.fillMaxSize()
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(config.trackHeight)
+                            .align(Alignment.Center)
                     ) {
                         val canvasWidth = this.size.width
                         val canvasHeight = this.size.height
@@ -361,20 +388,32 @@ fun PixaSlider(
                     }
                 }
 
-                // Thumb
+                // Thumb - properly positioned using align and offset
+                val finalThumbColor = thumbColorOverride ?: thumbColor
+
+                // Calculate border color for contrast - use dark color for light thumbs, light for dark
+                val borderColor1 = if (finalThumbColor.luminance() > 0.5f)
+                    Color.Black.copy(alpha = 0.8f)
+                else
+                    Color.White.copy(alpha = 0.9f)
+
                 Box(
                     modifier = Modifier
-                        .offset(x = this@BoxWithConstraints.maxWidth * normalizedValue - thumbSize * normalizedValue)
+                        .align(Alignment.CenterStart)
+                        .offset(x = (this@BoxWithConstraints.maxWidth - thumbSize) * normalizedValue)
                         .size(thumbSize)
                         .shadow(
                             elevation = if (enabled) config.thumbElevation else 0.dp,
                             shape = CircleShape
                         )
                         .clip(CircleShape)
-                        .background(thumbColor)
+                        .background(finalThumbColor)
+                        .border(2.5.dp, borderColor1, CircleShape)
                         .then(
                             if (variant == SliderVariant.Outlined) {
-                                Modifier.padding(Spacing.Micro).background(Color.White, CircleShape)
+                                Modifier
+                                    .padding(2.dp)
+                                    .border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape)
                             } else Modifier
                         )
                 )
