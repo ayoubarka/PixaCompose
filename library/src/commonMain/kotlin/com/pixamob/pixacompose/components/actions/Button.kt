@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -146,7 +147,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             iconSpacing = HierarchicalSize.Spacing.Nano,  // 2dp
             minWidth = 0.dp,
             cornerRadius = HierarchicalSize.Radius.Nano,  // 2dp
-            textStyle = { typography.labelSmall }
+            textStyle = { typography.actionMini }  // 10sp for 24dp button
         )
 
         SizeVariant.Compact -> ButtonSizeConfig(
@@ -156,7 +157,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
             minWidth = 0.dp,
             cornerRadius = HierarchicalSize.Radius.Compact,  // 4dp
-            textStyle = { typography.labelMedium }
+            textStyle = { typography.actionExtraSmall }  // 12sp for 32dp button
         )
 
         SizeVariant.Small -> ButtonSizeConfig(
@@ -166,7 +167,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
             minWidth = 0.dp,
             cornerRadius = HierarchicalSize.Radius.Small,  // 6dp
-            textStyle = { typography.actionSmall }
+            textStyle = { typography.actionSmall }  // 14sp for 36dp button
         )
 
         SizeVariant.Medium -> ButtonSizeConfig(
@@ -176,7 +177,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
             minWidth = HierarchicalSize.Spacing.Massive,  // 48dp
             cornerRadius = HierarchicalSize.Radius.Medium,  // 8dp
-            textStyle = { typography.actionMedium }
+            textStyle = { typography.actionMedium }  // 16sp for 44dp button ⭐
         )
 
         SizeVariant.Large -> ButtonSizeConfig(
@@ -186,7 +187,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
             minWidth = 120.dp,
             cornerRadius = HierarchicalSize.Radius.Large,  // 12dp
-            textStyle = { typography.actionLarge }
+            textStyle = { typography.actionLarge }  // 18sp for 48dp button
         )
 
         SizeVariant.Huge -> ButtonSizeConfig(
@@ -196,7 +197,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             iconSpacing = HierarchicalSize.Spacing.Small,  // 8dp
             minWidth = 160.dp,
             cornerRadius = HierarchicalSize.Radius.Huge,  // 16dp
-            textStyle = { typography.actionLarge }
+            textStyle = { typography.actionExtraLarge }  // 20sp for 56dp button
         )
 
         SizeVariant.Massive -> ButtonSizeConfig(
@@ -387,13 +388,15 @@ private fun InternalButton(
             contentAlignment = contentAlignment
         ) {
             Row(
-                modifier = Modifier.padding(
-                    horizontal = if (shape == ButtonShape.Circle) {
-                        0.dp
-                    } else {
-                        sizeConfig.horizontalPadding
-                    }
-                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        horizontal = if (shape == ButtonShape.Circle) {
+                            0.dp
+                        } else {
+                            sizeConfig.horizontalPadding
+                        }
+                    ),
                 horizontalArrangement = arrangement,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -642,9 +645,7 @@ private fun RowScope.ButtonContent(
             textAlign = TextAlign.Center,
             overflow = TextOverflow.Ellipsis,
             maxLines = 1,
-            modifier = Modifier
-                .align(Alignment.CenterVertically)
-                .weight(1f, fill = false)
+            modifier = Modifier.align(Alignment.CenterVertically)
         )
     }
 

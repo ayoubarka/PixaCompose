@@ -99,43 +99,43 @@ private fun getAvatarConfig(size: SizeVariant): AvatarConfig {
         )
         SizeVariant.Nano -> AvatarConfig(
             size = HierarchicalSize.Avatar.Nano,  // 16dp
-            textStyle = typography.captionRegular,
+            textStyle = typography.labelSmall,  // 10sp - micro labels
             iconSize = HierarchicalSize.Icon.Nano,  // 12dp
             statusSize = HierarchicalSize.Spacing.Compact  // 4dp
         )
         SizeVariant.Compact -> AvatarConfig(
             size = HierarchicalSize.Avatar.Compact,  // 24dp
-            textStyle = typography.captionBold,
+            textStyle = typography.labelMedium,  // 12sp - compact size
             iconSize = HierarchicalSize.Icon.Compact,  // 16dp
             statusSize = HierarchicalSize.Spacing.Small  // 8dp
         )
         SizeVariant.Small -> AvatarConfig(
             size = HierarchicalSize.Avatar.Small,  // 32dp
-            textStyle = typography.bodyRegular,
+            textStyle = typography.bodyRegular,  // 16sp - body text
             iconSize = HierarchicalSize.Icon.Small,  // 20dp
             statusSize = HierarchicalSize.Spacing.Small  // 8dp
         )
         SizeVariant.Medium -> AvatarConfig(
             size = HierarchicalSize.Avatar.Medium,  // 40dp
-            textStyle = typography.bodyBold,
+            textStyle = typography.bodyRegular,  // 16sp - standard (not bold)
             iconSize = HierarchicalSize.Icon.Medium,  // 24dp
             statusSize = HierarchicalSize.Icon.Nano  // 12dp
         )
         SizeVariant.Large -> AvatarConfig(
             size = HierarchicalSize.Avatar.Large,  // 48dp
-            textStyle = typography.subtitleRegular,
+            textStyle = typography.subtitleBold,  // 18sp - subtitle
             iconSize = HierarchicalSize.Icon.Large,  // 28dp
             statusSize = HierarchicalSize.Icon.Compact  // 16dp
         )
         SizeVariant.Huge -> AvatarConfig(
             size = HierarchicalSize.Avatar.Huge,  // 64dp
-            textStyle = typography.subtitleBold,
+            textStyle = typography.titleBold,  // 20sp - title
             iconSize = HierarchicalSize.Icon.Huge,  // 32dp
             statusSize = HierarchicalSize.Icon.Compact  // 16dp
         )
         SizeVariant.Massive -> AvatarConfig(
             size = HierarchicalSize.Avatar.Massive,  // 96dp
-            textStyle = typography.displaySmall,
+            textStyle = typography.headlineBold,  // 24sp - headline (not display)
             iconSize = HierarchicalSize.Icon.Massive,  // 48dp
             statusSize = HierarchicalSize.Icon.Medium  // 24dp
         )

@@ -1,11 +1,14 @@
 package com.pixamob.pixacompose.components.inputs
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -28,10 +31,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.actions.Chip
@@ -41,11 +46,11 @@ import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.RadiusSize
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.utils.DateTimeUtils
-import network.chaintech.kmp_date_time_picker.ui.timepicker.WheelTimePickerView
-import network.chaintech.kmp_date_time_picker.utils.DateTimePickerView
-import network.chaintech.kmp_date_time_picker.utils.WheelPickerDefaults
-import kotlinx.datetime.*
+import dev.darkokoa.datetimewheelpicker.WheelTimePicker
+import dev.darkokoa.datetimewheelpicker.core.WheelPickerDefaults
+import dev.darkokoa.datetimewheelpicker.core.format.timeFormatter
+import dev.darkokoa.datetimewheelpicker.core.format.TimeFormat as DarkokaoTimeFormat
+import kotlinx.datetime.LocalTime
 
 // ============================================================================
 // CONFIGURATION
@@ -121,7 +126,9 @@ data class TimePickerSizeConfig(
     val padding: Dp,
     val cornerRadius: Dp,
     val titleTextStyle: TextStyle,
-    val itemTextStyle: TextStyle
+    val itemTextStyle: TextStyle,
+    val selectorShape: Shape = RoundedCornerShape(16.dp),
+    val selectorBorder: BorderStroke? = null
 )
 
 /**
@@ -173,27 +180,34 @@ private fun getTimePickerTheme(colors: ColorPalette): TimePickerColors {
 @Composable
 private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig {
     val typography = AppTheme.typography
+    val colors = AppTheme.colors
     return when (size) {
         TimePickerSize.Small -> TimePickerSizeConfig(
-            height = 240.dp,
+            height = 280.dp,
             padding = HierarchicalSize.Spacing.Medium,
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyLight,
-            itemTextStyle = typography.bodyLight
+            itemTextStyle = typography.bodyLight,
+            selectorShape = RoundedCornerShape(12.dp),
+            selectorBorder = BorderStroke(1.5.dp, colors.baseBorderDefault)
         )
         TimePickerSize.Medium -> TimePickerSizeConfig(
-            height = 280.dp,
+            height = 320.dp,
             padding = HierarchicalSize.Spacing.Large,
             cornerRadius = RadiusSize.Medium,
             titleTextStyle = typography.bodyBold,
-            itemTextStyle = typography.bodyBold
+            itemTextStyle = typography.bodyBold,
+            selectorShape = RoundedCornerShape(16.dp),
+            selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
         TimePickerSize.Large -> TimePickerSizeConfig(
-            height = 320.dp,
+            height = 360.dp,
             padding = HierarchicalSize.Spacing.Huge,
             cornerRadius = RadiusSize.Large,
             titleTextStyle = typography.titleBold,
-            itemTextStyle = typography.titleRegular
+            itemTextStyle = typography.titleRegular,
+            selectorShape = RoundedCornerShape(20.dp),
+            selectorBorder = BorderStroke(2.5.dp, colors.baseBorderDefault)
         )
     }
 }
@@ -358,7 +372,7 @@ private fun WheelTimePickerImpl(
     minuteInterval: Int, // Constraint applied in onTimeChangeListener
     onTimeSelected: (LocalTime) -> Unit
 ) {
-    var selectedTime by remember { mutableStateOf(DateTimeUtils.now().atTime(12, 0)) }
+    var selectedTime by remember { mutableStateOf(LocalTime(12, 0)) }
 
     Column (
         modifier = modifier
@@ -384,35 +398,35 @@ private fun WheelTimePickerImpl(
             )
         }
 
-        // Note: kmp-date-time-picker doesn't directly support minuteInterval or custom AM/PM labels
-        // For full control over these, we'd need a custom implementation or fork the library
-        // As a workaround, we document the limitation
-        WheelTimePickerView(
-            modifier = Modifier.fillMaxWidth(),
-            showTimePicker = false,
-            hideHeader = true,
-            startTime = selectedTime.time,
-            height = sizeConfig.height,
-            timeFormat = if (format == TimeFormat.Hour12)
-                network.chaintech.kmp_date_time_picker.utils.TimeFormat.AM_PM
-            else
-                network.chaintech.kmp_date_time_picker.utils.TimeFormat.HOUR_24,
-            minTime = LocalTime(0, 0),
-            maxTime = LocalTime(23, 59),
-            selectedTextStyle = sizeConfig.itemTextStyle,
-            defaultTextStyle = sizeConfig.itemTextStyle.copy(color = colors.unselectedText),
-            dateTimePickerView = DateTimePickerView.BOTTOM_SHEET_VIEW,
-            selectorProperties = WheelPickerDefaults.selectorProperties(
-                borderColor = colors.divider
-            ),
-            onTimeChangeListener = { time ->
+        // Using darkokoa datetime wheel picker
+        Box(
+            modifier = Modifier.fillMaxWidth().height(sizeConfig.height),
+            contentAlignment = Alignment.Center
+        ) {
+            WheelTimePicker(
+                modifier = Modifier.fillMaxSize(),
+                startTime = selectedTime,
+                timeFormatter = timeFormatter(
+                    timeFormat = if (format == TimeFormat.Hour24)
+                        DarkokaoTimeFormat.HOUR_24
+                    else
+                        DarkokaoTimeFormat.AM_PM
+                ),
+                textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
+                textColor = colors.selectedText,
+                selectorProperties = WheelPickerDefaults.selectorProperties(
+                   color = colors.divider,
+                   shape = sizeConfig.selectorShape,
+                   border = sizeConfig.selectorBorder
+                )
+            ) { time ->
                 // Apply minuteInterval constraint
                 val adjustedMinute = (time.minute / minuteInterval) * minuteInterval
                 val adjustedTime = LocalTime(time.hour, adjustedMinute)
-                selectedTime = DateTimeUtils.now().atTime(adjustedTime)
+                selectedTime = adjustedTime
                 onTimeSelected(adjustedTime)
             }
-        )
+        }
     }
 }
 
@@ -484,23 +498,27 @@ private fun RangeWheelTimePickerImpl(
         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
 
         // Wheel picker
-        WheelTimePickerView(
-            modifier = Modifier.fillMaxWidth(),
-            showTimePicker = false,
-            hideHeader = true,
-            startTime = if (selectingStart) (startTime ?: LocalTime(12, 0)) else (endTime ?: LocalTime(12, 0)),
-            height = sizeConfig.height,
-            timeFormat = if (format == TimeFormat.Hour12)
-                network.chaintech.kmp_date_time_picker.utils.TimeFormat.AM_PM
-            else
-                network.chaintech.kmp_date_time_picker.utils.TimeFormat.HOUR_24,
-            minTime = LocalTime(0, 0),
-            maxTime = LocalTime(23, 59),
-            selectedTextStyle = sizeConfig.itemTextStyle,
-            defaultTextStyle = sizeConfig.itemTextStyle.copy(color = colors.unselectedText),
-            dateTimePickerView = DateTimePickerView.BOTTOM_SHEET_VIEW,
-            selectorProperties = WheelPickerDefaults.selectorProperties(borderColor = colors.divider),
-            onTimeChangeListener = { time ->
+        Box(
+            modifier = Modifier.fillMaxWidth().height(sizeConfig.height),
+            contentAlignment = Alignment.Center
+        ) {
+            WheelTimePicker(
+                modifier = Modifier.fillMaxSize(),
+                startTime = if (selectingStart) (startTime ?: LocalTime(12, 0)) else (endTime ?: LocalTime(12, 0)),
+                timeFormatter = timeFormatter(
+                    timeFormat = if (format == TimeFormat.Hour24)
+                        DarkokaoTimeFormat.HOUR_24
+                    else
+                        DarkokaoTimeFormat.AM_PM
+                ),
+                textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
+                textColor = colors.selectedText,
+                selectorProperties = WheelPickerDefaults.selectorProperties(
+                    color = colors.divider,
+                    shape = sizeConfig.selectorShape,
+                    border = sizeConfig.selectorBorder
+                )
+            ) { time ->
                 // Apply minuteInterval constraint
                 val adjustedMinute = (time.minute / minuteInterval) * minuteInterval
                 val adjustedTime = LocalTime(time.hour, adjustedMinute)
@@ -513,7 +531,7 @@ private fun RangeWheelTimePickerImpl(
                 }
                 onRangeSelected(startTime, endTime)
             }
-        )
+        }
     }
 }
 

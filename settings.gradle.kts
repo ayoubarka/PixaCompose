@@ -15,3 +15,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "PixaCompose"
 include(":library")
+include(":demo")

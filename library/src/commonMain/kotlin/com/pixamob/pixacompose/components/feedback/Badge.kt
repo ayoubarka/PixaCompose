@@ -24,11 +24,9 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
 
@@ -121,21 +119,21 @@ private fun getBadgeConfig(size: BadgeSize): BadgeConfig {
         BadgeSize.Small -> BadgeConfig(
             size = 16.dp,
             padding = 3.dp,
-            textStyle = typography.captionBold.copy(fontSize = 9.sp),
+            textStyle = typography.labelSmall,  // 10sp - proper Nano text size
             cornerRadius = RadiusSize.Small,
             iconSize = 10.dp
         )
         BadgeSize.Medium -> BadgeConfig(
             size = 20.dp,
             padding = 4.dp,
-            textStyle = typography.captionBold.copy(fontSize = 10.sp),
+            textStyle = typography.labelSmall,  // 10sp - proper Nano text size
             cornerRadius = RadiusSize.Medium,
             iconSize = 12.dp
         )
         BadgeSize.Large -> BadgeConfig(
             size = 24.dp,
             padding = 5.dp,
-            textStyle = typography.labelMedium.copy(fontWeight = FontWeight.Bold),
+            textStyle = typography.labelMedium,  // 12sp - proper Compact text size
             cornerRadius = RadiusSize.Medium,
             iconSize = 14.dp
         )

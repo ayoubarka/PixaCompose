@@ -1,8 +1,6 @@
 package com.pixamob.pixacompose.components.navigation
 import com.pixamob.pixacompose.theme.SizeVariant
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -21,35 +19,31 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.pixamob.pixacompose.components.actions.PixaButton
+import com.pixamob.pixacompose.components.actions.ButtonVariant
+import com.pixamob.pixacompose.components.actions.ButtonShape
+import com.pixamob.pixacompose.components.actions.ButtonColors
+import com.pixamob.pixacompose.components.actions.ButtonStateColors
 import com.pixamob.pixacompose.components.display.PixaAvatar
-import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.components.feedback.PixaBadge
 import com.pixamob.pixacompose.components.feedback.BadgeSize
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.theme.*
-import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION - Data models and enums
@@ -59,7 +53,7 @@ import com.pixamob.pixacompose.utils.AnimationUtils
  * Action configuration for top navigation bar
  *
  * @param icon Painter for the action icon
- * @param contentDescription Accessibility description for the action
+ * @param description Accessibility description for the action
  * @param onClick Callback when action is clicked
  * @param enabled Whether the action is enabled for interaction
  * @param badge Optional badge count for notifications/updates
@@ -68,7 +62,7 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 @Stable
 data class TopNavAction(
     val icon: Painter,
-    val contentDescription: String?,
+    val description: String? = null,
     val onClick: () -> Unit,
     val enabled: Boolean = true,
     val badge: Int? = null,
@@ -120,8 +114,8 @@ private data class TopNavSizeConfig(
  */
 private fun TopNavSize.toSizeConfig(): TopNavSizeConfig = when (this) {
     TopNavSize.Small -> TopNavSizeConfig(
-        height = 48.dp,
-        iconSize = 20.dp,
+        height = HierarchicalSize.Container.Medium  ,
+        iconSize =  HierarchicalSize.Icon.Small,
         avatarSize = SizeVariant.Small,
         horizontalPadding = HierarchicalSize.Spacing.Small,
         verticalPadding = HierarchicalSize.Spacing.Compact,
@@ -129,8 +123,8 @@ private fun TopNavSize.toSizeConfig(): TopNavSizeConfig = when (this) {
         titleFontScale = 0.9f
     )
     TopNavSize.Medium -> TopNavSizeConfig(
-        height = 56.dp,
-        iconSize = 24.dp,
+        height = HierarchicalSize.Container.Large  ,
+        iconSize =  HierarchicalSize.Icon.Medium,
         avatarSize = SizeVariant.Medium,
         horizontalPadding = HierarchicalSize.Spacing.Medium,
         verticalPadding = HierarchicalSize.Spacing.Small,
@@ -138,8 +132,8 @@ private fun TopNavSize.toSizeConfig(): TopNavSizeConfig = when (this) {
         titleFontScale = 1.0f
     )
     TopNavSize.Large -> TopNavSizeConfig(
-        height = 72.dp,
-        iconSize = 28.dp,
+        height = HierarchicalSize.Container.Huge  ,
+        iconSize =  HierarchicalSize.Icon.Large,
         avatarSize = SizeVariant.Large,
         horizontalPadding = HierarchicalSize.Spacing.Medium,
         verticalPadding = HierarchicalSize.Spacing.Medium,
@@ -153,58 +147,49 @@ private fun TopNavSize.toSizeConfig(): TopNavSizeConfig = when (this) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Internal action button with animation and optional badge
+ * Internal action button using PixaButton for consistent styling
  */
 @Composable
-private fun AnimatedActionButton(
+private fun ActionButton(
     action: TopNavAction,
     iconSize: Dp,
-    defaultTint: Color,
+    contentColor: Color,
     modifier: Modifier = Modifier
 ) {
-    val interactionSource = remember { MutableInteractionSource() }
-
-    // Animate scale for press feedback
-    val scale by animateFloatAsState(
-        targetValue = if (action.enabled) 1.0f else 0.85f,
-        animationSpec = AnimationUtils.fastTween(),
-        label = "actionScale"
-    )
-
-    // Use custom tint or default
-    val tintColor = action.tint ?: defaultTint
-
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(iconSize + 20.dp) // Touch target 44dp minimum
-                .scale(scale)
-                .clip(CircleShape)
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = ripple(bounded = true, radius = iconSize + 4.dp),
-                    enabled = action.enabled,
-                    role = Role.Button,
-                    onClick = action.onClick
+        // Use action.tint or contentColor for the icon
+        val iconColor = action.tint ?: contentColor
+
+        PixaButton(
+            onClick = action.onClick,
+            leadingIcon = action.icon,
+            size = when (iconSize) {
+                HierarchicalSize.Icon.Small -> SizeVariant.Small
+                HierarchicalSize.Icon.Medium -> SizeVariant.Medium
+                HierarchicalSize.Icon.Large -> SizeVariant.Large
+                else -> SizeVariant.Medium
+            },
+            variant = ButtonVariant.Ghost,
+            shape = ButtonShape.Circle,
+            enabled = action.enabled,
+            description = action.description,
+            modifier = Modifier.size(iconSize + 20.dp), // Touch target 44dp minimum
+            customColors = ButtonStateColors(
+                default = ButtonColors(
+                    background = Color.Transparent,
+                    content = iconColor,
+                    border = Color.Transparent
+                ),
+                disabled = ButtonColors(
+                    background = Color.Transparent,
+                    content = iconColor.copy(alpha = 0.5f),
+                    border = Color.Transparent
                 )
-                .semantics {
-                    role = Role.Button
-                    action.contentDescription?.let {
-                        contentDescription = it
-                    }
-                },
-            contentAlignment = Alignment.Center
-        ) {
-            PixaIcon(
-                painter = action.icon,
-                contentDescription = action.contentDescription,
-                modifier = Modifier.size(iconSize),
-                tint = if (action.enabled) tintColor else tintColor.copy(alpha = 0.5f)
             )
-        }
+        )
 
         // Badge overlay
         if (action.badge != null && action.badge > 0) {
@@ -409,7 +394,7 @@ fun PixaTopNavBar(
     size: TopNavSize = TopNavSize.Medium,
     elevation: Dp = 0.dp,
     bottomDivider: Boolean = false,
-    includeSafeAreaPadding: Boolean = true,
+    includeSafeAreaPadding: Boolean = false,
     enableScrolling: Boolean = false,
     onAvatarClick: (() -> Unit)? = null,
     ) {
@@ -436,13 +421,6 @@ fun PixaTopNavBar(
         TopNavTitleAlignment.Start
     }
 
-    // Animated content color
-    val animatedContentColor by animateColorAsState(
-        targetValue = contentColor,
-        animationSpec = AnimationUtils.standardTween(),
-        label = "contentColor"
-    )
-
     // Scroll state for actions
     val scrollState = rememberScrollState()
 
@@ -462,8 +440,7 @@ fun PixaTopNavBar(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(sizeConfig.height)
-                .padding(horizontal = sizeConfig.horizontalPadding)
-                .padding(vertical = sizeConfig.verticalPadding),
+                .padding(horizontal = sizeConfig.horizontalPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -479,10 +456,10 @@ fun PixaTopNavBar(
                     }
                 ) {
                     startActions.forEach { action ->
-                        AnimatedActionButton(
+                        ActionButton(
                             action = action,
                             iconSize = sizeConfig.iconSize,
-                            defaultTint = animatedContentColor
+                            contentColor = contentColor
                         )
                     }
                 }
@@ -531,10 +508,10 @@ fun PixaTopNavBar(
                     }
                 ) {
                     endActions.forEach { action ->
-                        AnimatedActionButton(
+                        ActionButton(
                             action = action,
                             iconSize = sizeConfig.iconSize,
-                            defaultTint = animatedContentColor
+                            contentColor = contentColor
                         )
                     }
 
@@ -566,159 +543,3 @@ fun PixaTopNavBar(
         }
     }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONVENIENCE - Preset configurations
-// ═══════════════════════════════════════════════════════════════════════════════
-
-/**
- * Convenience function for a top nav bar with back button and title
- *
- * @param title Title text to display
- * @param onBack Callback when back button is clicked
- * @param backIcon Back icon painter
- * @param subtitle Optional subtitle text
- * @param modifier Optional modifier
- * @param size Size variant
- * @param elevation Shadow elevation
- * @param containerColor Background color
- */
-@Composable
-fun BackTopNavBar(
-    title: String,
-    onBack: () -> Unit,
-    backIcon: Painter,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    size: TopNavSize = TopNavSize.Medium,
-    elevation: Dp = 0.dp,
-    containerColor: Color = AppTheme.colors.baseSurfaceDefault
-) {
-    PixaTopNavBar(
-        modifier = modifier,
-        title = title,
-        subtitle = subtitle,
-        startActions = listOf(
-            TopNavAction(
-                icon = backIcon,
-                contentDescription = "Navigate back",
-                onClick = onBack
-            )
-        ),
-        size = size,
-        elevation = elevation,
-        containerColor = containerColor
-    )
-}
-
-/**
- * Convenience function for a top nav bar with only a title (no actions)
- *
- * @param title Title text to display
- * @param subtitle Optional subtitle text
- * @param modifier Optional modifier
- * @param titleAlignment Title alignment (defaults to Center)
- * @param size Size variant
- * @param elevation Shadow elevation
- * @param bottomDivider Show bottom divider
- * @param containerColor Background color
- */
-@Composable
-fun TitleOnlyTopNavBar(
-    title: String,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    titleAlignment: TopNavTitleAlignment = TopNavTitleAlignment.Center,
-    size: TopNavSize = TopNavSize.Medium,
-    elevation: Dp = 0.dp,
-    bottomDivider: Boolean = false,
-    containerColor: Color = AppTheme.colors.baseSurfaceDefault
-) {
-    PixaTopNavBar(
-        modifier = modifier,
-        title = title,
-        subtitle = subtitle,
-        titleAlignment = titleAlignment,
-        size = size,
-        elevation = elevation,
-        bottomDivider = bottomDivider,
-        containerColor = containerColor
-    )
-}
-
-/**
- * Convenience function for a top nav bar with title and profile avatar
- *
- * @param title Title text to display
- * @param profileImageUrl URL of the profile image
- * @param onAvatarClick Callback when avatar is clicked
- * @param subtitle Optional subtitle text
- * @param modifier Optional modifier
- * @param startActions Optional start actions (e.g., menu button)
- * @param endActions Optional additional end actions before avatar
- * @param size Size variant
- * @param elevation Shadow elevation
- * @param containerColor Background color
- */
-@Composable
-fun ProfileTopNavBar(
-    title: String,
-    profileImageUrl: String,
-    onAvatarClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    subtitle: String? = null,
-    startActions: List<TopNavAction> = emptyList(),
-    endActions: List<TopNavAction> = emptyList(),
-    size: TopNavSize = TopNavSize.Medium,
-    elevation: Dp = 2.dp,
-    containerColor: Color = AppTheme.colors.baseSurfaceDefault
-) {
-    PixaTopNavBar(
-        modifier = modifier,
-        title = title,
-        subtitle = subtitle,
-        startActions = startActions,
-        endActions = endActions,
-        profileImageUrl = profileImageUrl,
-        onAvatarClick = onAvatarClick,
-        size = size,
-        elevation = elevation,
-        containerColor = containerColor
-    )
-}
-
-/**
- * Convenience function for a top nav bar with custom title composable
- *
- * @param titleComposable Custom composable for the title area
- * @param modifier Optional modifier
- * @param startActions Optional start actions
- * @param endActions Optional end actions
- * @param size Size variant
- * @param elevation Shadow elevation
- * @param bottomDivider Show bottom divider
- * @param containerColor Background color
- */
-@Composable
-fun CustomTitleTopNavBar(
-    titleComposable: @Composable () -> Unit,
-    modifier: Modifier = Modifier,
-    startActions: List<TopNavAction> = emptyList(),
-    endActions: List<TopNavAction> = emptyList(),
-    size: TopNavSize = TopNavSize.Medium,
-    elevation: Dp = 0.dp,
-    bottomDivider: Boolean = false,
-    containerColor: Color = AppTheme.colors.baseSurfaceDefault
-) {
-    PixaTopNavBar(
-        modifier = modifier,
-        titleComposable = titleComposable,
-        startActions = startActions,
-        endActions = endActions,
-        size = size,
-        elevation = elevation,
-        bottomDivider = bottomDivider,
-        containerColor = containerColor
-    )
-}
-

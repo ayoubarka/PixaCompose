@@ -429,7 +429,7 @@ private fun getTabStyle(
  * Handles: Click interaction, State animation, Content rendering
  */
 @Composable
-private fun PixaTab(
+fun PixaTab(
     selected: Boolean,
     onClick: () -> Unit,
     content: TabContent,
