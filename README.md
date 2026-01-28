@@ -25,7 +25,7 @@
 
 ```kotlin
 commonMain.dependencies {
-    implementation("com.pixamob:pixacompose:1.0.5")
+    implementation("com.pixamob:pixacompose:1.1.0")
 }
 ```
 
@@ -33,7 +33,7 @@ commonMain.dependencies {
 
 ```kotlin
 dependencies {
-    implementation("com.pixamob:pixacompose:1.0.5")
+    implementation("com.pixamob:pixacompose:1.1.0")
 }
 ```
 
