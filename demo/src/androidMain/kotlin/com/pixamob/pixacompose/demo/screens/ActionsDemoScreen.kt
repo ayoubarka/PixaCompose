@@ -241,7 +241,6 @@ fun ActionsDemoScreen(onBack: () -> Unit) {
                 Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)) {
 
                     PixaButton(
-                        modifier = Modifier.fillMaxWidth(),
                         onClick = {},
                         text = "Start Arrangement",
                         leadingIcon = painterResource(R.drawable.ic_home_bold_duotone),
@@ -251,7 +250,6 @@ fun ActionsDemoScreen(onBack: () -> Unit) {
                     )
 
                     PixaButton(
-                        modifier = Modifier.fillMaxWidth(),
                         onClick = {},
                         text = "Center Arrangement",
                         leadingIcon = painterResource(R.drawable.ic_home_bold_duotone),
@@ -261,7 +259,6 @@ fun ActionsDemoScreen(onBack: () -> Unit) {
                     )
 
                     PixaButton(
-                        modifier = Modifier.fillMaxWidth(),
                         onClick = {},
                         text = "End Arrangement",
                         leadingIcon = painterResource(R.drawable.ic_home_bold_duotone),
@@ -271,7 +268,6 @@ fun ActionsDemoScreen(onBack: () -> Unit) {
                     )
 
                     PixaButton(
-                        modifier = Modifier.fillMaxWidth(),
                         onClick = {},
                         text = "Between Arrangement",
                         leadingIcon = painterResource(R.drawable.ic_home_bold_duotone),
@@ -281,7 +277,6 @@ fun ActionsDemoScreen(onBack: () -> Unit) {
                     )
 
                     PixaButton(
-                        modifier = Modifier.fillMaxWidth(),
                         onClick = {},
                         text = "Around Arrangement",
                         leadingIcon = painterResource(R.drawable.ic_home_bold_duotone),

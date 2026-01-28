@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -360,7 +359,8 @@ private fun InternalButton(
     }
 
     CompositionLocalProvider(LocalContentColor provides contentColor) {
-        Box(
+        // ✅ Use Row directly instead of Box + Row
+        Row(
             modifier = buttonModifier
                 .shadow(
                     elevation = if (enabled) elevation else 0.dp,
@@ -372,7 +372,7 @@ private fun InternalButton(
                 .then(
                     if (currentColors.border != Color.Transparent) {
                         Modifier.border(
-                            BorderStroke(HierarchicalSize.Border.Compact, borderColor),  // 1dp
+                            BorderStroke(HierarchicalSize.Border.Compact, borderColor),
                             buttonShape
                         )
                     } else Modifier
@@ -384,50 +384,43 @@ private fun InternalButton(
                     role = Role.Button,
                     onClick = onClick,
                     onClickLabel = description
-                ),
-            contentAlignment = contentAlignment
-        ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        horizontal = if (shape == ButtonShape.Circle) {
-                            0.dp
-                        } else {
-                            sizeConfig.horizontalPadding
-                        }
-                    ),
-                horizontalArrangement = arrangement,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (loading) {
-                    if (loadingIcon != null) {
-                        PixaIcon(
-                            painter = loadingIcon,
-                            contentDescription = "Loading",
-                            size = sizeConfig.iconSize,
-                            tint = contentColor
-                        )
+                )
+                .padding(
+                    horizontal = if (shape == ButtonShape.Circle) {
+                        0.dp
                     } else {
-                        PixaCircularIndicator(
-                            progress = null, // Indeterminate
-                            modifier = Modifier.size(sizeConfig.iconSize),
-                            sizePreset = ProgressSize.Small,
-                            customColors = ProgressColors(
-                                progress = contentColor,
-                                track = contentColor.copy(alpha = 0.2f),
-                                label = contentColor
-                            )
-                        )
+                        sizeConfig.horizontalPadding
                     }
+                ),
+            horizontalArrangement = arrangement,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (loading) {
+                if (loadingIcon != null) {
+                    PixaIcon(
+                        painter = loadingIcon,
+                        contentDescription = "Loading",
+                        size = sizeConfig.iconSize,
+                        tint = contentColor
+                    )
                 } else {
-                    content()
+                    PixaCircularIndicator(
+                        progress = null,
+                        modifier = Modifier.size(sizeConfig.iconSize),
+                        sizePreset = ProgressSize.Small,
+                        customColors = ProgressColors(
+                            progress = contentColor,
+                            track = contentColor.copy(alpha = 0.2f),
+                            label = contentColor
+                        )
+                    )
                 }
+            } else {
+                content()
             }
         }
     }
 }
-
 // ============================================================================
 // PUBLIC API
 // ============================================================================

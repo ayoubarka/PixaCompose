@@ -125,12 +125,12 @@ object HierarchicalSize {
      */
     object Icon {
         val None = 0.dp            // No icon
-        val Nano = 12.dp           // Micro indicators, inline icons
-        val Compact = 16.dp        // Small badges, compact UI
-        val Small = 20.dp          // Secondary icons, list item accessories
+        val Nano = 10.dp           // Micro indicators, inline icons
+        val Compact = 14.dp        // Small badges, compact UI
+        val Small = 18.dp          // Secondary icons, list item accessories
         val Medium = 24.dp         // Standard icons (Material Design base) ⭐
         val Large = 28.dp          // Prominent icons in buttons/cards
-        val Huge = 32.dp           // Hero icons, primary actions
+        val Huge = 36.dp           // Hero icons, primary actions
         val Massive = 48.dp        // Marketing, empty states, splash screens
 
         fun forVariant(variant: SizeVariant): Dp = when (variant) {

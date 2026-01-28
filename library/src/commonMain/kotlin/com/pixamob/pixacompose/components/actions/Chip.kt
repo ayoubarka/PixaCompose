@@ -292,8 +292,8 @@ private fun getChipTheme(
  * Base Chip Component - Internal implementation
  */
 @Composable
-private fun PixaChip(
-    text: String,
+ fun PixaChip(
+    text: String?,
     variant: ChipVariant,
     size: SizeVariant,
     type: ChipType,
@@ -372,8 +372,8 @@ private fun PixaChip(
                 }
                 contentDescriptionText?.let {
                     contentDescription = it
-                } ?: run {
-                    contentDescription = text
+                } ?: text?.let {
+                    contentDescription = it
                 }
             }
             .then(
@@ -406,16 +406,18 @@ private fun PixaChip(
                     Spacer(modifier = Modifier.width(config.iconSpacing))
                 }
 
-                // Text
-                Text(
-                    text = text,
-                    style = config.textStyle(),
-                    color = contentColor,
-                    textAlign = TextAlign.Center,
-                    overflow = TextOverflow.Ellipsis,
-                    maxLines = 1,
-                    modifier = Modifier.widthIn(max = HierarchicalSize.Image.Medium + HierarchicalSize.Spacing.Massive)  // 120dp + 48dp
-                )
+                // Text (only if provided)
+                if (!text.isNullOrBlank()) {
+                    Text(
+                        text = text,
+                        style = config.textStyle(),
+                        color = contentColor,
+                        textAlign = TextAlign.Center,
+                        overflow = TextOverflow.Ellipsis,
+                        maxLines = 1,
+                        modifier = Modifier.widthIn(max = HierarchicalSize.Image.Medium + HierarchicalSize.Spacing.Massive)  // 120dp + 48dp
+                    )
+                }
 
                 // Trailing icon
                 if (trailingIcon != null && type != ChipType.Dismissible) {
@@ -464,7 +466,7 @@ private fun PixaChip(
 /**
  * Chip - Compact element representing an attribute, text, entity, or action
  *
- * @param text The text content of the chip
+ * @param text The text content of the chip (optional - can be null for icon-only chips)
  * @param variant Visual style variant (default: Tonal)
  * @param size Size variant (default: Medium)
  * @param type Behavior type (default: Static)
@@ -476,18 +478,26 @@ private fun PixaChip(
  * @param trailingIcon Optional icon after text (not used with Dismissible type)
  * @param modifier Modifier for customization
  * @param customColors Optional custom state colors for different states
- * @param contentDescription Optional accessibility description (defaults to text)
+ * @param contentDescription Optional accessibility description (defaults to text if provided)
  *
  * Common use cases:
  * - Filter chips: variant = Outlined, type = Selectable
  * - Tag chips: variant = Tonal, type = Static
  * - Removable tags: variant = Solid, type = Dismissible
  * - Input chips: variant = Solid, type = Input
+ * - Icon-only chips: text = null, leadingIcon = yourIcon
  *
  * @sample
  * ```
  * // Basic static chip
  * Chip(text = "Featured")
+ *
+ * // Icon-only chip (e.g., color indicator)
+ * Chip(
+ *     text = null,
+ *     leadingIcon = colorIcon,
+ *     variant = ChipVariant.Solid
+ * )
  *
  * // Filter chip with selection
  * var selected by remember { mutableStateOf(false) }
@@ -510,7 +520,7 @@ private fun PixaChip(
  */
 @Composable
 fun Chip(
-    text: String,
+    text: String? = null,
     modifier: Modifier = Modifier,
     variant: ChipVariant = ChipVariant.Tonal,
     size: SizeVariant = SizeVariant.Medium,

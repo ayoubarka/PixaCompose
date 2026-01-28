@@ -136,6 +136,9 @@ private data class TextAreaColors(
 
 /**
  * Get colors for TextArea variant
+ *
+ * Returns color configuration based on variant, error state, focus state, and enabled state.
+ * Text colors can be customized by using the returned TextAreaColors.text property.
  */
 @Composable
 private fun TextAreaVariant.colors(
@@ -151,7 +154,11 @@ private fun TextAreaVariant.colors(
             border = Color.Transparent,
             focusedBorder = colors.brandBorderDefault.copy(alpha = 0.2f),
             errorBorder = colors.errorBorderDefault,
-            text = if (enabled) colors.baseContentTitle else colors.baseContentDisabled,
+            text = when {
+                !enabled -> colors.baseContentDisabled
+                isError -> colors.errorContentDefault
+                else -> colors.baseContentTitle
+            },
             placeholder = colors.baseContentBody.copy(alpha = 0.5f),
             label = if (isFocused) colors.brandContentDefault else colors.baseContentBody,
             helperText = colors.baseContentBody,
@@ -165,7 +172,11 @@ private fun TextAreaVariant.colors(
             border = colors.baseBorderDefault,
             focusedBorder = colors.brandBorderDefault,
             errorBorder = colors.errorBorderDefault,
-            text = if (enabled) colors.baseContentTitle else colors.baseContentDisabled,
+            text = when {
+                !enabled -> colors.baseContentDisabled
+                isError -> colors.errorContentDefault
+                else -> colors.baseContentTitle
+            },
             placeholder = colors.baseContentBody.copy(alpha = 0.5f),
             label = if (isFocused) colors.brandContentDefault else colors.baseContentBody,
             helperText = colors.baseContentBody,
@@ -179,7 +190,11 @@ private fun TextAreaVariant.colors(
             border = Color.Transparent,
             focusedBorder = colors.baseBorderDefault.copy(alpha = 0.3f),
             errorBorder = colors.errorBorderDefault.copy(alpha = 0.3f),
-            text = if (enabled) colors.baseContentTitle else colors.baseContentDisabled,
+            text = when {
+                !enabled -> colors.baseContentDisabled
+                isError -> colors.errorContentDefault
+                else -> colors.baseContentTitle
+            },
             placeholder = colors.baseContentBody.copy(alpha = 0.4f),
             label = if (isFocused) colors.brandContentDefault else colors.baseContentBody,
             helperText = colors.baseContentBody,
@@ -222,6 +237,8 @@ private fun TextAreaVariant.colors(
  * @param showCharacterCount Whether to show character counter
  * @param interactionSource Interaction source for state
  * @param contentDescription Accessibility description
+ * @param customTextColor Optional custom text color (defaults to theme color)
+ * @param customFocusedTextColor Optional custom text color when focused (defaults to customTextColor or theme color)
  *
  * @sample
  * ```
@@ -258,11 +275,21 @@ fun PixaTextArea(
     maxLength: Int? = null,
     showCharacterCount: Boolean = false,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
-    contentDescription: String? = null
+    contentDescription: String? = null,
+    customTextColor: Color? = null,
+    customFocusedTextColor: Color? = null
 ) {
     val config = size.config()
     val isFocused by interactionSource.collectIsFocusedAsState()
     val colors = variant.colors(isError, isFocused, enabled)
+
+    // Determine text color: custom colors override variant colors
+    // Variant colors already handle isError, isFocused, and enabled states
+    val effectiveTextColor = when {
+        customFocusedTextColor != null && isFocused -> customFocusedTextColor
+        customTextColor != null -> customTextColor
+        else -> colors.text  // Use variant color which already considers all states
+    }
 
     // Animated colors
     val animatedBorderColor by animateColorAsState(
@@ -316,7 +343,7 @@ fun PixaTextArea(
                 .heightIn(min = config.minHeight),
             enabled = enabled,
             readOnly = readOnly,
-            textStyle = config.textStyle.copy(color = if (enabled) colors.text else colors.disabledText),
+            textStyle = config.textStyle.copy(color = effectiveTextColor),
             keyboardOptions = keyboardOptions,
             keyboardActions = keyboardActions,
             singleLine = false,

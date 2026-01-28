@@ -340,42 +340,7 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                             showHexInput = true,
                             showHistory = true,
                             onColorChanged = { selectedColor = it },
-                            customPalette = listOf(
-                                // Reds
-                                Color(0xFFEF5350), Color(0xFFF44336), Color(0xFFE53935), Color(0xFFD32F2F),
-                                Color(0xFFC62828), Color(0xFFB71C1C), Color(0xFFA60014), Color(0xFF8B0000),
-                                // Pinks
-                                Color(0xFFEC407A), Color(0xFFE91E63), Color(0xFFDD1E7A), Color(0xFFD81B60),
-                                Color(0xFFAD1457), Color(0xFF880E4F), Color(0xFF6A0080), Color(0xFF4A148C),
-                                // Purples
-                                Color(0xFFAB47BC), Color(0xFF9C27B0), Color(0xFF8E24AA), Color(0xFF7B1FA2),
-                                Color(0xFF6A1B9A), Color(0xFF4A148C), Color(0xFF42297C), Color(0xFF2E1A47),
-                                // Blues
-                                Color(0xFF5C6BC0), Color(0xFF3F51B5), Color(0xFF3949AB), Color(0xFF303F9F),
-                                Color(0xFF283593), Color(0xFF1A237E), Color(0xFF1B2A7C), Color(0xFF0D1B7E),
-                                // Light Blues & Cyans
-                                Color(0xFF42A5F5), Color(0xFF2196F3), Color(0xFF1E88E5), Color(0xFF1976D2),
-                                Color(0xFF1565C0), Color(0xFF0D47A1), Color(0xFF0B3E9C), Color(0xFF0000CD),
-                                // Teals & Greens
-                                Color(0xFF26C6DA), Color(0xFF00BCD4), Color(0xFF00ACC1), Color(0xFF0097A7),
-                                Color(0xFF26A69A), Color(0xFF009688), Color(0xFF00897B), Color(0xFF00695C),
-                                Color(0xFF66BB6A), Color(0xFF4CAF50), Color(0xFF43A047), Color(0xFF388E3C),
-                                Color(0xFF2E7D32), Color(0xFF1B5E20), Color(0xFF145A14), Color(0xFF003D00),
-                                // Yellows & Ambers
-                                Color(0xFFD4E157), Color(0xFFCDDC39), Color(0xFFC0CA33), Color(0xFFAFB42B),
-                                Color(0xFF9E9D24), Color(0xFF827717), Color(0xFF6B6B00), Color(0xFF4F4F00),
-                                Color(0xFFFFEE58), Color(0xFFFFEB3B), Color(0xFFFDD835), Color(0xFFFBC02D),
-                                // Oranges
-                                Color(0xFFFFCA28), Color(0xFFFFC107), Color(0xFFFFB300), Color(0xFFFFA000),
-                                Color(0xFFFF8F00), Color(0xFFFF6F00), Color(0xFFFF5722), Color(0xFFE65100),
-                                Color(0xFFFF9800), Color(0xFFFB8C00), Color(0xFFF57C00), Color(0xFFE65100),
-                                // Browns & Greys
-                                Color(0xFF8D6E63), Color(0xFF78909C), Color(0xFFBDBDBD), Color(0xFF9E9E9E),
-                                Color(0xFF757575), Color(0xFF616161), Color(0xFF424242), Color(0xFF212121),
-                                // Black & White
-                                Color(0xFF000000), Color(0xFFFFFFFF)
-                            ),
-                            modifier = Modifier.fillMaxWidth()
+                               modifier = Modifier.fillMaxWidth()
                         )
 
                         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
