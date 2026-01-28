@@ -243,9 +243,9 @@ val dark_accent_content_default: Color = accentColor[500]!!   // ANCHOR - weight
 val dark_accent_content_focus: Color = accentColor[300]!!
 
 // Base Colors - DARK MODE
-val dark_base_surface_subtle: Color = baseColor[900]!!
+val dark_base_surface_subtle: Color = baseColor[700]!!
 val dark_base_surface_default: Color = baseColor[800]!!
-val dark_base_surface_focus: Color = baseColor[700]!!
+val dark_base_surface_focus: Color = baseColor[900]!!
 val dark_base_surface_disabled: Color = baseColor[950]?.copy(0.5F)!!
 val dark_base_surface_shadow: Color = brandColor[950]!!
 

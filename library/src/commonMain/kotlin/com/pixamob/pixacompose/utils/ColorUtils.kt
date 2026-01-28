@@ -318,6 +318,89 @@ fun Color.contrastColor(): Color {
  * Material Design 3 color palette
  */
 object MaterialColors {
+    /**
+     * Tailwind CSS-inspired default color palette
+     * 10 color families × 10 shades each (50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950)
+     * Total: 100 colors arranged in 10 rows × 10 columns
+     */
+    @Suppress("unused")
+    val tailwindPalette = listOf(
+        // Row 1: White & Grays
+        Color(0xFFFFFFFF), Color(0xFFf5f5f5), Color(0xFFe5e5e5), Color(0xFFa3a3a3),
+        Color(0xFF737373), Color(0xFF404040), Color(0xFF262626), Color(0xFF000000),
+
+        // Row 2: Slate (Cool Gray)
+        Color(0xFFe2e8f0), Color(0xFFcbd5e1), Color(0xFF94a3b8), Color(0xFF64748b),
+        Color(0xFF475569), Color(0xFF334155), Color(0xFF1e293b), Color(0xFF0f172a),
+
+        // Row 3: Red
+        Color(0xFFfecaca), Color(0xFFfca5a5), Color(0xFFf87171), Color(0xFFef4444),
+        Color(0xFFdc2626), Color(0xFFb91c1c), Color(0xFF991b1b), Color(0xFF7f1d1d),
+
+        // Row 4: Orange
+        Color(0xFFfed7aa), Color(0xFFfdba74), Color(0xFFfb923c), Color(0xFFf97316),
+        Color(0xFFea580c), Color(0xFFc2410c), Color(0xFF9a3412), Color(0xFF7c2d12),
+
+        // Row 5: Amber
+        Color(0xFFfde68a), Color(0xFFfcd34d), Color(0xFFfbbf24), Color(0xFFf59e0b),
+        Color(0xFFd97706), Color(0xFFb45309), Color(0xFF92400e), Color(0xFF78350f),
+
+        // Row 6: Yellow
+        Color(0xFFfef08a), Color(0xFFfde047), Color(0xFFfacc15), Color(0xFFeab308),
+        Color(0xFFca8a04), Color(0xFFa16207), Color(0xFF854d0e), Color(0xFF713f12),
+
+        // Row 7: Lime
+        Color(0xFFd9f99d), Color(0xFFbef264), Color(0xFFa3e635), Color(0xFF84cc16),
+        Color(0xFF65a30d), Color(0xFF4d7c0f), Color(0xFF3f6212), Color(0xFF365314),
+
+        // Row 8: Green
+        Color(0xFFbbf7d0), Color(0xFF86efac), Color(0xFF4ade80), Color(0xFF22c55e),
+        Color(0xFF16a34a), Color(0xFF15803d), Color(0xFF166534), Color(0xFF14532d),
+
+        // Row 9: Emerald
+        Color(0xFFa7f3d0), Color(0xFF6ee7b7), Color(0xFF34d399), Color(0xFF10b981),
+        Color(0xFF059669), Color(0xFF047857), Color(0xFF065f46), Color(0xFF064e3b),
+
+        // Row 10: Teal
+        Color(0xFF99f6e4), Color(0xFF5eead4), Color(0xFF2dd4bf), Color(0xFF14b8a6),
+        Color(0xFF0d9488), Color(0xFF0f766e), Color(0xFF115e59), Color(0xFF134e4a),
+
+        // Row 11: Cyan
+        Color(0xFFa5f3fc), Color(0xFF67e8f9), Color(0xFF22d3ee), Color(0xFF06b6d4),
+        Color(0xFF0891b2), Color(0xFF0e7490), Color(0xFF155e75), Color(0xFF164e63),
+
+        // Row 12: Sky
+        Color(0xFFbae6fd), Color(0xFF7dd3fc), Color(0xFF38bdf8), Color(0xFF0ea5e9),
+        Color(0xFF0284c7), Color(0xFF0369a1), Color(0xFF075985), Color(0xFF0c4a6e),
+
+        // Row 13: Blue
+        Color(0xFFbfdbfe), Color(0xFF93c5fd), Color(0xFF60a5fa), Color(0xFF3b82f6),
+        Color(0xFF2563eb), Color(0xFF1d4ed8), Color(0xFF1e40af), Color(0xFF1e3a8a),
+
+        // Row 14: Indigo
+        Color(0xFFc7d2fe), Color(0xFFa5b4fc), Color(0xFF818cf8), Color(0xFF6366f1),
+        Color(0xFF4f46e5), Color(0xFF4338ca), Color(0xFF3730a3), Color(0xFF312e81),
+
+        // Row 15: Violet
+        Color(0xFFddd6fe), Color(0xFFc4b5fd), Color(0xFFa78bfa), Color(0xFF8b5cf6),
+        Color(0xFF7c3aed), Color(0xFF6d28d9), Color(0xFF5b21b6), Color(0xFF4c1d95),
+
+        // Row 16: Purple
+        Color(0xFFe9d5ff), Color(0xFFd8b4fe), Color(0xFFc084fc), Color(0xFFa855f7),
+        Color(0xFF9333ea), Color(0xFF7e22ce), Color(0xFF6b21a8), Color(0xFF581c87),
+
+        // Row 17: Fuchsia
+        Color(0xFFf5d0fe), Color(0xFFf0abfc), Color(0xFFe879f9), Color(0xFFd946ef),
+        Color(0xFFc026d3), Color(0xFFa21caf), Color(0xFF86198f), Color(0xFF701a75),
+
+        // Row 18: Pink
+        Color(0xFFfbcfe8), Color(0xFFf9a8d4), Color(0xFFf472b6), Color(0xFFec4899),
+        Color(0xFFdb2777), Color(0xFFbe185d), Color(0xFF9f1239), Color(0xFF831843),
+
+        // Row 19: Rose
+        Color(0xFFfecdd3), Color(0xFFfda4af), Color(0xFFfb7185), Color(0xFFf43f5e),
+        Color(0xFFe11d48), Color(0xFFbe123c), Color(0xFF9f1239), Color(0xFF881337),
+    )
     @Suppress("unused")
     val material3Colors = listOf(
         Color(0xFFEF5350), // Red

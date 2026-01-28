@@ -299,7 +299,9 @@ fun rememberColorPickerState(
  * @param showHistory Whether to show recent colors
  * @param showHexInput Whether to show hex input field
  * @param showModeSelector Whether to show mode selector tabs
- * @param customPalette Custom color palette for Grid mode (defaults to Material 3 colors)
+ * @param showColorComparison Whether to show previous/current color comparison (default: false)
+ * @param customPalette Custom color palette for Grid mode (defaults to Tailwind-inspired palette with 10 shades × 10 colors)
+ * @param gridColumnsCount Number of columns in grid mode (default: 10 for Tailwind palette)
  * @param enabled Whether the picker is enabled or disabled
  * @param contentDescription Content description for accessibility
  * @param onColorChanged Callback when color changes (debounced for performance)
@@ -315,8 +317,9 @@ fun PixaColorPicker(
     showHistory: Boolean = true,
     showHexInput: Boolean = true,
     showModeSelector: Boolean = true,
+    showColorComparison: Boolean = false,
     customPalette: List<Color>? = null,
-    gridColumnsCount: Int = 6,
+    gridColumnsCount: Int = 10,
     enabled: Boolean = true,
     contentDescription: String = "Color picker",
     onColorChanged: (Color) -> Unit = {}
@@ -343,13 +346,15 @@ fun PixaColorPicker(
             .then(if (!enabled) Modifier.graphicsLayer(alpha = 0.5f) else Modifier),
         verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)
     ) {
-        // Color preview
-        ColorPreview(
-            currentColor = state.currentColor,
-            previousColor = state.previousColor,
-            enabled = enabled,
-            modifier = Modifier.fillMaxWidth()
-        )
+        // Color preview (only shown when showColorComparison is true)
+        if (showColorComparison) {
+            ColorPreview(
+                currentColor = state.currentColor,
+                previousColor = state.previousColor,
+                enabled = enabled,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
 
         // Mode selector
         if (showModeSelector) {
@@ -373,7 +378,7 @@ fun PixaColorPicker(
                 ColorPickerMode.Grid -> GridColorPicker(
                     selectedColor = state.currentColor,
                     onColorSelected = { if (enabled) state.updateColor(it) },
-                    palette = customPalette ?: MaterialColors.material3Colors,
+                    palette = customPalette ?: MaterialColors.tailwindPalette,
                     gridColumnsCount = gridColumnsCount,
                     enabled = enabled,
                     modifier = Modifier.fillMaxWidth()
