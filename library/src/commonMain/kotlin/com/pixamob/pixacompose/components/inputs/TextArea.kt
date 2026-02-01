@@ -150,7 +150,7 @@ private fun TextAreaVariant.colors(
 
     return when (this) {
         TextAreaVariant.Filled -> TextAreaColors(
-            background = if (enabled) colors.baseSurfaceDefault else colors.baseSurfaceDisabled,
+            background = if (enabled) colors.baseSurfaceSubtle else colors.baseSurfaceDisabled,
             border = Color.Transparent,
             focusedBorder = colors.brandBorderDefault.copy(alpha = 0.2f),
             errorBorder = colors.errorBorderDefault,

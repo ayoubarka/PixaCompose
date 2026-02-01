@@ -30,57 +30,36 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
 
-/**
- * Badge Component - Small status indicator for notification counts, status dots, or labels
- */
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Badge variant types
- */
 enum class BadgeVariant {
-    /** Primary brand color - important notifications */
     Primary,
-    /** Success/positive indicator */
     Success,
-    /** Warning/caution indicator */
     Warning,
-    /** Error/critical indicator */
     Error,
-    /** Neutral/default indicator */
     Neutral,
-    /** Informational indicator */
     Info
 }
 
-/**
- * Badge size variants
- */
 enum class BadgeSize {
-    /** 6dp - Small dot indicator */
     Dot,
-    /** 16dp - Minimal badge */
     Small,
-    /** 20dp - Default badge size */
     Medium,
-    /** 24dp - Large badge */
     Large
 }
 
-/**
- * Badge style - affects appearance
- */
 enum class BadgeStyle {
-    /** Solid background */
     Solid,
-    /** Outlined with border */
     Outlined,
-    /** Subtle background */
     Subtle
 }
 
-/**
- * Badge colors for different states
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class BadgeColors(
@@ -89,9 +68,6 @@ data class BadgeColors(
     val border: Color = Color.Transparent
 )
 
-/**
- * Badge configuration
- */
 @Immutable
 @Stable
 data class BadgeConfig(
@@ -102,9 +78,10 @@ data class BadgeConfig(
     val iconSize: Dp
 )
 
-/**
- * Get badge configuration based on size
- */
+// ════════════════════════════════════════════════════════════════════════════
+// THEME PROVIDER
+// ════════════════════════════════════════════════════════════════════════════
+
 @Composable
 private fun getBadgeConfig(size: BadgeSize): BadgeConfig {
     val typography = AppTheme.typography

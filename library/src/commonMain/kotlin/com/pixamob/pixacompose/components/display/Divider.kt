@@ -15,37 +15,29 @@ import androidx.compose.ui.unit.Dp
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Divider Orientation - Direction of the divider
- */
 enum class DividerOrientation {
-    /** Horizontal line (default for content separation) */
     Horizontal,
-    /** Vertical line (for toolbar/sidebar separation) */
     Vertical
 }
 
-/**
- * Divider Colors
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class DividerColors(
     val line: Color
 )
 
+// ════════════════════════════════════════════════════════════════════════════
+// INTERNAL COMPONENT
+// ════════════════════════════════════════════════════════════════════════════
 
-// ============================================================================
-// BASE COMPONENT (Internal)
-// ============================================================================
-
-/**
- * Base Divider implementation
- */
 @Composable
 private fun PixaDividerImpl(
     modifier: Modifier = Modifier,
@@ -67,23 +59,18 @@ private fun PixaDividerImpl(
     )
 }
 
-// ============================================================================
-// PUBLIC API
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * PixaDivider - Visual separator between content
  *
- * A simple line component for separating content sections horizontally or vertically.
- * Commonly used in lists, cards, toolbars, and layouts to create visual hierarchy.
+ * A simple line component for separating content sections.
  *
- * @param modifier Modifier for the divider
- * @param orientation Direction of the divider (Horizontal or Vertical)
- * @param thickness Line thickness in Dp (default: HierarchicalSize.Divider.Compact = 1dp)
- * @param color Optional custom color (overrides default color)
+ * ## Usage Examples
  *
- * @sample
- * ```
+ * ```kotlin
  * // Horizontal divider (most common)
  * PixaDivider()
  *
@@ -96,6 +83,11 @@ private fun PixaDividerImpl(
  * // Custom color divider
  * PixaDivider(color = Color.Red)
  * ```
+ *
+ * @param modifier Modifier for the divider
+ * @param orientation Direction (Horizontal or Vertical)
+ * @param thickness Line thickness in Dp
+ * @param color Optional custom color
  */
 @Composable
 fun PixaDivider(

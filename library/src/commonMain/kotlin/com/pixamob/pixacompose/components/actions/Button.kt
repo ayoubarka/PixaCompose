@@ -49,40 +49,27 @@ import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Button Variant - Visual style of the button
- */
 enum class ButtonVariant {
-    /** Solid background with high emphasis (Primary actions: Submit, Save, Continue) */
     Solid,
-    /** Subtle tonal background with medium emphasis (Featured secondary actions) */
     Tonal,
-    /** Border only with medium emphasis (Secondary actions: Cancel, Back, Edit) */
     Outlined,
-    /** Transparent background with low emphasis (Tertiary actions: Learn More, Details) */
     Ghost
 }
 
-
-/**
- * Button Shape - Corner radius variants
- */
 enum class ButtonShape {
-    /** Rounded corners based on size */
     Default,
-    /** Fully rounded (height / 2 radius) */
     Pill,
-    /** Perfect circle (width = height, for icon-only buttons) */
     Circle
 }
 
-/**
- * Button Size Configuration
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class ButtonSizeConfig(
@@ -95,9 +82,6 @@ data class ButtonSizeConfig(
     val textStyle: @Composable () -> TextStyle
 )
 
-/**
- * Button Colors for different states
- */
 @Immutable
 @Stable
 data class ButtonColors(
@@ -107,9 +91,6 @@ data class ButtonColors(
     val ripple: Color = content.copy(alpha = 0.12f)
 )
 
-/**
- * Button State Colors
- */
 @Immutable
 @Stable
 data class ButtonStateColors(
@@ -118,13 +99,10 @@ data class ButtonStateColors(
     val loading: ButtonColors = default
 )
 
-// ============================================================================
-// SIZE CONFIGURATIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// THEME PROVIDER
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Get size configuration for a button size variant
- */
 @Composable
 private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
     val typography = AppTheme.typography
@@ -140,8 +118,8 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
         )
 
         SizeVariant.Nano -> ButtonSizeConfig(
-            height = HierarchicalSize.Button.Nano,  // 24dp
-            horizontalPadding = HierarchicalSize.Padding.Nano,  // 2dp
+            height = HierarchicalSize.Button.Nano,
+            horizontalPadding = HierarchicalSize.Padding.Nano,
             iconSize = HierarchicalSize.Icon.Nano,  // 12dp
             iconSpacing = HierarchicalSize.Spacing.Nano,  // 2dp
             minWidth = 0.dp,

@@ -39,62 +39,16 @@ import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlin.math.min
 
-/**
- * ProgressIndicator Component
- *
- * Show loading state or task progress with circular and linear variants.
- * Supports determinate (with progress value) and indeterminate (infinite animation) modes.
- * Uses semantic colors for different status indicators.
- *
- * Features:
- * - Circular and Linear variants
- * - Determinate (0.0 to 1.0 progress) and Indeterminate (infinite) modes
- * - Multiple size presets
- * - Semantic color variants (Primary, Success, Warning, Error, Info, Neutral)
- * - Optional percentage label for circular progress
- * - Smooth animations
- * - Full accessibility support
- *
- * @sample
- * ```
- * // Indeterminate loading
- * CircularProgressIndicator()
- *
- * // Determinate progress
- * CircularProgressIndicator(
- *     progress = 0.65f,
- *     showPercentage = true
- * )
- *
- * // Linear progress bar
- * LinearProgressIndicator(
- *     progress = uploadProgress,
- *     variant = ProgressVariant.Success,
- *     showLabel = true,
- *     label = "Uploading..."
- * )
- * ```
- */
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
-/**
- * Progress indicator variant - semantic colors
- */
 enum class ProgressVariant {
-    /** Primary brand color - default */
     Primary,
-    /** Success/completion indicator */
     Success,
-    /** Warning/caution indicator */
     Warning,
-    /** Error/failed indicator */
     Error,
-    /** Informational indicator */
     Info,
-    /** Neutral/default indicator */
     Neutral
 }
 

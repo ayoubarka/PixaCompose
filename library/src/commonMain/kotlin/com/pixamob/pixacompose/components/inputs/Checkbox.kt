@@ -39,47 +39,31 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.*
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Checkbox State - Selection state
- */
 enum class CheckboxState {
-    /** Not selected */
     Unchecked,
-    /** Selected */
     Checked,
-    /** Partially selected (for parent checkbox with mixed children) */
     Indeterminate
 }
 
-/**
- * Checkbox Variant - Visual style
- */
 enum class CheckboxVariant {
-    /** Filled background when checked (Primary style) */
     Filled,
-    /** Outlined border with checkmark (Subtle style) */
     Outlined
 }
 
-/**
- * Checkbox Size - Box size variants
- */
 enum class CheckboxSize {
-    /** 16dp - Compact UIs, dense forms */
     Small,
-    /** 20dp - DEFAULT, standard forms */
     Medium,
-    /** 24dp - Touch-friendly, prominent selections */
     Large
 }
 
-/**
- * Checkbox Size Configuration
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class CheckboxSizeConfig(
@@ -91,9 +75,6 @@ data class CheckboxSizeConfig(
     val labelStyle: @Composable () -> TextStyle
 )
 
-/**
- * Checkbox Colors
- */
 @Immutable
 @Stable
 data class CheckboxColors(
@@ -103,9 +84,6 @@ data class CheckboxColors(
     val label: Color
 )
 
-/**
- * Checkbox State Colors
- */
 @Immutable
 @Stable
 data class CheckboxStateColors(
@@ -115,13 +93,10 @@ data class CheckboxStateColors(
     val disabled: CheckboxColors
 )
 
-// ============================================================================
-// SIZE CONFIGURATIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// THEME PROVIDER
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Get size configuration for checkbox
- */
 @Composable
 private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
     val typography = AppTheme.typography

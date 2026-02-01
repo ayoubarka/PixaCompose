@@ -31,84 +31,28 @@ import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlinx.coroutines.delay
 
-/**
- * Alert Component
- *
- * Important inline messages with semantic colors (info, success, warning, error).
- * Built on top of Card component with integrated icons, actions, and dismissal.
- *
- * Features:
- * - Four semantic variants: Info, Success, Warning, Error
- * - Multiple styles: Filled, Outlined, Subtle
- * - Optional icon (default icons provided per variant)
- * - Dismissible with close button
- * - Action button support
- * - Card-based layout with proper spacing
- * - Full accessibility support
- * - Animated entrance and dismissal
- *
- * @sample
- * ```
- * // Simple info alert
- * Alert(
- *     title = "New Feature Available",
- *     message = "Check out our latest updates in the settings menu.",
- *     variant = AlertVariant.Info
- * )
- *
- * // Dismissible warning alert
- * Alert(
- *     title = "Storage Almost Full",
- *     message = "You're running low on storage space.",
- *     variant = AlertVariant.Warning,
- *     dismissible = true,
- *     onDismiss = { /* handle dismiss */ }
- * )
- *
- * // Error alert with action
- * Alert(
- *     title = "Connection Failed",
- *     message = "Unable to connect to server. Please try again.",
- *     variant = AlertVariant.Error,
- *     actionText = "Retry",
- *     onAction = { /* retry connection */ }
- * )
- * ```
- */
+// ════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
-/**
- * Alert semantic variants
- */
 enum class AlertVariant {
-    /** Informational message - blue */
     Info,
-    /** Success/positive message - green */
     Success,
-    /** Warning/caution message - orange */
     Warning,
-    /** Error/critical message - red */
     Error
 }
 
-/**
- * Alert visual style
- */
 enum class AlertStyle {
-    /** Filled background with semantic color */
     Filled,
-    /** Outlined border with white/transparent background */
     Outlined,
-    /** Subtle background tint */
     Subtle
 }
 
-/**
- * Alert colors for different states
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class AlertColors(
@@ -121,9 +65,6 @@ data class AlertColors(
     val close: Color
 )
 
-/**
- * Alert configuration
- */
 @Immutable
 @Stable
 data class AlertConfig(
@@ -138,13 +79,10 @@ data class AlertConfig(
     val maxMessageLines: Int = 4
 )
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Get alert colors based on variant and style
- */
 @Composable
 private fun getAlertColors(
     variant: AlertVariant,

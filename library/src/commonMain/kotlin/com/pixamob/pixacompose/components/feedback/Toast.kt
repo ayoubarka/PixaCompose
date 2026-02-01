@@ -116,55 +116,27 @@ import kotlin.random.Random
  * ```
  */
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Toast semantic variants
- */
 enum class ToastVariant {
-    /** Informational message - blue */
     Info,
-
-    /** Success/positive message - green */
     Success,
-
-    /** Warning/caution message - orange */
     Warning,
-
-    /** Error/critical message - red */
     Error
 }
 
-/**
- * Toast duration presets
- */
 enum class ToastDuration(val milliseconds: Long) {
-    /** Short duration - 2 seconds */
     Short(2000L),
-
-    /** Long duration - 4 seconds */
     Long(4000L),
-
-    /** Unlimited - must be manually dismissed */
     Unlimited(-1L)
 }
 
-/**
- * Toast screen position
- */
 enum class ToastPosition {
-    /** Top center of screen */
     Top,
-
-    /** Bottom center of screen */
     Bottom,
-
-    /** Top start (left in LTR) */
     TopStart,
-
-    /** Top end (right in LTR) */
     TopEnd,
 
     /** Bottom start (left in LTR) */

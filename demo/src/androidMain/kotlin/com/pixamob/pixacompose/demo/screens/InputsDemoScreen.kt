@@ -19,7 +19,7 @@ import com.pixamob.pixacompose.utils.DateTimeUtils.toIsoString
 
 /**
  * Complete Inputs Category Demo Screen
- * Displays: TextField, Checkbox, RadioButton, Switch, Slider, DatePicker, etc.
+ * Displays: TextField, Checkbox, RadioButton, Switch, Slider, DatePicker, Dropdown, etc.
  */
 @Composable
 fun InputsDemoScreen(onBack: () -> Unit) {
@@ -36,6 +36,9 @@ fun InputsDemoScreen(onBack: () -> Unit) {
 
     // Date Picker state
     var selectedDate by remember { mutableStateOf<String>("Select date") }
+
+    // Dropdown state
+    var selectedCountry by remember { mutableStateOf<String?>(null) }
 
     Column(
         modifier = Modifier
@@ -257,31 +260,31 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Large)) {
                         Text("Small Slider", style = AppTheme.typography.subtitleBold)
-                        FilledSlider(
+                        PixaSlider(
                             value = sliderValue,
                             onValueChange = { sliderValue = it },
                             size = SliderSize.Small,
-                            label = "Value",
+                            variant = SliderVariant.Filled,
                             showValue = true,
                             modifier = Modifier.fillMaxWidth()
                         )
 
                         Text("Medium Slider", style = AppTheme.typography.subtitleBold)
-                        FilledSlider(
+                        PixaSlider(
                             value = sliderValue,
                             onValueChange = { sliderValue = it },
                             size = SliderSize.Medium,
-                            label = "Value",
+                            variant = SliderVariant.Filled,
                             showValue = true,
                             modifier = Modifier.fillMaxWidth()
                         )
 
                         Text("Large Slider", style = AppTheme.typography.subtitleBold)
-                        FilledSlider(
+                        PixaSlider(
                             value = sliderValue,
                             onValueChange = { sliderValue = it },
                             size = SliderSize.Large,
-                            label = "Value",
+                            variant = SliderVariant.Filled,
                             showValue = true,
                             modifier = Modifier.fillMaxWidth()
                         )
@@ -297,29 +300,29 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Large)) {
                         Text("Filled", style = AppTheme.typography.subtitleBold)
-                        FilledSlider(
+                        PixaSlider(
                             value = sliderValue,
                             onValueChange = { sliderValue = it },
                             size = SliderSize.Medium,
-                            label = "Filled",
+                            variant = SliderVariant.Filled,
                             modifier = Modifier.fillMaxWidth()
                         )
 
                         Text("Outlined", style = AppTheme.typography.subtitleBold)
-                        OutlinedSlider(
+                        PixaSlider(
                             value = sliderValue,
                             onValueChange = { sliderValue = it },
                             size = SliderSize.Medium,
-                            label = "Outlined",
+                            variant = SliderVariant.Outlined,
                             modifier = Modifier.fillMaxWidth()
                         )
 
                         Text("Minimal", style = AppTheme.typography.subtitleBold)
-                        MinimalSlider(
+                        PixaSlider(
                             value = sliderValue,
                             onValueChange = { sliderValue = it },
                             size = SliderSize.Medium,
-                            label = "Minimal",
+                            variant = SliderVariant.Minimal,
                             modifier = Modifier.fillMaxWidth()
                         )
                     }
@@ -357,26 +360,24 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Large)) {
                         Text("Wheel Picker - 12 Hour Format", style = AppTheme.typography.subtitleBold)
-                        TimePicker(
+                        PixaTimePicker(
                             variant = TimePickerVariant.Wheel,
                             mode = TimeSelectionMode.Single,
                             size = TimePickerSize.Medium,
                             format = TimeFormat.Hour12,
-                            title = "Select Time",
                             onTimeSelected = { time ->
-                                selectedTime = time.to12HourFormat()
+                                selectedTime = time.toFormattedString()
                             }
                         )
 
                         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
 
                         Text("Wheel Picker - 24 Hour Format", style = AppTheme.typography.subtitleBold)
-                        TimePicker(
+                        PixaTimePicker(
                             variant = TimePickerVariant.Wheel,
                             mode = TimeSelectionMode.Single,
                             size = TimePickerSize.Medium,
                             format = TimeFormat.Hour24,
-                            title = "Select Time (24H)",
                             onTimeSelected = { time ->
                                 selectedTime = time.toFormattedString()
                             }
@@ -385,24 +386,22 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
 
                         Text("Clock Picker - Single Selection", style = AppTheme.typography.subtitleBold)
-                        TimePicker(
+                        PixaTimePicker(
                             variant = TimePickerVariant.Clock,
                             mode = TimeSelectionMode.Single,
                             size = TimePickerSize.Medium,
                             format = TimeFormat.Hour12,
-                            title = "Select Time (Clock)",
                             onTimeSelected = { time ->
-                                selectedTime = time.to12HourFormat()
+                                selectedTime = time.toFormattedString()
                             }
                         )
 
                         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
 
                         Text("TimeOfDay Picker", style = AppTheme.typography.subtitleBold)
-                        TimePicker(
+                        PixaTimePicker(
                             variant = TimePickerVariant.TimeOfDayPicker,
                             size = TimePickerSize.Medium,
-                            title = "Select Time Period",
                             onTimeOfDaySelected = { slot, time ->
                                 selectedTime = "$slot - ${time.toFormattedString()}"
                             }
@@ -411,15 +410,14 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
 
                         Text("Time Range Picker - Wheel", style = AppTheme.typography.subtitleBold)
-                        TimePicker(
+                        PixaTimePicker(
                             variant = TimePickerVariant.Wheel,
                             mode = TimeSelectionMode.Range,
                             size = TimePickerSize.Large,
                             format = TimeFormat.Hour12,
-                            title = "Select Time Range",
                             onRangeSelected = { start, end ->
                                 if (start != null && end != null) {
-                                    selectedTime = "${start.to12HourFormat()} - ${end.to12HourFormat()}"
+                                    selectedTime = "${start.toFormattedString()} - ${end.toFormattedString()}"
                                 }
                             }
                         )
@@ -442,7 +440,6 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                             variant = DatePickerVariant.Wheel,
                             mode = DateSelectionMode.Single,
                             size = DatePickerSize.Medium,
-                            title = "Select Date",
                             onDateSelected = { epochMillis ->
                                 val dateValue = epochMillis.toLocalDate()
                                 selectedDate = dateValue.toIsoString()
@@ -456,7 +453,6 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                             variant = DatePickerVariant.Calendar,
                             mode = DateSelectionMode.Single,
                             size = DatePickerSize.Large,
-                            title = "Select Date (Calendar)",
                             onDateSelected = { epochMillis ->
                                 val dateValue = epochMillis.toLocalDate()
                                 selectedDate = dateValue.toIsoString()
@@ -470,7 +466,6 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                             variant = DatePickerVariant.Calendar,
                             mode = DateSelectionMode.Range,
                             size = DatePickerSize.Large,
-                            title = "Select Date Range",
                             onRangeSelected = { start, end ->
                                 if (start != null && end != null) {
                                     selectedDate = "${start.toIsoString()} to ${end.toIsoString()}"
@@ -484,7 +479,6 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                         PixaDatePicker(
                             variant = DatePickerVariant.MonthDayPicker,
                             size = DatePickerSize.Medium,
-                            title = "Select Day of Month",
                             onDayOfMonthSelected = { day ->
                                 selectedDate = "Day: $day"
                             }
@@ -496,7 +490,6 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                         PixaDatePicker(
                             variant = DatePickerVariant.WeekdayPicker,
                             size = DatePickerSize.Medium,
-                            title = "Select Days of Week",
                             onWeekdaysSelected = { weekdays ->
                                 selectedDate = "Selected ${weekdays.size} days"
                             }
@@ -508,7 +501,6 @@ fun InputsDemoScreen(onBack: () -> Unit) {
                         PixaDatePicker(
                             variant = DatePickerVariant.DayCountPicker,
                             size = DatePickerSize.Medium,
-                            title = "Select Repeat Interval",
                             onDayCountSelected = { count ->
                                 selectedDate = "Every $count days"
                             }
@@ -516,6 +508,62 @@ fun InputsDemoScreen(onBack: () -> Unit) {
 
                         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
                         Text("Selected Date: $selectedDate", style = AppTheme.typography.bodyRegular)
+                    }
+                }
+            }
+
+            // ===== DROPDOWN COMPONENT =====
+            item {
+                DemoSection(
+                    title = "Dropdown - Selection",
+                    description = "Select from a list of options"
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)) {
+                        Text(
+                            text = "Outlined Dropdown",
+                            style = AppTheme.typography.subtitleBold,
+                            modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
+                        )
+                        PixaDropdown(
+                            items = listOf(
+                                DropdownItem("us", "United States"),
+                                DropdownItem("uk", "United Kingdom"),
+                                DropdownItem("ca", "Canada"),
+                                DropdownItem("au", "Australia"),
+                                DropdownItem("de", "Germany"),
+                                DropdownItem("fr", "France")
+                            ),
+                            selectedItem = selectedCountry,
+                            onItemSelected = { selectedCountry = it },
+                            placeholder = "Select a country",
+                            label = "Country",
+                            variant = DropdownVariant.Outlined,
+                            size = DropdownSize.Medium,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
+
+                        Text(
+                            text = "Filled Dropdown",
+                            style = AppTheme.typography.subtitleBold,
+                            modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
+                        )
+                        PixaDropdown(
+                            items = listOf(
+                                DropdownItem("small", "Small"),
+                                DropdownItem("medium", "Medium"),
+                                DropdownItem("large", "Large"),
+                                DropdownItem("xl", "Extra Large")
+                            ),
+                            selectedItem = null,
+                            onItemSelected = { },
+                            placeholder = "Select size",
+                            label = "Size",
+                            variant = DropdownVariant.Filled,
+                            size = DropdownSize.Medium,
+                            modifier = Modifier.fillMaxWidth()
+                        )
                     }
                 }
             }
