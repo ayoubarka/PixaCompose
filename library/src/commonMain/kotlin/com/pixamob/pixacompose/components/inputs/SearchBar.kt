@@ -13,7 +13,13 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,33 +40,29 @@ import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 
-// ============================================================================
-// Configuration
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * SearchBar variant enum
- */
 enum class SearchBarVariant {
-    Filled,    // Filled background
-    Outlined,  // Border only
-    Elevated   // Elevated with shadow
+    Filled,
+    Outlined,
+    Elevated
 }
 
-/**
- * SearchBar size enum
- */
 enum class SearchBarSize {
-    Small,     // Compact (36dp height)
-    Medium,    // Standard (44dp height)
-    Large      // Comfortable (52dp height)
+    Small,
+    Medium,
+    Large
 }
 
-/**
- * Configuration for SearchBar appearance
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
+@Immutable
 @Stable
-private data class SearchBarConfig(
+data class SearchBarSizeConfig(
     val height: Dp,
     val horizontalPadding: Dp,
     val verticalPadding: Dp,
@@ -72,14 +74,37 @@ private data class SearchBarConfig(
     val elevation: Dp
 )
 
-/**
- * Get configuration for given size
- */
+@Immutable
+@Stable
+data class SearchBarColors(
+    val background: Color,
+    val border: Color,
+    val focusedBorder: Color,
+    val text: Color,
+    val placeholder: Color,
+    val iconTint: Color,
+    val suggestionBackground: Color,
+    val suggestionHover: Color,
+    val suggestionText: Color,
+    val divider: Color
+)
+
+data class SearchSuggestion(
+    val text: String,
+    val icon: Painter? = null,
+    val metadata: String? = null,
+    val isRecent: Boolean = false
+)
+
+// ════════════════════════════════════════════════════════════════════════════
+// THEME PROVIDER
+// ════════════════════════════════════════════════════════════════════════════
+
 @Composable
-private fun SearchBarSize.config(): SearchBarConfig {
+private fun getSearchBarSizeConfig(size: SearchBarSize): SearchBarSizeConfig {
     val typography = AppTheme.typography
-    return when (this) {
-        SearchBarSize.Small -> SearchBarConfig(
+    return when (size) {
+        SearchBarSize.Small -> SearchBarSizeConfig(
             height = ComponentSize.InputSmall,
             horizontalPadding = HierarchicalSize.Spacing.Medium,
             verticalPadding = HierarchicalSize.Spacing.Compact,
@@ -90,7 +115,7 @@ private fun SearchBarSize.config(): SearchBarConfig {
             cornerRadius = CornerRadius.Small,
             elevation = Elevation.Small
         )
-        SearchBarSize.Medium -> SearchBarConfig(
+        SearchBarSize.Medium -> SearchBarSizeConfig(
             height = ComponentSize.InputMedium,
             horizontalPadding = HierarchicalSize.Spacing.Large,
             verticalPadding = HierarchicalSize.Spacing.Small,
@@ -101,7 +126,7 @@ private fun SearchBarSize.config(): SearchBarConfig {
             cornerRadius = CornerRadius.Medium,
             elevation = Elevation.Medium
         )
-        SearchBarSize.Large -> SearchBarConfig(
+        SearchBarSize.Large -> SearchBarSizeConfig(
             height = ComponentSize.InputLarge,
             horizontalPadding = HierarchicalSize.Spacing.Huge,
             verticalPadding = HierarchicalSize.Spacing.Medium,
@@ -115,38 +140,14 @@ private fun SearchBarSize.config(): SearchBarConfig {
     }
 }
 
-// ============================================================================
-// Theme
-// ============================================================================
-
-/**
- * Colors for SearchBar states
- */
-@Stable
-private data class SearchBarColors(
-    val background: Color,
-    val border: Color,
-    val focusedBorder: Color,
-    val text: Color,
-    val placeholder: Color,
-    val iconTint: Color,
-    val suggestionBackground: Color,
-    val suggestionHover: Color,
-    val suggestionText: Color,
-    val divider: Color
-)
-
-/**
- * Get colors for SearchBar variant
- */
 @Composable
-private fun SearchBarVariant.colors(
+private fun getSearchBarTheme(
+    variant: SearchBarVariant,
     isFocused: Boolean,
     enabled: Boolean
 ): SearchBarColors {
     val colors = AppTheme.colors
-
-    return when (this) {
+    return when (variant) {
         SearchBarVariant.Filled -> SearchBarColors(
             background = if (enabled) colors.baseSurfaceDefault else colors.baseSurfaceDisabled,
             border = Color.Transparent,
@@ -186,36 +187,68 @@ private fun SearchBarVariant.colors(
     }
 }
 
-// ============================================================================
-// Data Classes
-// ============================================================================
+
+// ════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Represents a search suggestion item
- */
-data class SearchSuggestion(
-    val text: String,
-    val icon: Painter? = null,
-    val metadata: String? = null,
-    val isRecent: Boolean = false
-)
-
-// ============================================================================
-// Base Component
-// ============================================================================
-
-/**
- * BaseSearchBar - Core search input component
+ * PixaSearchBar - Search input component with suggestions
  *
- * Dynamic and reusable search input with suggestions, filtering, and customization.
- * Follows Material 3 design with theme integration.
+ * A flexible search input with suggestions, filtering, and customization.
+ *
+ * ## Usage Examples
+ *
+ * ```kotlin
+ * // Basic search bar
+ * var query by remember { mutableStateOf("") }
+ * PixaSearchBar(
+ *     value = query,
+ *     onValueChange = { query = it },
+ *     placeholder = "Search..."
+ * )
+ *
+ * // With suggestions
+ * PixaSearchBar(
+ *     value = query,
+ *     onValueChange = { query = it },
+ *     suggestions = listOf(
+ *         SearchSuggestion("Recent search 1", isRecent = true),
+ *         SearchSuggestion("Suggestion 2")
+ *     ),
+ *     showSuggestions = query.isNotEmpty(),
+ *     onSuggestionClick = { suggestion -> query = suggestion.text }
+ * )
+ *
+ * // Elevated variant with voice search
+ * PixaSearchBar(
+ *     value = query,
+ *     onValueChange = { query = it },
+ *     variant = SearchBarVariant.Elevated,
+ *     size = SearchBarSize.Large,
+ *     onSearch = { performSearch(query) },
+ *     onVoiceSearch = { startVoiceInput() }
+ * )
+ *
+ * // Custom colors
+ * PixaSearchBar(
+ *     value = query,
+ *     onValueChange = { query = it },
+ *     colors = SearchBarColors(
+ *         background = Color.White,
+ *         text = Color.Black,
+ *         // ... other colors
+ *     )
+ * )
+ * ```
  *
  * @param value Current search query
  * @param onValueChange Callback when query changes
  * @param modifier Modifier for the search bar
- * @param variant Visual style variant
- * @param size Size preset
+ * @param variant Visual style variant (Filled, Outlined, Elevated)
+ * @param size Size preset (Small, Medium, Large)
  * @param enabled Whether the search bar is enabled
+ * @param colors Custom colors (null = use theme)
  * @param placeholder Optional placeholder text
  * @param searchIcon Optional search icon
  * @param clearIcon Optional clear/close icon
@@ -233,22 +266,6 @@ data class SearchSuggestion(
  * @param keyboardActions Keyboard actions
  * @param interactionSource Interaction source for state
  * @param contentDescription Accessibility description
- *
- * @sample
- * ```
- * var query by remember { mutableStateOf("") }
- * PixaSearchBar(
- *     value = query,
- *     onValueChange = { query = it },
- *     placeholder = "Search...",
- *     suggestions = listOf(
- *         SearchSuggestion("Recent search 1", isRecent = true),
- *         SearchSuggestion("Suggestion 2")
- *     ),
- *     showSuggestions = query.isNotEmpty(),
- *     onSearch = { performSearch(query) }
- * )
- * ```
  */
 @Composable
 fun PixaSearchBar(
@@ -258,6 +275,7 @@ fun PixaSearchBar(
     variant: SearchBarVariant = SearchBarVariant.Filled,
     size: SearchBarSize = SearchBarSize.Medium,
     enabled: Boolean = true,
+    colors: SearchBarColors? = null,
     placeholder: String = "Search...",
     searchIcon: Painter? = null,
     clearIcon: Painter? = null,
@@ -276,11 +294,10 @@ fun PixaSearchBar(
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     contentDescription: String? = null
 ) {
-    val config = size.config()
+    val sizeConfig = getSearchBarSizeConfig(size)
     val isFocused by interactionSource.collectIsFocusedAsState()
-    val colors = variant.colors(isFocused, enabled)
+    val themeColors = colors ?: getSearchBarTheme(variant, isFocused, enabled)
 
-    // Filter suggestions based on query
     val filteredSuggestions = remember(value, suggestions, filterSuggestions) {
         if (filterSuggestions && value.isNotEmpty()) {
             suggestions.filter { 
@@ -291,14 +308,13 @@ fun PixaSearchBar(
         }
     }
 
-    // Animated colors
     val animatedBorderColor by animateColorAsState(
-        targetValue = if (isFocused) colors.focusedBorder else colors.border,
+        targetValue = if (isFocused) themeColors.focusedBorder else themeColors.border,
         animationSpec = tween(durationMillis = 200)
     )
 
     val animatedBorderWidth by animateDpAsState(
-        targetValue = if (isFocused && variant == SearchBarVariant.Outlined) config.borderWidth * 1.2f else config.borderWidth,
+        targetValue = if (isFocused && variant == SearchBarVariant.Outlined) sizeConfig.borderWidth * 1.2f else sizeConfig.borderWidth,
         animationSpec = tween(durationMillis = 200)
     )
 
@@ -308,15 +324,14 @@ fun PixaSearchBar(
             role = Role.Button
         }
     ) {
-        // Search input
         BasicTextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = config.height),
+                .heightIn(min = sizeConfig.height),
             enabled = enabled,
-            textStyle = config.textStyle.copy(color = colors.text),
+            textStyle = sizeConfig.textStyle.copy(color = themeColors.text),
             keyboardOptions = keyboardOptions.copy(
                 imeAction = ImeAction.Search
             ),
@@ -325,33 +340,33 @@ fun PixaSearchBar(
             ),
             singleLine = true,
             interactionSource = interactionSource,
-            cursorBrush = SolidColor(colors.iconTint),
+            cursorBrush = SolidColor(themeColors.iconTint),
             decorationBox = { innerTextField ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(config.cornerRadius))
+                        .clip(RoundedCornerShape(sizeConfig.cornerRadius))
                         .then(
                             if (variant == SearchBarVariant.Elevated) {
                                 Modifier.shadow(
-                                    elevation = config.elevation,
-                                    shape = RoundedCornerShape(config.cornerRadius)
+                                    elevation = sizeConfig.elevation,
+                                    shape = RoundedCornerShape(sizeConfig.cornerRadius)
                                 )
                             } else Modifier
                         )
-                        .background(colors.background)
+                        .background(themeColors.background)
                         .then(
                             if (animatedBorderColor != Color.Transparent) {
                                 Modifier.border(
                                     width = animatedBorderWidth,
                                     color = animatedBorderColor,
-                                    shape = RoundedCornerShape(config.cornerRadius)
+                                    shape = RoundedCornerShape(sizeConfig.cornerRadius)
                                 )
                             } else Modifier
                         )
                         .padding(
-                            horizontal = config.horizontalPadding,
-                            vertical = config.verticalPadding
+                            horizontal = sizeConfig.horizontalPadding,
+                            vertical = sizeConfig.verticalPadding
                         )
                 ) {
                     Row(
@@ -359,40 +374,36 @@ fun PixaSearchBar(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
                     ) {
-                        // Search icon
                         if (searchIcon != null) {
                             PixaIcon(
                                 painter = searchIcon,
                                 contentDescription = "Search",
-                                tint = colors.iconTint,
-                                modifier = Modifier.size(config.iconSize)
+                                tint = themeColors.iconTint,
+                                modifier = Modifier.size(sizeConfig.iconSize)
                             )
                         }
 
-                        // Text input area
                         Box(
                             modifier = Modifier.weight(1f),
                             contentAlignment = Alignment.CenterStart
                         ) {
-                            // Placeholder
                             if (value.isEmpty()) {
                                 Text(
                                     text = placeholder,
-                                    style = config.textStyle,
-                                    color = colors.placeholder
+                                    style = sizeConfig.textStyle,
+                                    color = themeColors.placeholder
                                 )
                             }
                             innerTextField()
                         }
 
-                        // Clear button
                         if (showClearButton && value.isNotEmpty() && clearIcon != null) {
                             PixaIcon(
                                 painter = clearIcon,
                                 contentDescription = "Clear",
-                                tint = colors.iconTint,
+                                tint = themeColors.iconTint,
                                 modifier = Modifier
-                                    .size(config.iconSize)
+                                    .size(sizeConfig.iconSize)
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
@@ -402,15 +413,13 @@ fun PixaSearchBar(
                                     }
                             )
                         }
-
-                        // Voice search button
                         if (onVoiceSearch != null && voiceSearchIcon != null && value.isEmpty()) {
                             PixaIcon(
                                 painter = voiceSearchIcon,
                                 contentDescription = "Voice search",
-                                tint = colors.iconTint,
+                                tint = themeColors.iconTint,
                                 modifier = Modifier
-                                    .size(config.iconSize)
+                                    .size(sizeConfig.iconSize)
                                     .clickable(
                                         interactionSource = remember { MutableInteractionSource() },
                                         indication = null
@@ -428,13 +437,13 @@ fun PixaSearchBar(
         if (showSuggestions && filteredSuggestions.isNotEmpty()) {
             Popup(
                 alignment = Alignment.TopStart,
-                offset = androidx.compose.ui.unit.IntOffset(0, config.height.value.toInt()),
+                offset = androidx.compose.ui.unit.IntOffset(0, sizeConfig.height.value.toInt()),
                 properties = PopupProperties(focusable = false)
             ) {
                 SuggestionDropdown(
                     suggestions = filteredSuggestions,
-                    config = config,
-                    colors = colors,
+                    sizeConfig = sizeConfig,
+                    colors = themeColors,
                     onSuggestionClick = { suggestion ->
                         onSuggestionClick?.invoke(suggestion)
                         onValueChange(suggestion.text)
@@ -451,7 +460,7 @@ fun PixaSearchBar(
 @Composable
 private fun SuggestionDropdown(
     suggestions: List<SearchSuggestion>,
-    config: SearchBarConfig,
+    sizeConfig: SearchBarSizeConfig,
     colors: SearchBarColors,
     onSuggestionClick: (SearchSuggestion) -> Unit
 ) {
@@ -459,21 +468,21 @@ private fun SuggestionDropdown(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(
-                elevation = config.elevation,
-                shape = RoundedCornerShape(config.cornerRadius)
+                elevation = sizeConfig.elevation,
+                shape = RoundedCornerShape(sizeConfig.cornerRadius)
             )
-            .clip(RoundedCornerShape(config.cornerRadius))
+            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
             .background(colors.suggestionBackground)
             .border(
-                width = config.borderWidth,
+                width = sizeConfig.borderWidth,
                 color = colors.divider,
-                shape = RoundedCornerShape(config.cornerRadius)
+                shape = RoundedCornerShape(sizeConfig.cornerRadius)
             )
     ) {
         suggestions.forEachIndexed { index, suggestion ->
             SuggestionItem(
                 suggestion = suggestion,
-                config = config,
+                sizeConfig = sizeConfig,
                 colors = colors,
                 onClick = { onSuggestionClick(suggestion) }
             )
@@ -496,7 +505,7 @@ private fun SuggestionDropdown(
 @Composable
 private fun SuggestionItem(
     suggestion: SearchSuggestion,
-    config: SearchBarConfig,
+    sizeConfig: SearchBarSizeConfig,
     colors: SearchBarColors,
     onClick: () -> Unit
 ) {
@@ -506,47 +515,44 @@ private fun SuggestionItem(
             .clickable(onClick = onClick)
             .background(Color.Transparent)
             .padding(
-                horizontal = config.horizontalPadding,
-                vertical = config.verticalPadding
+                horizontal = sizeConfig.horizontalPadding,
+                vertical = sizeConfig.verticalPadding
             ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
     ) {
-        // Icon
         if (suggestion.icon != null) {
             PixaIcon(
                 painter = suggestion.icon,
                 contentDescription = null,
                 tint = colors.iconTint,
-                modifier = Modifier.size(config.iconSize)
+                modifier = Modifier.size(sizeConfig.iconSize)
             )
         }
 
-        // Text content
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = suggestion.text,
-                style = config.suggestionTextStyle,
+                style = sizeConfig.suggestionTextStyle,
                 color = colors.suggestionText
             )
             
             if (suggestion.metadata != null) {
                 Text(
                     text = suggestion.metadata,
-                    style = config.suggestionTextStyle.copy(
-                        fontSize = config.suggestionTextStyle.fontSize * 0.85f
+                    style = sizeConfig.suggestionTextStyle.copy(
+                        fontSize = sizeConfig.suggestionTextStyle.fontSize * 0.85f
                     ),
                     color = colors.suggestionText.copy(alpha = 0.6f)
                 )
             }
         }
 
-        // Recent indicator
         if (suggestion.isRecent) {
             Text(
                 text = "Recent",
-                style = config.suggestionTextStyle.copy(
-                    fontSize = config.suggestionTextStyle.fontSize * 0.75f
+                style = sizeConfig.suggestionTextStyle.copy(
+                    fontSize = sizeConfig.suggestionTextStyle.fontSize * 0.75f
                 ),
                 color = colors.suggestionText.copy(alpha = 0.5f)
             )

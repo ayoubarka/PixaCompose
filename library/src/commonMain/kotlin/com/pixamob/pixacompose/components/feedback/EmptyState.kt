@@ -69,29 +69,17 @@ import com.pixamob.pixacompose.theme.*
  * ```
  */
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Empty state types - Grouped by category to reduce complexity
- */
 sealed class EmptyStateType {
-    /**
-     * Empty content states - No data available
-     */
     sealed class Empty : EmptyStateType() {
-        /** Generic empty state */
         object NoContent : Empty()
-        /** Empty search results */
         object NoResults : Empty()
-        /** Empty list/collection */
         object EmptyList : Empty()
-        /** Empty inbox/messages */
         object EmptyInbox : Empty()
-        /** Empty favorites/bookmarks */
         object EmptyFavorites : Empty()
-        /** No items in cart */
         object EmptyCart : Empty()
     }
 

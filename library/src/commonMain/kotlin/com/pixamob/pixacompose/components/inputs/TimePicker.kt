@@ -1,7 +1,7 @@
 package com.pixamob.pixacompose.components.inputs
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -39,70 +39,39 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.actions.Chip
+import com.pixamob.pixacompose.components.actions.PixaChip
 import com.pixamob.pixacompose.components.actions.ChipType
 import com.pixamob.pixacompose.components.actions.ChipVariant
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
-import com.pixamob.pixacompose.theme.RadiusSize
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.RadiusSize
 import dev.darkokoa.datetimewheelpicker.WheelTimePicker
 import dev.darkokoa.datetimewheelpicker.core.WheelPickerDefaults
 import dev.darkokoa.datetimewheelpicker.core.format.timeFormatter
 import dev.darkokoa.datetimewheelpicker.core.format.TimeFormat as DarkokaoTimeFormat
 import kotlinx.datetime.LocalTime
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * TimePicker Variant - Visual style and interaction pattern
- */
 enum class TimePickerVariant {
-    /** Wheel picker (iOS-style) - Works on all platforms */
     Wheel,
-    /** Clock face (Material 3) - Best for Android */
     Clock,
-    /** Time of day picker - Select predefined time slots (Morning/Afternoon/Evening) */
     TimeOfDayPicker
 }
 
-/**
- * TimePicker Size - Height and padding variants
- */
-enum class TimePickerSize {
-    /** Small size - 240dp - Compact pickers */
-    Small,
-    /** Medium size - 280dp - DEFAULT, standard picker */
-    Medium,
-    /** Large size - 320dp - Prominent pickers */
-    Large
-}
+enum class TimePickerSize { Small, Medium, Large }
 
-/**
- * Time Format
- */
-enum class TimeFormat {
-    /** 12-hour format with AM/PM */
-    Hour12,
-    /** 24-hour format */
-    Hour24
-}
+enum class TimeFormat { Hour12, Hour24 }
 
-/**
- * Time Selection Mode
- */
-enum class TimeSelectionMode {
-    /** Single time selection */
-    Single,
-    /** Time range selection (start and end times) */
-    Range
-}
+enum class TimeSelectionMode { Single, Multiple, Range }
 
-/**
- * TimePicker Colors - Theme-aware color configuration
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class TimePickerColors(
@@ -116,9 +85,6 @@ data class TimePickerColors(
     val disabledText: Color
 )
 
-/**
- * TimePicker Size Configuration
- */
 @Immutable
 @Stable
 data class TimePickerSizeConfig(
@@ -131,10 +97,6 @@ data class TimePickerSizeConfig(
     val selectorBorder: BorderStroke? = null
 )
 
-/**
- * Localization strings for TimePicker
- * All text is customizable for i18n support
- */
 @Stable
 data class TimePickerStrings(
     val amLabel: String = "AM",
@@ -144,7 +106,6 @@ data class TimePickerStrings(
     val selectLabel: String = "Select",
     val hourLabel: String = "Hour",
     val minuteLabel: String = "Minute",
-    // Time of day slots (customizable)
     val timeOfDayLabels: Map<String, LocalTime> = mapOf(
         "Morning" to LocalTime(9, 0),
         "Afternoon" to LocalTime(14, 0),
@@ -153,13 +114,22 @@ data class TimePickerStrings(
     )
 )
 
-// ============================================================================
-// THEME PROVIDER
-// ============================================================================
+@Stable
+data class WheelTimeConfig(
+    val showSeconds: Boolean = false,
+    val showDividers: Boolean = true
+)
 
-/**
- * Get time picker colors from theme
- */
+@Stable
+data class ClockConfig(
+    val showMinuteSelector: Boolean = true,
+    val showPeriodSelector: Boolean = true
+)
+
+// ════════════════════════════════════════════════════════════════════════════
+// THEME PROVIDER
+// ════════════════════════════════════════════════════════════════════════════
+
 @Composable
 private fun getTimePickerTheme(colors: ColorPalette): TimePickerColors {
     return TimePickerColors(
@@ -174,9 +144,6 @@ private fun getTimePickerTheme(colors: ColorPalette): TimePickerColors {
     )
 }
 
-/**
- * Get time picker size configuration
- */
 @Composable
 private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig {
     val typography = AppTheme.typography
@@ -191,6 +158,7 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
             selectorShape = RoundedCornerShape(12.dp),
             selectorBorder = BorderStroke(1.5.dp, colors.baseBorderDefault)
         )
+
         TimePickerSize.Medium -> TimePickerSizeConfig(
             height = 320.dp,
             padding = HierarchicalSize.Spacing.Large,
@@ -200,6 +168,7 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
             selectorShape = RoundedCornerShape(16.dp),
             selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
+
         TimePickerSize.Large -> TimePickerSizeConfig(
             height = 360.dp,
             padding = HierarchicalSize.Spacing.Huge,
@@ -212,73 +181,107 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
     }
 }
 
-// ============================================================================
-// UNIFIED TIME PICKER (Main Entry Point)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Unified TimePicker - Main composable that delegates to specific variants
+ * PixaTimePicker - Comprehensive time picker component
  *
- * A comprehensive time picker with multiple variants and full i18n support.
- * All text is customizable via the `strings` parameter for multilingual apps.
+ * A flexible time picker with multiple variants and full customization.
+ * Supports single, multiple, and range selection modes.
  *
- * @param variant The picker variant to display
- * @param mode Selection mode (Single or Range)
- * @param modifier Modifier for the picker
- * @param size Size variant
- * @param title Optional title text
- * @param format Time format (12-hour or 24-hour)
- * @param colors Optional custom colors (overrides theme)
- * @param strings Localization strings for i18n (defaults to English)
- * @param minuteInterval Minute step interval (1, 5, 15, 30, etc.)
- * @param minTime Minimum selectable time (null = no limit)
- * @param maxTime Maximum selectable time (null = no limit)
- * @param onTimeSelected Callback for single time selection (LocalTime)
- * @param onRangeSelected Callback for range selection (start, end as LocalTime)
- * @param onTimeOfDaySelected Callback for time of day selection (slot name and LocalTime)
+ * ## Usage Examples
  *
- * @sample
- * ```
- * // Single time with Wheel
- * TimePicker(
+ * ```kotlin
+ * // Wheel time picker (iOS style)
+ * PixaTimePicker(
  *     variant = TimePickerVariant.Wheel,
  *     onTimeSelected = { time -> println("Selected: $time") }
  * )
  *
- * // Range selection
- * TimePicker(
- *     variant = TimePickerVariant.Wheel,
- *     mode = TimeSelectionMode.Range,
- *     onRangeSelected = { start, end -> println("Range: $start to $end") }
+ * // Clock picker (Material 3 style)
+ * PixaTimePicker(
+ *     variant = TimePickerVariant.Clock,
+ *     format = TimeFormat.Hour24,
+ *     onTimeSelected = { time -> println("Selected: $time") }
  * )
  *
- * // With Chinese localization
- * TimePicker(
+ * // Range selection
+ * PixaTimePicker(
  *     variant = TimePickerVariant.Wheel,
+ *     mode = TimeSelectionMode.Range,
+ *     initialStartTime = LocalTime(9, 0),
+ *     initialEndTime = LocalTime(17, 0),
+ *     onRangeSelected = { start, end -> println("$start to $end") }
+ * )
+ *
+ * // Time of day picker
+ * PixaTimePicker(
+ *     variant = TimePickerVariant.TimeOfDayPicker,
  *     strings = TimePickerStrings(
- *         amLabel = "上午",
- *         pmLabel = "下午",
- *         startLabel = "开始",
- *         endLabel = "结束"
+ *         timeOfDayLabels = mapOf(
+ *             "Breakfast" to LocalTime(8, 0),
+ *             "Lunch" to LocalTime(12, 30),
+ *             "Dinner" to LocalTime(19, 0)
+ *         )
+ *     ),
+ *     onTimeOfDaySelected = { slot, time -> println("$slot at $time") }
+ * )
+ *
+ * // Custom colors
+ * PixaTimePicker(
+ *     variant = TimePickerVariant.Wheel,
+ *     colors = TimePickerColors(
+ *         background = Color.White,
+ *         selectedBackground = Color.Blue,
+ *         selectedText = Color.White,
+ *         // ... other colors
  *     ),
  *     onTimeSelected = { ... }
  * )
  * ```
+ *
+ * @param variant Visual style variant (Wheel, Clock, TimeOfDayPicker)
+ * @param modifier Modifier for the picker
+ * @param mode Selection mode (Single, Multiple, Range)
+ * @param size Size variant (Small, Medium, Large)
+ * @param format Time format (Hour12, Hour24)
+ * @param enabled Whether the picker is enabled
+ * @param colors Custom colors (null = use theme)
+ * @param strings Localization strings
+ * @param minuteInterval Minute step interval (1, 5, 15, 30, etc.)
+ * @param minTime Minimum selectable time
+ * @param maxTime Maximum selectable time
+ * @param wheelConfig Wheel picker configuration
+ * @param clockConfig Clock picker configuration
+ * @param initialTime Initial selected time
+ * @param initialStartTime Initial range start time
+ * @param initialEndTime Initial range end time
+ * @param initialTimeOfDay Initial selected time of day slot
+ * @param onTimeSelected Callback for single time selection
+ * @param onRangeSelected Callback for range selection
+ * @param onTimeOfDaySelected Callback for time of day selection
  */
 @Composable
-fun TimePicker(
+fun PixaTimePicker(
     variant: TimePickerVariant,
     modifier: Modifier = Modifier,
     mode: TimeSelectionMode = TimeSelectionMode.Single,
     size: TimePickerSize = TimePickerSize.Medium,
-    title: String = "",
     format: TimeFormat = TimeFormat.Hour12,
+    enabled: Boolean = true,
     colors: TimePickerColors? = null,
     strings: TimePickerStrings = TimePickerStrings(),
     minuteInterval: Int = 1,
     minTime: LocalTime? = null,
     maxTime: LocalTime? = null,
-    // Callbacks for different variants
+    wheelConfig: WheelTimeConfig = WheelTimeConfig(),
+    clockConfig: ClockConfig = ClockConfig(),
+    initialTime: LocalTime? = null,
+    initialStartTime: LocalTime? = null,
+    initialEndTime: LocalTime? = null,
+    initialTimeOfDay: String? = null,
     onTimeSelected: ((LocalTime) -> Unit)? = null,
     onRangeSelected: ((LocalTime?, LocalTime?) -> Unit)? = null,
     onTimeOfDaySelected: ((String, LocalTime) -> Unit)? = null
@@ -287,229 +290,120 @@ fun TimePicker(
     val finalColors = colors ?: themeColors
     val sizeConfig = getTimePickerSizeConfig(size)
 
+    val containerModifier = modifier
+        .clip(RoundedCornerShape(sizeConfig.cornerRadius))
+        .background(finalColors.background)
+        .padding(sizeConfig.padding)
+
     when (variant) {
-        TimePickerVariant.Wheel -> {
-            if (mode == TimeSelectionMode.Range) {
-                // Range mode with wheel picker
-                RangeWheelTimePickerImpl(
-                    modifier = modifier,
-                    sizeConfig = sizeConfig,
-                    colors = finalColors,
-                    strings = strings,
-                    title = title,
-                    format = format,
-                    minuteInterval = minuteInterval,
-                    onRangeSelected = onRangeSelected ?: { _, _ -> }
-                )
-            } else {
-                // Single time wheel picker
-                WheelTimePickerImpl(
-                    modifier = modifier,
-                    sizeConfig = sizeConfig,
-                    colors = finalColors,
-                    strings = strings,
-                    title = title,
-                    format = format,
-                    minuteInterval = minuteInterval,
-                    onTimeSelected = onTimeSelected ?: {}
-                )
-            }
-        }
-        TimePickerVariant.Clock -> {
-            if (mode == TimeSelectionMode.Range) {
-                // Range mode with clock (note: simplified, Material3 TimePicker doesn't support range natively)
-                RangeClockTimePickerImpl(
-                    modifier = modifier,
-                    sizeConfig = sizeConfig,
-                    colors = finalColors,
-                    strings = strings,
-                    title = title,
-                    format = format,
-                    minTime = minTime,
-                    maxTime = maxTime,
-                    onRangeSelected = onRangeSelected ?: { _, _ -> }
-                )
-            } else {
-                // Single time clock picker (Material3-style)
-                ClockTimePickerImpl(
-                    modifier = modifier,
-                    sizeConfig = sizeConfig,
-                    colors = finalColors,
-                    strings = strings,
-                    title = title,
-                    format = format,
-                    minTime = minTime,
-                    maxTime = maxTime,
-                    onTimeSelected = onTimeSelected ?: {}
-                )
-            }
-        }
-        TimePickerVariant.TimeOfDayPicker -> {
-            TimeOfDayPickerImpl(
-                modifier = modifier,
-                sizeConfig = sizeConfig,
-                colors = finalColors,
-                strings = strings,
-                title = title,
-                onTimeOfDaySelected = onTimeOfDaySelected ?: { _, _ -> }
-            )
-        }
+        TimePickerVariant.Wheel -> WheelTimePickerContent(
+            modifier = containerModifier,
+            mode = mode,
+            sizeConfig = sizeConfig,
+            colors = finalColors,
+            strings = strings,
+            format = format,
+            enabled = enabled,
+            minuteInterval = minuteInterval,
+            initialTime = initialTime,
+            initialStartTime = initialStartTime,
+            initialEndTime = initialEndTime,
+            onTimeSelected = onTimeSelected,
+            onRangeSelected = onRangeSelected
+        )
+
+        TimePickerVariant.Clock -> ClockTimePickerContent(
+            modifier = containerModifier,
+            mode = mode,
+            sizeConfig = sizeConfig,
+            colors = finalColors,
+            strings = strings,
+            format = format,
+            enabled = enabled,
+            minTime = minTime,
+            maxTime = maxTime,
+            clockConfig = clockConfig,
+            initialTime = initialTime,
+            initialStartTime = initialStartTime,
+            initialEndTime = initialEndTime,
+            onTimeSelected = onTimeSelected,
+            onRangeSelected = onRangeSelected
+        )
+
+        TimePickerVariant.TimeOfDayPicker -> TimeOfDayPickerContent(
+            modifier = containerModifier,
+            mode = mode,
+            sizeConfig = sizeConfig,
+            colors = finalColors,
+            strings = strings,
+            enabled = enabled,
+            initialTimeOfDay = initialTimeOfDay,
+            onTimeOfDaySelected = onTimeOfDaySelected
+        )
     }
 }
 
-// ============================================================================
-// WHEEL TIME PICKER IMPLEMENTATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// WHEEL TIME PICKER
+// ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun WheelTimePickerImpl(
+private fun WheelTimePickerContent(
     modifier: Modifier,
-    sizeConfig: TimePickerSizeConfig,
-    colors: TimePickerColors,
-    strings: TimePickerStrings, // Used in semantics for accessibility
-    title: String,
-    format: TimeFormat,
-    minuteInterval: Int, // Constraint applied in onTimeChangeListener
-    onTimeSelected: (LocalTime) -> Unit
-) {
-    var selectedTime by remember { mutableStateOf(LocalTime(12, 0)) }
-
-    Column (
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-            .semantics {
-                contentDescription = title.ifEmpty {
-                    if (format == TimeFormat.Hour12)
-                        "${strings.hourLabel} ${strings.minuteLabel} ${strings.amLabel}/${strings.pmLabel}"
-                    else
-                        "${strings.hourLabel} ${strings.minuteLabel}"
-                }
-            },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (title.isNotEmpty()) {
-            Text(
-                text = title,
-                style = sizeConfig.titleTextStyle,
-                color = colors.title,
-                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium)
-            )
-        }
-
-        // Using darkokoa datetime wheel picker
-        Box(
-            modifier = Modifier.fillMaxWidth().height(sizeConfig.height),
-            contentAlignment = Alignment.Center
-        ) {
-            WheelTimePicker(
-                modifier = Modifier.fillMaxSize(),
-                startTime = selectedTime,
-                timeFormatter = timeFormatter(
-                    timeFormat = if (format == TimeFormat.Hour24)
-                        DarkokaoTimeFormat.HOUR_24
-                    else
-                        DarkokaoTimeFormat.AM_PM
-                ),
-                textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
-                textColor = colors.selectedText,
-                selectorProperties = WheelPickerDefaults.selectorProperties(
-                   color = colors.divider,
-                   shape = sizeConfig.selectorShape,
-                   border = sizeConfig.selectorBorder
-                )
-            ) { time ->
-                // Apply minuteInterval constraint
-                val adjustedMinute = (time.minute / minuteInterval) * minuteInterval
-                val adjustedTime = LocalTime(time.hour, adjustedMinute)
-                selectedTime = adjustedTime
-                onTimeSelected(adjustedTime)
-            }
-        }
-    }
-}
-
-@Composable
-private fun RangeWheelTimePickerImpl(
-    modifier: Modifier,
+    mode: TimeSelectionMode,
     sizeConfig: TimePickerSizeConfig,
     colors: TimePickerColors,
     strings: TimePickerStrings,
-    title: String,
     format: TimeFormat,
-    minuteInterval: Int, // Constraint applied in onTimeChangeListener
-    onRangeSelected: (LocalTime?, LocalTime?) -> Unit
+    enabled: Boolean,
+    minuteInterval: Int,
+    initialTime: LocalTime?,
+    initialStartTime: LocalTime?,
+    initialEndTime: LocalTime?,
+    onTimeSelected: ((LocalTime) -> Unit)?, onRangeSelected: ((LocalTime?, LocalTime?) -> Unit)?
 ) {
-    var selectingStart by remember { mutableStateOf(true) }
-    var startTime by remember { mutableStateOf<LocalTime?>(null) }
-    var endTime by remember { mutableStateOf<LocalTime?>(null) }
+    when (mode) {
+        TimeSelectionMode.Single -> SingleWheelTimePicker(
+            modifier = modifier, sizeConfig = sizeConfig, colors = colors, strings = strings,
+            format = format, enabled = enabled, minuteInterval = minuteInterval,
+            initialTime = initialTime, onTimeSelected = onTimeSelected ?: {}
+        )
 
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-    ) {
-        if (title.isNotEmpty()) {
-            Text(
-                text = title,
-                style = sizeConfig.titleTextStyle,
-                color = colors.title,
-                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
-            )
-        }
+        TimeSelectionMode.Range -> RangeWheelTimePicker(
+            modifier = modifier, sizeConfig = sizeConfig, colors = colors, strings = strings,
+            format = format, enabled = enabled, minuteInterval = minuteInterval,
+            initialStartTime = initialStartTime, initialEndTime = initialEndTime,
+            onRangeSelected = onRangeSelected ?: { _, _ -> }
+        )
 
-        // Range labels
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = strings.startLabel, style = sizeConfig.itemTextStyle.copy(fontSize = sizeConfig.itemTextStyle.fontSize * 0.8f), color = colors.unselectedText.copy(alpha = 0.6f))
-                Text(
-                    text = startTime?.toString() ?: strings.selectLabel,
-                    style = sizeConfig.itemTextStyle,
-                    color = if (selectingStart) colors.selectedText else colors.unselectedText,
-                    fontWeight = if (selectingStart) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(RadiusSize.Small))
-                        .background(if (selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(HierarchicalSize.Spacing.Small)
-                        .clickable { selectingStart = true }
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = strings.endLabel, style = sizeConfig.itemTextStyle.copy(fontSize = sizeConfig.itemTextStyle.fontSize * 0.8f), color = colors.unselectedText.copy(alpha = 0.6f))
-                Text(
-                    text = endTime?.toString() ?: strings.selectLabel,
-                    style = sizeConfig.itemTextStyle,
-                    color = if (!selectingStart) colors.selectedText else colors.unselectedText,
-                    fontWeight = if (!selectingStart) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(RadiusSize.Small))
-                        .background(if (!selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(HierarchicalSize.Spacing.Small)
-                        .clickable { selectingStart = false }
-                )
-            }
-        }
+        TimeSelectionMode.Multiple -> SingleWheelTimePicker(
+            modifier = modifier, sizeConfig = sizeConfig, colors = colors, strings = strings,
+            format = format, enabled = enabled, minuteInterval = minuteInterval,
+            initialTime = initialTime, onTimeSelected = onTimeSelected ?: {}
+        )
+    }
+}
 
-        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
+@Composable
+private fun SingleWheelTimePicker(
+    modifier: Modifier, sizeConfig: TimePickerSizeConfig, colors: TimePickerColors,
+    strings: TimePickerStrings, format: TimeFormat, enabled: Boolean,
+    minuteInterval: Int, initialTime: LocalTime?, onTimeSelected: (LocalTime) -> Unit
+) {
+    var selectedTime by remember { mutableStateOf(initialTime ?: LocalTime(12, 0)) }
 
-        // Wheel picker
+    Column(modifier = modifier.semantics {
+        contentDescription = if (format == TimeFormat.Hour12) "${strings.hourLabel} ${strings.minuteLabel} ${strings.amLabel}/${strings.pmLabel}"
+            else "${strings.hourLabel} ${strings.minuteLabel}"
+    }, horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier.fillMaxWidth().height(sizeConfig.height),
             contentAlignment = Alignment.Center
         ) {
             WheelTimePicker(
-                modifier = Modifier.fillMaxSize(),
-                startTime = if (selectingStart) (startTime ?: LocalTime(12, 0)) else (endTime ?: LocalTime(12, 0)),
+                modifier = Modifier.fillMaxSize(), startTime = selectedTime,
                 timeFormatter = timeFormatter(
-                    timeFormat = if (format == TimeFormat.Hour24)
-                        DarkokaoTimeFormat.HOUR_24
-                    else
-                        DarkokaoTimeFormat.AM_PM
+                    timeFormat = if (format == TimeFormat.Hour24) DarkokaoTimeFormat.HOUR_24 else DarkokaoTimeFormat.AM_PM
                 ),
                 textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
                 textColor = colors.selectedText,
@@ -519,85 +413,126 @@ private fun RangeWheelTimePickerImpl(
                     border = sizeConfig.selectorBorder
                 )
             ) { time ->
-                // Apply minuteInterval constraint
-                val adjustedMinute = (time.minute / minuteInterval) * minuteInterval
-                val adjustedTime = LocalTime(time.hour, adjustedMinute)
-
-                if (selectingStart) {
-                    startTime = adjustedTime
-                    selectingStart = false
-                } else {
-                    endTime = adjustedTime
+                if (enabled) {
+                    val adjustedMinute = (time.minute / minuteInterval) * minuteInterval
+                    val adjustedTime = LocalTime(time.hour, adjustedMinute)
+                    selectedTime = adjustedTime
+                    onTimeSelected(adjustedTime)
                 }
-                onRangeSelected(startTime, endTime)
             }
         }
     }
 }
 
-// ============================================================================
-// CLOCK TIME PICKER IMPLEMENTATION (Material 3 Compose Multiplatform)
-// ============================================================================
+@Composable
+private fun RangeWheelTimePicker(
+    modifier: Modifier, sizeConfig: TimePickerSizeConfig, colors: TimePickerColors,
+    strings: TimePickerStrings, format: TimeFormat, enabled: Boolean,
+    minuteInterval: Int, initialStartTime: LocalTime?, initialEndTime: LocalTime?,
+    onRangeSelected: (LocalTime?, LocalTime?) -> Unit
+) {
+    var selectingStart by remember { mutableStateOf(true) }
+    var startTime by remember { mutableStateOf(initialStartTime) }
+    var endTime by remember { mutableStateOf(initialEndTime) }
 
-/**
- * Material 3 TimePicker implementation using Compose Multiplatform
- * Works on all platforms (Android, iOS, Desktop)
- * https://kotlinlang.org/api/compose-multiplatform/material3/androidx.compose.material3/-time-picker.html
- */
+    Column(modifier = modifier) {
+        RangeSelectorRow(
+            sizeConfig, colors, strings, startTime?.toString(), endTime?.toString(),
+            selectingStart, { selectingStart = true }, { selectingStart = false })
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
+        Box(
+            modifier = Modifier.fillMaxWidth().height(sizeConfig.height),
+            contentAlignment = Alignment.Center
+        ) {
+            WheelTimePicker(
+                modifier = Modifier.fillMaxSize(),
+                startTime = if (selectingStart) (startTime ?: LocalTime(12, 0)) else (endTime
+                    ?: LocalTime(12, 0)),
+                timeFormatter = timeFormatter(
+                    timeFormat = if (format == TimeFormat.Hour24) DarkokaoTimeFormat.HOUR_24 else DarkokaoTimeFormat.AM_PM
+                ),
+                textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
+                textColor = colors.selectedText,
+                selectorProperties = WheelPickerDefaults.selectorProperties(
+                    color = colors.divider,
+                    shape = sizeConfig.selectorShape,
+                    border = sizeConfig.selectorBorder
+                )
+            ) { time ->
+                if (enabled) {
+                    val adjustedMinute = (time.minute / minuteInterval) * minuteInterval
+                    val adjustedTime = LocalTime(time.hour, adjustedMinute)
+                    if (selectingStart) {
+                        startTime = adjustedTime; selectingStart = false
+                    } else {
+                        endTime = adjustedTime
+                    }
+                    onRangeSelected(startTime, endTime)
+                }
+            }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CLOCK TIME PICKER
+// ════════════════════════════════════════════════════════════════════════════
+
+@Suppress("UNUSED_PARAMETER")
+@Composable
+private fun ClockTimePickerContent(
+    modifier: Modifier, mode: TimeSelectionMode, sizeConfig: TimePickerSizeConfig,
+    colors: TimePickerColors, strings: TimePickerStrings, format: TimeFormat,
+    enabled: Boolean, minTime: LocalTime?, maxTime: LocalTime?, clockConfig: ClockConfig,
+    initialTime: LocalTime?, initialStartTime: LocalTime?, initialEndTime: LocalTime?,
+    onTimeSelected: ((LocalTime) -> Unit)?, onRangeSelected: ((LocalTime?, LocalTime?) -> Unit)?
+) {
+    when (mode) {
+        TimeSelectionMode.Single, TimeSelectionMode.Multiple -> SingleClockTimePicker(
+            modifier = modifier, sizeConfig = sizeConfig, colors = colors,
+            format = format, enabled = enabled, initialTime = initialTime,
+            onTimeSelected = onTimeSelected ?: {}
+        )
+
+        TimeSelectionMode.Range -> RangeClockTimePicker(
+            modifier = modifier, sizeConfig = sizeConfig, colors = colors, strings = strings,
+            format = format, enabled = enabled,
+            initialStartTime = initialStartTime, initialEndTime = initialEndTime,
+            onRangeSelected = onRangeSelected ?: { _, _ -> }
+        )
+    }
+}
+
+@Suppress("UNUSED_PARAMETER")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun ClockTimePickerImpl(
-    modifier: Modifier,
-    sizeConfig: TimePickerSizeConfig,
-    colors: TimePickerColors,
-    @Suppress("UNUSED_PARAMETER") strings: TimePickerStrings, // Reserved for future customization
-    title: String,
-    format: TimeFormat,
-    @Suppress("UNUSED_PARAMETER") minTime: LocalTime?, // Reserved for validation
-    @Suppress("UNUSED_PARAMETER") maxTime: LocalTime?, // Reserved for validation
-    onTimeSelected: (LocalTime) -> Unit
+private fun SingleClockTimePicker(
+    modifier: Modifier, sizeConfig: TimePickerSizeConfig, colors: TimePickerColors,
+    format: TimeFormat, enabled: Boolean,
+    initialTime: LocalTime?, onTimeSelected: (LocalTime) -> Unit
 ) {
-    // Create Material3 TimePickerState
     val timePickerState = rememberTimePickerState(
-        initialHour = 12,
-        initialMinute = 0,
+        initialHour = initialTime?.hour ?: 12,
+        initialMinute = initialTime?.minute ?: 0,
         is24Hour = format == TimeFormat.Hour24
     )
 
-    // Observe state changes and notify parent
     LaunchedEffect(timePickerState.hour, timePickerState.minute) {
-        onTimeSelected(LocalTime(timePickerState.hour, timePickerState.minute))
+        if (enabled) {
+            onTimeSelected(LocalTime(timePickerState.hour, timePickerState.minute))
+        }
     }
 
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-    ) {
-        if (title.isNotEmpty()) {
-            Text(
-                text = title,
-                style = sizeConfig.titleTextStyle,
-                color = colors.title,
-                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
-            )
-        }
-
-        // Use Material 3 TimePicker from Compose Multiplatform
+    Column(modifier = modifier) {
         MaterialTheme(
             colorScheme = MaterialTheme.colorScheme.copy(
-                primary = colors.selectedBackground,
-                onPrimary = colors.selectedText,
-                surface = colors.surface,
-                onSurface = colors.unselectedText,
-                surfaceVariant = colors.background,
-                onSurfaceVariant = colors.unselectedText
+                primary = colors.selectedBackground, onPrimary = colors.selectedText,
+                surface = colors.surface, onSurface = colors.unselectedText,
+                surfaceVariant = colors.background, onSurfaceVariant = colors.unselectedText
             )
         ) {
             TimePicker(
-                state = timePickerState,
-                modifier = Modifier.fillMaxWidth(),
+                state = timePickerState, modifier = Modifier.fillMaxWidth(),
                 colors = TimePickerDefaults.colors(
                     clockDialColor = colors.surface,
                     clockDialSelectedContentColor = colors.selectedText,
@@ -620,232 +555,129 @@ private fun ClockTimePickerImpl(
 }
 
 @Composable
-private fun RangeClockTimePickerImpl(
+private fun RangeClockTimePicker(
     modifier: Modifier,
     sizeConfig: TimePickerSizeConfig,
     colors: TimePickerColors,
     strings: TimePickerStrings,
-    title: String,
     format: TimeFormat,
-    minTime: LocalTime?,
-    maxTime: LocalTime?,
+    enabled: Boolean,
+    initialStartTime: LocalTime?,
+    initialEndTime: LocalTime?,
     onRangeSelected: (LocalTime?, LocalTime?) -> Unit
 ) {
     var selectingStart by remember { mutableStateOf(true) }
-    var startTime by remember { mutableStateOf<LocalTime?>(null) }
-    var endTime by remember { mutableStateOf<LocalTime?>(null) }
+    var startTime by remember { mutableStateOf(initialStartTime) }
+    var endTime by remember { mutableStateOf(initialEndTime) }
 
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-    ) {
-        if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small))
-        }
-
-        // Range labels
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = strings.startLabel, style = sizeConfig.itemTextStyle.copy(fontSize = sizeConfig.itemTextStyle.fontSize * 0.8f), color = colors.unselectedText.copy(alpha = 0.6f))
-                Text(
-                    text = startTime?.toString() ?: strings.selectLabel,
-                    style = sizeConfig.itemTextStyle,
-                    color = if (selectingStart) colors.selectedText else colors.unselectedText,
-                    fontWeight = if (selectingStart) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(RadiusSize.Small))
-                        .background(if (selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(HierarchicalSize.Spacing.Small)
-                        .clickable { selectingStart = true }
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = strings.endLabel, style = sizeConfig.itemTextStyle.copy(fontSize = sizeConfig.itemTextStyle.fontSize * 0.8f), color = colors.unselectedText.copy(alpha = 0.6f))
-                Text(
-                    text = endTime?.toString() ?: strings.selectLabel,
-                    style = sizeConfig.itemTextStyle,
-                    color = if (!selectingStart) colors.selectedText else colors.unselectedText,
-                    fontWeight = if (!selectingStart) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(RadiusSize.Small))
-                        .background(if (!selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(HierarchicalSize.Spacing.Small)
-                        .clickable { selectingStart = false }
-                )
-            }
-        }
-
+    Column(modifier = modifier) {
+        RangeSelectorRow(
+            sizeConfig, colors, strings, startTime?.toString(), endTime?.toString(),
+            selectingStart, { selectingStart = true }, { selectingStart = false })
         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
-
-        // Reuse clock impl
-        ClockTimePickerImpl(
-            modifier = Modifier,
-            sizeConfig = sizeConfig,
-            colors = colors,
-            strings = strings,
-            title = "",
-            format = format,
-            minTime = if (!selectingStart) startTime else minTime,
-            maxTime = maxTime,
-            onTimeSelected = { time ->
-                if (selectingStart) {
-                    startTime = time
-                    selectingStart = false
-                } else {
-                    endTime = time
-                }
-                onRangeSelected(startTime, endTime)
+        SingleClockTimePicker(
+            modifier = Modifier, sizeConfig = sizeConfig, colors = colors,
+            format = format, enabled = enabled,
+            initialTime = if (selectingStart) startTime else endTime
+        ) { time ->
+            if (selectingStart) {
+                startTime = time; selectingStart = false
+            } else {
+                endTime = time
             }
+            onRangeSelected(startTime, endTime)
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TIME OF DAY PICKER
+// ════════════════════════════════════════════════════════════════════════════
+
+@Suppress("UNUSED_PARAMETER")
+@Composable
+private fun TimeOfDayPickerContent(
+    modifier: Modifier, mode: TimeSelectionMode, sizeConfig: TimePickerSizeConfig,
+    colors: TimePickerColors, strings: TimePickerStrings, enabled: Boolean,
+    initialTimeOfDay: String?, onTimeOfDaySelected: ((String, LocalTime) -> Unit)?
+) {
+    var selectedSlots by remember {
+        mutableStateOf(initialTimeOfDay?.let { setOf(it) } ?: emptySet<String>())
+    }
+    val isMultiSelect = mode == TimeSelectionMode.Multiple
+
+    Column(modifier = modifier) {
+        Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)) {
+            strings.timeOfDayLabels.forEach { (slotName, time) ->
+                val isSelected = slotName in selectedSlots
+                PixaChip(
+                    text = "$slotName (${time})",
+                    variant = if (isSelected) ChipVariant.Solid else ChipVariant.Outlined,
+                    type = ChipType.Selectable,
+                    selected = isSelected,
+                    enabled = enabled,
+                    onClick = {
+                        selectedSlots = if (isMultiSelect) {
+                            if (isSelected) selectedSlots - slotName else selectedSlots + slotName
+                        } else {
+                            setOf(slotName)
+                        }
+                        onTimeOfDaySelected?.invoke(slotName, time)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    contentDescription = "$slotName at $time"
+                )
+            }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SHARED COMPONENTS
+// ════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun RangeSelectorRow(
+    sizeConfig: TimePickerSizeConfig, colors: TimePickerColors, strings: TimePickerStrings,
+    startValue: String?, endValue: String?, selectingStart: Boolean,
+    onStartClick: () -> Unit, onEndClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        RangeSelectorItem(
+            strings.startLabel, startValue ?: strings.selectLabel, selectingStart,
+            sizeConfig, colors, onStartClick, Modifier.weight(1f)
+        )
+        RangeSelectorItem(
+            strings.endLabel, endValue ?: strings.selectLabel, !selectingStart,
+            sizeConfig, colors, onEndClick, Modifier.weight(1f)
         )
     }
 }
 
-// ============================================================================
-// TIME OF DAY PICKER IMPLEMENTATION
-// ============================================================================
-
 @Composable
-private fun TimeOfDayPickerImpl(
-    modifier: Modifier,
-    sizeConfig: TimePickerSizeConfig,
-    colors: TimePickerColors,
-    strings: TimePickerStrings,
-    title: String,
-    onTimeOfDaySelected: (String, LocalTime) -> Unit
+private fun RangeSelectorItem(
+    label: String, value: String, isSelected: Boolean, sizeConfig: TimePickerSizeConfig,
+    colors: TimePickerColors, onClick: () -> Unit, modifier: Modifier = Modifier
 ) {
-    var selectedSlot by remember { mutableStateOf<String?>(null) }
-
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-    ) {
-        if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium))
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)) {
-            strings.timeOfDayLabels.forEach { (slotName, time) ->
-                val isSelected = slotName == selectedSlot
-
-                Chip(
-                    text = "$slotName (${time.toString()})",
-                    variant = if (isSelected) ChipVariant.Solid else ChipVariant.Outlined,
-                    type = ChipType.Selectable,
-                    selected = isSelected,
-                    onClick = {
-                        selectedSlot = slotName
-                        onTimeOfDaySelected(slotName, time)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    contentDescription = "$slotName at ${time}"
-                )
-            }
-        }
+    Column(modifier = modifier) {
+        Text(
+            text = label, style = sizeConfig.itemTextStyle.copy(
+                fontSize = sizeConfig.itemTextStyle.fontSize * 0.8f
+            ),
+            color = colors.unselectedText.copy(alpha = 0.6f)
+        )
+        Text(
+            text = value, style = sizeConfig.itemTextStyle,
+            color = if (isSelected) colors.selectedText else colors.unselectedText,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier
+                .clip(RoundedCornerShape(RadiusSize.Small))
+                .background(if (isSelected) colors.selectedBackground else Color.Transparent)
+                .padding(HierarchicalSize.Spacing.Small)
+                .clickable(onClick = onClick)
+        )
     }
 }
-
-// ============================================================================
-// USAGE EXAMPLES & DOCUMENTATION
-// ============================================================================
-
-/**
- * COMPREHENSIVE USAGE EXAMPLES:
- *
- * 1. Simple Wheel Time Picker (12-hour):
- * ```
- * TimePicker(
- *     variant = TimePickerVariant.Wheel,
- *     format = TimeFormat.Hour12,
- *     onTimeSelected = { time ->
- *         println("Selected: $time")
- *     }
- * )
- * ```
- *
- * 2. 24-hour Wheel Picker:
- * ```
- * TimePicker(
- *     variant = TimePickerVariant.Wheel,
- *     format = TimeFormat.Hour24,
- *     title = "Select Time",
- *     onTimeSelected = { time -> ... }
- * )
- * ```
- *
- * 3. Range Selection with Wheel:
- * ```
- * TimePicker(
- *     variant = TimePickerVariant.Wheel,
- *     mode = TimeSelectionMode.Range,
- *     onRangeSelected = { start, end ->
- *         println("Range: $start to $end")
- *     }
- * )
- * ```
- *
- * 4. Clock Face Picker (Material3-style):
- * ```
- * TimePicker(
- *     variant = TimePickerVariant.Clock,
- *     format = TimeFormat.Hour12,
- *     onTimeSelected = { time -> ... }
- * )
- * ```
- *
- * 5. Time of Day Picker:
- * ```
- * TimePicker(
- *     variant = TimePickerVariant.TimeOfDayPicker,
- *     onTimeOfDaySelected = { slot, time ->
- *         println("$slot at $time")
- *     }
- * )
- * ```
- *
- * 6. Custom Time Slots:
- * ```
- * TimePicker(
- *     variant = TimePickerVariant.TimeOfDayPicker,
- *     strings = TimePickerStrings(
- *         timeOfDayLabels = mapOf(
- *             "Breakfast" to LocalTime(8, 0),
- *             "Lunch" to LocalTime(12, 30),
- *             "Dinner" to LocalTime(19, 0)
- *         )
- *     ),
- *     onTimeOfDaySelected = { slot, time -> ... }
- * )
- * ```
- *
- * 7. Chinese Localization:
- * ```
- * TimePicker(
- *     variant = TimePickerVariant.Wheel,
- *     format = TimeFormat.Hour12,
- *     strings = TimePickerStrings(
- *         amLabel = "上午",
- *         pmLabel = "下午",
- *         startLabel = "开始",
- *         endLabel = "结束",
- *         hourLabel = "小时",
- *         minuteLabel = "分钟"
- *     ),
- *     onTimeSelected = { ... }
- * )
- * ```
- *
- * 8. With Time Bounds:
- * ```
- * TimePicker(
- *     variant = TimePickerVariant.Clock,
- *     minTime = LocalTime(9, 0),
- *     maxTime = LocalTime(17, 0),
- *     onTimeSelected = { ... }
- * )
- * ```
- */
-

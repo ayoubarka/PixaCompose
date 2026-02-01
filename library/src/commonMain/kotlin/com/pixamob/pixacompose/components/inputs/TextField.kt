@@ -216,16 +216,63 @@ private fun TextFieldVariant.colors(
 // ============================================================================
 
 /**
- * PixaTextField - Core text input component
+ * PixaTextField - Single-line text input component
  *
- * Single-line text input with variants, sizes, and full customization.
- * Follows Material 3 design with theme integration.
+ * A flexible text field with variants, sizes, and full customization.
+ *
+ * ## Usage Examples
+ *
+ * ```kotlin
+ * // Basic text field
+ * var text by remember { mutableStateOf("") }
+ * PixaTextField(
+ *     value = text,
+ *     onValueChange = { text = it },
+ *     placeholder = "Enter text"
+ * )
+ *
+ * // Outlined variant with label
+ * PixaTextField(
+ *     value = email,
+ *     onValueChange = { email = it },
+ *     variant = TextFieldVariant.Outlined,
+ *     label = "Email",
+ *     placeholder = "Enter your email"
+ * )
+ *
+ * // With error state
+ * PixaTextField(
+ *     value = password,
+ *     onValueChange = { password = it },
+ *     isError = password.length < 8,
+ *     errorText = "Password must be at least 8 characters",
+ *     visualTransformation = PasswordVisualTransformation()
+ * )
+ *
+ * // With icons
+ * PixaTextField(
+ *     value = search,
+ *     onValueChange = { search = it },
+ *     leadingIcon = painterResource(Res.drawable.ic_search),
+ *     trailingIcon = painterResource(Res.drawable.ic_clear),
+ *     placeholder = "Search..."
+ * )
+ *
+ * // Large size with character limit
+ * PixaTextField(
+ *     value = bio,
+ *     onValueChange = { bio = it },
+ *     size = TextFieldSize.Large,
+ *     maxLength = 150,
+ *     helperText = "${bio.length}/150"
+ * )
+ * ```
  *
  * @param value Current text value
  * @param onValueChange Callback when text changes
  * @param modifier Modifier for the text field
- * @param variant Visual style variant
- * @param size Size preset
+ * @param variant Visual style variant (Filled, Outlined, Ghost)
+ * @param size Size preset (Small, Medium, Large)
  * @param enabled Whether the field is enabled
  * @param readOnly Whether the field is read-only
  * @param isError Whether to show error state
@@ -242,20 +289,8 @@ private fun TextFieldVariant.colors(
  * @param maxLength Optional maximum character length
  * @param interactionSource Interaction source for state
  * @param contentDescription Accessibility description
- * @param customTextColor Optional custom text color (defaults to theme color)
- * @param customFocusedTextColor Optional custom text color when focused (defaults to customTextColor or theme color)
- *
- * @sample
- * ```
- * var text by remember { mutableStateOf("") }
- * PixaTextField(
- *     value = text,
- *     onValueChange = { text = it },
- *     label = "Email",
- *     placeholder = "Enter your email",
- *     variant = TextFieldVariant.Outlined
- * )
- * ```
+ * @param customTextColor Optional custom text color
+ * @param customFocusedTextColor Optional custom text color when focused
  */
 @Composable
 fun PixaTextField(

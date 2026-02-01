@@ -304,6 +304,7 @@ fun rememberColorPickerState(
  * @param gridColumnsCount Number of columns in grid mode (default: 10 for Tailwind palette)
  * @param enabled Whether the picker is enabled or disabled
  * @param contentDescription Content description for accessibility
+ * @param selectionIconConfig Configuration for selection icon visibility and appearance in grid mode
  * @param onColorChanged Callback when color changes (debounced for performance)
  */
 @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
@@ -319,7 +320,8 @@ fun PixaColorPicker(
     showModeSelector: Boolean = true,
     showColorComparison: Boolean = false,
     customPalette: List<Color>? = null,
-    gridColumnsCount: Int = 10,
+    gridColumnsCount: Int = 8,
+    selectionIconConfig: SelectionIconConfig = SelectionIconConfig(),
     enabled: Boolean = true,
     contentDescription: String = "Color picker",
     onColorChanged: (Color) -> Unit = {}
@@ -381,7 +383,8 @@ fun PixaColorPicker(
                     palette = customPalette ?: MaterialColors.tailwindPalette,
                     gridColumnsCount = gridColumnsCount,
                     enabled = enabled,
-                    modifier = Modifier.fillMaxWidth()
+                    modifier = Modifier.fillMaxWidth(),
+                    selectionIconConfig = selectionIconConfig
                 )
 
                 ColorPickerMode.Wheel -> WheelColorPicker(
@@ -565,14 +568,31 @@ private fun ModeSelector(
 // Grid Color Picker
 // ============================================================================
 
+/**
+ * Selection icon configuration for grid color picker
+ */
+@Immutable
+@Stable
+data class SelectionIconConfig(
+    /** Whether to show the selection icon */
+    val visible: Boolean = true,
+    /** Size of the selection icon */
+    val size: Dp = HierarchicalSize.Icon.Small,
+    /** Custom color for the selection icon (null = auto-contrast based on selected color) */
+    val color: Color? = null,
+    /** Stroke width for the checkmark */
+    val strokeWidth: Dp = HierarchicalSize.Border.Medium
+)
+
 @Composable
 private fun GridColorPicker(
     selectedColor: Color,
     onColorSelected: (Color) -> Unit,
     palette: List<Color>,
-    gridColumnsCount: Int = 6,
+    gridColumnsCount: Int = 8,
     enabled: Boolean,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    selectionIconConfig: SelectionIconConfig = SelectionIconConfig()
 ) {
     LazyVerticalGrid(
         columns = GridCells.Fixed(gridColumnsCount),
@@ -608,24 +628,28 @@ private fun GridColorPicker(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                if (isSelected) {
-                    Canvas(modifier = Modifier.size(HierarchicalSize.Icon.Small)) {
+                if (isSelected && selectionIconConfig.visible) {
+                    val iconColor = selectionIconConfig.color
+                        ?: if (color.luminance() > 0.5f) Color.Black else Color.White
+
+                    Canvas(modifier = Modifier.size(selectionIconConfig.size)) {
+                        val strokeWidthPx = selectionIconConfig.strokeWidth.toPx()
                         drawCircle(
-                            color = if (color.luminance() > 0.5f) Color.Black else Color.White,
+                            color = iconColor,
                             radius = size.minDimension / 2,
-                            style = Stroke(width = HierarchicalSize.Border.Medium.toPx())
+                            style = Stroke(width = strokeWidthPx)
                         )
                         drawLine(
-                            color = if (color.luminance() > 0.5f) Color.Black else Color.White,
+                            color = iconColor,
                             start = Offset(size.width * 0.3f, size.height * 0.5f),
                             end = Offset(size.width * 0.45f, size.height * 0.65f),
-                            strokeWidth = HierarchicalSize.Border.Medium.toPx()
+                            strokeWidth = strokeWidthPx
                         )
                         drawLine(
-                            color = if (color.luminance() > 0.5f) Color.Black else Color.White,
+                            color = iconColor,
                             start = Offset(size.width * 0.45f, size.height * 0.65f),
                             end = Offset(size.width * 0.7f, size.height * 0.35f),
-                            strokeWidth = HierarchicalSize.Border.Medium.toPx()
+                            strokeWidth = strokeWidthPx
                         )
                     }
                 }

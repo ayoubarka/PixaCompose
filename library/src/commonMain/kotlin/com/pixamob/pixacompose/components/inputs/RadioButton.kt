@@ -35,35 +35,25 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.*
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * RadioButton Variant - Visual style
- */
 enum class RadioButtonVariant {
-    /** Filled center dot when selected (Primary style) */
     Filled,
-    /** Outlined ring with dot (Subtle style) */
     Outlined
 }
 
-/**
- * RadioButton Size - Circle size variants
- */
 enum class RadioButtonSize {
-    /** 16dp - Compact UIs, dense forms */
     Small,
-    /** 20dp - DEFAULT, standard forms */
     Medium,
-    /** 24dp - Touch-friendly, prominent selections */
     Large
 }
 
-/**
- * RadioButton Size Configuration
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class RadioButtonSizeConfig(
@@ -74,9 +64,6 @@ data class RadioButtonSizeConfig(
     val labelStyle: @Composable () -> TextStyle
 )
 
-/**
- * RadioButton Colors
- */
 @Immutable
 @Stable
 data class RadioButtonColors(

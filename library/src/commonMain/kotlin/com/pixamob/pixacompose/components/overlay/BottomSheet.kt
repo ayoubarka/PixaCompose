@@ -232,6 +232,29 @@ private class BottomSheetNestedScrollConnection : NestedScrollConnection {
     }
 }
 
+/**
+ * Fixed nested scroll connection that prevents sheet dragging
+ * Used when isFixed = true to ensure stable interaction with scrollable content
+ */
+private class FixedBottomSheetNestedScrollConnection : NestedScrollConnection {
+    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+        // Consume all vertical scroll to prevent sheet dragging
+        return if (source == NestedScrollSource.UserInput) {
+            Offset(0f, available.y)
+        } else {
+            Offset.Zero
+        }
+    }
+
+    override fun onPostScroll(
+        consumed: Offset,
+        available: Offset,
+        source: NestedScrollSource
+    ): Offset {
+        return Offset.Zero
+    }
+}
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // BASE - Internal composables
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -343,6 +366,9 @@ private fun DragHandle(
  * @param shape Custom shape for the sheet (defaults to rounded top corners)
  * @param showDragHandle If true, shows drag handle at top
  * @param skipPartiallyExpanded If true, sheet goes from hidden to fully expanded
+ * @param dismissOnOutsideClick If true, clicking outside the sheet dismisses it (default: true)
+ * @param dismissOnBackClick If true, back button/gesture dismisses the sheet (default: true)
+ * @param isFixed If true, prevents dragging for sheets with scrollable content (default: false)
  * @param content The content of the bottom sheet
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -357,6 +383,9 @@ fun PixaBottomSheet(
     shape: Shape? = null,
     showDragHandle: Boolean = true,
     skipPartiallyExpanded: Boolean = true,
+    dismissOnOutsideClick: Boolean = true,
+    dismissOnBackClick: Boolean = true,
+    isFixed: Boolean = false,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val sizeConfig = size.toSizeConfig()
@@ -366,16 +395,25 @@ fun PixaBottomSheet(
         topEnd = sizeConfig.cornerRadius
     )
 
+    // Nested scroll connection that blocks dragging when isFixed is true
+    val fixedScrollConnection = remember(isFixed) {
+        if (isFixed) FixedBottomSheetNestedScrollConnection() else BottomSheetNestedScrollConnection()
+    }
+
     ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
+        onDismissRequest = {
+            if (dismissOnBackClick) {
+                onDismissRequest()
+            }
+        },
         modifier = modifier,
         sheetState = sheetState,
         containerColor = colors.container,
         contentColor = colors.content,
-        scrimColor = colors.scrim,
+        scrimColor = if (dismissOnOutsideClick) colors.scrim else colors.scrim.copy(alpha = 0.01f),
         shape = sheetShape,
         tonalElevation = if (elevated) 8.dp else 0.dp,
-        dragHandle = if (showDragHandle) {
+        dragHandle = if (showDragHandle && !isFixed) {
             {
                 DragHandle(
                     width = sizeConfig.dragHandleWidth,
@@ -383,8 +421,12 @@ fun PixaBottomSheet(
                     color = colors.dragHandle
                 )
             }
-        } else null
+        } else null,
+        properties = androidx.compose.material3.ModalBottomSheetProperties(
+            shouldDismissOnBackPress = dismissOnBackClick
+        )
     ) {
+        // Intercept scrim clicks if dismissOnOutsideClick is false
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -393,7 +435,7 @@ fun PixaBottomSheet(
                     horizontal = sizeConfig.horizontalPadding,
                     vertical = sizeConfig.verticalPadding
                 )
-                .nestedScroll(remember { BottomSheetNestedScrollConnection() })
+                .nestedScroll(fixedScrollConnection)
         ) {
             content()
         }

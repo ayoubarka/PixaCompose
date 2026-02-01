@@ -40,85 +40,36 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import com.valentinilk.shimmer.shimmer
 
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
+@Stable
+sealed class PixaImageSource {
+    data class Url(val url: String) : PixaImageSource()
+    data class Resource(val painter: Painter) : PixaImageSource()
+    data class Vector(val imageVector: ImageVector) : PixaImageSource()
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ════════════════════════════════════════════════════════════════════════════
+
 /**
- * PixaImage - A powerful, unified image component for Compose Multiplatform
- *
- * **Designed for mobile-first experiences with robust loading/error handling**
- *
- * **Features:**
- * - ✅ Single entry point for all image types (URL, Painter, ImageVector)
- * - ✅ Automatic loading & error state handling via Coil 3
- * - ✅ Shimmer loading effect (built-in, uses valentinilk.shimmer)
- * - ✅ Crossfade animation on successful load
- * - ✅ Shape clipping (rounded corners, circles, custom shapes)
- * - ✅ Click handling with Material ripple (touch-friendly)
- * - ✅ Theme-aware fallbacks (error colors, shimmer colors)
- * - ✅ Full accessibility support (semantics, role, contentDescription)
- * - ✅ Multiplatform compatible (Android, iOS)
- * - ✅ Mobile-optimized (responsive, performant)
- *
- * **Image Sources:**
- * - [PixaImageSource.Url] - Remote image loaded asynchronously via Coil 3
- * - [PixaImageSource.Resource] - Painter from resources (painterResource)
- * - [PixaImageSource.Vector] - Compose ImageVector (scalable icons/graphics)
- *
  * @param source The image source (Url, Resource, or Vector)
- * @param contentDescription **Required** for accessibility. Warns if null.
- * @param modifier Modifier for the image container
- * @param contentScale How to scale the image content (default: Crop for photos, Fit for icons)
- * @param shape Shape to clip the image (default: RectangleShape, use CircleShape for avatars)
- * @param size Fixed size for the image. Pass null to use modifier size
- * @param tint Tint color for vectors/painters. Pass null for original colors (photos)
- * @param loadingPlaceholder Custom painter while loading. Default: shimmer effect
- * @param errorFallback Custom painter on load failure. Default: broken image icon
- * @param brokenImageIcon Custom broken image icon. Pass null to use default
- * @param onClick Click handler (optional). Adds ripple effect when set
- * @param crossfade Enable crossfade animation on load (URL images, default: true)
- * @param backgroundColor Background color behind the image (useful for transparent PNGs)
- * @param alignment Alignment of the image within its bounds
- *
- * **Example: Basic URL image with automatic loading/error states**
- * ```
- * PixaImage(
- *     source = PixaImageSource.Url("https://example.com/photo.jpg"),
- *     contentDescription = "Profile photo",
- *     shape = CircleShape,
- *     size = 64.dp
- * )
- * ```
- *
- * **Example: URL image with custom placeholders and click handler**
- * ```
- * PixaImage(
- *     source = PixaImageSource.Url("https://example.com/photo.jpg"),
- *     contentDescription = "Profile photo",
- *     loadingPlaceholder = painterResource(R.drawable.placeholder),
- *     errorFallback = painterResource(R.drawable.error),
- *     shape = RoundedCornerShape(16.dp),
- *     onClick = { /* open full screen */ }
- * )
- * ```
- *
- * **Example: Vector icon as image**
- * ```
- * PixaImage(
- *     source = PixaImageSource.Vector(Icons.Default.Person),
- *     contentDescription = "User icon",
- *     tint = MaterialTheme.colorScheme.primary,
- *     size = 48.dp
- * )
- * ```
- *
- * **Example: Resource image (local drawable)**
- * ```
- * PixaImage(
- *     source = PixaImageSource.Resource(painterResource(R.drawable.banner)),
- *     contentDescription = "App banner",
- *     contentScale = ContentScale.FillWidth,
- *     shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp)
- * )
- * ```
- */
+ * @param contentDescription Accessibility description
+ * @param modifier Modifier
+ * @param contentScale How to scale the content
+ * @param shape Shape to clip the image
+ * @param size Fixed size
+ * @param tint Tint color
+ * @param loadingPlaceholder Custom loading placeholder
+ * @param errorFallback Custom error fallback
+ * @param brokenImageIcon Custom broken image icon
+ * @param onClick Click handler
+ * @param crossfade Enable crossfade animation
+ * @param backgroundColor Background color
+ * */
 @Composable
 fun PixaImage(
     source: PixaImageSource,
@@ -213,47 +164,10 @@ fun PixaImage(
     }
 }
 
-// ============================================================================
-// IMAGE SOURCE TYPES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// INTERNAL COMPONENTS
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Sealed class representing different image source types for PixaImage
- */
-@Stable
-sealed class PixaImageSource {
-    /**
-     * Remote URL loaded asynchronously via Coil 3
-     *
-     * @param url The remote image URL (https://, http://, or data URIs)
-     */
-    @Stable
-    data class Url(val url: String) : PixaImageSource()
-
-    /**
-     * Painter resource (painterResource, rememberImagePainter, etc.)
-     *
-     * @param painter The painter to display
-     */
-    @Stable
-    data class Resource(val painter: Painter) : PixaImageSource()
-
-    /**
-     * ImageVector source (Icons.Default.*, custom vectors)
-     *
-     * @param imageVector The vector graphic to display
-     */
-    @Stable
-    data class Vector(val imageVector: ImageVector) : PixaImageSource()
-}
-
-// ============================================================================
-// INTERNAL IMAGE RENDERERS
-// ============================================================================
-
-/**
- * Renders URL-based images with Coil 3, handling loading/error states
- */
 @Composable
 private fun UrlImageRenderer(
     url: String,

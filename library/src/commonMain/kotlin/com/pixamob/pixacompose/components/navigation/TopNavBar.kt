@@ -45,20 +45,10 @@ import com.pixamob.pixacompose.components.feedback.BadgeSize
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.theme.*
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONFIGURATION - Data models and enums
-// ═══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Action configuration for top navigation bar
- *
- * @param icon Painter for the action icon
- * @param description Accessibility description for the action
- * @param onClick Callback when action is clicked
- * @param enabled Whether the action is enabled for interaction
- * @param badge Optional badge count for notifications/updates
- * @param tint Optional custom tint color (null uses default contentColor)
- */
 @Stable
 data class TopNavAction(
     val icon: Painter,
@@ -69,15 +59,9 @@ data class TopNavAction(
     val tint: Color? = null
 )
 
-/**
- * Size variant for top navigation bar
- */
 enum class TopNavSize {
-    /** Small size: 48dp height, compact layout for minimal screens */
     Small,
-    /** Medium size: 56dp height, standard app bar (default) */
     Medium,
-    /** Large size: 72dp height, prominent header for landing pages */
     Large
 }
 

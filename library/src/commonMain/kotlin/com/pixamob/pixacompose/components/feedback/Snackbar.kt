@@ -108,41 +108,28 @@ import kotlin.math.abs
  * ```
  */
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Snackbar semantic variants
- */
 enum class SnackbarVariant {
-    /** Default/neutral - dark gray */
     Default,
-    /** Informational message - blue */
     Info,
-    /** Success/positive message - green */
     Success,
-    /** Warning/caution message - orange */
     Warning,
-    /** Error/critical message - red */
     Error
 }
 
-/**
- * Snackbar duration presets
- */
 enum class SnackbarDuration(val milliseconds: Long) {
-    /** Short duration - 4 seconds */
     Short(4000L),
-    /** Long duration - 10 seconds */
     Long(10000L),
-    /** Indefinite - stays until dismissed or action taken */
     Indefinite(-1L)
 }
 
-/**
- * Snackbar colors for different states
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class SnackbarColors(

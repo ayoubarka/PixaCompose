@@ -60,14 +60,10 @@ import com.valentinilk.shimmer.shimmer
  * ```
  */
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-
-/**
- * Skeleton size presets
- */
 enum class SkeletonSize {
     Small,
     Medium,
@@ -75,29 +71,19 @@ enum class SkeletonSize {
     ExtraLarge
 }
 
-/**
- * Shimmer animation direction
- */
 enum class ShimmerDirection {
-    /** Left to right shimmer */
     Horizontal,
-    /** Top to bottom shimmer */
     Vertical
 }
 
-/**
- * Image skeleton shape
- */
 enum class SkeletonImageShape {
-    /** Rectangular image */
     Rectangle,
-    /** Circular image (avatar-style) */
     Circle
 }
 
-/**
- * Skeleton configuration
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
 @Immutable
 @Stable
 data class SkeletonConfig(

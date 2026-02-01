@@ -27,9 +27,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
@@ -121,6 +125,52 @@ data class BaseCardColors(
     val background: Color,
     val border: Color = Color.Transparent,
     val content: Color
+)
+
+/**
+ * Border configuration for cards
+ */
+@Stable
+data class CardBorderConfig(
+    /** Border color (null = use theme default based on variant) */
+    val color: Color? = null,
+    /** Border width */
+    val width: Dp = BorderSize.Standard,
+    /** Border style - solid or dashed pattern */
+    val style: CardBorderStyle = CardBorderStyle.Solid
+)
+
+/**
+ * Border style options
+ */
+enum class CardBorderStyle {
+    /** Solid continuous border */
+    Solid,
+    /** Dashed border pattern */
+    Dashed,
+    /** Dotted border pattern */
+    Dotted,
+    /** No border */
+    None
+}
+
+/**
+ * Shadow configuration for cards
+ */
+@Stable
+data class CardShadowConfig(
+    /** Shadow elevation */
+    val elevation: Dp = 0.dp,
+    /** Shadow color */
+    val color: Color = Color.Black.copy(alpha = 0.1f),
+    /** Shadow spread radius */
+    val spreadRadius: Dp = 0.dp,
+    /** Shadow blur radius */
+    val blurRadius: Dp = 0.dp,
+    /** Shadow X offset */
+    val offsetX: Dp = 0.dp,
+    /** Shadow Y offset */
+    val offsetY: Dp = 0.dp
 )
 
 /**
@@ -265,6 +315,8 @@ private fun InternalCard(
     padding: BaseCardPadding = BaseCardPadding.Medium,
     cornerRadius: Dp = RadiusSize.Medium,
     colors: BaseCardStateColors,
+    borderConfig: CardBorderConfig? = null,
+    shadowConfig: CardShadowConfig? = null,
     content: @Composable ConstraintLayoutScope.() -> Unit
 ) {
     // Animated colors based on state with spring for snappier feel
@@ -274,29 +326,53 @@ private fun InternalCard(
         label = "card_background"
     )
 
+    // Determine border color - priority: borderConfig > theme colors
+    val themeBorderColor = if (!enabled) colors.disabled.border else colors.default.border
+    val finalBorderColor = borderConfig?.color ?: themeBorderColor
+
     val borderColor by animateColorAsState(
-        targetValue = if (!enabled) colors.disabled.border else colors.default.border,
+        targetValue = finalBorderColor,
         animationSpec = spring(),
         label = "card_border"
     )
 
-    val elevationDp = if (variant == BaseCardVariant.Elevated && enabled) {
-        getBaseCardElevationDp(elevation)
-    } else {
-        0.dp
+    // Determine elevation - priority: shadowConfig > elevation enum
+    val elevationDp = when {
+        shadowConfig != null -> shadowConfig.elevation
+        variant == BaseCardVariant.Elevated && enabled -> getBaseCardElevationDp(elevation)
+        else -> 0.dp
     }
 
     val paddingDp = getBaseCardPaddingDp(padding)
     val shape = RoundedCornerShape(cornerRadius)
 
-    val borderModifier = if (borderColor != Color.Transparent) {
-        Modifier.border(
-            width = BorderSize.Standard,
-            color = borderColor,
-            shape = shape
-        )
-    } else {
-        Modifier
+    // Build border modifier based on border config
+    val borderModifier = when {
+        borderConfig?.style == CardBorderStyle.None -> Modifier
+        borderConfig?.style == CardBorderStyle.Dashed || borderConfig?.style == CardBorderStyle.Dotted -> {
+            // For dashed/dotted, we use a custom draw modifier
+            Modifier.drawBehind {
+                val strokeWidth = (borderConfig.width).toPx()
+                val pathEffect = when (borderConfig.style) {
+                    CardBorderStyle.Dashed -> PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    CardBorderStyle.Dotted -> PathEffect.dashPathEffect(floatArrayOf(4f, 4f), 0f)
+                    else -> null
+                }
+                drawRoundRect(
+                    color = borderColor,
+                    style = Stroke(width = strokeWidth, pathEffect = pathEffect),
+                    cornerRadius = CornerRadius(cornerRadius.toPx())
+                )
+            }
+        }
+        borderColor != Color.Transparent -> {
+            Modifier.border(
+                width = borderConfig?.width ?: BorderSize.Standard,
+                color = borderColor,
+                shape = shape
+            )
+        }
+        else -> Modifier
     }
 
     val clickableModifier = if (onClick != null && enabled) {
@@ -320,7 +396,9 @@ private fun InternalCard(
             .shadow(
                 elevation = elevationDp,
                 shape = shape,
-                clip = false
+                clip = false,
+                ambientColor = shadowConfig?.color ?: Color.Black.copy(alpha = 0.1f),
+                spotColor = shadowConfig?.color ?: Color.Black.copy(alpha = 0.1f)
             )
             .clip(shape)
             .then(borderModifier)
@@ -360,6 +438,8 @@ private fun InternalCard(
  * @param padding Internal padding
  * @param cornerRadius Corner radius override (default: RadiusSize.Medium)
  * @param backgroundColor Optional background color override
+ * @param borderConfig Optional border configuration (color, width, style)
+ * @param shadowConfig Optional shadow configuration (elevation, color, offsets)
  * @param content Card content (ConstraintLayout scope for flexible positioning)
  *
  * @sample
@@ -424,6 +504,8 @@ fun PixaCard(
     padding: BaseCardPadding = BaseCardPadding.Medium,
     cornerRadius: Dp = RadiusSize.Medium,
     backgroundColor: Color? = null,
+    borderConfig: CardBorderConfig? = null,
+    shadowConfig: CardShadowConfig? = null,
     skeletonShape: androidx.compose.ui.graphics.Shape? = null,
     content: @Composable ConstraintLayoutScope.() -> Unit
 ) {
@@ -461,6 +543,8 @@ fun PixaCard(
         padding = padding,
         cornerRadius = cornerRadius,
         colors = finalColors,
+        borderConfig = borderConfig,
+        shadowConfig = shadowConfig,
         content = content
     )
 }

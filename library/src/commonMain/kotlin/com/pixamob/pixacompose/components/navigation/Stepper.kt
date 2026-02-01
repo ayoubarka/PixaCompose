@@ -44,64 +44,12 @@ import com.pixamob.pixacompose.components.feedback.SkeletonText
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 
-/**
- * Stepper Component
- *
- * Multi-step progress indicator for workflows, forms, and guided processes.
- * Displays steps with completed/current/pending states and smooth animations.
- *
- * Features:
- * - Vertical and Horizontal orientations
- * - Multiple indicator types: Dot, Number, Icon, Checkmark
- * - Connector styles: Line, Dashed, Arrow
- * - Card-based step content
- * - Interactive step navigation
- * - Animated state transitions
- * - Full accessibility support
- *
- * @sample
- * ```
- * // Basic vertical stepper
- * val steps = listOf(
- *     StepData(title = "Account Info", isCompleted = true),
- *     StepData(title = "Verification", isCompleted = false),
- *     StepData(title = "Confirm", isCompleted = false)
- * )
- * Stepper(
- *     steps = steps,
- *     currentStep = 1,
- *     orientation = StepperOrientation.Vertical
- * )
- *
- * // Horizontal with numbers
- * Stepper(
- *     steps = steps,
- *     currentStep = 2,
- *     orientation = StepperOrientation.Horizontal,
- *     indicatorType = StepIndicatorType.Number
- * )
- *
- * // Interactive with click handler
- * Stepper(
- *     steps = steps,
- *     currentStep = currentStep,
- *     onStepClick = { step -> if (step < currentStep) currentStep = step }
- * )
- * ```
- */
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
-
-/**
- * Stepper orientation
- */
 enum class StepperOrientation {
-    /** Vertical layout - default for mobile */
     Vertical,
-
-    /** Horizontal layout - for wide screens or few steps */
     Horizontal
 }
 

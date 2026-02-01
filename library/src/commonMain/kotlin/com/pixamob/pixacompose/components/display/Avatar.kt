@@ -42,29 +42,16 @@ import coil3.compose.AsyncImage
 import com.pixamob.pixacompose.components.feedback.SkeletonCircle
 import com.pixamob.pixacompose.theme.AppTheme
 
-/**
- * Avatar Component
- *
- * Display user profile pictures, initials, or placeholder icons.
- * Supports images (with Coil), text initials, icons, and status badges.
- */
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-
-/**
- * Avatar shape variants
- */
 enum class AvatarShape {
-    /** Circular avatar */
     Circle,
-    /** Rounded square avatar */
     Rounded,
-    /** Square avatar */
     Square
 }
 
-/**
- * Avatar status indicator position
- */
 enum class AvatarStatusPosition {
     TopLeft,
     TopRight,
@@ -72,9 +59,10 @@ enum class AvatarStatusPosition {
     BottomRight
 }
 
-/**
- * Avatar configuration
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class AvatarConfig(
@@ -84,9 +72,10 @@ data class AvatarConfig(
     val statusSize: Dp
 )
 
-/**
- * Get avatar configuration based on size
- */
+// ════════════════════════════════════════════════════════════════════════════
+// THEME PROVIDER
+// ════════════════════════════════════════════════════════════════════════════
+
 @Composable
 private fun getAvatarConfig(size: SizeVariant): AvatarConfig {
     val typography = AppTheme.typography

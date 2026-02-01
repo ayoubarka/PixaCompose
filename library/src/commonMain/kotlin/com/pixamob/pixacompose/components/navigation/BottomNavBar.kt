@@ -52,20 +52,10 @@ import com.pixamob.pixacompose.components.display.BaseCardPadding
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
 
-// ═══════════════════════════════════════════════════════════════════════════════
-// CONFIGURATION - Data models and enums
-// ═══════════════════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Navigation item configuration for bottom navigation bar
- *
- * @param title Display text for the navigation item
- * @param iconSelected Painter for selected/active state icon
- * @param iconUnselected Painter for unselected/inactive state icon
- * @param contentDescription Accessibility description (null uses title)
- * @param badgeCount Optional badge count for notifications/updates
- * @param enabled Whether the item is enabled for interaction
- */
 data class NavItem(
     val title: String,
     val iconSelected: Painter,
@@ -75,25 +65,18 @@ data class NavItem(
     val enabled: Boolean = true
 )
 
-/**
- * Display style for navigation tab items
- */
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
+
 enum class TabDisplayStyle {
-    /** Show icon only (no text) */
     IconOnly,
-    /** Show text only (no icon) */
     TextOnly,
-    /** Show both icon and text (default) */
     IconWithText
 }
 
-/**
- * Icon style variant for navigation items
- */
 enum class NavIconStyle {
-    /** Bold icons for selected, line icons for unselected (default behavior) */
     BoldLine,
-    /** Custom painter-based selection (use iconSelected/iconUnselected) */
     Custom
 }
 

@@ -1,18 +1,35 @@
 package com.pixamob.pixacompose.components.inputs
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -25,15 +42,21 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.sp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.actions.Chip
+import androidx.compose.ui.unit.sp
+import com.pixamob.pixacompose.components.actions.PixaChip
 import com.pixamob.pixacompose.components.actions.ChipType
 import com.pixamob.pixacompose.components.actions.ChipVariant
-import com.pixamob.pixacompose.theme.*
+import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.BorderSize
+import com.pixamob.pixacompose.theme.ColorPalette
+import com.pixamob.pixacompose.theme.ComponentSize
+import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.RadiusSize
+import com.pixamob.pixacompose.theme.Spacing
+import com.pixamob.pixacompose.utils.AnimationUtils.standardSpring
 import com.pixamob.pixacompose.utils.DateTimeUtils
 import com.pixamob.pixacompose.utils.DateTimeUtils.toEpochMillis
-import com.pixamob.pixacompose.utils.AnimationUtils.standardSpring
 import dev.darkokoa.datetimewheelpicker.WheelDatePicker
 import dev.darkokoa.datetimewheelpicker.core.WheelPickerDefaults
 import kotlinx.datetime.DateTimeUnit
@@ -43,51 +66,27 @@ import kotlinx.datetime.Month
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
 
-// ============================================================================
-// CONFIGURATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * DatePicker Variant - Visual style and interaction pattern
- */
 enum class DatePickerVariant {
-    /** Wheel picker (iOS-style) - Works on all platforms */
     Wheel,
-    /** Calendar grid (Material 3) - Best for Android */
     Calendar,
-    /** Month day picker - Select specific day of month (1-31) */
     MonthDayPicker,
-    /** Weekday picker - Multi-select days of week */
     WeekdayPicker,
-    /** Day count picker - Select repeat interval (Every X days) */
+    MonthPicker,
     DayCountPicker
 }
 
-/**
- * DatePicker Size - Height and padding variants
- */
-enum class DatePickerSize {
-    /** Small size - 240dp - Compact pickers */
-    Small,
-    /** Medium size - 280dp - DEFAULT, standard picker */
-    Medium,
-    /** Large size - 320dp - Prominent pickers */
-    Large
-}
+enum class DatePickerSize { Small, Medium, Large }
 
-/**
- * Date Selection Mode
- */
-enum class DateSelectionMode {
-    /** Single date selection */
-    Single,
-    /** Date range selection (start and end dates) */
-    Range
-}
+enum class DateSelectionMode { Single, Multiple, Range }
 
-/**
- * DatePicker Colors - Theme-aware color configuration
- */
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
 @Immutable
 @Stable
 data class DatePickerColors(
@@ -99,12 +98,10 @@ data class DatePickerColors(
     val divider: Color,
     val title: Color,
     val todayHighlight: Color,
-    val disabledText: Color
+    val disabledText: Color,
+    val rangeBackground: Color = selectedBackground.copy(alpha = 0.2f)
 )
 
-/**
- * DatePicker Size Configuration
- */
 @Immutable
 @Stable
 data class DatePickerSizeConfig(
@@ -118,38 +115,59 @@ data class DatePickerSizeConfig(
     val selectorBorder: BorderStroke? = null
 )
 
-/**
- * Localization strings for DatePicker
- * All text is customizable for i18n support
- */
 @Stable
 data class DatePickerStrings(
     val weekdayNames: List<String> = listOf("Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"),
     val weekdayShortNames: List<String> = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"),
-    val monthNames: List<String> = listOf("January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"),
-    val monthShortNames: List<String> = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun",
-        "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
+    val monthNames: List<String> = listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"),
+    val monthShortNames: List<String> = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
     val startLabel: String = "Start",
     val endLabel: String = "End",
     val selectLabel: String = "Select",
     val todayLabel: String = "Today",
     val repeatLabelSingular: String = "Every 1 day",
-    val repeatLabelPlural: (Int) -> String = { count -> "Every $count days" },
-    val previousMonthLabel: String = "Previous month",
-    val nextMonthLabel: String = "Next month",
+    val repeatLabelPlural: (Int) -> String = { "Every $it days" },
+    val previousLabel: String = "Previous",
+    val nextLabel: String = "Next",
     val increaseLabel: String = "Increase",
     val decreaseLabel: String = "Decrease",
-    val dayOfMonthLabel: (Int) -> String = { day -> "Day $day" }
+    val dayOfMonthLabel: (Int) -> String = { "Day $it" }
 )
 
-// ============================================================================
-// THEME PROVIDER
-// ============================================================================
+@Stable
+data class DayItemStyle(
+    val shape: Shape = CircleShape,
+    val selectedShape: Shape = CircleShape,
+    val todayBorderWidth: Dp = 2.dp,
+    val animateSelection: Boolean = true
+)
 
-/**
- * Get date picker colors from theme
- */
+@Stable
+data class CalendarConfig(
+    val showWeekdayHeaders: Boolean = true,
+    val highlightToday: Boolean = true,
+    val showAdjacentMonthDays: Boolean = false,
+    val firstDayOfWeek: DayOfWeek = DayOfWeek.SUNDAY,
+    val dayItemStyle: DayItemStyle = DayItemStyle()
+)
+
+@Stable
+data class WheelConfig(
+    val yearsRange: IntRange = 1900..2100,
+    val showDividers: Boolean = true
+)
+
+@Stable
+data class StepperConfig(
+    val minValue: Int = 1,
+    val maxValue: Int = 365,
+    val step: Int = 1
+)
+
+// ════════════════════════════════════════════════════════════════════════════
+// THEME PROVIDER
+// ════════════════════════════════════════════════════════════════════════════
+
 @Composable
 private fun getDatePickerTheme(colors: ColorPalette): DatePickerColors {
     return DatePickerColors(
@@ -161,13 +179,11 @@ private fun getDatePickerTheme(colors: ColorPalette): DatePickerColors {
         divider = colors.baseBorderDefault,
         title = colors.baseContentTitle,
         todayHighlight = colors.brandContentDefault,
-        disabledText = colors.baseContentDisabled
+        disabledText = colors.baseContentDisabled,
+        rangeBackground = colors.brandSurfaceDefault.copy(alpha = 0.2f)
     )
 }
 
-/**
- * Get date picker size configuration
- */
 @Composable
 private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig {
     val typography = AppTheme.typography
@@ -206,70 +222,105 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
     }
 }
 
-/**
- * Helper to get days in month
- */
-private fun getDaysInMonth(year: Int, month: Month): Int {
-    return DateTimeUtils.getDaysInMonth(year, month)
-}
+// ════════════════════════════════════════════════════════════════════════════
+// HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+
+private fun getDaysInMonth(year: Int, month: Month): Int = DateTimeUtils.getDaysInMonth(year, month)
+
+private fun getDayOfWeekIndex(dayOfWeek: DayOfWeek): Int = DateTimeUtils.getDayOfWeekIndex(dayOfWeek)
+
+// ════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Helper to get day of week as 0-6 (0=Sunday)
- */
-private fun getDayOfWeekIndex(dayOfWeek: DayOfWeek): Int {
-    return DateTimeUtils.getDayOfWeekIndex(dayOfWeek)
-}
-
-// ============================================================================
-// UNIFIED DATE PICKER (Main Entry Point)
-// ============================================================================
-
-/**
- * Unified DatePicker - Main composable that delegates to specific variants
+ * PixaDatePicker - Comprehensive date picker component
  *
- * A comprehensive date picker with multiple variants and full i18n support.
- * All text is customizable via the `strings` parameter for multilingual apps.
+ * A flexible date picker with multiple variants and full customization.
+ * Supports single, multiple, and range selection modes.
  *
- * @param variant The picker variant to display
- * @param mode Selection mode (Single or Range)
- * @param modifier Modifier for the picker
- * @param size Size variant
- * @param title Optional title text
- * @param colors Optional custom colors (overrides theme)
- * @param strings Localization strings for i18n (defaults to English)
- * @param minDate Minimum selectable date (null = no limit)
- * @param maxDate Maximum selectable date (null = no limit)
- * @param onDateSelected Callback for single date selection (Long timestamp)
- * @param onRangeSelected Callback for range selection (start, end as LocalDate)
- * @param onWeekdaysSelected Callback for weekday selection (Set of weekday indices 0-6)
- * @param onDayCountSelected Callback for day count selection (Int)
- * @param onDayOfMonthSelected Callback for day of month selection (Int 1-31)
+ * ## Usage Examples
  *
- * @sample
- * ```
- * // Single date with Calendar
- * DatePicker(
+ * ```kotlin
+ * // Calendar picker with single selection
+ * PixaDatePicker(
  *     variant = DatePickerVariant.Calendar,
- *     onDateSelected = { timestamp -> ... }
+ *     onDateSelected = { timestamp -> println("Selected: $timestamp") }
  * )
  *
- * // Range selection
- * DatePicker(
+ * // Multiple date selection
+ * PixaDatePicker(
+ *     variant = DatePickerVariant.Calendar,
+ *     mode = DateSelectionMode.Multiple,
+ *     initialDates = setOf(LocalDate(2024, 1, 15), LocalDate(2024, 1, 20)),
+ *     onDatesSelected = { dates -> println("Selected: $dates") }
+ * )
+ *
+ * // Range selection with initial values
+ * PixaDatePicker(
  *     variant = DatePickerVariant.Calendar,
  *     mode = DateSelectionMode.Range,
- *     onRangeSelected = { start, end -> ... }
+ *     initialStartDate = LocalDate(2024, 1, 1),
+ *     initialEndDate = LocalDate(2024, 1, 31),
+ *     onRangeSelected = { start, end -> println("$start to $end") }
  * )
  *
- * // With French localization
- * DatePicker(
+ * // Weekday picker for recurring events
+ * PixaDatePicker(
+ *     variant = DatePickerVariant.WeekdayPicker,
+ *     mode = DateSelectionMode.Multiple,
+ *     initialWeekdays = setOf(0, 2, 4), // Sun, Tue, Thu
+ *     onWeekdaysSelected = { days -> println("Days: $days") }
+ * )
+ *
+ * // Month picker
+ * PixaDatePicker(
+ *     variant = DatePickerVariant.MonthPicker,
+ *     mode = DateSelectionMode.Multiple,
+ *     onMonthsSelected = { months -> println("Months: $months") }
+ * )
+ *
+ * // Custom colors
+ * PixaDatePicker(
  *     variant = DatePickerVariant.Calendar,
- *     strings = DatePickerStrings(
- *         weekdayShortNames = listOf("Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"),
- *         monthNames = listOf("Janvier", "Février", ...)
+ *     colors = DatePickerColors(
+ *         background = Color.White,
+ *         selectedBackground = Color.Blue,
+ *         selectedText = Color.White,
+ *         // ... other colors
  *     ),
  *     onDateSelected = { ... }
  * )
  * ```
+ *
+ * @param variant Visual style variant (Calendar, Wheel, WeekdayPicker, etc.)
+ * @param modifier Modifier for the picker
+ * @param mode Selection mode (Single, Multiple, Range)
+ * @param size Size variant (Small, Medium, Large)
+ * @param enabled Whether the picker is enabled
+ * @param colors Custom colors (null = use theme)
+ * @param strings Localization strings
+ * @param minDate Minimum selectable date
+ * @param maxDate Maximum selectable date
+ * @param calendarConfig Calendar-specific configuration
+ * @param wheelConfig Wheel picker configuration
+ * @param stepperConfig Day count stepper configuration
+ * @param initialDate Initial selected date (Single mode)
+ * @param initialDates Initial selected dates (Multiple mode)
+ * @param initialStartDate Initial range start date
+ * @param initialEndDate Initial range end date
+ * @param initialWeekdays Initial selected weekdays (0-6)
+ * @param initialMonths Initial selected months (0-11)
+ * @param initialDayOfMonth Initial day of month (1-31)
+ * @param initialDayCount Initial day count
+ * @param onDateSelected Callback for single date selection
+ * @param onDatesSelected Callback for multiple dates selection
+ * @param onRangeSelected Callback for range selection
+ * @param onWeekdaysSelected Callback for weekdays selection
+ * @param onMonthsSelected Callback for months selection
+ * @param onDayOfMonthSelected Callback for day of month selection
+ * @param onDayCountSelected Callback for day count selection
  */
 @Composable
 fun PixaDatePicker(
@@ -277,595 +328,375 @@ fun PixaDatePicker(
     modifier: Modifier = Modifier,
     mode: DateSelectionMode = DateSelectionMode.Single,
     size: DatePickerSize = DatePickerSize.Medium,
-    title: String = "",
+    enabled: Boolean = true,
     colors: DatePickerColors? = null,
     strings: DatePickerStrings = DatePickerStrings(),
     minDate: LocalDate? = null,
     maxDate: LocalDate? = null,
-    // Callbacks for different variants
+    calendarConfig: CalendarConfig = CalendarConfig(),
+    wheelConfig: WheelConfig = WheelConfig(),
+    stepperConfig: StepperConfig = StepperConfig(),
+    initialDate: LocalDate? = null,
+    initialDates: Set<LocalDate> = emptySet(),
+    initialStartDate: LocalDate? = null,
+    initialEndDate: LocalDate? = null,
+    initialWeekdays: Set<Int> = emptySet(),
+    initialMonths: Set<Int> = emptySet(),
+    initialDayOfMonth: Int? = null,
+    initialDayCount: Int = 1,
     onDateSelected: ((Long) -> Unit)? = null,
+    onDatesSelected: ((Set<LocalDate>) -> Unit)? = null,
     onRangeSelected: ((LocalDate?, LocalDate?) -> Unit)? = null,
     onWeekdaysSelected: ((Set<Int>) -> Unit)? = null,
-    onDayCountSelected: ((Int) -> Unit)? = null,
-    onDayOfMonthSelected: ((Int) -> Unit)? = null
+    onMonthsSelected: ((Set<Int>) -> Unit)? = null,
+    onDayOfMonthSelected: ((Int) -> Unit)? = null,
+    onDayCountSelected: ((Int) -> Unit)? = null
 ) {
     val themeColors = getDatePickerTheme(AppTheme.colors)
     val finalColors = colors ?: themeColors
     val sizeConfig = getDatePickerSizeConfig(size)
 
+    val containerModifier = modifier
+        .clip(RoundedCornerShape(sizeConfig.cornerRadius))
+        .background(finalColors.background)
+        .padding(sizeConfig.padding)
+
     when (variant) {
-        DatePickerVariant.Wheel -> {
-            if (mode == DateSelectionMode.Range) {
-                // Range mode with wheel picker
-                RangeWheelDatePickerImpl(
-                    modifier = modifier,
-                    sizeConfig = sizeConfig,
-                    colors = finalColors,
-                    strings = strings,
-                    title = title,
-                    onRangeSelected = onRangeSelected ?: { _, _ -> }
-                )
-            } else {
-                // Single date wheel picker
-                WheelDatePickerImpl(
-                    modifier = modifier,
-                    sizeConfig = sizeConfig,
-                    colors = finalColors,
-                    title = title,
-                    onDateSelected = onDateSelected ?: {}
-                )
-            }
-        }
-        DatePickerVariant.Calendar -> {
-            if (mode == DateSelectionMode.Range) {
-                // Range mode with calendar
-                RangeCalendarDatePickerImpl(
-                    modifier = modifier,
-                    sizeConfig = sizeConfig,
-                    colors = finalColors,
-                    strings = strings,
-                    title = title,
-                    minDate = minDate,
-                    maxDate = maxDate,
-                    onRangeSelected = onRangeSelected ?: { _, _ -> }
-                )
-            } else {
-                // Single date calendar picker
-                CalendarDatePickerImpl(
-                    modifier = modifier,
-                    sizeConfig = sizeConfig,
-                    colors = finalColors,
-                    strings = strings,
-                    title = title,
-                    minDate = minDate,
-                    maxDate = maxDate,
-                    onDateSelected = { date ->
-                        onDateSelected?.invoke(date.toEpochDays() * 86400000)
-                    }
-                )
-            }
-        }
-        DatePickerVariant.MonthDayPicker -> {
-            MonthDayPickerImpl(
-                modifier = modifier,
-                sizeConfig = sizeConfig,
-                colors = finalColors,
-                strings = strings,
-                title = title,
-                onDaySelected = onDayOfMonthSelected ?: {}
-            )
-        }
-        DatePickerVariant.WeekdayPicker -> {
-            WeekdayPickerImpl(
-                modifier = modifier,
-                sizeConfig = sizeConfig,
-                colors = finalColors,
-                strings = strings,
-                title = title,
-                onWeekdaysSelected = onWeekdaysSelected ?: {}
-            )
-        }
-        DatePickerVariant.DayCountPicker -> {
-            DayCountPickerImpl(
-                modifier = modifier,
-                sizeConfig = sizeConfig,
-                colors = finalColors,
-                strings = strings,
-                title = title,
-                onDayCountSelected = onDayCountSelected ?: {}
-            )
-        }
-    }
-}
-
-// ============================================================================
-// WHEEL DATE PICKER IMPLEMENTATION
-// ============================================================================
-
-@Composable
-private fun WheelDatePickerImpl(
-    modifier: Modifier,
-    sizeConfig: DatePickerSizeConfig,
-    colors: DatePickerColors,
-    title: String,
-    onDateSelected: (Long) -> Unit
-) {
-    var selectedDate by remember { mutableStateOf(DateTimeUtils.now()) }
-
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-            .semantics {
-                contentDescription = if (title.isNotEmpty()) title else "Date picker"
-            },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (title.isNotEmpty()) {
-            Text(
-                text = title,
-                style = sizeConfig.titleTextStyle,
-                color = colors.title,
-                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium)
-            )
-        }
-
-        Box(
-            modifier = Modifier.fillMaxWidth().height(sizeConfig.height),
-            contentAlignment = Alignment.Center
-        ) {
-            WheelDatePicker(
-                modifier = Modifier.fillMaxSize(),
-                startDate = selectedDate,
-                yearsRange = (1900..2100),
-                textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
-                textColor = colors.selectedText,
-                selectorProperties = WheelPickerDefaults.selectorProperties(
-                    color = colors.divider,
-                    shape = sizeConfig.selectorShape,
-                    border = sizeConfig.selectorBorder
-                )
-            ) { date ->
-                selectedDate = date
-                onDateSelected(date.toEpochMillis())
-            }
-        }
-    }
-}
-
-@Composable
-private fun RangeWheelDatePickerImpl(
-    modifier: Modifier,
-    sizeConfig: DatePickerSizeConfig,
-    colors: DatePickerColors,
-    strings: DatePickerStrings,
-    title: String,
-    onRangeSelected: (LocalDate?, LocalDate?) -> Unit
-) {
-    var selectingStart by remember { mutableStateOf(true) }
-    var startDate by remember { mutableStateOf<LocalDate?>(null) }
-    var endDate by remember { mutableStateOf<LocalDate?>(null) }
-
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-    ) {
-        if (title.isNotEmpty()) {
-            Text(
-                text = title,
-                style = sizeConfig.titleTextStyle,
-                color = colors.title,
-                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
-            )
-        }
-
-        // Range labels
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = strings.startLabel, style = sizeConfig.dayTextStyle, color = colors.unselectedText.copy(alpha = 0.6f))
-                Text(
-                    text = startDate?.toString() ?: strings.selectLabel,
-                    style = sizeConfig.itemTextStyle,
-                    color = if (selectingStart) colors.selectedText else colors.unselectedText,
-                    fontWeight = if (selectingStart) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(RadiusSize.Small))
-                        .background(if (selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(HierarchicalSize.Spacing.Small)
-                        .clickable { selectingStart = true }
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = strings.endLabel, style = sizeConfig.dayTextStyle, color = colors.unselectedText.copy(alpha = 0.6f))
-                Text(
-                    text = endDate?.toString() ?: strings.selectLabel,
-                    style = sizeConfig.itemTextStyle,
-                    color = if (!selectingStart) colors.selectedText else colors.unselectedText,
-                    fontWeight = if (!selectingStart) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(RadiusSize.Small))
-                        .background(if (!selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(HierarchicalSize.Spacing.Small)
-                        .clickable { selectingStart = false }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
-
-        // Wheel picker
-        Box(
-            modifier = Modifier.fillMaxWidth().height(sizeConfig.height),
-            contentAlignment = Alignment.Center
-        ) {
-            WheelDatePicker(
-                modifier = Modifier.fillMaxSize(),
-                startDate = if (selectingStart) (startDate ?: DateTimeUtils.now()) else (endDate ?: DateTimeUtils.now()),
-                yearsRange = (1900..2100),
-                textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
-                textColor = colors.selectedText,
-                selectorProperties = WheelPickerDefaults.selectorProperties(
-                    color = colors.divider,
-                    shape = sizeConfig.selectorShape,
-                    border = sizeConfig.selectorBorder
-                )
-            ) { date ->
-                if (selectingStart) {
-                    startDate = date
-                    selectingStart = false
-                } else {
-                    endDate = date
-                }
-                onRangeSelected(startDate, endDate)
-            }
-        }
-    }
-}
-
-// ============================================================================
-// CALENDAR DATE PICKER IMPLEMENTATION
-// ============================================================================
-
-@Composable
-private fun CalendarDatePickerImpl(
-    modifier: Modifier,
-    sizeConfig: DatePickerSizeConfig,
-    colors: DatePickerColors,
-    strings: DatePickerStrings,
-    title: String,
-    minDate: LocalDate?,
-    maxDate: LocalDate?,
-    onDateSelected: (LocalDate) -> Unit
-) {
-    var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    var currentMonth by remember { mutableStateOf(DateTimeUtils.now()) }
-
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-    ) {
-        if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small))
-        }
-
-        // Month navigation
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // TODO: Replace with custom icon painters
-            Text(
-                text = "‹",
-                style = androidx.compose.ui.text.TextStyle(
-                    fontSize = 24.sp,
-                    color = colors.unselectedText
-                ),
-                modifier = Modifier.clickable {
-                    currentMonth = currentMonth.minus(1, DateTimeUnit.MONTH)
-                }
-            )
-            Text(
-                text = "${strings.monthNames.getOrElse(currentMonth.month.ordinal) { currentMonth.month.name }} ${currentMonth.year}",
-                style = sizeConfig.itemTextStyle,
-                color = colors.title,
-                fontWeight = FontWeight.SemiBold
-            )
-            Text(
-                text = "›",
-                style = androidx.compose.ui.text.TextStyle(
-                    fontSize = 24.sp,
-                    color = colors.unselectedText
-                ),
-                modifier = Modifier.clickable {
-                    currentMonth = currentMonth.plus(1, DateTimeUnit.MONTH)
-                }
-            )
-        }
-
-        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
-
-        // Weekday headers
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-            strings.weekdayShortNames.forEach { day ->
-                Text(
-                    text = day,
-                    style = sizeConfig.dayTextStyle,
-                    color = colors.unselectedText.copy(alpha = 0.6f),
-                    modifier = Modifier.weight(1f),
-                    textAlign = TextAlign.Center
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(Spacing.Tiny))
-
-        // Calendar grid
-        val daysInMonth = getDaysInMonth(currentMonth.year, currentMonth.month)
-        val firstDayOfMonth = LocalDate(currentMonth.year, currentMonth.month, 1)
-        val startDayOfWeek = getDayOfWeekIndex(firstDayOfMonth.dayOfWeek)
-        val today = DateTimeUtils.now()
-
-        Column {
-            var dayCounter = 1 - startDayOfWeek
-            repeat(6) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    repeat(7) {
-                        val day = dayCounter++
-                        if (day in 1..daysInMonth) {
-                            val date = LocalDate(currentMonth.year, currentMonth.month, day)
-                            val isSelected = date == selectedDate
-                            val isToday = date == today
-                            val isEnabled = (minDate == null || date >= minDate) && (maxDate == null || date <= maxDate)
-
-                            val scale by animateFloatAsState(
-                                targetValue = if (isSelected) 1.1f else 1f,
-                                animationSpec = standardSpring(),
-                                label = "dayScale"
-                            )
-
-                            Box(
-                                modifier = Modifier.weight(1f).aspectRatio(1f).padding(Spacing.Micro)
-                                    .scale(scale)
-                                    .clip(CircleShape)
-                                    .background(when {
-                                        isSelected -> colors.selectedBackground
-                                        isToday -> colors.todayHighlight.copy(alpha = 0.1f)
-                                        else -> Color.Transparent
-                                    })
-                                    .clickable(enabled = isEnabled) {
-                                        selectedDate = date
-                                        onDateSelected(date)
-                                    }
-                                    .semantics {
-                                        contentDescription = "$day ${strings.monthNames.getOrElse(currentMonth.month.ordinal) { currentMonth.month.name }} ${currentMonth.year}"
-                                    },
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = day.toString(),
-                                    style = sizeConfig.dayTextStyle,
-                                    color = when {
-                                        isSelected -> colors.selectedText
-                                        !isEnabled -> colors.disabledText
-                                        isToday -> colors.todayHighlight
-                                        else -> colors.unselectedText
-                                    },
-                                    fontWeight = if (isSelected || isToday) FontWeight.Bold else FontWeight.Normal
-                                )
-                            }
-                        } else {
-                            Box(modifier = Modifier.weight(1f).aspectRatio(1f))
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun RangeCalendarDatePickerImpl(
-    modifier: Modifier,
-    sizeConfig: DatePickerSizeConfig,
-    colors: DatePickerColors,
-    strings: DatePickerStrings,
-    title: String,
-    minDate: LocalDate?,
-    maxDate: LocalDate?,
-    onRangeSelected: (LocalDate?, LocalDate?) -> Unit
-) {
-    var selectingStart by remember { mutableStateOf(true) }
-    var startDate by remember { mutableStateOf<LocalDate?>(null) }
-    var endDate by remember { mutableStateOf<LocalDate?>(null) }
-
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-    ) {
-        if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small))
-        }
-
-        // Range labels
-        Row(modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small), horizontalArrangement = Arrangement.SpaceBetween) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = strings.startLabel, style = sizeConfig.dayTextStyle, color = colors.unselectedText.copy(alpha = 0.6f))
-                Text(
-                    text = startDate?.toString() ?: strings.selectLabel,
-                    style = sizeConfig.itemTextStyle,
-                    color = if (selectingStart) colors.selectedText else colors.unselectedText,
-                    fontWeight = if (selectingStart) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(RadiusSize.Small))
-                        .background(if (selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(HierarchicalSize.Spacing.Small)
-                        .clickable { selectingStart = true }
-                )
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = strings.endLabel, style = sizeConfig.dayTextStyle, color = colors.unselectedText.copy(alpha = 0.6f))
-                Text(
-                    text = endDate?.toString() ?: strings.selectLabel,
-                    style = sizeConfig.itemTextStyle,
-                    color = if (!selectingStart) colors.selectedText else colors.unselectedText,
-                    fontWeight = if (!selectingStart) FontWeight.Bold else FontWeight.Normal,
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(RadiusSize.Small))
-                        .background(if (!selectingStart) colors.selectedBackground else Color.Transparent)
-                        .padding(HierarchicalSize.Spacing.Small)
-                        .clickable { selectingStart = false }
-                )
-            }
-        }
-
-        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
-
-        // Reuse calendar impl with adjusted callback
-        CalendarDatePickerImpl(
-            modifier = Modifier,
-            sizeConfig = sizeConfig,
-            colors = colors,
-            strings = strings,
-            title = "",
-            minDate = if (!selectingStart) startDate else minDate,
-            maxDate = maxDate,
-            onDateSelected = { date ->
-                if (selectingStart) {
-                    startDate = date
-                    selectingStart = false
-                } else {
-                    endDate = date
-                }
-                onRangeSelected(startDate, endDate)
-            }
+        DatePickerVariant.Wheel -> WheelDatePickerContent(
+            modifier = containerModifier, mode = mode, sizeConfig = sizeConfig, colors = finalColors,
+            strings = strings, enabled = enabled, wheelConfig = wheelConfig,
+            initialDate = initialDate, initialStartDate = initialStartDate, initialEndDate = initialEndDate,
+            onDateSelected = onDateSelected, onRangeSelected = onRangeSelected
+        )
+        DatePickerVariant.Calendar -> CalendarDatePickerContent(
+            modifier = containerModifier, mode = mode, sizeConfig = sizeConfig, colors = finalColors,
+            strings = strings, enabled = enabled, minDate = minDate, maxDate = maxDate,
+            calendarConfig = calendarConfig, initialDate = initialDate, initialDates = initialDates,
+            initialStartDate = initialStartDate, initialEndDate = initialEndDate,
+            onDateSelected = onDateSelected, onDatesSelected = onDatesSelected, onRangeSelected = onRangeSelected
+        )
+        DatePickerVariant.MonthDayPicker -> MonthDayPickerContent(
+            modifier = containerModifier, mode = mode, sizeConfig = sizeConfig, colors = finalColors,
+            strings = strings, enabled = enabled, initialDayOfMonth = initialDayOfMonth,
+            onDayOfMonthSelected = onDayOfMonthSelected
+        )
+        DatePickerVariant.WeekdayPicker -> WeekdayPickerContent(
+            modifier = containerModifier, mode = mode, sizeConfig = sizeConfig, colors = finalColors,
+            strings = strings, enabled = enabled, initialWeekdays = initialWeekdays,
+            onWeekdaysSelected = onWeekdaysSelected
+        )
+        DatePickerVariant.MonthPicker -> MonthPickerContent(
+            modifier = containerModifier, mode = mode, sizeConfig = sizeConfig, colors = finalColors,
+            strings = strings, enabled = enabled, initialMonths = initialMonths,
+            onMonthsSelected = onMonthsSelected
+        )
+        DatePickerVariant.DayCountPicker -> DayCountPickerContent(
+            modifier = containerModifier, sizeConfig = sizeConfig, colors = finalColors,
+            strings = strings, enabled = enabled, stepperConfig = stepperConfig,
+            initialDayCount = initialDayCount, onDayCountSelected = onDayCountSelected
         )
     }
 }
 
-// ============================================================================
-// MONTH DAY PICKER IMPLEMENTATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// WHEEL DATE PICKER
+// ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun MonthDayPickerImpl(
-    modifier: Modifier,
-    sizeConfig: DatePickerSizeConfig,
-    colors: DatePickerColors,
-    strings: DatePickerStrings,
-    title: String,
-    onDaySelected: (Int) -> Unit
+private fun WheelDatePickerContent(
+    modifier: Modifier, mode: DateSelectionMode, sizeConfig: DatePickerSizeConfig,
+    colors: DatePickerColors, strings: DatePickerStrings, enabled: Boolean,
+    wheelConfig: WheelConfig, initialDate: LocalDate?, initialStartDate: LocalDate?,
+    initialEndDate: LocalDate?, onDateSelected: ((Long) -> Unit)?, onRangeSelected: ((LocalDate?, LocalDate?) -> Unit)?
 ) {
-    var selectedDay by remember { mutableStateOf<Int?>(null) }
+    if (mode == DateSelectionMode.Range) {
+        RangeWheelPicker(modifier, sizeConfig, colors, strings, enabled, wheelConfig,
+            initialStartDate, initialEndDate, onRangeSelected ?: { _, _ -> })
+    } else {
+        SingleWheelPicker(modifier, sizeConfig, colors, enabled, wheelConfig,
+            initialDate, onDateSelected ?: {})
+    }
+}
 
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-    ) {
-        if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium))
+@Composable
+private fun SingleWheelPicker(
+    modifier: Modifier, sizeConfig: DatePickerSizeConfig, colors: DatePickerColors,
+    enabled: Boolean, wheelConfig: WheelConfig, initialDate: LocalDate?, onDateSelected: (Long) -> Unit
+) {
+    var selectedDate by remember { mutableStateOf(initialDate ?: DateTimeUtils.now()) }
+
+    Column(modifier = modifier.semantics { contentDescription = "Date picker" },
+        horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(modifier = Modifier.fillMaxWidth().height(sizeConfig.height), contentAlignment = Alignment.Center) {
+            WheelDatePicker(
+                modifier = Modifier.fillMaxSize(), startDate = selectedDate, yearsRange = wheelConfig.yearsRange,
+                textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center), textColor = colors.selectedText,
+                selectorProperties = WheelPickerDefaults.selectorProperties(color = colors.divider,
+                    shape = sizeConfig.selectorShape, border = sizeConfig.selectorBorder)
+            ) { date -> if (enabled) { selectedDate = date; onDateSelected(date.toEpochMillis()) } }
         }
+    }
+}
 
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(7),
-            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
-            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
-            modifier = Modifier.heightIn(max = sizeConfig.height)
-        ) {
-            items((1..31).toList()) { day ->
-                val isSelected = day == selectedDay
-                val scale by animateFloatAsState(
-                    targetValue = if (isSelected) 1.1f else 1f,
-                    animationSpec = standardSpring(),
-                    label = "dayScale"
-                )
+@Composable
+private fun RangeWheelPicker(
+    modifier: Modifier, sizeConfig: DatePickerSizeConfig, colors: DatePickerColors,
+    strings: DatePickerStrings, enabled: Boolean, wheelConfig: WheelConfig,
+    initialStartDate: LocalDate?, initialEndDate: LocalDate?, onRangeSelected: (LocalDate?, LocalDate?) -> Unit
+) {
+    var selectingStart by remember { mutableStateOf(true) }
+    var startDate by remember { mutableStateOf(initialStartDate) }
+    var endDate by remember { mutableStateOf(initialEndDate) }
 
-                Box(
-                    modifier = Modifier.aspectRatio(1f)
-                        .scale(scale)
-                        .clip(CircleShape)
-                        .background(if (isSelected) colors.selectedBackground else colors.surface)
-                        .border(
-                            width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
-                            color = if (isSelected) colors.selectedBackground else colors.divider,
-                            shape = CircleShape
-                        )
-                        .clickable {
-                            selectedDay = day
-                            onDaySelected(day)
-                        }
-                        .semantics {
-                            contentDescription = strings.dayOfMonthLabel(day)
-                        },
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = day.toString(),
-                        style = sizeConfig.dayTextStyle,
-                        color = if (isSelected) colors.selectedText else colors.unselectedText,
-                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                    )
+    Column(modifier = modifier) {
+        RangeSelectorRow(sizeConfig, colors, strings, startDate?.toString(), endDate?.toString(),
+            selectingStart, { selectingStart = true }, { selectingStart = false })
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
+        Box(modifier = Modifier.fillMaxWidth().height(sizeConfig.height), contentAlignment = Alignment.Center) {
+            WheelDatePicker(
+                modifier = Modifier.fillMaxSize(),
+                startDate = if (selectingStart) (startDate ?: DateTimeUtils.now()) else (endDate ?: DateTimeUtils.now()),
+                yearsRange = wheelConfig.yearsRange, textStyle = sizeConfig.itemTextStyle.copy(textAlign = TextAlign.Center),
+                textColor = colors.selectedText,
+                selectorProperties = WheelPickerDefaults.selectorProperties(color = colors.divider,
+                    shape = sizeConfig.selectorShape, border = sizeConfig.selectorBorder)
+            ) { date ->
+                if (enabled) {
+                    if (selectingStart) { startDate = date; selectingStart = false } else { endDate = date }
+                    onRangeSelected(startDate, endDate)
                 }
             }
         }
     }
 }
 
-// ============================================================================
-// WEEKDAY PICKER IMPLEMENTATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// CALENDAR DATE PICKER
+// ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun WeekdayPickerImpl(
-    modifier: Modifier,
-    sizeConfig: DatePickerSizeConfig,
-    colors: DatePickerColors,
-    strings: DatePickerStrings,
-    title: String,
-    onWeekdaysSelected: (Set<Int>) -> Unit
+private fun CalendarDatePickerContent(
+    modifier: Modifier, mode: DateSelectionMode, sizeConfig: DatePickerSizeConfig,
+    colors: DatePickerColors, strings: DatePickerStrings, enabled: Boolean,
+    minDate: LocalDate?, maxDate: LocalDate?, calendarConfig: CalendarConfig, initialDate: LocalDate?,
+    initialDates: Set<LocalDate>, initialStartDate: LocalDate?, initialEndDate: LocalDate?,
+    onDateSelected: ((Long) -> Unit)?, onDatesSelected: ((Set<LocalDate>) -> Unit)?,
+    onRangeSelected: ((LocalDate?, LocalDate?) -> Unit)?
 ) {
-    var selectedDays by remember { mutableStateOf(emptySet<Int>()) }
+    var currentMonth by remember { mutableStateOf(initialDate ?: DateTimeUtils.now()) }
 
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-    ) {
-        if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium))
+    when (mode) {
+        DateSelectionMode.Single -> {
+            var selectedDate by remember { mutableStateOf(initialDate) }
+            CalendarGrid(modifier, sizeConfig, colors, strings, enabled, minDate, maxDate,
+                calendarConfig, currentMonth, { currentMonth = it }, selectedDate?.let { setOf(it) } ?: emptySet(),
+                null, null) { date -> selectedDate = date; onDateSelected?.invoke(date.toEpochDays() * 86400000L) }
         }
+        DateSelectionMode.Multiple -> {
+            var selectedDates by remember { mutableStateOf(initialDates) }
+            CalendarGrid(modifier, sizeConfig, colors, strings, enabled, minDate, maxDate,
+                calendarConfig, currentMonth, { currentMonth = it }, selectedDates, null, null) { date ->
+                selectedDates = if (date in selectedDates) selectedDates - date else selectedDates + date
+                onDatesSelected?.invoke(selectedDates)
+            }
+        }
+        DateSelectionMode.Range -> {
+            var selectingStart by remember { mutableStateOf(true) }
+            var startDate by remember { mutableStateOf(initialStartDate) }
+            var endDate by remember { mutableStateOf(initialEndDate) }
+            Column(modifier = modifier) {
+                RangeSelectorRow(sizeConfig, colors, strings, startDate?.toString(), endDate?.toString(),
+                    selectingStart, { selectingStart = true }, { selectingStart = false })
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
+                CalendarGrid(Modifier, sizeConfig, colors, strings, enabled,
+                    if (!selectingStart) startDate else minDate, maxDate, calendarConfig, currentMonth,
+                    { currentMonth = it }, emptySet(), startDate, endDate) { date ->
+                    if (selectingStart) { startDate = date; endDate = null; selectingStart = false }
+                    else { endDate = date }
+                    onRangeSelected?.invoke(startDate, endDate)
+                }
+            }
+        }
+    }
+}
 
+@Composable
+private fun CalendarGrid(
+    modifier: Modifier, sizeConfig: DatePickerSizeConfig, colors: DatePickerColors,
+    strings: DatePickerStrings, enabled: Boolean, minDate: LocalDate?, maxDate: LocalDate?,
+    calendarConfig: CalendarConfig, currentMonth: LocalDate, onMonthChange: (LocalDate) -> Unit,
+    selectedDates: Set<LocalDate>, rangeStart: LocalDate?, rangeEnd: LocalDate?, onDateClick: (LocalDate) -> Unit
+) {
+    Column(modifier = modifier) {
+        MonthNavigationRow(sizeConfig, colors, strings, currentMonth,
+            { onMonthChange(currentMonth.minus(1, DateTimeUnit.MONTH)) },
+            { onMonthChange(currentMonth.plus(1, DateTimeUnit.MONTH)) })
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
+        if (calendarConfig.showWeekdayHeaders) {
+            WeekdayHeaderRow(sizeConfig, colors, strings)
+            Spacer(modifier = Modifier.height(Spacing.Tiny))
+        }
+        DaysGrid(sizeConfig, colors, strings, currentMonth, enabled, minDate, maxDate, calendarConfig,
+            selectedDates, rangeStart, rangeEnd, onDateClick)
+    }
+}
+
+@Composable
+private fun MonthNavigationRow(
+    sizeConfig: DatePickerSizeConfig, colors: DatePickerColors, strings: DatePickerStrings,
+    currentMonth: LocalDate, onPrevious: () -> Unit, onNext: () -> Unit
+) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
+        horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Text(text = "‹", style = TextStyle(fontSize = 24.sp, color = colors.unselectedText),
+            modifier = Modifier.clickable(onClick = onPrevious).semantics { contentDescription = strings.previousLabel })
+        Text(text = "${strings.monthNames.getOrElse(currentMonth.month.ordinal) { currentMonth.month.name }} ${currentMonth.year}",
+            style = sizeConfig.itemTextStyle, color = colors.title, fontWeight = FontWeight.SemiBold)
+        Text(text = "›", style = TextStyle(fontSize = 24.sp, color = colors.unselectedText),
+            modifier = Modifier.clickable(onClick = onNext).semantics { contentDescription = strings.nextLabel })
+    }
+}
+
+@Composable
+private fun WeekdayHeaderRow(sizeConfig: DatePickerSizeConfig, colors: DatePickerColors, strings: DatePickerStrings) {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+        strings.weekdayShortNames.forEach { day ->
+            Text(text = day, style = sizeConfig.dayTextStyle, color = colors.unselectedText.copy(alpha = 0.6f),
+                modifier = Modifier.weight(1f), textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+private fun DaysGrid(
+    sizeConfig: DatePickerSizeConfig, colors: DatePickerColors, strings: DatePickerStrings,
+    currentMonth: LocalDate, enabled: Boolean, minDate: LocalDate?, maxDate: LocalDate?,
+    calendarConfig: CalendarConfig, selectedDates: Set<LocalDate>, rangeStart: LocalDate?,
+    rangeEnd: LocalDate?, onDateClick: (LocalDate) -> Unit
+) {
+    val daysInMonth = getDaysInMonth(currentMonth.year, currentMonth.month)
+    val firstDayOfMonth = LocalDate(currentMonth.year, currentMonth.month, 1)
+    val startDayOfWeek = getDayOfWeekIndex(firstDayOfMonth.dayOfWeek)
+    val today = DateTimeUtils.now()
+
+    Column {
+        var dayCounter = 1 - startDayOfWeek
+        repeat(6) {
+            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                repeat(7) {
+                    val day = dayCounter++
+                    if (day in 1..daysInMonth) {
+                        val date = LocalDate(currentMonth.year, currentMonth.month, day)
+                        val isSelected = date in selectedDates
+                        val isToday = date == today && calendarConfig.highlightToday
+                        val isEnabled = enabled && (minDate == null || date >= minDate) && (maxDate == null || date <= maxDate)
+                        val isInRange = rangeStart != null && rangeEnd != null && date > rangeStart && date < rangeEnd
+                        val isRangeEdge = date == rangeStart || date == rangeEnd
+                        val scale by animateFloatAsState(targetValue = if (isSelected || isRangeEdge) 1.1f else 1f,
+                            animationSpec = standardSpring(), label = "dayScale")
+
+                        Box(modifier = Modifier.weight(1f).aspectRatio(1f).padding(Spacing.Micro)
+                            .scale(if (calendarConfig.dayItemStyle.animateSelection) scale else 1f)
+                            .clip(calendarConfig.dayItemStyle.shape)
+                            .background(when {
+                                isSelected || isRangeEdge -> colors.selectedBackground
+                                isInRange -> colors.rangeBackground
+                                isToday -> colors.todayHighlight.copy(alpha = 0.1f)
+                                else -> Color.Transparent
+                            })
+                            .clickable(enabled = isEnabled) { onDateClick(date) }
+                            .semantics { contentDescription = "$day ${strings.monthNames.getOrElse(currentMonth.month.ordinal) { currentMonth.month.name }} ${currentMonth.year}" },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(text = day.toString(), style = sizeConfig.dayTextStyle, color = when {
+                                isSelected || isRangeEdge -> colors.selectedText
+                                !isEnabled -> colors.disabledText
+                                isToday -> colors.todayHighlight
+                                else -> colors.unselectedText
+                            }, fontWeight = if (isSelected || isToday || isRangeEdge) FontWeight.Bold else FontWeight.Normal)
+                        }
+                    } else { Box(modifier = Modifier.weight(1f).aspectRatio(1f)) }
+                }
+            }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MONTH DAY PICKER
+// ════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun MonthDayPickerContent(
+    modifier: Modifier, mode: DateSelectionMode, sizeConfig: DatePickerSizeConfig,
+    colors: DatePickerColors, strings: DatePickerStrings, enabled: Boolean,
+    initialDayOfMonth: Int?, onDayOfMonthSelected: ((Int) -> Unit)?
+) {
+    var selectedDays by remember { mutableStateOf(initialDayOfMonth?.let { setOf(it) } ?: emptySet<Int>()) }
+    val isMultiSelect = mode == DateSelectionMode.Multiple
+
+    Column(modifier = modifier) {
+        LazyVerticalGrid(columns = GridCells.Fixed(7),
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
+            modifier = Modifier.heightIn(max = sizeConfig.height)) {
+            items((1..31).toList()) { day ->
+                val isSelected = day in selectedDays
+                val scale by animateFloatAsState(targetValue = if (isSelected) 1.1f else 1f,
+                    animationSpec = standardSpring(), label = "dayScale")
+                Box(modifier = Modifier.aspectRatio(1f).scale(scale).clip(CircleShape)
+                    .background(if (isSelected) colors.selectedBackground else colors.surface)
+                    .border(width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
+                        color = if (isSelected) colors.selectedBackground else colors.divider, shape = CircleShape)
+                    .clickable(enabled = enabled) {
+                        selectedDays = if (isMultiSelect) { if (isSelected) selectedDays - day else selectedDays + day } else { setOf(day) }
+                        onDayOfMonthSelected?.invoke(day)
+                    }
+                    .semantics { contentDescription = strings.dayOfMonthLabel(day) },
+                    contentAlignment = Alignment.Center) {
+                    Text(text = day.toString(), style = sizeConfig.dayTextStyle,
+                        color = if (isSelected) colors.selectedText else colors.unselectedText,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal)
+                }
+            }
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// WEEKDAY PICKER
+// ════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun WeekdayPickerContent(
+    modifier: Modifier, mode: DateSelectionMode, sizeConfig: DatePickerSizeConfig,
+    colors: DatePickerColors, strings: DatePickerStrings, enabled: Boolean,
+    initialWeekdays: Set<Int>, onWeekdaysSelected: ((Set<Int>) -> Unit)?
+) {
+    var selectedDays by remember { mutableStateOf(initialWeekdays) }
+    val isMultiSelect = mode != DateSelectionMode.Single
+
+    Column(modifier = modifier) {
         Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)) {
             strings.weekdayNames.forEachIndexed { index, dayName ->
                 val isSelected = index in selectedDays
-
-                Chip(
+                PixaChip(
                     text = dayName,
                     variant = if (isSelected) ChipVariant.Solid else ChipVariant.Outlined,
                     type = ChipType.Selectable,
                     selected = isSelected,
+                    enabled = enabled,
+                    backgroundColor = if (isSelected) colors.selectedBackground else null,
+                    contentColor = if (isSelected) colors.selectedText else colors.unselectedText,
                     onClick = {
-                        selectedDays = if (isSelected) {
-                            selectedDays - index
+                        selectedDays = if (isMultiSelect) {
+                            if (isSelected) selectedDays - index else selectedDays + index
                         } else {
-                            selectedDays + index
+                            setOf(index)
                         }
-                        onWeekdaysSelected(selectedDays)
+                        onWeekdaysSelected?.invoke(selectedDays)
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().heightIn(min = sizeConfig.height / 4),
                     contentDescription = "$dayName ${if (isSelected) "selected" else "not selected"}"
                 )
             }
@@ -873,205 +704,128 @@ private fun WeekdayPickerImpl(
     }
 }
 
-// ============================================================================
-// DAY COUNT PICKER IMPLEMENTATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// MONTH PICKER
+// ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun DayCountPickerImpl(
-    modifier: Modifier,
-    sizeConfig: DatePickerSizeConfig,
-    colors: DatePickerColors,
-    strings: DatePickerStrings,
-    title: String,
-    onDayCountSelected: (Int) -> Unit,
-    minDays: Int = 1,
-    maxDays: Int = 365
+private fun MonthPickerContent(
+    modifier: Modifier, mode: DateSelectionMode, sizeConfig: DatePickerSizeConfig,
+    colors: DatePickerColors, strings: DatePickerStrings, enabled: Boolean,
+    initialMonths: Set<Int>, onMonthsSelected: ((Set<Int>) -> Unit)?
 ) {
-    var dayCount by remember { mutableStateOf(1) }
+    var selectedMonths by remember { mutableStateOf(initialMonths) }
+    val isMultiSelect = mode != DateSelectionMode.Single
 
-    Column(
-        modifier = modifier
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-            .background(colors.background)
-            .padding(sizeConfig.padding)
-            .semantics {
-                contentDescription = "$title $dayCount ${if (dayCount == 1) "day" else "days"}"
-            },
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (title.isNotEmpty()) {
-            Text(text = title, style = sizeConfig.titleTextStyle, color = colors.title, modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium))
-        }
-
-        // Display
-        Text(
-            text = if (dayCount == 1) strings.repeatLabelSingular else strings.repeatLabelPlural(dayCount),
-            style = sizeConfig.itemTextStyle.copy(fontWeight = FontWeight.Bold),
-            color = colors.selectedText,
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(RadiusSize.Medium))
-                .background(colors.selectedBackground)
-                .padding(HierarchicalSize.Spacing.Large),
-            textAlign = TextAlign.Center
-        )
-
-        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
-
-        // Stepper
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier.size(ComponentSize.ExtraLarge).clip(CircleShape)
-                    .background(if (dayCount > minDays) colors.surface else colors.surface.copy(alpha = 0.3f))
-                    .clickable(enabled = dayCount > minDays) {
-                        dayCount = (dayCount - 1).coerceAtLeast(minDays)
-                        onDayCountSelected(dayCount)
+    Column(modifier = modifier) {
+        LazyVerticalGrid(columns = GridCells.Fixed(3),
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
+            modifier = Modifier.heightIn(max = sizeConfig.height)) {
+            items(strings.monthNames.indices.toList()) { index ->
+                val isSelected = index in selectedMonths
+                Box(modifier = Modifier.clip(RoundedCornerShape(RadiusSize.Medium))
+                    .background(if (isSelected) colors.selectedBackground else colors.surface)
+                    .border(width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
+                        color = if (isSelected) colors.selectedBackground else colors.divider,
+                        shape = RoundedCornerShape(RadiusSize.Medium))
+                    .clickable(enabled = enabled) {
+                        selectedMonths = if (isMultiSelect) { if (isSelected) selectedMonths - index else selectedMonths + index } else { setOf(index) }
+                        onMonthsSelected?.invoke(selectedMonths)
                     }
-                    .semantics { contentDescription = strings.decreaseLabel },
-                contentAlignment = Alignment.Center
-            ) {
-                // TODO: Replace with custom icon painter
-                Text(
-                    text = "−",
-                    style = androidx.compose.ui.text.TextStyle(
-                        fontSize = 24.sp,
-                        color = if (dayCount > minDays) colors.unselectedText else colors.disabledText
-                    )
-                )
-            }
-
-            Text(
-                text = dayCount.toString(),
-                style = sizeConfig.titleTextStyle.copy(fontWeight = FontWeight.Bold, fontSize = sizeConfig.titleTextStyle.fontSize * 1.5),
-                color = colors.title,
-                modifier = Modifier.padding(horizontal = HierarchicalSize.Spacing.Large)
-            )
-
-            Box(
-                modifier = Modifier.size(ComponentSize.ExtraLarge).clip(CircleShape)
-                    .background(if (dayCount < maxDays) colors.surface else colors.surface.copy(alpha = 0.3f))
-                    .clickable(enabled = dayCount < maxDays) {
-                        dayCount = (dayCount + 1).coerceAtMost(maxDays)
-                        onDayCountSelected(dayCount)
-                    }
-                    .semantics { contentDescription = strings.increaseLabel },
-                contentAlignment = Alignment.Center
-            ) {
-                // TODO: Replace with custom icon painter
-                Text(
-                    text = "+",
-                    style = androidx.compose.ui.text.TextStyle(
-                        fontSize = 24.sp,
-                        color = if (dayCount < maxDays) colors.unselectedText else colors.disabledText
-                    )
-                )
+                    .padding(HierarchicalSize.Spacing.Medium)
+                    .semantics { contentDescription = strings.monthNames[index] },
+                    contentAlignment = Alignment.Center) {
+                    Text(text = strings.monthShortNames[index], style = sizeConfig.dayTextStyle,
+                        color = if (isSelected) colors.selectedText else colors.unselectedText,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal, textAlign = TextAlign.Center)
+                }
             }
         }
-        }
+    }
 }
 
-// ============================================================================
-// USAGE EXAMPLES & DOCUMENTATION
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// DAY COUNT PICKER
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * COMPREHENSIVE USAGE EXAMPLES:
- *
- * 1. Simple Calendar Date Picker:
- * ```
- * DatePicker(
- *     variant = DatePickerVariant.Calendar,
- *     onDateSelected = { timestamp ->
- *         println("Selected: ${Instant.fromEpochMilliseconds(timestamp)}")
- *     }
- * )
- * ```
- *
- * 2. Range Selection with Calendar:
- * ```
- * DatePicker(
- *     variant = DatePickerVariant.Calendar,
- *     mode = DateSelectionMode.Range,
- *     onRangeSelected = { start, end ->
- *         println("Range: $start to $end")
- *     }
- * )
- * ```
- *
- * 3. Wheel Picker (iOS-style):
- * ```
- * DatePicker(
- *     variant = DatePickerVariant.Wheel,
- *     title = "Select Date",
- *     onDateSelected = { timestamp -> ... }
- * )
- * ```
- *
- * 4. Month Day Picker:
- * ```
- * DatePicker(
- *     variant = DatePickerVariant.MonthDayPicker,
- *     title = "Select Day of Month",
- *     onDayOfMonthSelected = { day ->
- *         println("Day $day selected")
- *     }
- * )
- * ```
- *
- * 5. Weekday Picker (Multi-select):
- * ```
- * DatePicker(
- *     variant = DatePickerVariant.WeekdayPicker,
- *     title = "Select Days",
- *     onWeekdaysSelected = { days ->
- *         println("Selected: ${days.joinToString()}")
- *     }
- * )
- * ```
- *
- * 6. Day Count Picker (Intervals):
- * ```
- * DatePicker(
- *     variant = DatePickerVariant.DayCountPicker,
- *     title = "Repeat Every",
- *     onDayCountSelected = { count ->
- *         println("Every $count days")
- *     }
- * )
- * ```
- *
- * 7. French Localization:
- * ```
- * DatePicker(
- *     variant = DatePickerVariant.Calendar,
- *     strings = DatePickerStrings(
- *         weekdayShortNames = listOf("Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"),
- *         monthNames = listOf("Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
- *             "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"),
- *         startLabel = "Début",
- *         endLabel = "Fin",
- *         selectLabel = "Sélectionner",
- *         todayLabel = "Aujourd'hui",
- *         repeatLabelFormat = "Tous les %d jour",
- *         repeatLabelPluralFormat = "Tous les %d jours"
- *     ),
- *     onDateSelected = { ... }
- * )
- * ```
- *
- * 8. With Date Bounds:
- * ```
- * DatePicker(
- *     variant = DatePickerVariant.Calendar,
- *     minDate = LocalDate(2024, 1, 1),
- *     maxDate = LocalDate(2026, 12, 31),
- *     onDateSelected = { ... }
- * )
- * ```
- */
+@Composable
+private fun DayCountPickerContent(
+    modifier: Modifier, sizeConfig: DatePickerSizeConfig, colors: DatePickerColors,
+    strings: DatePickerStrings, enabled: Boolean, stepperConfig: StepperConfig,
+    initialDayCount: Int, onDayCountSelected: ((Int) -> Unit)?
+) {
+    var dayCount by remember { mutableStateOf(initialDayCount.coerceIn(stepperConfig.minValue, stepperConfig.maxValue)) }
 
+    Column(modifier = modifier.semantics { contentDescription = "Day count picker: $dayCount days" },
+        horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(text = if (dayCount == 1) strings.repeatLabelSingular else strings.repeatLabelPlural(dayCount),
+            style = sizeConfig.itemTextStyle.copy(fontWeight = FontWeight.Bold), color = colors.selectedText,
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(RadiusSize.Medium))
+                .background(colors.selectedBackground).padding(HierarchicalSize.Spacing.Large),
+            textAlign = TextAlign.Center)
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically) {
+            StepperButton("−", enabled && dayCount > stepperConfig.minValue, colors, strings.decreaseLabel) {
+                dayCount = (dayCount - stepperConfig.step).coerceAtLeast(stepperConfig.minValue)
+                onDayCountSelected?.invoke(dayCount)
+            }
+            Text(text = dayCount.toString(), style = sizeConfig.titleTextStyle.copy(
+                fontWeight = FontWeight.Bold, fontSize = sizeConfig.titleTextStyle.fontSize * 1.5),
+                color = colors.title, modifier = Modifier.padding(horizontal = HierarchicalSize.Spacing.Large))
+            StepperButton("+", enabled && dayCount < stepperConfig.maxValue, colors, strings.increaseLabel) {
+                dayCount = (dayCount + stepperConfig.step).coerceAtMost(stepperConfig.maxValue)
+                onDayCountSelected?.invoke(dayCount)
+            }
+        }
+    }
+}
+
+@Composable
+private fun StepperButton(text: String, enabled: Boolean, colors: DatePickerColors,
+    contentDescription: String, onClick: () -> Unit) {
+    Box(modifier = Modifier.size(ComponentSize.ExtraLarge).clip(CircleShape)
+        .background(if (enabled) colors.surface else colors.surface.copy(alpha = 0.3f))
+        .clickable(enabled = enabled, onClick = onClick)
+        .semantics { this.contentDescription = contentDescription },
+        contentAlignment = Alignment.Center) {
+        Text(text = text, style = TextStyle(fontSize = 24.sp,
+            color = if (enabled) colors.unselectedText else colors.disabledText))
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SHARED COMPONENTS
+// ════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun RangeSelectorRow(
+    sizeConfig: DatePickerSizeConfig, colors: DatePickerColors, strings: DatePickerStrings,
+    startValue: String?, endValue: String?, selectingStart: Boolean,
+    onStartClick: () -> Unit, onEndClick: () -> Unit
+) {
+    Row(modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
+        horizontalArrangement = Arrangement.SpaceBetween) {
+        RangeSelectorItem(strings.startLabel, startValue ?: strings.selectLabel, selectingStart,
+            sizeConfig, colors, onStartClick, Modifier.weight(1f))
+        RangeSelectorItem(strings.endLabel, endValue ?: strings.selectLabel, !selectingStart,
+            sizeConfig, colors, onEndClick, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun RangeSelectorItem(
+    label: String, value: String, isSelected: Boolean, sizeConfig: DatePickerSizeConfig,
+    colors: DatePickerColors, onClick: () -> Unit, modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Text(text = label, style = sizeConfig.dayTextStyle, color = colors.unselectedText.copy(alpha = 0.6f))
+        Text(text = value, style = sizeConfig.itemTextStyle,
+            color = if (isSelected) colors.selectedText else colors.unselectedText,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            modifier = Modifier.clip(RoundedCornerShape(RadiusSize.Small))
+                .background(if (isSelected) colors.selectedBackground else Color.Transparent)
+                .padding(HierarchicalSize.Spacing.Small).clickable(onClick = onClick))
+    }
+}

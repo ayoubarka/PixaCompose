@@ -4,6 +4,7 @@ import com.pixamob.pixacompose.theme.SizeVariant
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
@@ -53,12 +55,7 @@ import com.pixamob.pixacompose.components.feedback.BadgeStyle
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
-
 import com.pixamob.pixacompose.theme.ColorPalette
-
-
-
-
 
 // ============================================================================
 // CONFIGURATION & MODELS
@@ -108,6 +105,45 @@ enum class TabIndicatorStyle {
     /** No indicator */
     None
 }
+
+/**
+ * Tab indicator shape options
+ */
+enum class TabIndicatorShape {
+    /** Rectangle (default) - sharp corners */
+    Rectangle,
+    /** Rounded rectangle - slight corner rounding */
+    RoundedRectangle,
+    /** Oval/Pill - fully rounded ends */
+    Oval,
+    /** Top rounded - only top corners rounded (for bottom indicators) */
+    TopRounded,
+    /** Bottom rounded - only bottom corners rounded (for top indicators) */
+    BottomRounded
+}
+
+/**
+ * Tab indicator configuration for customizing indicator appearance
+ *
+ * @param shape The shape of the indicator
+ * @param height Height of the indicator (for underline/top-bottom styles)
+ * @param width Width of the indicator (null = match tab width)
+ * @param cornerRadius Corner radius for RoundedRectangle shape
+ * @param color Optional custom indicator color (null = use theme default)
+ * @param animationDurationMs Duration of indicator animation in milliseconds
+ * @param horizontalPadding Horizontal padding to inset the indicator from tab edges
+ */
+@Immutable
+@Stable
+data class TabIndicatorConfig(
+    val shape: TabIndicatorShape = TabIndicatorShape.Rectangle,
+    val height: Dp? = null,
+    val width: Dp? = null,
+    val cornerRadius: Dp = 0.dp,
+    val color: Color? = null,
+    val animationDurationMs: Int = 300,
+    val horizontalPadding: Dp = 0.dp
+)
 
 /**
  * Tab content - can be text, icon, or both
@@ -419,6 +455,37 @@ private fun getTabStyle(
 }
 
 // ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
+
+/**
+ * Get the shape for the tab indicator based on configuration
+ */
+private fun getIndicatorShape(
+    indicatorShape: TabIndicatorShape,
+    height: Dp,
+    cornerRadius: Dp
+): Shape {
+    return when (indicatorShape) {
+        TabIndicatorShape.Rectangle -> RoundedCornerShape(0.dp)
+        TabIndicatorShape.RoundedRectangle -> RoundedCornerShape(cornerRadius)
+        TabIndicatorShape.Oval -> RoundedCornerShape(height / 2)
+        TabIndicatorShape.TopRounded -> RoundedCornerShape(
+            topStart = cornerRadius,
+            topEnd = cornerRadius,
+            bottomStart = 0.dp,
+            bottomEnd = 0.dp
+        )
+        TabIndicatorShape.BottomRounded -> RoundedCornerShape(
+            topStart = 0.dp,
+            topEnd = 0.dp,
+            bottomStart = cornerRadius,
+            bottomEnd = cornerRadius
+        )
+    }
+}
+
+// ============================================================================
 // BASE TAB (Internal - handles core logic)
 // ============================================================================
 
@@ -444,6 +511,7 @@ fun PixaTab(
     badgeVariant: BadgeVariant = BadgeVariant.Error,
     enabled: Boolean = true,
     indicatorStyle: TabIndicatorStyle = TabIndicatorStyle.Underline,
+    indicatorConfig: TabIndicatorConfig = TabIndicatorConfig(),
     modifier: Modifier = Modifier
 ) {
     // Animated colors with spring for snappier feel
@@ -477,9 +545,14 @@ fun PixaTab(
         label = "tab_border"
     )
 
+    // Use custom indicator color if provided, otherwise use style default
     val indicatorColor by animateColorAsState(
-        targetValue = if (selected) style.selected.indicator else Color.Transparent,
-        animationSpec = spring(),
+        targetValue = if (selected) {
+            indicatorConfig.color ?: style.selected.indicator
+        } else {
+            Color.Transparent
+        },
+        animationSpec = tween(durationMillis = indicatorConfig.animationDurationMs),
         label = "tab_indicator"
     )
 
@@ -591,10 +664,22 @@ fun PixaTab(
 
                 // Bottom indicator (Underline)
                 if (showIndicator && indicatorStyle == TabIndicatorStyle.Underline) {
+                    val indicatorHeight = indicatorConfig.height ?: config.indicatorHeight
+                    val indicatorShape = getIndicatorShape(indicatorConfig.shape, indicatorHeight, indicatorConfig.cornerRadius)
+
                     Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(config.indicatorHeight)
+                            .padding(horizontal = indicatorConfig.horizontalPadding)
+                            .height(indicatorHeight)
+                            .then(
+                                if (indicatorConfig.width != null) {
+                                    Modifier.width(indicatorConfig.width)
+                                } else {
+                                    Modifier.fillMaxWidth()
+                                }
+                            )
+                            .clip(indicatorShape)
                             .background(indicatorColor)
                     )
                 }
@@ -670,12 +755,16 @@ fun PixaTab(
                         }
                     }
             ) {
-                // Left indicator
+                // Left indicator with configurable shape
                 if (showIndicator) {
+                    val indicatorWidth = indicatorConfig.width ?: config.indicatorHeight
+                    val indicatorShape = getIndicatorShape(indicatorConfig.shape, indicatorWidth, indicatorConfig.cornerRadius)
+
                     Box(
                         modifier = Modifier
-                            .width(config.indicatorHeight)
-                            .height(config.height)
+                            .width(indicatorWidth)
+                            .height(indicatorConfig.height ?: config.height)
+                            .clip(indicatorShape)
                             .background(indicatorColor)
                     )
                 }

@@ -28,35 +28,32 @@ import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import com.pixamob.pixacompose.theme.HierarchicalSize
 
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
+@Stable
+sealed class IconSource {
+    @Stable
+    data class Vector(val imageVector: ImageVector) : IconSource()
+
+    @Stable
+    data class Resource(val painter: Painter) : IconSource()
+
+    @Stable
+    data class Url(val url: String) : IconSource()
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ════════════════════════════════════════════════════════════════════════════
+
 /**
- * PixaIcon - A unified, powerful icon component for Compose Multiplatform
+ * PixaIcon - Unified icon component for Compose Multiplatform
  *
- * **Features:**
- * - Single entry point for all icon types (ImageVector, Painter, URL)
- * - Theme-aware tinting with LocalContentColor by default
- * - Optional animation (scale + fade on appearance)
- * - URL loading with placeholder and error states via Coil3
- * - Full accessibility support with contentDescription
- * - Multiplatform compatible (Android, iOS)
- * - Zero Material 3 conflicts (uses Image/AsyncImage directly)
+ * ## Usage Examples
  *
- * **Icon Sources:**
- * - [IconSource.Vector] - Compose ImageVector (e.g., Icons.Default.Home)
- * - [IconSource.Resource] - Painter from resources or custom painters
- * - [IconSource.Url] - Remote image loaded asynchronously
- *
- * @param source The icon source (Vector, Resource, or Url)
- * @param contentDescription Accessibility description. **Required for accessibility** (nullable but logged if null)
- * @param modifier Modifier for the icon container
- * @param tint Tint color. Uses LocalContentColor by default. Pass null for no tint (original colors)
- * @param size Icon size in Dp
- * @param animation Enable scale+fade animation on appearance
- * @param placeholder Placeholder painter shown while loading URL icons
- * @param error Error painter shown if URL loading fails
- * @param contentScale How to scale the icon content (default: Fit)
- *
- * @sample
- * ```
+ * ```kotlin
  * // Vector icon with animation
  * PixaIcon(
  *     source = IconSource.Vector(Icons.Default.Home),
@@ -70,7 +67,7 @@ import com.pixamob.pixacompose.theme.HierarchicalSize
  * PixaIcon(
  *     source = IconSource.Resource(painterResource(R.drawable.logo)),
  *     contentDescription = "App Logo",
- *     tint = null // preserve original colors
+ *     tint = null
  * )
  *
  * // URL icon with error handling
@@ -82,6 +79,16 @@ import com.pixamob.pixacompose.theme.HierarchicalSize
  *     size = 48.dp
  * )
  * ```
+ *
+ * @param source The icon source (Vector, Resource, or Url)
+ * @param contentDescription Accessibility description
+ * @param modifier Modifier for the icon container
+ * @param tint Tint color (null for original colors)
+ * @param size Icon size in Dp
+ * @param animation Enable scale+fade animation
+ * @param placeholder Placeholder painter for URL icons
+ * @param error Error painter for URL icons
+ * @param contentScale How to scale the content
  */
 @Composable
 fun PixaIcon(
@@ -95,7 +102,6 @@ fun PixaIcon(
     error: Painter? = null,
     contentScale: ContentScale = ContentScale.Fit
 ) {
-    // Warn if contentDescription is null (accessibility issue)
     LaunchedEffect(contentDescription) {
         if (contentDescription == null) {
             println("⚠️ PixaIcon: contentDescription is null. This may impact accessibility.")
@@ -171,37 +177,9 @@ fun PixaIcon(
     }
 }
 
-// ============================================================================
-// ICON SOURCE TYPES
-// ============================================================================
-
-/**
- * Sealed class representing different icon source types
- */
-@Stable
-sealed class IconSource {
-    /**
-     * ImageVector source (e.g., Icons.Default.Home)
-     */
-    @Stable
-    data class Vector(val imageVector: ImageVector) : IconSource()
-
-    /**
-     * Painter resource (e.g., painterResource, rememberImagePainter)
-     */
-    @Stable
-    data class Resource(val painter: Painter) : IconSource()
-
-    /**
-     * Remote URL loaded via Coil
-     */
-    @Stable
-    data class Url(val url: String) : IconSource()
-}
-
-// ============================================================================
-// INTERNAL ICON RENDERERS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// INTERNAL COMPONENTS
+// ════════════════════════════════════════════════════════════════════════════
 
 @Composable
 private fun VectorIcon(

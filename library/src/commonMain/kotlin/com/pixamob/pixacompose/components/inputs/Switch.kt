@@ -12,7 +12,11 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -27,33 +31,34 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 
-// ============================================================================
-// Configuration
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Switch variant enum
- */
 enum class SwitchVariant {
-    Filled,    // Solid filled background
-    Outlined,  // Outlined style with border
-    Minimal    // Minimal design
+    Filled,
+    Outlined,
+    Minimal
 }
 
-/**
- * Switch size enum
- */
 enum class SwitchSize {
-    Small,     // Compact switch
-    Medium,    // Standard switch
-    Large      // Prominent switch
+    Small,
+    Medium,
+    Large
 }
 
-/**
- * Configuration for Switch appearance
- */
+enum class LabelPosition {
+    Start,
+    End
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DATA CLASSES
+// ════════════════════════════════════════════════════════════════════════════
+
+@Immutable
 @Stable
-private data class SwitchConfig(
+data class SwitchSizeConfig(
     val width: Dp,
     val height: Dp,
     val thumbSize: Dp,
@@ -64,55 +69,9 @@ private data class SwitchConfig(
     val labelSpacing: Dp
 )
 
-/**
- * Get configuration for given size
- */
-@Composable
-private fun SwitchSize.config(): SwitchConfig {
-    val typography = AppTheme.typography
-    return when (this) {
-        SwitchSize.Small -> SwitchConfig(
-            width = ComponentSize.VerySmall,
-            height = ComponentSize.Minimal - HierarchicalSize.Spacing.Small,
-            thumbSize = IconSize.Tiny,
-            thumbPadding = Spacing.Micro,
-            thumbElevation = ShadowSize.Medium,
-            borderWidth = BorderSize.Tiny,
-            labelStyle = typography.bodyLight,
-            labelSpacing = HierarchicalSize.Spacing.Small
-        )
-        SwitchSize.Medium -> SwitchConfig(
-            width = ComponentSize.Medium,
-            height = IconSize.Medium,
-            thumbSize = IconSize.Small,
-            thumbPadding = Spacing.Micro,
-            thumbElevation = ShadowSize.Large,
-            borderWidth = BorderSize.SlightlyThicker,
-            labelStyle = typography.bodyRegular,
-            labelSpacing = HierarchicalSize.Spacing.Medium
-        )
-        SwitchSize.Large -> SwitchConfig(
-            width = ComponentSize.ExtraLarge,
-            height = HierarchicalSize.Button.Small - HierarchicalSize.Spacing.Small,
-            thumbSize = IconSize.Large,
-            thumbPadding = Spacing.Micro,
-            thumbElevation = HierarchicalSize.Shadow.Huge,
-            borderWidth = BorderSize.Standard,
-            labelStyle = typography.bodyBold,
-            labelSpacing = HierarchicalSize.Spacing.Large
-        )
-    }
-}
-
-// ============================================================================
-// Theme
-// ============================================================================
-
-/**
- * Colors for Switch states
- */
+@Immutable
 @Stable
-private data class SwitchColors(
+data class SwitchColors(
     val trackOn: Color,
     val trackOff: Color,
     val thumbOn: Color,
@@ -126,14 +85,51 @@ private data class SwitchColors(
     val disabledBorder: Color
 )
 
-/**
- * Get colors for Switch variant
- */
-@Composable
-private fun SwitchVariant.colors(): SwitchColors {
-    val colors = AppTheme.colors
+// ════════════════════════════════════════════════════════════════════════════
+// THEME PROVIDER
+// ════════════════════════════════════════════════════════════════════════════
 
-    return when (this) {
+@Composable
+private fun getSwitchSizeConfig(size: SwitchSize): SwitchSizeConfig {
+    val typography = AppTheme.typography
+    return when (size) {
+        SwitchSize.Small -> SwitchSizeConfig(
+            width = ComponentSize.VerySmall,
+            height = ComponentSize.Minimal - HierarchicalSize.Spacing.Small,
+            thumbSize = IconSize.Tiny,
+            thumbPadding = Spacing.Micro,
+            thumbElevation = ShadowSize.Medium,
+            borderWidth = BorderSize.Tiny,
+            labelStyle = typography.bodyLight,
+            labelSpacing = HierarchicalSize.Spacing.Small
+        )
+        SwitchSize.Medium -> SwitchSizeConfig(
+            width = ComponentSize.Medium,
+            height = IconSize.Medium,
+            thumbSize = IconSize.Small,
+            thumbPadding = Spacing.Micro,
+            thumbElevation = ShadowSize.Large,
+            borderWidth = BorderSize.SlightlyThicker,
+            labelStyle = typography.bodyRegular,
+            labelSpacing = HierarchicalSize.Spacing.Medium
+        )
+        SwitchSize.Large -> SwitchSizeConfig(
+            width = ComponentSize.ExtraLarge,
+            height = HierarchicalSize.Button.Small - HierarchicalSize.Spacing.Small,
+            thumbSize = IconSize.Large,
+            thumbPadding = Spacing.Micro,
+            thumbElevation = HierarchicalSize.Shadow.Huge,
+            borderWidth = BorderSize.Standard,
+            labelStyle = typography.bodyBold,
+            labelSpacing = HierarchicalSize.Spacing.Large
+        )
+    }
+}
+
+@Composable
+private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
+    val colors = AppTheme.colors
+    return when (variant) {
         SwitchVariant.Filled -> SwitchColors(
             trackOn = colors.brandSurfaceDefault,
             trackOff = colors.baseSurfaceElevated,
@@ -176,21 +172,60 @@ private fun SwitchVariant.colors(): SwitchColors {
     }
 }
 
-// ============================================================================
-// Pixa Component
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaSwitch - Core switch component
+ * PixaSwitch - Binary toggle control component
  *
- * Binary toggle control with smooth animations and full customization.
+ * A flexible switch with smooth animations and full customization.
  *
- * @param checked Whether the switch is on (true) or off (false)
+ * ## Usage Examples
+ *
+ * ```kotlin
+ * // Basic switch
+ * var checked by remember { mutableStateOf(false) }
+ * PixaSwitch(
+ *     checked = checked,
+ *     onCheckedChange = { checked = it }
+ * )
+ *
+ * // Switch with label
+ * PixaSwitch(
+ *     checked = darkMode,
+ *     onCheckedChange = { darkMode = it },
+ *     label = "Dark Mode",
+ *     labelPosition = LabelPosition.Start
+ * )
+ *
+ * // Outlined variant
+ * PixaSwitch(
+ *     checked = notifications,
+ *     onCheckedChange = { notifications = it },
+ *     variant = SwitchVariant.Outlined,
+ *     size = SwitchSize.Large
+ * )
+ *
+ * // Custom colors
+ * PixaSwitch(
+ *     checked = enabled,
+ *     onCheckedChange = { enabled = it },
+ *     colors = SwitchColors(
+ *         trackOn = Color.Green,
+ *         thumbOn = Color.White,
+ *         // ... other colors
+ *     )
+ * )
+ * ```
+ *
+ * @param checked Whether the switch is on or off
  * @param onCheckedChange Callback when switch state changes
  * @param modifier Modifier for the switch
- * @param variant Visual style variant
- * @param size Size preset
+ * @param variant Visual style variant (Filled, Outlined, Minimal)
+ * @param size Size preset (Small, Medium, Large)
  * @param enabled Whether the switch is enabled
+ * @param colors Custom colors (null = use theme)
  * @param label Optional label text
  * @param labelPosition Position of label (Start or End)
  * @param interactionSource Interaction source for state
@@ -204,48 +239,48 @@ fun PixaSwitch(
     variant: SwitchVariant = SwitchVariant.Filled,
     size: SwitchSize = SwitchSize.Medium,
     enabled: Boolean = true,
+    colors: SwitchColors? = null,
     label: String? = null,
     labelPosition: LabelPosition = LabelPosition.End,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     contentDescription: String? = null
 ) {
-    val config = size.config()
-    val colors = variant.colors()
+    val sizeConfig = getSwitchSizeConfig(size)
+    val themeColors = colors ?: getSwitchTheme(variant)
 
-    // Animated values
     val trackColor by animateColorAsState(
         targetValue = when {
-            !enabled && checked -> colors.disabledTrackOn
-            !enabled -> colors.disabledTrackOff
-            checked -> colors.trackOn
-            else -> colors.trackOff
+            !enabled && checked -> themeColors.disabledTrackOn
+            !enabled -> themeColors.disabledTrackOff
+            checked -> themeColors.trackOn
+            else -> themeColors.trackOff
         },
         animationSpec = AnimationUtils.smoothSpring()
     )
 
     val thumbColor by animateColorAsState(
         targetValue = when {
-            !enabled -> colors.disabledThumb
-            checked -> colors.thumbOn
-            else -> colors.thumbOff
+            !enabled -> themeColors.disabledThumb
+            checked -> themeColors.thumbOn
+            else -> themeColors.thumbOff
         },
         animationSpec = AnimationUtils.smoothSpring()
     )
 
     val borderColor by animateColorAsState(
         targetValue = when {
-            !enabled -> colors.disabledBorder
-            checked -> colors.borderOn
-            else -> colors.borderOff
+            !enabled -> themeColors.disabledBorder
+            checked -> themeColors.borderOn
+            else -> themeColors.borderOff
         },
         animationSpec = AnimationUtils.smoothSpring()
     )
 
     val thumbOffset by animateDpAsState(
         targetValue = if (checked) {
-            config.width - config.thumbSize - config.thumbPadding
+            sizeConfig.width - sizeConfig.thumbSize - sizeConfig.thumbPadding
         } else {
-            config.thumbPadding
+            sizeConfig.thumbPadding
         },
         animationSpec = AnimationUtils.smoothSpring()
     )
@@ -266,47 +301,44 @@ fun PixaSwitch(
                 interactionSource = interactionSource,
                 indication = ripple(
                     bounded = false,
-                    radius = config.width / 2
+                    radius = sizeConfig.width / 2
                 )
             ) {
                 onCheckedChange(!checked)
             },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(config.labelSpacing)
+        horizontalArrangement = Arrangement.spacedBy(sizeConfig.labelSpacing)
     ) {
-        // Label before switch
         if (label != null && labelPosition == LabelPosition.Start) {
             Text(
                 text = label,
-                style = config.labelStyle,
-                color = if (enabled) colors.label else colors.disabledThumb
+                style = sizeConfig.labelStyle,
+                color = if (enabled) themeColors.label else themeColors.disabledThumb
             )
         }
 
-        // Switch track and thumb
         Box(
             modifier = Modifier
-                .size(width = config.width, height = config.height)
-                .clip(RoundedCornerShape(config.height / 2))
+                .size(width = sizeConfig.width, height = sizeConfig.height)
+                .clip(RoundedCornerShape(sizeConfig.height / 2))
                 .background(trackColor)
                 .then(
                     if (borderColor != Color.Transparent) {
                         Modifier.border(
-                            width = config.borderWidth,
+                            width = sizeConfig.borderWidth,
                             color = borderColor,
-                            shape = RoundedCornerShape(config.height / 2)
+                            shape = RoundedCornerShape(sizeConfig.height / 2)
                         )
                     } else Modifier
                 ),
             contentAlignment = Alignment.CenterStart
         ) {
-            // Thumb
             Box(
                 modifier = Modifier
                     .offset(x = thumbOffset)
-                    .size(config.thumbSize)
+                    .size(sizeConfig.thumbSize)
                     .shadow(
-                        elevation = if (enabled) config.thumbElevation else 0.dp,
+                        elevation = if (enabled) sizeConfig.thumbElevation else 0.dp,
                         shape = CircleShape
                     )
                     .clip(CircleShape)
@@ -314,23 +346,14 @@ fun PixaSwitch(
             )
         }
 
-        // Label after switch
         if (label != null && labelPosition == LabelPosition.End) {
             Text(
                 text = label,
-                style = config.labelStyle,
-                color = if (enabled) colors.label else colors.disabledThumb
+                style = sizeConfig.labelStyle,
+                color = if (enabled) themeColors.label else themeColors.disabledThumb
             )
         }
     }
-}
-
-/**
- * Label position for switch
- */
-enum class LabelPosition {
-    Start, // Label before switch
-    End    // Label after switch
 }
 
 // ============================================================================
