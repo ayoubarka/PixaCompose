@@ -2,8 +2,8 @@
 android-minSdk = "24"
 android-compileSdk = "36"
 android-targetSdk = "36"
-appVersionCode = "11"
-appVersionName = "1.1.0"
+appVersionCode = "12"
+appVersionName = "1.1.1"
 
 agp = "8.13.2"
 kotlin = "2.3.0"
@@ -11,8 +11,8 @@ compose = "1.10.0"
 vanniktechMavenPublish = "0.36.0"
 material3-adaptive = "1.2.0"
 kotlinx-datetime = "0.7.1"
-androidx-activityCompose = "1.12.2"
-androidx-navigation = "2.9.6"
+androidx-activityCompose = "1.12.3"
+androidx-navigation = "2.9.7"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }

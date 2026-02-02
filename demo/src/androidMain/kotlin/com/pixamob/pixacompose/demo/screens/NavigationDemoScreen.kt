@@ -4,8 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -16,12 +14,16 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.actions.ButtonShape
- import com.pixamob.pixacompose.components.navigation.PixaBottomNavBar
+import com.pixamob.pixacompose.components.navigation.PixaBottomNavBar
 import com.pixamob.pixacompose.components.navigation.NavItem
 import com.pixamob.pixacompose.components.navigation.PixaTopNavBar
 import com.pixamob.pixacompose.components.navigation.TabDisplayStyle
 import com.pixamob.pixacompose.components.navigation.TopNavAction
 import com.pixamob.pixacompose.components.navigation.TopNavSize
+import com.pixamob.pixacompose.components.navigation.PixaDrawer
+import com.pixamob.pixacompose.components.navigation.DrawerItem
+import com.pixamob.pixacompose.components.navigation.DrawerSection
+import com.pixamob.pixacompose.components.navigation.DrawerPosition
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
@@ -164,6 +166,11 @@ fun NavigationDemoScreen(onBack: () -> Unit) {
                 }
             }
 
+            // ===== DRAWER =====
+            item {
+                DrawerDemo()
+            }
+
             // ===== STEPPER INFO =====
             item {
                 DemoSection(
@@ -234,3 +241,145 @@ fun NavigationDemoScreen(onBack: () -> Unit) {
         }
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// DRAWER DEMO
+// ════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun DrawerDemo() {
+    var startDrawerOpen by remember { mutableStateOf(false) }
+    var endDrawerOpen by remember { mutableStateOf(false) }
+    var selectedItemId by remember { mutableStateOf("home") }
+
+    val drawerSections = listOf(
+        DrawerSection(
+            items = listOf(
+                DrawerItem(
+                    id = "home",
+                    title = "Home",
+                    icon = painterResource(R.drawable.ic_home_bold_duotone)
+                ),
+                DrawerItem(
+                    id = "mood",
+                    title = "Mood Tracker",
+                    icon = painterResource(R.drawable.ic_face_bold_duotone),
+                    badge = "3"
+                ),
+                DrawerItem(
+                    id = "reports",
+                    title = "Reports",
+                    icon = painterResource(R.drawable.ic_chart_bold_duotone)
+                ),
+                DrawerItem(
+                    id = "habits",
+                    title = "Habits",
+                    icon = painterResource(R.drawable.ic_grid_bold_duotone)
+                )
+            )
+        ),
+        DrawerSection(
+            title = "Settings",
+            items = listOf(
+                DrawerItem(
+                    id = "settings",
+                    title = "Settings",
+                    icon = painterResource(R.drawable.ic_grid_bold_duotone)
+                ),
+                DrawerItem(
+                    id = "help",
+                    title = "Help & Support",
+                    icon = painterResource(R.drawable.ic_face_bold_duotone)
+                )
+            )
+        )
+    )
+
+    DemoSection(
+        title = "Drawer - Side Navigation",
+        description = "Modal navigation drawer from start or end"
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)) {
+            DemoLabel(text = "Start Drawer (Left)")
+            PixaButton(
+                onClick = { startDrawerOpen = true },
+                text = "Open Start Drawer",
+                size = SizeVariant.Medium,
+                variant = ButtonVariant.Outlined,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
+
+            DemoLabel(text = "End Drawer (Right)")
+            PixaButton(
+                onClick = { endDrawerOpen = true },
+                text = "Open End Drawer",
+                size = SizeVariant.Medium,
+                variant = ButtonVariant.Outlined,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Text(
+                text = "Selected: $selectedItemId",
+                style = AppTheme.typography.bodyRegular,
+                color = AppTheme.colors.baseContentBody
+            )
+        }
+    }
+
+    // Start Drawer
+    PixaDrawer(
+        visible = startDrawerOpen,
+        onDismiss = { startDrawerOpen = false },
+        sections = drawerSections,
+        selectedItemId = selectedItemId,
+        position = DrawerPosition.Start,
+        onItemClick = { item ->
+            selectedItemId = item.id
+            startDrawerOpen = false
+        },
+        header = {
+            DrawerHeader(title = "PixaCompose Demo")
+        }
+    )
+
+    // End Drawer
+    PixaDrawer(
+        visible = endDrawerOpen,
+        onDismiss = { endDrawerOpen = false },
+        sections = drawerSections,
+        selectedItemId = selectedItemId,
+        position = DrawerPosition.End,
+        onItemClick = { item ->
+            selectedItemId = item.id
+            endDrawerOpen = false
+        },
+        header = {
+            DrawerHeader(title = "End Navigation")
+        }
+    )
+}
+
+@Composable
+private fun DrawerHeader(title: String) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(AppTheme.colors.brandSurfaceDefault)
+            .padding(HierarchicalSize.Padding.Large)
+    ) {
+        Text(
+            text = title,
+            style = AppTheme.typography.titleBold,
+            color = AppTheme.colors.baseContentNegative
+        )
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
+        Text(
+            text = "Navigation Menu",
+            style = AppTheme.typography.bodyRegular,
+            color = AppTheme.colors.baseContentNegative.copy(alpha = 0.8f)
+        )
+    }
+}
+
