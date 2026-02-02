@@ -76,7 +76,14 @@ enum class DatePickerVariant {
     MonthDayPicker,
     WeekdayPicker,
     MonthPicker,
-    DayCountPicker
+    DayCountPicker,
+    SchedulePicker
+}
+
+enum class ScheduleFrequency {
+    Daily,
+    Weekly,
+    Monthly
 }
 
 enum class DatePickerSize { Small, Medium, Large }
@@ -121,17 +128,24 @@ data class DatePickerStrings(
     val weekdayShortNames: List<String> = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"),
     val monthNames: List<String> = listOf("January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"),
     val monthShortNames: List<String> = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"),
-    val startLabel: String = "Start",
-    val endLabel: String = "End",
-    val selectLabel: String = "Select",
-    val todayLabel: String = "Today",
+    val startLabel: String? = "Start",
+    val endLabel: String? = "End",
+    val selectLabel: String? = "Select",
+    val todayLabel: String? = "Today",
     val repeatLabelSingular: String = "Every 1 day",
     val repeatLabelPlural: (Int) -> String = { "Every $it days" },
-    val previousLabel: String = "Previous",
-    val nextLabel: String = "Next",
-    val increaseLabel: String = "Increase",
-    val decreaseLabel: String = "Decrease",
-    val dayOfMonthLabel: (Int) -> String = { "Day $it" }
+    val previousLabel: String? = "Previous",
+    val nextLabel: String? = "Next",
+    val increaseLabel: String? = "Increase",
+    val decreaseLabel: String? = "Decrease",
+    val dayOfMonthLabel: (Int) -> String = { "Day $it" },
+    val dailyLabel: String? = "Daily",
+    val weeklyLabel: String? = "Weekly",
+    val monthlyLabel: String? = "Monthly",
+    val everyDayLabel: String? = "Every day",
+    val selectWeekdaysHint: String? = "Select weekdays",
+    val selectMonthDaysHint: String? = "Select days of month",
+    val headerLabel: String? = null
 )
 
 @Stable
@@ -162,6 +176,32 @@ data class StepperConfig(
     val minValue: Int = 1,
     val maxValue: Int = 365,
     val step: Int = 1
+)
+
+@Stable
+data class ScheduleConfig(
+    val showFrequencyTabs: Boolean = true,
+    val allowMultipleWeekdays: Boolean = true,
+    val allowMultipleMonthDays: Boolean = true,
+    val weekdayChipStyle: WeekdayChipStyle = WeekdayChipStyle.Horizontal,
+    val weekdayItemShape: Shape = CircleShape,
+    val monthDayItemShape: Shape = CircleShape,
+    val tabShape: Shape = RoundedCornerShape(8.dp),
+    val tabContainerShape: Shape = RoundedCornerShape(12.dp)
+)
+
+enum class WeekdayChipStyle {
+    Horizontal,
+    Vertical,
+    Grid
+}
+
+@Immutable
+@Stable
+data class ScheduleSelection(
+    val frequency: ScheduleFrequency = ScheduleFrequency.Daily,
+    val selectedWeekdays: Set<Int> = emptySet(),
+    val selectedMonthDays: Set<Int> = emptySet()
 )
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -344,13 +384,16 @@ fun PixaDatePicker(
     initialMonths: Set<Int> = emptySet(),
     initialDayOfMonth: Int? = null,
     initialDayCount: Int = 1,
+    scheduleConfig: ScheduleConfig = ScheduleConfig(),
+    initialScheduleSelection: ScheduleSelection = ScheduleSelection(),
     onDateSelected: ((Long) -> Unit)? = null,
     onDatesSelected: ((Set<LocalDate>) -> Unit)? = null,
     onRangeSelected: ((LocalDate?, LocalDate?) -> Unit)? = null,
     onWeekdaysSelected: ((Set<Int>) -> Unit)? = null,
     onMonthsSelected: ((Set<Int>) -> Unit)? = null,
     onDayOfMonthSelected: ((Int) -> Unit)? = null,
-    onDayCountSelected: ((Int) -> Unit)? = null
+    onDayCountSelected: ((Int) -> Unit)? = null,
+    onScheduleSelected: ((ScheduleSelection) -> Unit)? = null
 ) {
     val themeColors = getDatePickerTheme(AppTheme.colors)
     val finalColors = colors ?: themeColors
@@ -394,6 +437,11 @@ fun PixaDatePicker(
             modifier = containerModifier, sizeConfig = sizeConfig, colors = finalColors,
             strings = strings, enabled = enabled, stepperConfig = stepperConfig,
             initialDayCount = initialDayCount, onDayCountSelected = onDayCountSelected
+        )
+        DatePickerVariant.SchedulePicker -> SchedulePickerContent(
+            modifier = containerModifier, sizeConfig = sizeConfig, colors = finalColors,
+            strings = strings, enabled = enabled, scheduleConfig = scheduleConfig,
+            initialSelection = initialScheduleSelection, onScheduleSelected = onScheduleSelected
         )
     }
 }
@@ -549,11 +597,11 @@ private fun MonthNavigationRow(
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
         horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
         Text(text = "‹", style = TextStyle(fontSize = 24.sp, color = colors.unselectedText),
-            modifier = Modifier.clickable(onClick = onPrevious).semantics { contentDescription = strings.previousLabel })
+            modifier = Modifier.clickable(onClick = onPrevious).semantics { contentDescription = strings.previousLabel ?: "Previous" })
         Text(text = "${strings.monthNames.getOrElse(currentMonth.month.ordinal) { currentMonth.month.name }} ${currentMonth.year}",
             style = sizeConfig.itemTextStyle, color = colors.title, fontWeight = FontWeight.SemiBold)
         Text(text = "›", style = TextStyle(fontSize = 24.sp, color = colors.unselectedText),
-            modifier = Modifier.clickable(onClick = onNext).semantics { contentDescription = strings.nextLabel })
+            modifier = Modifier.clickable(onClick = onNext).semantics { contentDescription = strings.nextLabel ?: "Next" })
     }
 }
 
@@ -767,14 +815,14 @@ private fun DayCountPickerContent(
         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically) {
-            StepperButton("−", enabled && dayCount > stepperConfig.minValue, colors, strings.decreaseLabel) {
+            StepperButton("−", enabled && dayCount > stepperConfig.minValue, colors, strings.decreaseLabel ?: "Decrease") {
                 dayCount = (dayCount - stepperConfig.step).coerceAtLeast(stepperConfig.minValue)
                 onDayCountSelected?.invoke(dayCount)
             }
             Text(text = dayCount.toString(), style = sizeConfig.titleTextStyle.copy(
                 fontWeight = FontWeight.Bold, fontSize = sizeConfig.titleTextStyle.fontSize * 1.5),
                 color = colors.title, modifier = Modifier.padding(horizontal = HierarchicalSize.Spacing.Large))
-            StepperButton("+", enabled && dayCount < stepperConfig.maxValue, colors, strings.increaseLabel) {
+            StepperButton("+", enabled && dayCount < stepperConfig.maxValue, colors, strings.increaseLabel ?: "Increase") {
                 dayCount = (dayCount + stepperConfig.step).coerceAtMost(stepperConfig.maxValue)
                 onDayCountSelected?.invoke(dayCount)
             }
@@ -807,9 +855,9 @@ private fun RangeSelectorRow(
 ) {
     Row(modifier = Modifier.fillMaxWidth().padding(vertical = HierarchicalSize.Spacing.Small),
         horizontalArrangement = Arrangement.SpaceBetween) {
-        RangeSelectorItem(strings.startLabel, startValue ?: strings.selectLabel, selectingStart,
+        RangeSelectorItem(strings.startLabel ?: "", startValue ?: (strings.selectLabel ?: ""), selectingStart,
             sizeConfig, colors, onStartClick, Modifier.weight(1f))
-        RangeSelectorItem(strings.endLabel, endValue ?: strings.selectLabel, !selectingStart,
+        RangeSelectorItem(strings.endLabel ?: "", endValue ?: (strings.selectLabel ?: ""), !selectingStart,
             sizeConfig, colors, onEndClick, Modifier.weight(1f))
     }
 }
@@ -829,3 +877,393 @@ private fun RangeSelectorItem(
                 .padding(HierarchicalSize.Spacing.Small).clickable(onClick = onClick))
     }
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// SCHEDULE PICKER (Daily / Weekly / Monthly with Multi-Select)
+// ════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun SchedulePickerContent(
+    modifier: Modifier,
+    sizeConfig: DatePickerSizeConfig,
+    colors: DatePickerColors,
+    strings: DatePickerStrings,
+    enabled: Boolean,
+    scheduleConfig: ScheduleConfig,
+    initialSelection: ScheduleSelection,
+    onScheduleSelected: ((ScheduleSelection) -> Unit)?
+) {
+    var selectedFrequency by remember { mutableStateOf(initialSelection.frequency) }
+    var selectedWeekdays by remember { mutableStateOf(initialSelection.selectedWeekdays) }
+    var selectedMonthDays by remember { mutableStateOf(initialSelection.selectedMonthDays) }
+
+    val currentSelection = ScheduleSelection(
+        frequency = selectedFrequency,
+        selectedWeekdays = selectedWeekdays,
+        selectedMonthDays = selectedMonthDays
+    )
+
+    Column(modifier = modifier) {
+        // Frequency Tab Selector
+        if (scheduleConfig.showFrequencyTabs) {
+            ScheduleFrequencyTabs(
+                selectedFrequency = selectedFrequency,
+                onFrequencySelected = { frequency ->
+                    selectedFrequency = frequency
+                    onScheduleSelected?.invoke(currentSelection.copy(frequency = frequency))
+                },
+                strings = strings,
+                colors = colors,
+                sizeConfig = sizeConfig,
+                enabled = enabled,
+                tabShape = scheduleConfig.tabShape,
+                tabContainerShape = scheduleConfig.tabContainerShape
+            )
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
+        }
+
+        // Content based on frequency
+        when (selectedFrequency) {
+            ScheduleFrequency.Daily -> {
+                DailyScheduleContent(
+                    colors = colors,
+                    strings = strings,
+                    sizeConfig = sizeConfig
+                )
+            }
+            ScheduleFrequency.Weekly -> {
+                WeeklyScheduleContent(
+                    selectedWeekdays = selectedWeekdays,
+                    onWeekdaysChanged = { weekdays ->
+                        selectedWeekdays = weekdays
+                        onScheduleSelected?.invoke(currentSelection.copy(selectedWeekdays = weekdays))
+                    },
+                    strings = strings,
+                    colors = colors,
+                    sizeConfig = sizeConfig,
+                    enabled = enabled,
+                    allowMultiple = scheduleConfig.allowMultipleWeekdays,
+                    chipStyle = scheduleConfig.weekdayChipStyle,
+                    itemShape = scheduleConfig.weekdayItemShape
+                )
+            }
+            ScheduleFrequency.Monthly -> {
+                MonthlyScheduleContent(
+                    selectedDays = selectedMonthDays,
+                    onDaysChanged = { days ->
+                        selectedMonthDays = days
+                        onScheduleSelected?.invoke(currentSelection.copy(selectedMonthDays = days))
+                    },
+                    strings = strings,
+                    colors = colors,
+                    sizeConfig = sizeConfig,
+                    enabled = enabled,
+                    allowMultiple = scheduleConfig.allowMultipleMonthDays,
+                    itemShape = scheduleConfig.monthDayItemShape
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ScheduleFrequencyTabs(
+    selectedFrequency: ScheduleFrequency,
+    onFrequencySelected: (ScheduleFrequency) -> Unit,
+    strings: DatePickerStrings,
+    colors: DatePickerColors,
+    sizeConfig: DatePickerSizeConfig,
+    enabled: Boolean,
+    tabShape: Shape = RoundedCornerShape(RadiusSize.Small),
+    tabContainerShape: Shape = RoundedCornerShape(RadiusSize.Medium)
+) {
+    val frequencies = listOf(
+        ScheduleFrequency.Daily to strings.dailyLabel,
+        ScheduleFrequency.Weekly to strings.weeklyLabel,
+        ScheduleFrequency.Monthly to strings.monthlyLabel
+    )
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(tabContainerShape)
+            .background(colors.surface)
+            .padding(Spacing.Tiny),
+        horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+    ) {
+        frequencies.forEach { (frequency, label) ->
+            val isSelected = selectedFrequency == frequency
+            val scale by animateFloatAsState(
+                targetValue = if (isSelected) 1f else 0.95f,
+                animationSpec = standardSpring(),
+                label = "tabScale"
+            )
+
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .scale(scale)
+                    .clip(tabShape)
+                    .background(if (isSelected) colors.selectedBackground else Color.Transparent)
+                    .clickable(enabled = enabled) { onFrequencySelected(frequency) }
+                    .padding(vertical = HierarchicalSize.Spacing.Medium),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = label ?: "",
+                    style = sizeConfig.itemTextStyle,
+                    color = if (isSelected) colors.selectedText else colors.unselectedText,
+                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DailyScheduleContent(
+    colors: DatePickerColors,
+    strings: DatePickerStrings,
+    sizeConfig: DatePickerSizeConfig
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(RadiusSize.Medium))
+            .background(colors.surface)
+            .padding(HierarchicalSize.Spacing.Large),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "📅",
+                style = TextStyle(fontSize = 32.sp)
+            )
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
+            strings.everyDayLabel?.let { label ->
+                Text(
+                    text = label,
+                    style = sizeConfig.itemTextStyle.copy(fontWeight = FontWeight.SemiBold),
+                    color = colors.title
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeeklyScheduleContent(
+    selectedWeekdays: Set<Int>,
+    onWeekdaysChanged: (Set<Int>) -> Unit,
+    strings: DatePickerStrings,
+    colors: DatePickerColors,
+    sizeConfig: DatePickerSizeConfig,
+    enabled: Boolean,
+    allowMultiple: Boolean,
+    chipStyle: WeekdayChipStyle,
+    itemShape: Shape = CircleShape
+) {
+    Column {
+        strings.selectWeekdaysHint?.let { hint ->
+            Text(
+                text = hint,
+                style = sizeConfig.dayTextStyle,
+                color = colors.unselectedText.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
+            )
+        }
+
+        when (chipStyle) {
+            WeekdayChipStyle.Horizontal -> {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+                ) {
+                    strings.weekdayShortNames.forEachIndexed { index, dayName ->
+                        val isSelected = index in selectedWeekdays
+                        WeekdayChipItem(
+                            text = dayName.first().toString(),
+                            isSelected = isSelected,
+                            enabled = enabled,
+                            colors = colors,
+                            shape = itemShape,
+                            onClick = {
+                                val newSelection = if (allowMultiple) {
+                                    if (isSelected) selectedWeekdays - index else selectedWeekdays + index
+                                } else {
+                                    setOf(index)
+                                }
+                                onWeekdaysChanged(newSelection)
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+            WeekdayChipStyle.Grid -> {
+                LazyVerticalGrid(
+                    columns = GridCells.Fixed(4),
+                    horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
+                    verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
+                    modifier = Modifier.heightIn(max = sizeConfig.height / 2)
+                ) {
+                    items(strings.weekdayShortNames.indices.toList()) { index ->
+                        val isSelected = index in selectedWeekdays
+                        WeekdayChipItem(
+                            text = strings.weekdayShortNames[index],
+                            isSelected = isSelected,
+                            enabled = enabled,
+                            colors = colors,
+                            shape = itemShape,
+                            onClick = {
+                                val newSelection = if (allowMultiple) {
+                                    if (isSelected) selectedWeekdays - index else selectedWeekdays + index
+                                } else {
+                                    setOf(index)
+                                }
+                                onWeekdaysChanged(newSelection)
+                            }
+                        )
+                    }
+                }
+            }
+            WeekdayChipStyle.Vertical -> {
+                Column(verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)) {
+                    strings.weekdayNames.forEachIndexed { index, dayName ->
+                        val isSelected = index in selectedWeekdays
+                        PixaChip(
+                            text = dayName,
+                            variant = if (isSelected) ChipVariant.Solid else ChipVariant.Outlined,
+                            type = ChipType.Selectable,
+                            selected = isSelected,
+                            enabled = enabled,
+                            backgroundColor = if (isSelected) colors.selectedBackground else null,
+                            contentColor = if (isSelected) colors.selectedText else colors.unselectedText,
+                            onClick = {
+                                val newSelection = if (allowMultiple) {
+                                    if (isSelected) selectedWeekdays - index else selectedWeekdays + index
+                                } else {
+                                    setOf(index)
+                                }
+                                onWeekdaysChanged(newSelection)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            contentDescription = "$dayName ${if (isSelected) "selected" else "not selected"}"
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WeekdayChipItem(
+    text: String,
+    isSelected: Boolean,
+    enabled: Boolean,
+    colors: DatePickerColors,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    shape: Shape = CircleShape
+) {
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.05f else 1f,
+        animationSpec = standardSpring(),
+        label = "weekdayScale"
+    )
+
+    Box(
+        modifier = modifier
+            .scale(scale)
+            .aspectRatio(1f)
+            .clip(shape)
+            .background(if (isSelected) colors.selectedBackground else colors.surface)
+            .border(
+                width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
+                color = if (isSelected) colors.selectedBackground else colors.divider,
+                shape = shape
+            )
+            .clickable(enabled = enabled, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            style = TextStyle(
+                fontSize = 12.sp,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+                color = if (isSelected) colors.selectedText else colors.unselectedText
+            )
+        )
+    }
+}
+
+@Composable
+private fun MonthlyScheduleContent(
+    selectedDays: Set<Int>,
+    onDaysChanged: (Set<Int>) -> Unit,
+    strings: DatePickerStrings,
+    colors: DatePickerColors,
+    sizeConfig: DatePickerSizeConfig,
+    enabled: Boolean,
+    allowMultiple: Boolean,
+    itemShape: Shape = CircleShape
+) {
+    Column {
+        strings.selectMonthDaysHint?.let { hint ->
+            Text(
+                text = hint,
+                style = sizeConfig.dayTextStyle,
+                color = colors.unselectedText.copy(alpha = 0.7f),
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
+            )
+        }
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(7),
+            horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Tiny),
+            modifier = Modifier.heightIn(max = sizeConfig.height)
+        ) {
+            items((1..31).toList()) { day ->
+                val isSelected = day in selectedDays
+                val scale by animateFloatAsState(
+                    targetValue = if (isSelected) 1.1f else 1f,
+                    animationSpec = standardSpring(),
+                    label = "dayScale"
+                )
+
+                Box(
+                    modifier = Modifier
+                        .aspectRatio(1f)
+                        .scale(scale)
+                        .clip(itemShape)
+                        .background(if (isSelected) colors.selectedBackground else colors.surface)
+                        .border(
+                            width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
+                            color = if (isSelected) colors.selectedBackground else colors.divider,
+                            shape = itemShape
+                        )
+                        .clickable(enabled = enabled) {
+                            val newSelection = if (allowMultiple) {
+                                if (isSelected) selectedDays - day else selectedDays + day
+                            } else {
+                                setOf(day)
+                            }
+                            onDaysChanged(newSelection)
+                        }
+                        .semantics { contentDescription = strings.dayOfMonthLabel(day) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = day.toString(),
+                        style = sizeConfig.dayTextStyle,
+                        color = if (isSelected) colors.selectedText else colors.unselectedText,
+                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
+                    )
+                }
+            }
+        }
+    }
+}
+

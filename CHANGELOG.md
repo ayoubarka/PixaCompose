@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **SchedulePicker Variant for DatePicker**:
+  - New `DatePickerVariant.SchedulePicker` for recurring schedule selection
+  - `ScheduleFrequency` enum: `Daily`, `Weekly`, `Monthly` modes
+  - `ScheduleSelection` data class for tracking frequency and selected days
+  - `ScheduleConfig` with full customization options:
+    - `showFrequencyTabs` - toggle Daily/Weekly/Monthly tab visibility
+    - `allowMultipleWeekdays` - enable multi-select for weekdays
+    - `allowMultipleMonthDays` - enable multi-select for month days
+    - `weekdayChipStyle` - Horizontal, Vertical, or Grid layouts
+    - `weekdayItemShape` - custom shape for weekday items
+    - `monthDayItemShape` - custom shape for month day items
+    - `tabShape` - custom shape for frequency tabs
+    - `tabContainerShape` - custom shape for tab container
+  - Smooth animations on selection with configurable shapes
+  - Full accessibility support with semantic content descriptions
+
+- **Optional/Nullable Labels**:
+  - `DatePickerStrings` labels are now nullable for cleaner customization
+  - `TimePickerStrings` labels are now nullable
+  - Added `headerLabel` property for custom header text
+
+### Changed
+- **Demo App Restructured**:
+  - `InputsDemoScreen` reorganized with keyed lazy list items for better performance
+  - Added SchedulePicker demo with default and custom shape examples
+  - Each component demo extracted into separate composable functions
+
 ### Planning
 - Dialog component
 - BottomSheet component

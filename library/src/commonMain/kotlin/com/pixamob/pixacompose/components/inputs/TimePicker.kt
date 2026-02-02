@@ -99,13 +99,14 @@ data class TimePickerSizeConfig(
 
 @Stable
 data class TimePickerStrings(
-    val amLabel: String = "AM",
-    val pmLabel: String = "PM",
-    val startLabel: String = "Start",
-    val endLabel: String = "End",
-    val selectLabel: String = "Select",
-    val hourLabel: String = "Hour",
-    val minuteLabel: String = "Minute",
+    val amLabel: String? = "AM",
+    val pmLabel: String? = "PM",
+    val startLabel: String? = "Start",
+    val endLabel: String? = "End",
+    val selectLabel: String? = "Select",
+    val hourLabel: String? = "Hour",
+    val minuteLabel: String? = "Minute",
+    val headerLabel: String? = null,
     val timeOfDayLabels: Map<String, LocalTime> = mapOf(
         "Morning" to LocalTime(9, 0),
         "Afternoon" to LocalTime(14, 0),
@@ -647,11 +648,11 @@ private fun RangeSelectorRow(
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
         RangeSelectorItem(
-            strings.startLabel, startValue ?: strings.selectLabel, selectingStart,
+            strings.startLabel ?: "", startValue ?: (strings.selectLabel ?: ""), selectingStart,
             sizeConfig, colors, onStartClick, Modifier.weight(1f)
         )
         RangeSelectorItem(
-            strings.endLabel, endValue ?: strings.selectLabel, !selectingStart,
+            strings.endLabel ?: "", endValue ?: (strings.selectLabel ?: ""), !selectingStart,
             sizeConfig, colors, onEndClick, Modifier.weight(1f)
         )
     }

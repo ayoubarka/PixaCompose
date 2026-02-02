@@ -303,27 +303,76 @@ Column {
 
 ### DatePicker
 
-Date selection with calendar interface.
+Comprehensive date selection with multiple variants including calendar, wheel, weekday picker, and schedule picker.
 
-**Parameters**:
+**Variants**: `Calendar`, `Wheel`, `MonthDayPicker`, `WeekdayPicker`, `MonthPicker`, `DayCountPicker`, `SchedulePicker`
+
+**Selection Modes**: `Single`, `Multiple`, `Range`
+
+**Core Parameters**:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `selectedDate` | `LocalDate?` | Required | Currently selected date |
-| `onDateSelected` | `(LocalDate) -> Unit` | Required | Callback when date is selected |
-| `modifier` | `Modifier` | `Modifier` | Modifier for the picker |
+| `variant` | `DatePickerVariant` | Required | Visual style variant |
+| `mode` | `DateSelectionMode` | `Single` | Selection mode |
+| `size` | `DatePickerSize` | `Medium` | Size preset (Small, Medium, Large) |
+| `enabled` | `Boolean` | `true` | Whether the picker is enabled |
 | `minDate` | `LocalDate?` | `null` | Minimum selectable date |
 | `maxDate` | `LocalDate?` | `null` | Maximum selectable date |
-| `label` | `String?` | `null` | Optional label |
+| `colors` | `DatePickerColors?` | `null` | Custom colors (null = use theme) |
+| `strings` | `DatePickerStrings` | Default | Localization strings |
 
-**Example**:
+**SchedulePicker Parameters**:
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `scheduleConfig` | `ScheduleConfig` | Default | Schedule configuration |
+| `initialScheduleSelection` | `ScheduleSelection` | Default | Initial selection state |
+| `onScheduleSelected` | `(ScheduleSelection) -> Unit?` | `null` | Callback for schedule changes |
+
+**ScheduleConfig Options**:
+| Property | Type | Default | Description |
+|----------|------|---------|-------------|
+| `showFrequencyTabs` | `Boolean` | `true` | Show Daily/Weekly/Monthly tabs |
+| `allowMultipleWeekdays` | `Boolean` | `true` | Allow multi-select weekdays |
+| `allowMultipleMonthDays` | `Boolean` | `true` | Allow multi-select month days |
+| `weekdayChipStyle` | `WeekdayChipStyle` | `Horizontal` | Horizontal, Vertical, or Grid |
+| `weekdayItemShape` | `Shape` | `CircleShape` | Shape for weekday items |
+| `monthDayItemShape` | `Shape` | `CircleShape` | Shape for month day items |
+| `tabShape` | `Shape` | `RoundedCornerShape(8.dp)` | Shape for frequency tabs |
+| `tabContainerShape` | `Shape` | `RoundedCornerShape(12.dp)` | Shape for tab container |
+
+**Example - Calendar Picker**:
 ```kotlin
 var birthDate by remember { mutableStateOf<LocalDate?>(null) }
 
-DatePicker(
-    selectedDate = birthDate,
-    onDateSelected = { birthDate = it },
-    label = "Birth Date",
-    maxDate = LocalDate.now() // Can't select future dates
+PixaDatePicker(
+    variant = DatePickerVariant.Calendar,
+    mode = DateSelectionMode.Single,
+    onDateSelected = { epochMillis -> 
+        birthDate = epochMillis.toLocalDate()
+    },
+    maxDate = LocalDate.now()
+)
+```
+
+**Example - Schedule Picker**:
+```kotlin
+var scheduleSelection by remember { 
+    mutableStateOf(ScheduleSelection(frequency = ScheduleFrequency.Weekly))
+}
+
+PixaDatePicker(
+    variant = DatePickerVariant.SchedulePicker,
+    size = DatePickerSize.Medium,
+    scheduleConfig = ScheduleConfig(
+        showFrequencyTabs = true,
+        allowMultipleWeekdays = true,
+        weekdayChipStyle = WeekdayChipStyle.Horizontal,
+        weekdayItemShape = RoundedCornerShape(8.dp)
+    ),
+    initialScheduleSelection = scheduleSelection,
+    onScheduleSelected = { selection ->
+        scheduleSelection = selection
+    }
 )
 ```
 
