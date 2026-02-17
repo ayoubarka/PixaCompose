@@ -5,18 +5,27 @@ android-targetSdk = "36"
 appVersionCode = "12"
 appVersionName = "1.1.1"
 
-agp = "8.13.2"
-kotlin = "2.3.0"
-compose = "1.10.0"
-vanniktechMavenPublish = "0.36.0"
+agp = "9.0.1"
+kotlin = "2.3.10"
+compose = "1.10.1"
+compose-material3 = "1.10.0-alpha05"
 material3-adaptive = "1.2.0"
 kotlinx-datetime = "0.7.1"
-androidx-activityCompose = "1.12.3"
+androidx-activityCompose = "1.12.4"
 androidx-navigation = "2.9.7"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
+
+# Compose
+compose-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "compose" }
+compose-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "compose" }
+compose-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "compose-material3" }
+compose-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "compose" }
+compose-components-resources = { module = "org.jetbrains.compose.components:components-resources", version.ref = "compose" }
+compose-components-uiToolingPreview = { module = "org.jetbrains.compose.components:components-ui-tooling-preview", version.ref = "compose" }
+compose-materialIconsExtended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
 
 # UI Components
 cmp-datetime-picker = { module = "io.github.darkokoa:datetime-wheel-picker", version = "1.1.0" }
@@ -34,10 +43,21 @@ material3-adaptive-navigation = { module = "org.jetbrains.compose.material3.adap
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activityCompose" }
 androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "androidx-navigation" }
 
+
+[bundles]
+# Material3 Adaptive bundle
+material3-adaptive-suite = [
+    "material3-adaptive",
+    "material3-adaptive-layout",
+    "material3-adaptive-navigation"
+]
+
+
 [plugins]
-android-application = { id = "com.android.application", version.ref = "agp" }
-android-kotlin-multiplatform-library = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
+androidApplication = { id = "com.android.application", version.ref = "agp" }
+androidLibrary = { id = "com.android.library", version.ref = "agp" }
+androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.ref = "agp" }
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose" }
-compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-vanniktech-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "vanniktechMavenPublish" }
+composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
+vanniktechMavenPublish = { id = "com.vanniktech.maven.publish", version = "0.36.0" }
