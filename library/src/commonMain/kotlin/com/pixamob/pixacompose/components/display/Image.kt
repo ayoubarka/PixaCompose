@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ripple
@@ -38,7 +40,10 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
+import com.pixamob.library.generated.resources.Res
 import com.valentinilk.shimmer.shimmer
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 
 // ════════════════════════════════════════════════════════════════════════════
 // DATA CLASSES
@@ -49,6 +54,23 @@ sealed class PixaImageSource {
     data class Url(val url: String) : PixaImageSource()
     data class Resource(val painter: Painter) : PixaImageSource()
     data class Vector(val imageVector: ImageVector) : PixaImageSource()
+    data class SvgPath(
+        val pathData: String,
+        val viewportWidth: Float = 24f,
+        val viewportHeight: Float = 24f,
+        val defaultWidth: Dp = 24.dp,
+        val defaultHeight: Dp = 24.dp
+    ) : PixaImageSource()
+    data class SvgFile(
+        val filePath: String,
+        val width: Dp? = null,
+        val height: Dp? = null
+    ) : PixaImageSource()
+    data class DrawableResource(
+        val drawableResource: org.jetbrains.compose.resources.DrawableResource,
+        val width: Dp? = null,
+        val height: Dp? = null
+    ) : PixaImageSource()
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -56,7 +78,7 @@ sealed class PixaImageSource {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * @param source The image source (Url, Resource, or Vector)
+ * @param source The image source (Url, Resource, Vector, or SvgPath)
  * @param contentDescription Accessibility description
  * @param modifier Modifier
  * @param contentScale How to scale the content
@@ -157,6 +179,47 @@ fun PixaImage(
                     modifier = Modifier.fillMaxSize(),
                     tint = tint,
                     contentScale = contentScale,
+                    alignment = alignment
+                )
+            }
+
+            is PixaImageSource.SvgPath -> {
+                SvgPathRenderer(
+                    pathData = source.pathData,
+                    viewportWidth = source.viewportWidth,
+                    viewportHeight = source.viewportHeight,
+                    defaultWidth = source.defaultWidth,
+                    defaultHeight = source.defaultHeight,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize(),
+                    tint = tint,
+                    contentScale = contentScale,
+                    alignment = alignment
+                )
+            }
+
+            is PixaImageSource.SvgFile -> {
+                SvgFileRenderer(
+                    filePath = source.filePath,
+                    width = source.width,
+                    height = source.height,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = contentScale,
+                    tint = tint,
+                    alignment = alignment
+                )
+            }
+
+            is PixaImageSource.DrawableResource -> {
+                DrawableResourceRenderer(
+                    drawableResource = source.drawableResource,
+                    width = source.width,
+                    height = source.height,
+                    contentDescription = contentDescription,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = contentScale,
+                    tint = tint,
                     alignment = alignment
                 )
             }
@@ -283,6 +346,175 @@ private fun VectorImageRenderer(
         colorFilter = tint?.let { ColorFilter.tint(it) },
         alignment = alignment
     )
+}
+
+/**
+ * Renders SVG path data as ImageVector
+ * Converts SVG path string into a composable ImageVector
+ */
+@Composable
+private fun SvgPathRenderer(
+    pathData: String,
+    viewportWidth: Float,
+    viewportHeight: Float,
+    defaultWidth: Dp,
+    defaultHeight: Dp,
+    contentDescription: String?,
+    modifier: Modifier,
+    tint: Color?,
+    contentScale: ContentScale,
+    alignment: Alignment
+) {
+    val imageVector = remember(pathData, viewportWidth, viewportHeight, defaultWidth, defaultHeight) {
+        createImageVectorFromPath(
+            pathData = pathData,
+            viewportWidth = viewportWidth,
+            viewportHeight = viewportHeight,
+            defaultWidth = defaultWidth,
+            defaultHeight = defaultHeight
+        )
+    }
+
+    val painter = rememberVectorPainter(imageVector)
+    Image(
+        painter = painter,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        colorFilter = tint?.let { ColorFilter.tint(it) },
+        alignment = alignment
+    )
+}
+
+/**
+ * Renders SVG files from composeResources/files/ directory.
+ *
+ * Uses Res.readBytes() to load raw SVG bytes, then feeds them to Coil
+ * which handles SVG rendering natively via its SVG decoder.
+ *
+ * Required Coil dependency:
+ *   implementation("io.coil-kt.coil3:coil-svg:3.x.x")
+ *
+ * File structure:
+ *   composeResources/files/icons/faces/ic_face_happy_circle_bold_duotone.svg
+ *
+ * Usage:
+ *   PixaImageSource.SvgFile("icons/faces/ic_face_happy_circle_bold_duotone.svg")
+ */
+@Composable
+private fun SvgFileRenderer(
+    filePath: String,
+    width: Dp?,
+    height: Dp?,
+    contentDescription: String?,
+    modifier: Modifier,
+    contentScale: ContentScale,
+    tint: Color?,
+    alignment: Alignment
+) {
+    var svgBytes by remember(filePath) { mutableStateOf<ByteArray?>(null) }
+    var hasError by remember(filePath) { mutableStateOf(false) }
+
+    // Load SVG bytes from files/ directory
+    LaunchedEffect(filePath) {
+        try {
+            svgBytes = Res.readBytes(filePath)
+        } catch (e: Exception) {
+            hasError = true
+            println("⚠️ PixaImage: Failed to read SVG file: $filePath — ${e.message}")
+        }
+    }
+
+    val sizeModifier = when {
+        width != null && height != null -> Modifier.size(width, height)
+        width != null -> Modifier.width(width)
+        height != null -> Modifier.height(height)
+        else -> Modifier
+    }
+
+    when {
+        hasError -> DefaultErrorIndicator(modifier = modifier.then(sizeModifier))
+
+        svgBytes == null -> ShimmerLoadingBox(modifier = modifier.then(sizeModifier))
+
+        else -> {
+            // Feed raw SVG bytes to Coil — requires coil-svg decoder on classpath
+            AsyncImage(
+                model = svgBytes,
+                contentDescription = contentDescription,
+                modifier = modifier.then(sizeModifier),
+                contentScale = contentScale,
+                colorFilter = tint?.let { ColorFilter.tint(it) },
+                alignment = alignment
+            )
+        }
+    }
+}
+
+/**
+ * Renders drawable resources (XML vector drawables, PNGs, etc.)
+ * This is the recommended approach for KMP projects
+ *
+ * Usage with generated resources:
+ * ```kotlin
+ * PixaImage(
+ *     source = PixaImageSource.DrawableResource(Res.drawable.ic_face_happy),
+ *     contentDescription = "Happy face"
+ * )
+ * ```
+ */
+@Composable
+private fun DrawableResourceRenderer(
+    drawableResource:  DrawableResource,
+    width: Dp?,
+    height: Dp?,
+    contentDescription: String?,
+    modifier: Modifier,
+    contentScale: ContentScale,
+    tint: Color?,
+    alignment: Alignment
+) {
+    val painter = painterResource(drawableResource)
+
+    val sizeModifier = when {
+        width != null && height != null -> Modifier.size(width, height)
+        width != null -> Modifier.width(width)
+        height != null -> Modifier.height(height)
+        else -> Modifier
+    }
+
+    Image(
+        painter = painter,
+        contentDescription = contentDescription,
+        modifier = modifier.then(sizeModifier),
+        contentScale = contentScale,
+        colorFilter = tint?.let { ColorFilter.tint(it) },
+        alignment = alignment
+    )
+}
+
+/**
+ * Creates an ImageVector from SVG path data
+ */
+private fun createImageVectorFromPath(
+    pathData: String,
+    viewportWidth: Float,
+    viewportHeight: Float,
+    defaultWidth: Dp,
+    defaultHeight: Dp
+): ImageVector {
+    return ImageVector.Builder(
+        name = "SvgPath",
+        defaultWidth = defaultWidth,
+        defaultHeight = defaultHeight,
+        viewportWidth = viewportWidth,
+        viewportHeight = viewportHeight
+    ).apply {
+        addPath(
+            pathData = PathParser().parsePathString(pathData).toNodes(),
+            fill = SolidColor(Color.Black)
+        )
+    }.build()
 }
 
 // ============================================================================
@@ -453,105 +685,111 @@ fun PixaImage(
     )
 }
 
-// ============================================================================
-// USAGE EXAMPLES & DOCUMENTATION
-// ============================================================================
+/**
+ * PixaImage from SVG Path - Convenience function
+ *
+ * Shorthand for creating SVG path-based images
+ */
+@Composable
+fun PixaImage(
+    svgPath: String,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    size: Dp = 24.dp,
+    tint: Color? = null,
+    onClick: (() -> Unit)? = null,
+    backgroundColor: Color = Color.Transparent,
+    contentScale: ContentScale = ContentScale.Fit,
+    viewportWidth: Float = 24f,
+    viewportHeight: Float = 24f
+) {
+    PixaImage(
+        source = PixaImageSource.SvgPath(
+            pathData = svgPath,
+            viewportWidth = viewportWidth,
+            viewportHeight = viewportHeight,
+            defaultWidth = size,
+            defaultHeight = size
+        ),
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        size = size,
+        tint = tint,
+        onClick = onClick,
+        backgroundColor = backgroundColor
+    )
+}
 
 /**
- * # PixaImage Usage Examples
+ * PixaImage from SVG file path - Convenience function
  *
- * ## 1. Avatar Image (Circular, URL with loading state)
+ * Shorthand for loading SVG files from resources
+ */
+@Composable
+fun PixaImage(
+    svgFilePath: String,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    width: Dp? = null,
+    height: Dp? = null,
+    tint: Color? = null,
+    onClick: (() -> Unit)? = null,
+    backgroundColor: Color = Color.Transparent,
+    contentScale: ContentScale = ContentScale.Fit
+) {
+    PixaImage(
+        source = PixaImageSource.SvgFile(
+            filePath = svgFilePath,
+            width = width,
+            height = height
+        ),
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        tint = tint,
+        onClick = onClick,
+        backgroundColor = backgroundColor
+    )
+}
+
+/**
+ * PixaImage from DrawableResource - Convenience function
+ *
+ * Recommended for KMP projects using XML vector drawables
+ *
+ * Usage:
  * ```kotlin
  * PixaImage(
- *     source = PixaImageSource.Url(user.avatarUrl),
- *     contentDescription = "User avatar: ${user.name}",
- *     shape = CircleShape,
- *     size = 64.dp,
- *     contentScale = ContentScale.Crop
- * )
- * ```
- *
- * ## 2. Photo Gallery Item (with click handler)
- * ```kotlin
- * PixaImage(
- *     url = photo.url,
- *     contentDescription = "Photo: ${photo.title}",
- *     shape = RoundedCornerShape(12.dp),
- *     contentScale = ContentScale.Crop,
- *     onClick = { openFullScreen(photo) },
- *     modifier = Modifier.aspectRatio(1f)
- * )
- * ```
- *
- * ## 3. Banner Image (full width, custom error)
- * ```kotlin
- * PixaImage(
- *     url = banner.imageUrl,
- *     contentDescription = "Promotional banner",
- *     loadingPlaceholder = painterResource(R.drawable.banner_placeholder),
- *     errorFallback = painterResource(R.drawable.banner_error),
- *     shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
- *     contentScale = ContentScale.FillWidth,
- *     modifier = Modifier.fillMaxWidth().height(200.dp)
- * )
- * ```
- *
- * ## 4. Vector Icon as Image (theme-aware tint)
- * ```kotlin
- * PixaImage(
- *     source = PixaImageSource.Vector(Icons.Default.Person),
- *     contentDescription = "User profile",
- *     tint = MaterialTheme.colorScheme.primary,
+ *     drawableResource = Res.drawable.ic_face_happy,
+ *     contentDescription = "Happy face",
  *     size = 48.dp
  * )
  * ```
- *
- * ## 5. Product Thumbnail (with background color for transparent PNGs)
- * ```kotlin
- * PixaImage(
- *     url = product.thumbnailUrl,
- *     contentDescription = "Product: ${product.name}",
- *     backgroundColor = Color.White,
- *     shape = RoundedCornerShape(8.dp),
- *     contentScale = ContentScale.Fit,
- *     size = 120.dp
- * )
- * ```
- *
- * ## 6. Local Resource Image
- * ```kotlin
- * PixaImage(
- *     painter = painterResource(R.drawable.onboarding_1),
- *     contentDescription = "Onboarding screen 1",
- *     contentScale = ContentScale.FillBounds,
- *     modifier = Modifier.fillMaxSize()
- * )
- * ```
- *
- * ## 7. Clickable Profile Picture with ripple
- * ```kotlin
- * PixaImage(
- *     url = user.profilePictureUrl,
- *     contentDescription = "Profile picture",
- *     shape = CircleShape,
- *     size = 80.dp,
- *     onClick = { navigateToProfile(user.id) }
- *     // Ripple effect automatically added when onClick is set
- * )
- * ```
- *
- * ## 8. Card Cover Image (responsive sizing)
- * ```kotlin
- * Card {
- *     PixaImage(
- *         url = article.coverImageUrl,
- *         contentDescription = "Article cover: ${article.title}",
- *         contentScale = ContentScale.Crop,
- *         modifier = Modifier
- *             .fillMaxWidth()
- *             .aspectRatio(16f / 9f)
- *     )
- * }
- * ```
  */
-
+@Composable
+fun PixaImage(
+    drawableResource: DrawableResource,
+    contentDescription: String?,
+    modifier: Modifier = Modifier,
+    width: Dp? = null,
+    height: Dp? = null,
+    tint: Color? = null,
+    onClick: (() -> Unit)? = null,
+    backgroundColor: Color = Color.Transparent,
+    contentScale: ContentScale = ContentScale.Fit
+) {
+    PixaImage(
+        source = PixaImageSource.DrawableResource(
+            drawableResource = drawableResource,
+            width = width,
+            height = height
+        ),
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        tint = tint,
+        onClick = onClick,
+        backgroundColor = backgroundColor
+    )
+}

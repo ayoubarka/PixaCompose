@@ -1,19 +1,46 @@
-import com.android.build.api.dsl.androidLibrary
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
-    alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.jetbrainsCompose)
-    alias(libs.plugins.compose.compiler)
-    alias(libs.plugins.vanniktech.mavenPublish)
+    alias(libs.plugins.composeCompiler)
+    alias(libs.plugins.androidKmpLibrary)
+    alias(libs.plugins.kotlinMultiplatform)
+    alias(libs.plugins.vanniktechMavenPublish)
 }
 
 group = "com.pixamob"
 version = libs.versions.appVersionName.get()
 
 kotlin {
+
+    androidLibrary{
+        compileSdk = libs.versions.android.compileSdk.get().toInt()
+        minSdk = libs.versions.android.minSdk.get().toInt()
+        namespace = "com.pixamob.pixacompose.library"
+        experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
+        
+        compilations.all {
+            compileTaskProvider.configure {
+                compilerOptions {
+                    jvmTarget.set(JvmTarget.JVM_11)
+                }
+            }
+        }
+    }
+
+    listOf(
+        iosArm64(),
+        iosSimulatorArm64()
+    ).forEach { iosTarget ->
+        iosTarget.binaries.framework {
+            baseName = "library"
+            isStatic = true
+        }
+    }
+
+/**
     @Suppress("UnstableApiUsage")
+
     androidLibrary {
         namespace = "com.pixamob"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
@@ -30,13 +57,6 @@ kotlin {
         }
     }
 
-    // Temporarily disabled due to kmp-date-time-picker JS incompatibility
-    // js {
-    //     browser()
-    //     binaries.executable()
-    //     compiler = KotlinJsCompilerType.IR.toString()
-    // }
-
     listOf(
         iosX64(),
         iosArm64(),
@@ -52,44 +72,19 @@ kotlin {
         }
     }
 
-
-    // Disable linuxX64 target as it's not supported by Compose Multiplatform
-    @Suppress("OPT_IN_USAGE")
-    applyDefaultHierarchyTemplate {
-        common {
-            group("mobile") {
-                group("ios") {
-                    withIos()
-                }
-                withAndroidTarget()
-            }
-        }
-    }
-
-    targets.configureEach {
-        compilations.configureEach {
-            compileTaskProvider.configure {
-                compilerOptions {
-                    freeCompilerArgs.add("-Xexpect-actual-classes")
-                }
-            }
-        }
-    }
+*/
 
     sourceSets {
         commonMain.dependencies {
-            // Compose Multiplatform dependencies
-            implementation(compose.runtime)
-            implementation(compose.foundation)
-            implementation(compose.material3)
-            implementation(compose.ui)
-            implementation(compose.components.resources)
-            implementation(compose.components.uiToolingPreview)
+            implementation(libs.compose.runtime)
+            implementation(libs.compose.foundation)
+            implementation(libs.compose.material3)
+            implementation(libs.compose.ui)
+            implementation(libs.compose.components.resources)
+            implementation(libs.compose.components.uiToolingPreview)
 
             // Material3 Adaptive Components
-            implementation(libs.material3.adaptive)
-            implementation(libs.material3.adaptive.layout)
-            implementation(libs.material3.adaptive.navigation)
+            implementation(libs.bundles.material3.adaptive.suite)
 
             // Kotlinx libraries
             implementation(libs.kotlinx.datetime)

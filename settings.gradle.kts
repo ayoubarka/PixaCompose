@@ -15,4 +15,5 @@ dependencyResolutionManagement {
 
 rootProject.name = "PixaCompose"
 include(":library")
-include(":demo")
+//include(":demo")
+include(":androidApp")
