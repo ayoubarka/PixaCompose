@@ -1,6 +1,10 @@
 package com.pixamob.pixacompose.utils
 
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -11,9 +15,19 @@ import androidx.compose.ui.unit.dp
  * Provides utility functions for accessing screen dimensions and
  * performing screen-related calculations in a Composable context.
  *
+ * **Important:** Wrap your root composable with [ScreenSizeProvider] so
+ * that [getScreenHeight] and [getScreenWidth] return the correct values.
+ *
  * ## Usage Examples
  *
  * ```kotlin
+ * @Composable
+ * fun App() {
+ *     ScreenSizeProvider {
+ *         MyScreen()
+ *     }
+ * }
+ *
  * @Composable
  * fun MyScreen() {
  *     val screenHeight = ScreenUtil.getScreenHeight()
@@ -21,7 +35,7 @@ import androidx.compose.ui.unit.dp
  *
  *     Box(
  *         modifier = Modifier
- *             .height(screenHeight * 0.5f) // Half screen height
+ *             .height(screenHeight * 0.5f)
  *             .width(screenWidth)
  *     ) {
  *         // Content
@@ -35,15 +49,6 @@ object ScreenUtil {
      * Get the screen height in Dp
      *
      * @return The current screen height as Dp
-     *
-     * @sample
-     * ```
-     * @Composable
-     * fun Example() {
-     *     val height = ScreenUtil.getScreenHeight()
-     *     Box(modifier = Modifier.height(height / 2)) { }
-     * }
-     * ```
      */
     @Composable
     fun getScreenHeight(): Dp {
@@ -54,15 +59,6 @@ object ScreenUtil {
      * Get the screen width in Dp
      *
      * @return The current screen width as Dp
-     *
-     * @sample
-     * ```
-     * @Composable
-     * fun Example() {
-     *     val width = ScreenUtil.getScreenWidth()
-     *     Box(modifier = Modifier.width(width / 3)) { }
-     * }
-     * ```
      */
     @Composable
     fun getScreenWidth(): Dp {
@@ -173,15 +169,21 @@ data class ScreenSize(
 )
 
 /**
- * Composition local for screen size
- * This should be provided at the root of your app using BoxWithConstraints
+ * Composition local for screen size.
+ * Provided by [ScreenSizeProvider]. If not provided, defaults to 0.dp.
  */
-val LocalScreenSize = androidx.compose.runtime.staticCompositionLocalOf {
+val LocalScreenSize = compositionLocalOf {
     ScreenSize(width = 0.dp, height = 0.dp)
 }
 
 /**
- * Provider composable that calculates and provides screen size to children
+ * Provider composable that measures available space and provides screen size
+ * to all children via [LocalScreenSize].
+ *
+ * Uses [SubcomposeLayout] so the dimensions are available **synchronously**
+ * on the very first composition frame — no "0 on first frame" problem.
+ *
+ * Place this **once** at (or near) the root of your composable tree.
  *
  * @param content The composable content that will have access to screen size
  *
@@ -190,7 +192,6 @@ val LocalScreenSize = androidx.compose.runtime.staticCompositionLocalOf {
  * @Composable
  * fun App() {
  *     ScreenSizeProvider {
- *         // All children can now use ScreenUtil
  *         val width = ScreenUtil.getScreenWidth()
  *         MyScreen()
  *     }
@@ -201,15 +202,22 @@ val LocalScreenSize = androidx.compose.runtime.staticCompositionLocalOf {
 fun ScreenSizeProvider(
     content: @Composable () -> Unit
 ) {
-    androidx.compose.foundation.layout.BoxWithConstraints {
-        val screenSize = ScreenSize(
-            width = maxWidth,
-            height = maxHeight
-        )
-        androidx.compose.runtime.CompositionLocalProvider(
-            LocalScreenSize provides screenSize
-        ) {
-            content()
+    SubcomposeLayout(modifier = Modifier.fillMaxSize()) { constraints ->
+        val width = with(density) { constraints.maxWidth.toDp() }
+        val height = with(density) { constraints.maxHeight.toDp() }
+
+        val measurables = subcompose("screen_content") {
+            androidx.compose.runtime.CompositionLocalProvider(
+                LocalScreenSize provides ScreenSize(width = width, height = height)
+            ) {
+                content()
+            }
+        }
+
+        val placeables = measurables.map { it.measure(constraints) }
+
+        layout(constraints.maxWidth, constraints.maxHeight) {
+            placeables.forEach { it.placeRelative(0, 0) }
         }
     }
 }

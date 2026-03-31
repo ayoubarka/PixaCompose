@@ -7,6 +7,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -65,6 +66,19 @@ import kotlinx.datetime.LocalDate
 import kotlinx.datetime.Month
 import kotlinx.datetime.minus
 import kotlinx.datetime.plus
+import kotlinx.datetime.number
+import kotlinx.datetime.DatePeriod
+import com.kizitonwose.calendar.compose.HorizontalCalendar
+import com.kizitonwose.calendar.compose.HeatMapCalendar
+import com.kizitonwose.calendar.compose.rememberCalendarState
+import com.kizitonwose.calendar.compose.heatmapcalendar.rememberHeatMapCalendarState
+import com.kizitonwose.calendar.core.CalendarDay
+import com.kizitonwose.calendar.core.CalendarMonth
+import com.kizitonwose.calendar.core.DayPosition
+import com.kizitonwose.calendar.core.firstDayOfWeekFromLocale
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.datetime.YearMonth
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -73,6 +87,7 @@ import kotlinx.datetime.plus
 enum class DatePickerVariant {
     Wheel,
     Calendar,
+    HeatMap,
     MonthDayPicker,
     WeekdayPicker,
     MonthPicker,
@@ -162,7 +177,9 @@ data class CalendarConfig(
     val highlightToday: Boolean = true,
     val showAdjacentMonthDays: Boolean = false,
     val firstDayOfWeek: DayOfWeek = DayOfWeek.SUNDAY,
-    val dayItemStyle: DayItemStyle = DayItemStyle()
+    val dayItemStyle: DayItemStyle = DayItemStyle(),
+    val activityDots: Map<LocalDate, List<Color>> = emptyMap(),
+    val heatmapIntensity: Map<LocalDate, Float> = emptyMap()
 )
 
 @Stable
@@ -202,6 +219,18 @@ data class ScheduleSelection(
     val frequency: ScheduleFrequency = ScheduleFrequency.Daily,
     val selectedWeekdays: Set<Int> = emptySet(),
     val selectedMonthDays: Set<Int> = emptySet()
+)
+
+@Stable
+data class PixaCalendarDayData(
+    val date: LocalDate,
+    val dayNumber: String,
+    val isCurrentMonth: Boolean,
+    val isSelected: Boolean,
+    val isToday: Boolean,
+    val isEnabled: Boolean = true,
+    val isInRange: Boolean = false,
+    val isRangeEdge: Boolean = false
 )
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -393,7 +422,8 @@ fun PixaDatePicker(
     onMonthsSelected: ((Set<Int>) -> Unit)? = null,
     onDayOfMonthSelected: ((Int) -> Unit)? = null,
     onDayCountSelected: ((Int) -> Unit)? = null,
-    onScheduleSelected: ((ScheduleSelection) -> Unit)? = null
+    onScheduleSelected: ((ScheduleSelection) -> Unit)? = null,
+    dayContent: (@Composable BoxScope.(PixaCalendarDayData) -> Unit)? = null
 ) {
     val themeColors = getDatePickerTheme(AppTheme.colors)
     val finalColors = colors ?: themeColors
@@ -416,7 +446,14 @@ fun PixaDatePicker(
             strings = strings, enabled = enabled, minDate = minDate, maxDate = maxDate,
             calendarConfig = calendarConfig, initialDate = initialDate, initialDates = initialDates,
             initialStartDate = initialStartDate, initialEndDate = initialEndDate,
-            onDateSelected = onDateSelected, onDatesSelected = onDatesSelected, onRangeSelected = onRangeSelected
+            onDateSelected = onDateSelected, onDatesSelected = onDatesSelected, onRangeSelected = onRangeSelected,
+            dayContent = dayContent
+        )
+        DatePickerVariant.HeatMap -> HeatMapCalendarContent(
+            modifier = containerModifier, sizeConfig = sizeConfig, colors = finalColors,
+            strings = strings, enabled = enabled, minDate = minDate, maxDate = maxDate,
+            calendarConfig = calendarConfig, initialDate = initialDate,
+            onDateSelected = onDateSelected
         )
         DatePickerVariant.MonthDayPicker -> MonthDayPickerContent(
             modifier = containerModifier, mode = mode, sizeConfig = sizeConfig, colors = finalColors,
@@ -529,7 +566,8 @@ private fun CalendarDatePickerContent(
     minDate: LocalDate?, maxDate: LocalDate?, calendarConfig: CalendarConfig, initialDate: LocalDate?,
     initialDates: Set<LocalDate>, initialStartDate: LocalDate?, initialEndDate: LocalDate?,
     onDateSelected: ((Long) -> Unit)?, onDatesSelected: ((Set<LocalDate>) -> Unit)?,
-    onRangeSelected: ((LocalDate?, LocalDate?) -> Unit)?
+    onRangeSelected: ((LocalDate?, LocalDate?) -> Unit)?,
+    dayContent: (@Composable BoxScope.(PixaCalendarDayData) -> Unit)?
 ) {
     var currentMonth by remember { mutableStateOf(initialDate ?: DateTimeUtils.now()) }
 
@@ -538,15 +576,15 @@ private fun CalendarDatePickerContent(
             var selectedDate by remember { mutableStateOf(initialDate) }
             CalendarGrid(modifier, sizeConfig, colors, strings, enabled, minDate, maxDate,
                 calendarConfig, currentMonth, { currentMonth = it }, selectedDate?.let { setOf(it) } ?: emptySet(),
-                null, null) { date -> selectedDate = date; onDateSelected?.invoke(date.toEpochDays() * 86400000L) }
+                null, null, { date -> selectedDate = date; onDateSelected?.invoke(date.toEpochDays() * 86400000L) }, dayContent)
         }
         DateSelectionMode.Multiple -> {
             var selectedDates by remember { mutableStateOf(initialDates) }
             CalendarGrid(modifier, sizeConfig, colors, strings, enabled, minDate, maxDate,
-                calendarConfig, currentMonth, { currentMonth = it }, selectedDates, null, null) { date ->
+                calendarConfig, currentMonth, { currentMonth = it }, selectedDates, null, null, { date ->
                 selectedDates = if (date in selectedDates) selectedDates - date else selectedDates + date
                 onDatesSelected?.invoke(selectedDates)
-            }
+            }, dayContent)
         }
         DateSelectionMode.Range -> {
             var selectingStart by remember { mutableStateOf(true) }
@@ -558,11 +596,11 @@ private fun CalendarDatePickerContent(
                 Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
                 CalendarGrid(Modifier, sizeConfig, colors, strings, enabled,
                     if (!selectingStart) startDate else minDate, maxDate, calendarConfig, currentMonth,
-                    { currentMonth = it }, emptySet(), startDate, endDate) { date ->
+                    { currentMonth = it }, emptySet(), startDate, endDate, { date ->
                     if (selectingStart) { startDate = date; endDate = null; selectingStart = false }
                     else { endDate = date }
                     onRangeSelected?.invoke(startDate, endDate)
-                }
+                }, dayContent)
             }
         }
     }
@@ -573,7 +611,8 @@ private fun CalendarGrid(
     modifier: Modifier, sizeConfig: DatePickerSizeConfig, colors: DatePickerColors,
     strings: DatePickerStrings, enabled: Boolean, minDate: LocalDate?, maxDate: LocalDate?,
     calendarConfig: CalendarConfig, currentMonth: LocalDate, onMonthChange: (LocalDate) -> Unit,
-    selectedDates: Set<LocalDate>, rangeStart: LocalDate?, rangeEnd: LocalDate?, onDateClick: (LocalDate) -> Unit
+    selectedDates: Set<LocalDate>, rangeStart: LocalDate?, rangeEnd: LocalDate?, onDateClick: (LocalDate) -> Unit,
+    dayContent: (@Composable BoxScope.(PixaCalendarDayData) -> Unit)?
 ) {
     Column(modifier = modifier) {
         MonthNavigationRow(sizeConfig, colors, strings, currentMonth,
@@ -585,7 +624,7 @@ private fun CalendarGrid(
             Spacer(modifier = Modifier.height(Spacing.Tiny))
         }
         DaysGrid(sizeConfig, colors, strings, currentMonth, enabled, minDate, maxDate, calendarConfig,
-            selectedDates, rangeStart, rangeEnd, onDateClick)
+            selectedDates, rangeStart, rangeEnd, onDateClick, dayContent)
     }
 }
 
@@ -620,7 +659,8 @@ private fun DaysGrid(
     sizeConfig: DatePickerSizeConfig, colors: DatePickerColors, strings: DatePickerStrings,
     currentMonth: LocalDate, enabled: Boolean, minDate: LocalDate?, maxDate: LocalDate?,
     calendarConfig: CalendarConfig, selectedDates: Set<LocalDate>, rangeStart: LocalDate?,
-    rangeEnd: LocalDate?, onDateClick: (LocalDate) -> Unit
+    rangeEnd: LocalDate?, onDateClick: (LocalDate) -> Unit,
+    dayContent: (@Composable BoxScope.(PixaCalendarDayData) -> Unit)?
 ) {
     val daysInMonth = getDaysInMonth(currentMonth.year, currentMonth.month)
     val firstDayOfMonth = LocalDate(currentMonth.year, currentMonth.month, 1)
@@ -643,6 +683,17 @@ private fun DaysGrid(
                         val scale by animateFloatAsState(targetValue = if (isSelected || isRangeEdge) 1.1f else 1f,
                             animationSpec = standardSpring(), label = "dayScale")
 
+                        val dayData = PixaCalendarDayData(
+                            date = date,
+                            dayNumber = day.toString(),
+                            isCurrentMonth = true,
+                            isSelected = isSelected,
+                            isToday = isToday,
+                            isEnabled = isEnabled,
+                            isInRange = isInRange,
+                            isRangeEdge = isRangeEdge
+                        )
+
                         Box(modifier = Modifier.weight(1f).aspectRatio(1f).padding(Spacing.Micro)
                             .scale(if (calendarConfig.dayItemStyle.animateSelection) scale else 1f)
                             .clip(calendarConfig.dayItemStyle.shape)
@@ -656,17 +707,103 @@ private fun DaysGrid(
                             .semantics { contentDescription = "$day ${strings.monthNames.getOrElse(currentMonth.month.ordinal) { currentMonth.month.name }} ${currentMonth.year}" },
                             contentAlignment = Alignment.Center
                         ) {
-                            Text(text = day.toString(), style = sizeConfig.dayTextStyle, color = when {
-                                isSelected || isRangeEdge -> colors.selectedText
-                                !isEnabled -> colors.disabledText
-                                isToday -> colors.todayHighlight
-                                else -> colors.unselectedText
-                            }, fontWeight = if (isSelected || isToday || isRangeEdge) FontWeight.Bold else FontWeight.Normal)
+                            if (dayContent != null) {
+                                dayContent(dayData)
+                            } else {
+                                Text(text = day.toString(), style = sizeConfig.dayTextStyle, color = when {
+                                    isSelected || isRangeEdge -> colors.selectedText
+                                    !isEnabled -> colors.disabledText
+                                    isToday -> colors.todayHighlight
+                                    else -> colors.unselectedText
+                                }, fontWeight = if (isSelected || isToday || isRangeEdge) FontWeight.Bold else FontWeight.Normal)
+                            }
                         }
                     } else { Box(modifier = Modifier.weight(1f).aspectRatio(1f)) }
                 }
             }
         }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// HEATMAP CALENDAR
+// ════════════════════════════════════════════════════════════════════════════
+
+@Composable
+private fun HeatMapCalendarContent(
+    modifier: Modifier, sizeConfig: DatePickerSizeConfig, colors: DatePickerColors,
+    strings: DatePickerStrings, enabled: Boolean, minDate: LocalDate?, maxDate: LocalDate?,
+    calendarConfig: CalendarConfig, initialDate: LocalDate?, onDateSelected: ((Long) -> Unit)?
+) {
+    val currentDate = initialDate ?: DateTimeUtils.now()
+    val rawStartMonth = YearMonth(minDate?.year ?: (currentDate.year - 1), minDate?.month ?: Month.JANUARY)
+    val rawEndMonth = YearMonth(maxDate?.year ?: (currentDate.year + 1), maxDate?.month ?: Month.DECEMBER)
+
+    // Ensure startMonth is not after endMonth
+    val (startMonth, endMonth) = if (rawStartMonth > rawEndMonth) {
+         rawEndMonth to rawStartMonth
+    } else {
+         rawStartMonth to rawEndMonth
+    }
+
+    val state = rememberHeatMapCalendarState(
+        startMonth = startMonth,
+        endMonth = endMonth,
+        firstVisibleMonth = YearMonth(currentDate.year, currentDate.month),
+        firstDayOfWeek = firstDayOfWeekFromLocale()
+    )
+
+    Column(modifier = modifier) {
+        val currentMonth = state.firstVisibleMonth.yearMonth
+        MonthNavigationRow(sizeConfig, colors, strings, LocalDate(currentMonth.year, currentMonth.month, 1),
+            { },
+            { }
+        )
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
+        
+        HeatMapCalendar(
+            state = state,
+            weekHeaderPosition = com.kizitonwose.calendar.compose.heatmapcalendar.HeatMapWeekHeaderPosition.Start,
+            weekHeader = {
+               Text(text = strings.weekdayShortNames.getOrElse(it.ordinal) { "" }.take(1),
+                    style = sizeConfig.dayTextStyle, color = colors.unselectedText.copy(alpha = 0.6f),
+                    modifier = Modifier.padding(end = Spacing.Small))
+            },
+            dayContent = { day, _ ->
+                val date = LocalDate(day.date.year, day.date.month, day.date.day)
+                val count = calendarConfig.heatmapIntensity[date] ?: 0f
+                val dotColors = calendarConfig.activityDots[date] ?: emptyList()
+                
+                val alpha = (0.2f + (0.8f * count.coerceIn(0f, 1f))).coerceIn(0f, 1f)
+                val isToday = date == DateTimeUtils.now() && calendarConfig.highlightToday
+                
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(Spacing.Micro)
+                    .aspectRatio(1f)
+                    .clip(calendarConfig.dayItemStyle.shape)
+                    .background(when {
+                        count > 0 -> colors.selectedBackground.copy(alpha = alpha)
+                        isToday -> colors.todayHighlight.copy(alpha = 0.1f)
+                        else -> colors.surface
+                    })
+                    .border(width = if (isToday) calendarConfig.dayItemStyle.todayBorderWidth else BorderSize.Tiny,
+                            color = if (isToday) colors.todayHighlight else colors.divider,
+                            shape = calendarConfig.dayItemStyle.shape)
+                    .clickable(enabled = enabled) { onDateSelected?.invoke(date.toEpochDays() * 86400000L) },
+                    verticalArrangement = Arrangement.Center
+                ) {
+                    if (dotColors.isEmpty() && count == 0f) {
+                        Text(text = day.date.day.toString(), style = sizeConfig.dayTextStyle,
+                             color = if (isToday) colors.todayHighlight else colors.unselectedText)
+                    } else if (dotColors.isNotEmpty()) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+                            dotColors.take(3).forEach { color ->
+                                Box(modifier = Modifier.size(4.dp).clip(CircleShape).background(color))
+                            }
+                        }
+                    }
+                }
+            }
+        )
     }
 }
 
@@ -1266,4 +1403,7 @@ private fun MonthlyScheduleContent(
         }
     }
 }
+
+
+
 

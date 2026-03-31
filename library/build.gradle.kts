@@ -90,12 +90,17 @@ kotlin {
             implementation(libs.kotlinx.datetime)
 
             // UI Components
+            implementation(libs.kizitonwose.calendar)
             implementation(libs.cmp.datetime.picker)
             implementation(libs.cmp.constraintlayout)
             implementation(libs.cmp.shimmer)
-            implementation(libs.coil.compose)
-            implementation(libs.coil.network)
-        }
+
+            // Coil Image Loading with SVG support - exposed to users
+            api(libs.bundles.coil)
+
+            // Vico Charts - Compose Multiplatform charting library
+            api(libs.vico.multiplatform)
+         }
     }
 }
 

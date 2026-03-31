@@ -5,14 +5,16 @@ android-targetSdk = "36"
 appVersionCode = "12"
 appVersionName = "1.1.1"
 
-agp = "9.0.1"
-kotlin = "2.3.10"
-compose = "1.10.1"
+agp = "9.1.0"
+kotlin = "2.3.20"
+compose = "1.10.3"
 compose-material3 = "1.10.0-alpha05"
 material3-adaptive = "1.2.0"
 kotlinx-datetime = "0.7.1"
-androidx-activityCompose = "1.12.4"
+androidx-activityCompose = "1.13.0"
 androidx-navigation = "2.9.7"
+coilVersion = "3.4.0"
+vicoVersion = "2.4.3"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -28,11 +30,17 @@ compose-components-uiToolingPreview = { module = "org.jetbrains.compose.componen
 compose-materialIconsExtended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
 
 # UI Components
+kizitonwose-calendar = { module = "com.kizitonwose.calendar:compose-multiplatform", version = "2.10.0" }
 cmp-datetime-picker = { module = "io.github.darkokoa:datetime-wheel-picker", version = "1.1.0" }
-cmp-constraintlayout = { module = "tech.annexflow.compose:constraintlayout-compose-multiplatform", version = "0.6.1" }
+cmp-constraintlayout = { module = "tech.annexflow.compose:constraintlayout-compose-multiplatform", version = "0.7.0" }
 cmp-shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version = "1.3.3" }
-coil-compose = { module = "io.coil-kt.coil3:coil-compose", version = "3.3.0" }
-coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version = "3.3.0" }
+
+coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilVersion" }
+coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilVersion" }
+coil-svg = { module = "io.coil-kt.coil3:coil-svg", version.ref = "coilVersion" }
+
+# Vico Charts
+vico-multiplatform = { module = "com.patrykandpatrick.vico:multiplatform", version.ref = "vicoVersion" }
 
 # Material3 Adaptive bundle
 material3-adaptive = { module = "org.jetbrains.compose.material3.adaptive:adaptive", version.ref = "material3-adaptive" }
@@ -50,6 +58,11 @@ material3-adaptive-suite = [
     "material3-adaptive",
     "material3-adaptive-layout",
     "material3-adaptive-navigation"
+]
+coil = [
+    "coil-compose",
+    "coil-network",
+    "coil-svg"
 ]
 
 

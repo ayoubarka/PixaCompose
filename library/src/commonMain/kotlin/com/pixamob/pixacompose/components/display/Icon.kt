@@ -93,7 +93,7 @@ sealed class IconSource {
 @Composable
 fun PixaIcon(
     source: IconSource,
-    contentDescription: String?,
+    contentDescription: String? = null,
     modifier: Modifier = Modifier,
     tint: Color? = LocalContentColor.current,
     size: Dp = HierarchicalSize.Icon.Small,

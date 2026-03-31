@@ -6,9 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ripple
@@ -61,16 +59,8 @@ sealed class PixaImageSource {
         val defaultWidth: Dp = 24.dp,
         val defaultHeight: Dp = 24.dp
     ) : PixaImageSource()
-    data class SvgFile(
-        val filePath: String,
-        val width: Dp? = null,
-        val height: Dp? = null
-    ) : PixaImageSource()
-    data class DrawableResource(
-        val drawableResource: org.jetbrains.compose.resources.DrawableResource,
-        val width: Dp? = null,
-        val height: Dp? = null
-    ) : PixaImageSource()
+    data class SvgFile(val filePath: String) : PixaImageSource()
+    data class DrawableResource(val drawableResource: org.jetbrains.compose.resources.DrawableResource) : PixaImageSource()
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -78,12 +68,12 @@ sealed class PixaImageSource {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * @param source The image source (Url, Resource, Vector, or SvgPath)
+ * @param source The image source (Url, Resource, Vector, SvgPath, SvgFile, or DrawableResource)
  * @param contentDescription Accessibility description
- * @param modifier Modifier
+ * @param modifier Modifier (controls size, shape, padding, etc.)
  * @param contentScale How to scale the content
  * @param shape Shape to clip the image
- * @param size Fixed size
+ * @param size Fixed size (convenience parameter)
  * @param tint Tint color
  * @param loadingPlaceholder Custom loading placeholder
  * @param errorFallback Custom error fallback
@@ -201,8 +191,6 @@ fun PixaImage(
             is PixaImageSource.SvgFile -> {
                 SvgFileRenderer(
                     filePath = source.filePath,
-                    width = source.width,
-                    height = source.height,
                     contentDescription = contentDescription,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = contentScale,
@@ -214,8 +202,6 @@ fun PixaImage(
             is PixaImageSource.DrawableResource -> {
                 DrawableResourceRenderer(
                     drawableResource = source.drawableResource,
-                    width = source.width,
-                    height = source.height,
                     contentDescription = contentDescription,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = contentScale,
@@ -262,7 +248,6 @@ private fun UrlImageRenderer(
         when (loadState) {
             is AsyncImagePainter.State.Loading -> {
                 if (loadingPlaceholder != null) {
-                    // Custom placeholder
                     Image(
                         painter = loadingPlaceholder,
                         contentDescription = null,
@@ -271,14 +256,12 @@ private fun UrlImageRenderer(
                         alignment = alignment
                     )
                 } else {
-                    // Default shimmer loading effect
                     ShimmerLoadingBox(modifier = Modifier.fillMaxSize())
                 }
             }
 
             is AsyncImagePainter.State.Error -> {
                 if (errorFallback != null) {
-                    // Custom error fallback
                     Image(
                         painter = errorFallback,
                         contentDescription = "Error loading image",
@@ -287,7 +270,6 @@ private fun UrlImageRenderer(
                         alignment = alignment
                     )
                 } else {
-                    // Default broken image indicator
                     DefaultErrorIndicator(
                         modifier = Modifier.fillMaxSize(),
                         brokenImageIcon = brokenImageIcon
@@ -297,15 +279,12 @@ private fun UrlImageRenderer(
 
             is AsyncImagePainter.State.Success,
             is AsyncImagePainter.State.Empty -> {
-                // Image loaded successfully or empty state - AsyncImage handles display
+                // Image loaded successfully or empty state
             }
         }
     }
 }
 
-/**
- * Renders painter-based images (local resources)
- */
 @Composable
 private fun ResourceImageRenderer(
     painter: Painter,
@@ -325,9 +304,6 @@ private fun ResourceImageRenderer(
     )
 }
 
-/**
- * Renders vector-based images (ImageVector)
- */
 @Composable
 private fun VectorImageRenderer(
     imageVector: ImageVector,
@@ -348,10 +324,6 @@ private fun VectorImageRenderer(
     )
 }
 
-/**
- * Renders SVG path data as ImageVector
- * Converts SVG path string into a composable ImageVector
- */
 @Composable
 private fun SvgPathRenderer(
     pathData: String,
@@ -387,87 +359,52 @@ private fun SvgPathRenderer(
 }
 
 /**
- * Renders SVG files from composeResources/files/ directory.
+ * Renders SVG files from composeResources/files/ using Coil's AsyncImage with automatic SVG detection.
  *
- * Uses Res.readBytes() to load raw SVG bytes, then feeds them to Coil
- * which handles SVG rendering natively via its SVG decoder.
+ * Coil 3.3.0+ automatically detects and decodes SVG files by looking for the `<svg` marker
+ * in the first 1KB of the file. The coil-svg library must be included in dependencies.
  *
- * Required Coil dependency:
- *   implementation("io.coil-kt.coil3:coil-svg:3.x.x")
+ * Implementation based on: https://coil-kt.github.io/coil/svgs/
  *
  * File structure:
- *   composeResources/files/icons/faces/ic_face_happy_circle_bold_duotone.svg
+ *   composeResources/files/icons/faces/ic_face_happy.svg
  *
  * Usage:
- *   PixaImageSource.SvgFile("icons/faces/ic_face_happy_circle_bold_duotone.svg")
+ *   PixaImage(
+ *       source = PixaImageSource.SvgFile("icons/faces/ic_face_happy.svg"),
+ *       contentDescription = "Happy face",
+ *       modifier = Modifier.size(48.dp),
+ *       tint = Color.Blue
+ *   )
+ *
+ * Note: Size is controlled purely by the modifier, not by the SVG's internal dimensions.
  */
 @Composable
 private fun SvgFileRenderer(
     filePath: String,
-    width: Dp?,
-    height: Dp?,
     contentDescription: String?,
     modifier: Modifier,
     contentScale: ContentScale,
     tint: Color?,
     alignment: Alignment
 ) {
-    var svgBytes by remember(filePath) { mutableStateOf<ByteArray?>(null) }
-    var hasError by remember(filePath) { mutableStateOf(false) }
+    val uri = Res.getUri(filePath)
 
-    // Load SVG bytes from files/ directory
-    LaunchedEffect(filePath) {
-        try {
-            svgBytes = Res.readBytes(filePath)
-        } catch (e: Exception) {
-            hasError = true
-            println("⚠️ PixaImage: Failed to read SVG file: $filePath — ${e.message}")
-        }
-    }
-
-    val sizeModifier = when {
-        width != null && height != null -> Modifier.size(width, height)
-        width != null -> Modifier.width(width)
-        height != null -> Modifier.height(height)
-        else -> Modifier
-    }
-
-    when {
-        hasError -> DefaultErrorIndicator(modifier = modifier.then(sizeModifier))
-
-        svgBytes == null -> ShimmerLoadingBox(modifier = modifier.then(sizeModifier))
-
-        else -> {
-            // Feed raw SVG bytes to Coil — requires coil-svg decoder on classpath
-            AsyncImage(
-                model = svgBytes,
-                contentDescription = contentDescription,
-                modifier = modifier.then(sizeModifier),
-                contentScale = contentScale,
-                colorFilter = tint?.let { ColorFilter.tint(it) },
-                alignment = alignment
-            )
-        }
-    }
+    // Coil AsyncImage with automatic SVG detection (coil-svg library)
+    // The ImageLoader automatically detects SVGs by looking for <svg marker
+    AsyncImage(
+        model = uri,
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentScale = contentScale,
+        colorFilter = tint?.let { ColorFilter.tint(it) },
+        alignment = alignment
+    )
 }
 
-/**
- * Renders drawable resources (XML vector drawables, PNGs, etc.)
- * This is the recommended approach for KMP projects
- *
- * Usage with generated resources:
- * ```kotlin
- * PixaImage(
- *     source = PixaImageSource.DrawableResource(Res.drawable.ic_face_happy),
- *     contentDescription = "Happy face"
- * )
- * ```
- */
 @Composable
 private fun DrawableResourceRenderer(
-    drawableResource:  DrawableResource,
-    width: Dp?,
-    height: Dp?,
+    drawableResource: DrawableResource,
     contentDescription: String?,
     modifier: Modifier,
     contentScale: ContentScale,
@@ -476,26 +413,16 @@ private fun DrawableResourceRenderer(
 ) {
     val painter = painterResource(drawableResource)
 
-    val sizeModifier = when {
-        width != null && height != null -> Modifier.size(width, height)
-        width != null -> Modifier.width(width)
-        height != null -> Modifier.height(height)
-        else -> Modifier
-    }
-
     Image(
         painter = painter,
         contentDescription = contentDescription,
-        modifier = modifier.then(sizeModifier),
+        modifier = modifier,
         contentScale = contentScale,
         colorFilter = tint?.let { ColorFilter.tint(it) },
         alignment = alignment
     )
 }
 
-/**
- * Creates an ImageVector from SVG path data
- */
 private fun createImageVectorFromPath(
     pathData: String,
     viewportWidth: Float,
@@ -521,10 +448,6 @@ private fun createImageVectorFromPath(
 // LOADING & ERROR INDICATORS
 // ============================================================================
 
-/**
- * Shimmer loading effect using valentinilk.shimmer library
- * Theme-aware colors (uses Material3 color scheme)
- */
 @Composable
 private fun ShimmerLoadingBox(modifier: Modifier = Modifier) {
     Box(
@@ -536,9 +459,6 @@ private fun ShimmerLoadingBox(modifier: Modifier = Modifier) {
     )
 }
 
-/**
- * Default error indicator - broken image icon with theme-aware colors
- */
 @Composable
 private fun DefaultErrorIndicator(
     modifier: Modifier = Modifier,
@@ -558,9 +478,6 @@ private fun DefaultErrorIndicator(
     }
 }
 
-/**
- * Creates a custom broken image icon vector
- */
 @Composable
 private fun rememberBrokenImageVector(): ImageVector {
     return remember {
@@ -588,16 +505,10 @@ private fun rememberBrokenImageVector(): ImageVector {
     }
 }
 
-
 // ============================================================================
 // CONVENIENCE FUNCTIONS
 // ============================================================================
 
-/**
- * PixaImage from URL - Convenience function
- *
- * Shorthand for creating URL-based images without wrapping in PixaImageSource.Url
- */
 @Composable
 fun PixaImage(
     url: String,
@@ -627,11 +538,6 @@ fun PixaImage(
     )
 }
 
-/**
- * PixaImage from Painter - Convenience function
- *
- * Shorthand for creating painter-based images
- */
 @Composable
 fun PixaImage(
     painter: Painter,
@@ -657,11 +563,6 @@ fun PixaImage(
     )
 }
 
-/**
- * PixaImage from ImageVector - Convenience function
- *
- * Shorthand for creating vector-based images
- */
 @Composable
 fun PixaImage(
     imageVector: ImageVector,
@@ -685,11 +586,6 @@ fun PixaImage(
     )
 }
 
-/**
- * PixaImage from SVG Path - Convenience function
- *
- * Shorthand for creating SVG path-based images
- */
 @Composable
 fun PixaImage(
     svgPath: String,
@@ -724,26 +620,32 @@ fun PixaImage(
 /**
  * PixaImage from SVG file path - Convenience function
  *
- * Shorthand for loading SVG files from resources
+ * Uses Coil 3.3.0's automatic SVG detection and decoding.
+ * Requires coil-svg library dependency.
+ *
+ * The SVG is loaded from composeResources/files/ directory.
+ * Size controlled by modifier only.
+ *
+ * Example:
+ *   PixaImage(
+ *       svgFilePath = "icons/logo.svg",
+ *       contentDescription = "App logo",
+ *       modifier = Modifier.size(64.dp),
+ *       tint = MaterialTheme.colorScheme.primary
+ *   )
  */
 @Composable
 fun PixaImage(
     svgFilePath: String,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    width: Dp? = null,
-    height: Dp? = null,
     tint: Color? = null,
     onClick: (() -> Unit)? = null,
     backgroundColor: Color = Color.Transparent,
     contentScale: ContentScale = ContentScale.Fit
 ) {
     PixaImage(
-        source = PixaImageSource.SvgFile(
-            filePath = svgFilePath,
-            width = width,
-            height = height
-        ),
+        source = PixaImageSource.SvgFile(filePath = svgFilePath),
         contentDescription = contentDescription,
         modifier = modifier,
         contentScale = contentScale,
@@ -753,38 +655,18 @@ fun PixaImage(
     )
 }
 
-/**
- * PixaImage from DrawableResource - Convenience function
- *
- * Recommended for KMP projects using XML vector drawables
- *
- * Usage:
- * ```kotlin
- * PixaImage(
- *     drawableResource = Res.drawable.ic_face_happy,
- *     contentDescription = "Happy face",
- *     size = 48.dp
- * )
- * ```
- */
 @Composable
 fun PixaImage(
     drawableResource: DrawableResource,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    width: Dp? = null,
-    height: Dp? = null,
     tint: Color? = null,
     onClick: (() -> Unit)? = null,
     backgroundColor: Color = Color.Transparent,
     contentScale: ContentScale = ContentScale.Fit
 ) {
     PixaImage(
-        source = PixaImageSource.DrawableResource(
-            drawableResource = drawableResource,
-            width = width,
-            height = height
-        ),
+        source = PixaImageSource.DrawableResource(drawableResource = drawableResource),
         contentDescription = contentDescription,
         modifier = modifier,
         contentScale = contentScale,

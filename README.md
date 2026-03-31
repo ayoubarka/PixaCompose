@@ -380,6 +380,78 @@ PixaImage(
 )
 ```
 
+#### SVG Support with Coil 3
+
+PixaImage supports rendering SVG files from your `composeResources/files/` directory using Coil 3. 
+
+**Setup Required:**
+
+Initialize Coil with SVG decoder in your app:
+
+```kotlin
+import coil3.ImageLoader
+import coil3.compose.LocalImageLoader
+import coil3.decode.SvgDecoder
+import androidx.compose.runtime.CompositionLocalProvider
+
+val imageLoader = ImageLoader.Builder(context)
+    .components { add(SvgDecoder.Factory()) }
+    .build()
+
+CompositionLocalProvider(LocalImageLoader provides imageLoader) {
+    // Your app content
+}
+```
+
+**File Structure:**
+
+```
+composeResources/
+  └── files/
+      └── icons/
+          └── faces/
+              └── icon.svg
+```
+
+**Usage:**
+
+```kotlin
+// Basic SVG rendering
+PixaImage(
+    source = PixaImageSource.SvgFile("icons/faces/icon.svg"),
+    contentDescription = "Icon",
+    modifier = Modifier.size(32.dp)
+)
+
+// SVG with tinting
+PixaImage(
+    source = PixaImageSource.SvgFile("icons/faces/icon.svg"),
+    contentDescription = "Icon",
+    modifier = Modifier.size(48.dp),
+    tint = Color.Blue
+)
+
+// SVG with custom content scale
+PixaImage(
+    source = PixaImageSource.SvgFile("icons/logo.svg"),
+    contentDescription = "Logo",
+    modifier = Modifier.fillMaxWidth().height(100.dp),
+    contentScale = ContentScale.Fit
+)
+```
+
+**Features:**
+- ✅ Loads SVG bytes via `Res.readBytes(filePath)`
+- ✅ Automatic SVG decoding via Coil 3
+- ✅ Size controlled by modifier
+- ✅ Shimmer loading indicator
+- ✅ Error handling with fallback
+- ✅ Tinting support via `ColorFilter`
+- ✅ Automatic caching by Coil
+- ✅ Supports subfolders in `files/`
+
+**Note:** Size is controlled purely by the `modifier` parameter. The `width` and `height` parameters in `PixaImageSource.SvgFile` are ignored.
+
 ## 📱 Examples
 
 ### Dashboard Screen

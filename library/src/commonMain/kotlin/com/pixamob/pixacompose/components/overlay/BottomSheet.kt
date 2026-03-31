@@ -1,49 +1,69 @@
 package com.pixamob.pixacompose.components.overlay
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectVerticalDragGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
-import androidx.compose.ui.input.nestedscroll.NestedScrollSource
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.actions.PixaButton
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.pixamob.pixacompose.components.actions.ButtonVariant
-import com.pixamob.pixacompose.theme.*
+import com.pixamob.pixacompose.components.actions.PixaButton
+import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.RadiusSize
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION - Data models and enums
@@ -75,43 +95,6 @@ enum class BottomSheetStyle {
     Secondary,
     /** Surface: White/light surface with high contrast */
     Surface
-}
-
-/**
- * Bottom Sheet Scope
- * Provides control functions for the bottom sheet
- */
-interface BottomSheetScope {
-    /** Dismiss/hide the bottom sheet */
-    fun dismiss()
-
-    /** Expand sheet fully (if partially expanded) */
-    fun expand()
-
-    /** Partially expand sheet (if supported) */
-    fun collapse()
-}
-
-/**
- * Internal implementation of BottomSheetScope
- */
-@OptIn(ExperimentalMaterial3Api::class)
-private class BottomSheetScopeImpl(
-    private val sheetState: SheetState,
-    private val onDismissRequest: () -> Unit
-) : BottomSheetScope {
-    override fun dismiss() {
-        onDismissRequest()
-    }
-
-    override fun expand() {
-        // Expand to full height if possible
-        // SheetState doesn't have direct expand method, handled by state
-    }
-
-    override fun collapse() {
-        // Collapse to partial height if skipPartiallyExpanded is false
-    }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -214,53 +197,39 @@ private fun BottomSheetStyle.getColors(elevated: Boolean): BottomSheetColors {
     }
 }
 
-/**
- * Nested scroll connection for bottom sheets
- * Allows proper handling of nested scrolling content
- */
-private class BottomSheetNestedScrollConnection : NestedScrollConnection {
-    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        return Offset.Zero
-    }
+// ═══════════════════════════════════════════════════════════════════════════════
+// ANIMATION - Shared bottom sheet animation specs
+// ═══════════════════════════════════════════════════════════════════════════════
 
-    override fun onPostScroll(
-        consumed: Offset,
-        available: Offset,
-        source: NestedScrollSource
-    ): Offset {
-        return Offset.Zero
-    }
-}
+/** Duration for scrim fade and sheet slide animations (ms). */
+private const val SHEET_ANIM_DURATION = 300
 
-/**
- * Fixed nested scroll connection that prevents sheet dragging
- * Used when isFixed = true to ensure stable interaction with scrollable content
- */
-private class FixedBottomSheetNestedScrollConnection : NestedScrollConnection {
-    override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
-        // Consume all vertical scroll to prevent sheet dragging
-        return if (source == NestedScrollSource.UserInput) {
-            Offset(0f, available.y)
-        } else {
-            Offset.Zero
-        }
-    }
+/** Sheet slide-in from bottom enter transition. */
+private val SheetEnterTransition = slideInVertically(
+    initialOffsetY = { it },
+    animationSpec = tween(SHEET_ANIM_DURATION)
+)
 
-    override fun onPostScroll(
-        consumed: Offset,
-        available: Offset,
-        source: NestedScrollSource
-    ): Offset {
-        return Offset.Zero
-    }
-}
+/** Sheet slide-out to bottom exit transition. */
+private val SheetExitTransition = slideOutVertically(
+    targetOffsetY = { it },
+    animationSpec = tween(SHEET_ANIM_DURATION)
+)
+
+/** Scrim fade-in enter transition. */
+private val ScrimEnterTransition = fadeIn(animationSpec = tween(SHEET_ANIM_DURATION))
+
+/** Scrim fade-out exit transition. */
+private val ScrimExitTransition = fadeOut(animationSpec = tween(SHEET_ANIM_DURATION))
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BASE - Internal composables
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Internal drag handle composable
+ * Internal drag handle composable.
+ * When the sheet is not fixed, drag gestures are attached ONLY here
+ * so inner scrollable content never fights with sheet drag.
  */
 @Composable
 private fun DragHandle(
@@ -294,95 +263,52 @@ private fun DragHandle(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * BaseBottomSheet - Foundational Bottom Sheet Component
+ * PixaBottomSheet — Fully Custom Bottom Sheet Component
  *
- * A flexible bottom sheet component with comprehensive customization options.
- * Uses Material 3's ModalBottomSheet as the foundation with full theme integration.
+ * A 100% custom bottom sheet built from scratch using Box + Popup + drag gestures.
+ * No Material 3 ModalBottomSheet dependency. This gives full control over
+ * scroll/drag behavior with no interference from M3 internals.
  *
- * ## Key Features
- * - Size variants (Compact/Standard/Expanded/Full) with different height fractions
- * - Style variants (Primary/Secondary/Surface) with color schemes
- * - Elevated variant for depth
- * - Optional drag handle with accessibility
- * - Scrim overlay with customizable color
- * - Nested scroll support for scrollable content
- * - Theme-aware styling with AppTheme integration
- * - BottomSheetScope for programmatic control
- *
- * ## Size Variants
- * - **Compact (40%)**: Quick actions, simple selections
- * - **Standard (60%)**: Default, most common use case
- * - **Expanded (75%)**: Rich content, multiple sections
- * - **Full (95%)**: Full-screen-like experience
- *
- * ## Usage Examples
- *
- * ### Basic sheet with content:
- * ```kotlin
- * var showSheet by remember { mutableStateOf(false) }
- *
- * if (showSheet) {
- *     PixaBottomSheet(
- *         onDismissRequest = { showSheet = false }
- *     ) {
- *         Text("Sheet Content", modifier = Modifier.padding(16.dp))
- *     }
- * }
+ * ## Architecture
+ * ```
+ * Popup (full-screen overlay, z-ordered above everything)
+ *   └── Box (fillMaxSize)
+ *         ├── Scrim  (AnimatedVisibility — fadeIn / fadeOut)
+ *         └── Sheet  (AnimatedVisibility — slideInFromBottom / slideOutToBottom)
+ *               ├── DragHandle (optional, drag gesture attached here ONLY)
+ *               └── Content   (scrollable internally, NO drag gesture)
  * ```
  *
- * ### Expanded sheet with elevation:
- * ```kotlin
- * PixaBottomSheet(
- *     onDismissRequest = { showSheet = false },
- *     size = BottomSheetSizeVariant.Expanded,
- *     style = BottomSheetStyle.Primary,
- *     elevated = true
- * ) {
- *     Column {
- *         Text("Title", style = AppTheme.typography.titleBold)
- *         Divider()
- *         // Content...
- *     }
- * }
- * ```
- *
- * ### Without drag handle:
- * ```kotlin
- * PixaBottomSheet(
- *     onDismissRequest = { showSheet = false },
- *     showDragHandle = false,
- *     shape = RoundedCornerShape(0.dp) // Square top
- * ) {
- *     // Content
- * }
- * ```
+ * ## Key Design Decisions
+ * - **Drag gesture is ONLY on the drag handle**, never on the content area.
+ *   This means nested scrollable content (LazyColumn, LazyVerticalGrid) scrolls
+ *   freely to the end without ever triggering sheet dismissal.
+ * - `isFixed = true` disables drag handle & all drag gestures entirely.
+ * - Back press is handled by Popup's `onDismissRequest`.
+ * - Entry/exit animations use `MutableTransitionState` so the exit animation
+ *   plays fully before the Popup is removed from the tree.
  *
  * @param onDismissRequest Callback when sheet should be dismissed
- * @param modifier Modifier for the sheet container
- * @param sheetState Sheet state for controlling sheet behavior
+ * @param modifier Modifier for the sheet panel
  * @param size Size variant affecting max height and padding
  * @param style Style variant affecting color scheme
  * @param elevated If true, uses elevated surface colors
- * @param shape Custom shape for the sheet (defaults to rounded top corners)
+ * @param shape Custom shape (defaults to rounded top corners)
  * @param showDragHandle If true, shows drag handle at top
- * @param skipPartiallyExpanded If true, sheet goes from hidden to fully expanded
- * @param dismissOnOutsideClick If true, clicking outside the sheet dismisses it (default: true)
- * @param dismissOnBackClick If true, back button/gesture dismisses the sheet (default: true)
- * @param isFixed If true, prevents dragging for sheets with scrollable content (default: false)
+ * @param dismissOnOutsideClick If true, clicking the scrim dismisses the sheet
+ * @param dismissOnBackClick If true, back press / gesture dismisses the sheet
+ * @param isFixed If true, disables drag handle & all drag gestures
  * @param content The content of the bottom sheet
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PixaBottomSheet(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-    sheetState: SheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     size: BottomSheetSizeVariant = BottomSheetSizeVariant.Standard,
     style: BottomSheetStyle = BottomSheetStyle.Primary,
     elevated: Boolean = false,
     shape: Shape? = null,
     showDragHandle: Boolean = true,
-    skipPartiallyExpanded: Boolean = true,
     dismissOnOutsideClick: Boolean = true,
     dismissOnBackClick: Boolean = true,
     isFixed: Boolean = false,
@@ -394,50 +320,135 @@ fun PixaBottomSheet(
         topStart = sizeConfig.cornerRadius,
         topEnd = sizeConfig.cornerRadius
     )
+    val coroutineScope = rememberCoroutineScope()
 
-    // Nested scroll connection that blocks dragging when isFixed is true
-    val fixedScrollConnection = remember(isFixed) {
-        if (isFixed) FixedBottomSheetNestedScrollConnection() else BottomSheetNestedScrollConnection()
+    // Drag offset — only used when isFixed == false and drag handle is shown
+    val dragOffset = remember { Animatable(0f) }
+
+    // Dismiss threshold in pixels
+    val dismissThresholdPx = with(LocalDensity.current) { 200.dp.toPx() }
+
+    // ── Animation state ──
+    // Starts as false, immediately set to true → triggers enter animation.
+    // On dismiss request → set to false → triggers exit animation.
+    // When exit animation finishes (isIdle && !currentState && !targetState)
+    // → actually remove the Popup by calling onDismissRequest.
+    val animVisibleState = remember { MutableTransitionState(false) }
+
+    // Trigger enter animation on first composition
+    LaunchedEffect(Unit) {
+        animVisibleState.targetState = true
     }
 
-    ModalBottomSheet(
+    // Internal dismiss helper: starts the exit animation
+    val requestDismiss: () -> Unit = remember(onDismissRequest) {
+        { animVisibleState.targetState = false }
+    }
+
+    // Detect when exit animation is fully complete → actually dismiss
+    LaunchedEffect(animVisibleState) {
+        snapshotFlow { animVisibleState.isIdle && !animVisibleState.currentState }
+            .collect { finished ->
+                if (finished) onDismissRequest()
+            }
+    }
+
+    // Use Popup for true overlay z-ordering (above nav bars, other content)
+    Popup(
+        alignment = Alignment.BottomCenter,
         onDismissRequest = {
-            if (dismissOnBackClick) {
-                onDismissRequest()
-            }
+            if (dismissOnBackClick) requestDismiss()
         },
-        modifier = modifier,
-        sheetState = sheetState,
-        containerColor = colors.container,
-        contentColor = colors.content,
-        scrimColor = if (dismissOnOutsideClick) colors.scrim else colors.scrim.copy(alpha = 0.01f),
-        shape = sheetShape,
-        tonalElevation = if (elevated) 8.dp else 0.dp,
-        dragHandle = if (showDragHandle && !isFixed) {
-            {
-                DragHandle(
-                    width = sizeConfig.dragHandleWidth,
-                    height = sizeConfig.dragHandleHeight,
-                    color = colors.dragHandle
-                )
-            }
-        } else null,
-        properties = androidx.compose.material3.ModalBottomSheetProperties(
-            shouldDismissOnBackPress = dismissOnBackClick
+        properties = PopupProperties(
+            focusable = true,
+            dismissOnBackPress = dismissOnBackClick
         )
     ) {
-        // Intercept scrim clicks if dismissOnOutsideClick is false
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(max = 1000.dp.times(sizeConfig.maxHeightFraction))
-                .padding(
-                    horizontal = sizeConfig.horizontalPadding,
-                    vertical = sizeConfig.verticalPadding
+        Box(modifier = Modifier.fillMaxSize()) {
+
+            // ── Scrim (animated fade) ──
+            AnimatedVisibility(
+                visibleState = animVisibleState,
+                enter = ScrimEnterTransition,
+                exit = ScrimExitTransition
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(colors.scrim)
+                        .then(
+                            if (dismissOnOutsideClick) {
+                                Modifier.clickable(
+                                    indication = null,
+                                    interactionSource = remember { MutableInteractionSource() }
+                                ) { requestDismiss() }
+                            } else Modifier
+                        )
                 )
-                .nestedScroll(fixedScrollConnection)
-        ) {
-            content()
+            }
+
+            // ── Sheet panel (animated slide from bottom) ──
+            AnimatedVisibility(
+                visibleState = animVisibleState,
+                enter = SheetEnterTransition,
+                exit = SheetExitTransition,
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                Column(
+                    modifier = modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 1000.dp.times(sizeConfig.maxHeightFraction))
+                        .offset { IntOffset(0, dragOffset.value.roundToInt().coerceAtLeast(0)) }
+                        .clip(sheetShape)
+                        .background(colors.container)
+                        .padding(
+                            horizontal = sizeConfig.horizontalPadding,
+                            vertical = sizeConfig.verticalPadding
+                        )
+                ) {
+                    // ── Drag Handle (drag gesture attached ONLY here) ──
+                    if (showDragHandle && !isFixed) {
+                        DragHandle(
+                            width = sizeConfig.dragHandleWidth,
+                            height = sizeConfig.dragHandleHeight,
+                            color = colors.dragHandle,
+                            modifier = Modifier.pointerInput(Unit) {
+                                detectVerticalDragGestures(
+                                    onDragEnd = {
+                                        coroutineScope.launch {
+                                            if (dragOffset.value > dismissThresholdPx) {
+                                                requestDismiss()
+                                            } else {
+                                                dragOffset.animateTo(
+                                                    targetValue = 0f,
+                                                    animationSpec = spring(
+                                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                                                        stiffness = Spring.StiffnessMedium
+                                                    )
+                                                )
+                                            }
+                                        }
+                                    },
+                                    onDragCancel = {
+                                        coroutineScope.launch { dragOffset.animateTo(0f) }
+                                    },
+                                    onVerticalDrag = { change, dragAmount ->
+                                        change.consume()
+                                        coroutineScope.launch {
+                                            dragOffset.snapTo(
+                                                (dragOffset.value + dragAmount).coerceAtLeast(0f)
+                                            )
+                                        }
+                                    }
+                                )
+                            }
+                        )
+                    }
+
+                    // ── Content (NO drag gesture — scrollable content is free) ──
+                    content()
+                }
+            }
         }
     }
 }
@@ -477,10 +488,10 @@ fun PixaBottomSheet(
  * @param style Style variant
  * @param elevated Elevated surface
  * @param showDragHandle Show drag handle
+ * @param isFixed If true, prevents dragging for sheets with scrollable content
  * @param errorMessage Optional error message below trigger
  * @param onDismiss Additional callback when dismissed
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelectOptionBottomSheet(
     trigger: @Composable (show: () -> Unit) -> Unit,
@@ -490,10 +501,10 @@ fun SelectOptionBottomSheet(
     style: BottomSheetStyle = BottomSheetStyle.Primary,
     elevated: Boolean = false,
     showDragHandle: Boolean = true,
+    isFixed: Boolean = false,
     errorMessage: String? = null,
     onDismiss: () -> Unit = {}
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var isVisible by remember { mutableStateOf(false) }
 
     Column(
@@ -519,11 +530,11 @@ fun SelectOptionBottomSheet(
                 isVisible = false
                 onDismiss()
             },
-            sheetState = sheetState,
             size = size,
             style = style,
             elevated = elevated,
-            showDragHandle = showDragHandle
+            showDragHandle = showDragHandle,
+            isFixed = isFixed
         ) {
             content {
                 isVisible = false
@@ -538,27 +549,6 @@ fun SelectOptionBottomSheet(
  *
  * A bottom sheet that shows collapsed content initially and can expand to show more.
  *
- * ## Usage Example
- * ```kotlin
- * ExpandableBottomSheet(
- *     collapsedContent = { expand ->
- *         Column {
- *             Text("Preview Content")
- *             BaseButton(
- *                 text = "See More",
- *                 onClick = { expand() }
- *             )
- *         }
- *     },
- *     expandedContent = { dismiss ->
- *         Column {
- *             Text("Full Content")
- *             // ... more content
- *         }
- *     }
- * )
- * ```
- *
  * @param collapsedContent Initial collapsed content (receives expand function)
  * @param expandedContent Full expanded content (receives dismiss function)
  * @param modifier Modifier for container
@@ -567,7 +557,6 @@ fun SelectOptionBottomSheet(
  * @param style Style variant
  * @param elevated Elevated surface
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ExpandableBottomSheet(
     collapsedContent: @Composable ColumnScope.(expand: () -> Unit) -> Unit,
@@ -578,7 +567,6 @@ fun ExpandableBottomSheet(
     style: BottomSheetStyle = BottomSheetStyle.Primary,
     elevated: Boolean = false
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = false)
     var isExpanded by remember { mutableStateOf(initiallyExpanded) }
     var isVisible by remember { mutableStateOf(false) }
 
@@ -597,11 +585,9 @@ fun ExpandableBottomSheet(
                 isVisible = false
                 isExpanded = false
             },
-            sheetState = sheetState,
             size = if (isExpanded) size else BottomSheetSizeVariant.Compact,
             style = style,
-            elevated = elevated,
-            skipPartiallyExpanded = false
+            elevated = elevated
         ) {
             expandedContent {
                 isVisible = false
@@ -616,25 +602,6 @@ fun ExpandableBottomSheet(
  *
  * A bottom sheet displaying a list of items for selection.
  *
- * ## Usage Example
- * ```kotlin
- * ListBottomSheet(
- *     title = "Select Country",
- *     items = countries,
- *     onItemSelected = { country ->
- *         // Handle selection
- *     }
- * ) { country, onSelect ->
- *     Text(
- *         text = country.name,
- *         modifier = Modifier
- *             .fillMaxWidth()
- *             .clickable { onSelect(country) }
- *             .padding(16.dp)
- *     )
- * }
- * ```
- *
  * @param title Title text for the sheet
  * @param items List of items to display
  * @param onItemSelected Callback when an item is selected
@@ -645,7 +612,6 @@ fun ExpandableBottomSheet(
  * @param elevated Elevated surface
  * @param onDismiss Callback when sheet is dismissed
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> ListBottomSheet(
     title: String,
@@ -658,7 +624,6 @@ fun <T> ListBottomSheet(
     elevated: Boolean = false,
     onDismiss: () -> Unit = {}
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     var isVisible by remember { mutableStateOf(true) }
 
     if (isVisible) {
@@ -667,7 +632,6 @@ fun <T> ListBottomSheet(
                 isVisible = false
                 onDismiss()
             },
-            sheetState = sheetState,
             size = size,
             style = style,
             elevated = elevated
@@ -679,11 +643,14 @@ fun <T> ListBottomSheet(
                 modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Small)
             )
 
-            androidx.compose.material3.HorizontalDivider(
-                thickness = 1.dp,
-                color = AppTheme.colors.baseBorderSubtle.copy(alpha = 0.33f),
-                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Medium)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(AppTheme.colors.baseBorderSubtle.copy(alpha = 0.33f))
             )
+
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
 
             LazyColumn(
                 verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
@@ -704,18 +671,6 @@ fun <T> ListBottomSheet(
  *
  * A bottom sheet for confirming actions with title, message, and action buttons.
  *
- * ## Usage Example
- * ```kotlin
- * ConfirmationBottomSheet(
- *     title = "Delete Item?",
- *     message = "This action cannot be undone.",
- *     confirmText = "Delete",
- *     cancelText = "Cancel",
- *     onConfirm = { /* Delete item */ },
- *     onDismiss = { /* Cancel */ }
- * )
- * ```
- *
  * @param title Title text
  * @param message Message/description text
  * @param confirmText Text for confirm button
@@ -727,7 +682,6 @@ fun <T> ListBottomSheet(
  * @param size Size variant
  * @param style Style variant
  */
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ConfirmationBottomSheet(
     title: String,
@@ -741,11 +695,8 @@ fun ConfirmationBottomSheet(
     size: BottomSheetSizeVariant = BottomSheetSizeVariant.Compact,
     style: BottomSheetStyle = BottomSheetStyle.Primary
 ) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-
     PixaBottomSheet(
         onDismissRequest = onDismiss,
-        sheetState = sheetState,
         size = size,
         style = style,
         modifier = modifier
@@ -790,4 +741,3 @@ fun ConfirmationBottomSheet(
         }
     }
 }
-
