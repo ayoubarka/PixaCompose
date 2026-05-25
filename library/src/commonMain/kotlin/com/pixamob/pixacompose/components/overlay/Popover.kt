@@ -26,7 +26,6 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.RadiusSize
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -88,7 +87,7 @@ private fun getPopoverSizeConfig(): PopoverSizeConfig {
     val typography = AppTheme.typography
     return PopoverSizeConfig(
         padding = HierarchicalSize.Spacing.Medium,
-        cornerRadius = RadiusSize.Medium,
+        cornerRadius = HierarchicalSize.Radius.Medium,
         elevation = HierarchicalSize.Shadow.Medium,
         offset = HierarchicalSize.Spacing.Small,
         textStyle = typography.bodyRegular

@@ -89,7 +89,7 @@ enum class SkeletonImageShape {
 data class SkeletonConfig(
     val height: Dp,
     val width: Dp? = null,
-    val cornerRadius: Dp = RadiusSize.Medium,
+    val cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     val shimmerEnabled: Boolean = true,
     val shimmerDurationMillis: Int = 1500,
     val shimmerDirection: ShimmerDirection = ShimmerDirection.Horizontal
@@ -232,7 +232,7 @@ fun SkeletonImage(
 ) {
     val imageShape = when (shape) {
         SkeletonImageShape.Circle -> CircleShape
-        SkeletonImageShape.Rectangle -> RoundedCornerShape(RadiusSize.Medium)
+        SkeletonImageShape.Rectangle -> RoundedCornerShape(HierarchicalSize.Radius.Medium)
     }
 
     Skeleton(
@@ -305,7 +305,7 @@ fun SkeletonButton(
 
 /**
  * Card Skeleton - Simulates a card with image and text content
- * Note: The skeleton inherits the parent card's shape (RadiusSize.Large)
+ * Note: The skeleton inherits the parent card's shape (HierarchicalSize.Radius.Large)
  *
  * @param modifier Modifier for the skeleton
  * @param showImage Whether to show image placeholder
@@ -325,7 +325,7 @@ fun SkeletonCard(
     lastLineFraction: Float = 0.6f,
     shimmerEnabled: Boolean = true
 ) {
-    val cardShape = RoundedCornerShape(RadiusSize.Large)
+    val cardShape = RoundedCornerShape(HierarchicalSize.Radius.Large)
 
     Column(
         modifier = modifier
@@ -374,7 +374,7 @@ fun SkeletonCard(
                         .height(16.dp)
                         .background(
                             AppTheme.colors.baseSurfaceSubtle,
-                            RoundedCornerShape(RadiusSize.Small)
+                            RoundedCornerShape(HierarchicalSize.Radius.Small)
                         )
                 )
             }
@@ -444,7 +444,7 @@ fun SkeletonListItem(
                             .height(if (index == 0) 18.dp else 14.dp)
                             .background(
                                 AppTheme.colors.baseSurfaceSubtle,
-                                RoundedCornerShape(RadiusSize.Small)
+                                RoundedCornerShape(HierarchicalSize.Radius.Small)
                             )
                     )
                 }
@@ -498,7 +498,7 @@ fun SkeletonAvatarWithText(
         )
 
         Column(
-            verticalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
         ) {
             repeat(textLines) { index ->
                 Box(
@@ -507,7 +507,7 @@ fun SkeletonAvatarWithText(
                         .height(if (index == 0) 16.dp else 12.dp)
                         .background(
                             AppTheme.colors.baseSurfaceSubtle,
-                            RoundedCornerShape(RadiusSize.Small)
+                            RoundedCornerShape(HierarchicalSize.Radius.Small)
                         )
                 )
             }
@@ -533,7 +533,7 @@ fun SkeletonGrid(
     columns: Int = 2,
     rows: Int = 3,
     itemHeight: Dp = 120.dp,
-    itemShape: Shape = RoundedCornerShape(RadiusSize.Medium),
+    itemShape: Shape = RoundedCornerShape(HierarchicalSize.Radius.Medium),
     horizontalSpacing: Dp = HierarchicalSize.Spacing.Medium,
     verticalSpacing: Dp = HierarchicalSize.Spacing.Medium,
     shimmerEnabled: Boolean = true
@@ -586,7 +586,7 @@ fun SkeletonList(
     itemCount: Int = 5,
     showAvatar: Boolean = true,
     showSeparators: Boolean = false,
-    itemSpacing: Dp = if (showSeparators) 0.dp else Spacing.Tiny,
+    itemSpacing: Dp = if (showSeparators) 0.dp else HierarchicalSize.Spacing.Compact,
     shimmerEnabled: Boolean = true
 ) {
     Column(

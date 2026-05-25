@@ -731,157 +731,6 @@ object HierarchicalSize {
 // ============================================
 // LEGACY ALIASES (Maintained for backward compatibility)
 // ============================================
-//
-// These objects preserve the original API surface to avoid breaking existing code.
-// New code should prefer HierarchicalSize.* directly for clarity.
-//
-// Migration Guide:
-// - BorderSize.Thin → HierarchicalSize.Border.Compact
-// - ComponentSize.Medium → HierarchicalSize.Container.Medium
-// - IconSize.Medium → HierarchicalSize.Icon.Medium
-// - RadiusSize.Medium → HierarchicalSize.Radius.Medium
-// ============================================
-
-object BorderSize {
-    val None = HierarchicalSize.Border.None
-    val Hairline = HierarchicalSize.Border.Nano
-    val Thin = HierarchicalSize.Border.Compact
-    val Tiny = HierarchicalSize.Border.Compact
-    val Default = HierarchicalSize.Border.Small
-    val Medium = HierarchicalSize.Border.Medium
-    val Thick = HierarchicalSize.Border.Large
-    val ExtraThick = HierarchicalSize.Border.Huge
-    val SlightlyThicker = 2.5.dp  // Legacy custom value (not in hierarchy)
-    val Standard = HierarchicalSize.Border.Medium
-    val BorderWidth = HierarchicalSize.Border.Small
-}
-
-object ComponentSize {
-    val Tiny = HierarchicalSize.Chip.Compact
-    val VerySmall = HierarchicalSize.Container.Compact
-    val ExtraSmall = HierarchicalSize.Button.Small
-    val Small = HierarchicalSize.Container.Small
-    val Medium = HierarchicalSize.Container.Medium
-    val Large = HierarchicalSize.Container.Large
-    val ExtraLarge = HierarchicalSize.Container.Huge
-    val Huge = HierarchicalSize.ListItem.Huge
-    val VeryLarge = HierarchicalSize.BottomNav.Huge
-    val Minimal = 20.dp  // Legacy custom value
-    val ButtonSmall = HierarchicalSize.Button.Small
-    val ButtonMedium = HierarchicalSize.Button.Medium
-    val InputSmall = HierarchicalSize.Input.Small
-    val InputMedium = HierarchicalSize.Input.Medium
-    val InputLarge = HierarchicalSize.Input.Large
-    val ChipSmall = HierarchicalSize.Chip.Small
-    val ChipMedium = HierarchicalSize.Chip.Medium
-    val ChipLarge = HierarchicalSize.Chip.Large
-    val AvatarSize = HierarchicalSize.Avatar.Medium
-    val ImageSmall = HierarchicalSize.Image.Small
-    val ImageMedium = HierarchicalSize.Image.Medium
-    val DialogMinWidth = 280.dp  // Legacy specific value
-    val DialogMaxWidth = 560.dp  // Legacy specific value
-    val SnackbarSingleLine = 48.dp
-    val SliderTrackMedium = HierarchicalSize.SliderTrack.Medium
-    val SliderTrackLarge = HierarchicalSize.SliderTrack.Large
-    val Inset = HierarchicalSize.Spacing.Large
-    val Elevation = HierarchicalSize.Shadow.Small
-}
-
-object RadiusSize {
-    val None = HierarchicalSize.Radius.None
-    val Tiny = HierarchicalSize.Radius.Nano
-    val ExtraSmall = HierarchicalSize.Radius.Compact
-    val Small = HierarchicalSize.Radius.Small
-    val Medium = HierarchicalSize.Radius.Medium
-    val Large = HierarchicalSize.Radius.Large
-    val ExtraLarge = HierarchicalSize.Radius.Huge
-    val Huge = HierarchicalSize.Radius.Massive
-    val VeryLarge = HierarchicalSize.Radius.Massive
-    val Full = HierarchicalSize.Radius.Full
-    val CornerRadius = HierarchicalSize.Radius.Medium
-}
-
-object IconSize {
-    val Tiny = HierarchicalSize.Icon.Nano
-    val VerySmall = HierarchicalSize.Icon.Compact
-    val ExtraSmall = 18.dp  // Legacy custom value (between 16 and 20)
-    val Small = HierarchicalSize.Icon.Small
-    val Medium = HierarchicalSize.Icon.Medium
-    val Large = HierarchicalSize.Icon.Large
-    val ExtraLarge = HierarchicalSize.Icon.Huge
-    val Huge = HierarchicalSize.Icon.Huge
-    val VeryLarge = HierarchicalSize.Icon.Massive
-}
-
-object ShadowSize {
-    val None = HierarchicalSize.Shadow.None
-    val Tiny = HierarchicalSize.Shadow.Nano
-    val Small = HierarchicalSize.Shadow.Small
-    val Medium = HierarchicalSize.Shadow.Medium
-    val Large = HierarchicalSize.Shadow.Large
-    val ExtraLarge = HierarchicalSize.Shadow.Huge
-    val VeryLarge = HierarchicalSize.Shadow.Massive
-}
-
-object Spacing {
-    val None = HierarchicalSize.Spacing.None
-    val Micro = HierarchicalSize.Spacing.Nano
-    val Tiny = HierarchicalSize.Spacing.Compact
-    val ExtraSmall = HierarchicalSize.Spacing.Compact
-    val Small = HierarchicalSize.Spacing.Small
-    val Medium = HierarchicalSize.Spacing.Medium
-    val Large = HierarchicalSize.Spacing.Large
-    val ExtraLarge = HierarchicalSize.Spacing.Huge
-    val VeryLarge = HierarchicalSize.Spacing.Massive
-    val Huge = HierarchicalSize.Spacing.Massive
-    val Massive = HierarchicalSize.Spacing.Massive
-}
-
-object TouchTarget {
-    val Minimum = HierarchicalSize.TouchTarget.Small  // 48dp WCAG minimum
-    val Comfortable = HierarchicalSize.TouchTarget.Large
-    val Spacious = HierarchicalSize.TouchTarget.Huge
-}
-
-object DividerSize {
-    val Hairline = HierarchicalSize.Divider.Nano
-    val Thin = HierarchicalSize.Divider.Compact
-    val Default = HierarchicalSize.Divider.Small
-    val Medium = HierarchicalSize.Divider.Medium
-    val Thick = HierarchicalSize.Divider.Large
-    val ExtraThick = HierarchicalSize.Divider.Huge
-}
-
-object StrokeSize {
-    val Thin = HierarchicalSize.Stroke.Compact
-    val Default = HierarchicalSize.Stroke.Small
-    val Medium = HierarchicalSize.Stroke.Medium
-    val Thick = HierarchicalSize.Stroke.Large
-    val Standard = HierarchicalSize.Stroke.Medium
-    val ExtraThick = HierarchicalSize.Stroke.Huge
-}
-
-// Standalone quick-access objects for commonly used properties
-object BorderWidth {
-    val Thin = HierarchicalSize.Border.Compact
-    val Small = HierarchicalSize.Border.Small
-    val Medium = HierarchicalSize.Border.Medium
-    val Thick = HierarchicalSize.Border.Large
-}
-
-object CornerRadius {
-    val Small = HierarchicalSize.Radius.Small
-    val Medium = HierarchicalSize.Radius.Medium
-    val Large = HierarchicalSize.Radius.Large
-}
-
-object Elevation {
-    val Small = HierarchicalSize.Shadow.Small
-    val Medium = HierarchicalSize.Shadow.Medium
-    val Large = HierarchicalSize.Shadow.Large
-}
-
-// ============================================
 // HELPER FUNCTIONS & DATA CLASSES
 // ============================================
 
@@ -1011,7 +860,7 @@ fun getSizesFor(variant: SizeVariant) = ComponentSizes(
  *
  * ```kotlin
  * // Old code (still works)
- * Icon(modifier = Modifier.size(IconSize.Medium))
+ * Icon(modifier = Modifier.size(HierarchicalSize.Icon.Medium))
  *
  * // New code (preferred)
  * Icon(modifier = Modifier.size(HierarchicalSize.Icon.Medium))
@@ -1223,7 +1072,7 @@ fun getSizesFor(variant: SizeVariant) = ComponentSizes(
  * ListItem.Medium (56dp)
  *   ├─ Padding.Medium (12dp × 2 = 24dp vertical used)
  *   ├─ Icon.Medium (24dp) ✓
- *   └─ Spacing.Small (8dp gap) ✓
+ *   └─ HierarchicalSize.Spacing.Small (8dp gap) ✓
  * ```
  *
  * ## ACCESSIBILITY NOTES

@@ -45,11 +45,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
-import com.pixamob.pixacompose.theme.ComponentSize
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.ShadowSize
-import com.pixamob.pixacompose.theme.Spacing
 import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlin.math.roundToInt
 
@@ -152,22 +148,22 @@ private fun getSliderSizeConfig(size: SliderSize): SliderSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
         SliderSize.Small -> SliderSizeConfig(
-            trackHeight = ComponentSize.SliderTrackMedium,
-            thumbSize = IconSize.VerySmall,
-            thumbElevation = ShadowSize.Medium,
+            trackHeight = HierarchicalSize.SliderTrack.Medium,
+            thumbSize = HierarchicalSize.Icon.Compact,
+            thumbElevation = HierarchicalSize.Shadow.Medium,
             labelStyle = typography.labelSmall,
             valueStyle = typography.bodyBold
         )
         SliderSize.Medium -> SliderSizeConfig(
-            trackHeight = ComponentSize.SliderTrackLarge,
-            thumbSize = IconSize.Small,
-            thumbElevation = ShadowSize.Large,
+            trackHeight = HierarchicalSize.SliderTrack.Large,
+            thumbSize = HierarchicalSize.Icon.Small,
+            thumbElevation = HierarchicalSize.Shadow.Large,
             labelStyle = typography.labelMedium,
             valueStyle = typography.bodyRegular
         )
         SliderSize.Large -> SliderSizeConfig(
-            trackHeight = ComponentSize.SliderTrackLarge + Spacing.Micro,
-            thumbSize = IconSize.Medium,
+            trackHeight = HierarchicalSize.SliderTrack.Large + HierarchicalSize.Spacing.Nano,
+            thumbSize = HierarchicalSize.Icon.Medium,
             thumbElevation = HierarchicalSize.Shadow.Huge,
             labelStyle = typography.labelLarge,
             valueStyle = typography.bodyLight

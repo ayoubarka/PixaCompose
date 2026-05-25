@@ -215,7 +215,7 @@ fun PixaChart(
     isLoading: Boolean = false,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium
 ) {
     if (isLoading) {
         Skeleton(
@@ -247,7 +247,7 @@ fun PixaChart(
                 }
 
                 if (subtitle != null) {
-                    Spacer(modifier = Modifier.height(Spacing.Micro))
+                    Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
                     Text(
                         text = subtitle,
                         style = AppTheme.typography.captionRegular,
@@ -330,7 +330,7 @@ fun PixaLineChart(
     isLoading: Boolean = false,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
@@ -417,7 +417,7 @@ fun PixaColumnChart(
     isLoading: Boolean = false,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
@@ -511,7 +511,7 @@ fun PixaCandlestickChart(
     isLoading: Boolean = false,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
 
@@ -641,7 +641,7 @@ fun ComparisonChart(
         Skeleton(
             modifier = modifier.fillMaxWidth(),
             height = getChartHeightDp(chartHeight) + 80.dp,
-            shape = RoundedCornerShape(RadiusSize.Medium),
+            shape = RoundedCornerShape(HierarchicalSize.Radius.Medium),
             shimmerEnabled = true
         )
         return
@@ -677,7 +677,7 @@ fun ComparisonChart(
             }
 
             if (subtitle != null) {
-                Spacer(modifier = Modifier.height(Spacing.Micro))
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
                 Text(
                     text = subtitle,
                     style = AppTheme.typography.captionRegular,
@@ -767,7 +767,7 @@ fun MultiLineChart(
         Skeleton(
             modifier = modifier.fillMaxWidth(),
             height = getChartHeightDp(chartHeight) + 80.dp,
-            shape = RoundedCornerShape(RadiusSize.Medium),
+            shape = RoundedCornerShape(HierarchicalSize.Radius.Medium),
             shimmerEnabled = true
         )
         return
@@ -803,7 +803,7 @@ fun MultiLineChart(
             }
 
             if (subtitle != null) {
-                Spacer(modifier = Modifier.height(Spacing.Micro))
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
                 Text(
                     text = subtitle,
                     style = AppTheme.typography.captionRegular,

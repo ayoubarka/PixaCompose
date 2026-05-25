@@ -46,13 +46,11 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
-import com.pixamob.pixacompose.theme.ComponentSize
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.elevationShadow
 import com.pixamob.pixacompose.utils.AnimationUtils
@@ -150,13 +148,13 @@ data class SnackbarConfig(
     val padding: Dp = HierarchicalSize.Spacing.Medium,
     val actionSpacing: Dp = HierarchicalSize.Spacing.Small,
     val maxMessageLines: Int = 2,
-    val minWidth: Dp = ComponentSize.DialogMinWidth, // 280.dp
+    val minWidth: Dp = 280.dp, // 280.dp
     val maxWidth: Dp = HierarchicalSize.Container.DialogMaxWidth, // 560.dp
-    val minHeight: Dp = ComponentSize.SnackbarSingleLine, // 48.dp
+    val minHeight: Dp = 48.dp, // 48.dp
     val elevation: ComponentElevation = ComponentElevation.Highest, // 8dp for prominence
-    val cornerRadius: Dp = RadiusSize.Small,
+    val cornerRadius: Dp = HierarchicalSize.Radius.Small,
     val swipeToDismissThreshold: Float = 0.3f,
-    val iconSize: Dp = IconSize.Small // 20.dp
+    val iconSize: Dp = HierarchicalSize.Icon.Small // 20.dp
 )
 
 /**
@@ -914,8 +912,8 @@ internal fun Snackbar(
                 data.actionLabel?.let { actionLabel ->
                     Box(
                         modifier = Modifier
-                            .heightIn(min = ComponentSize.Medium) // 44dp touch target
-                            .clip(RoundedCornerShape(RadiusSize.Small))
+                            .heightIn(min = HierarchicalSize.Container.Medium) // 44dp touch target
+                            .clip(RoundedCornerShape(HierarchicalSize.Radius.Small))
                             .clickable(
                                 onClick = onActionPerformed,
                                 indication = ripple(bounded = true),
@@ -942,8 +940,8 @@ internal fun Snackbar(
                 if (data.withDismissAction) {
                     Box(
                         modifier = Modifier
-                            .size(ComponentSize.Medium) // 44dp touch target
-                            .clip(RoundedCornerShape(RadiusSize.Small))
+                            .size(HierarchicalSize.Container.Medium) // 44dp touch target
+                            .clip(RoundedCornerShape(HierarchicalSize.Radius.Small))
                             .clickable(
                                 onClick = onDismiss,
                                 indication = ripple(bounded = true),

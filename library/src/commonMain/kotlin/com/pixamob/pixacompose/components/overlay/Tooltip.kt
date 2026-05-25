@@ -29,7 +29,6 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.RadiusSize
 import kotlinx.coroutines.delay
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -82,7 +81,7 @@ private fun getTooltipSizeConfig(): TooltipSizeConfig {
     val typography = AppTheme.typography
     return TooltipSizeConfig(
         padding = HierarchicalSize.Spacing.Small,
-        cornerRadius = RadiusSize.Small,
+        cornerRadius = HierarchicalSize.Radius.Small,
         elevation = HierarchicalSize.Shadow.Small,
         textStyle = typography.captionRegular,
         offset = HierarchicalSize.Spacing.Compact

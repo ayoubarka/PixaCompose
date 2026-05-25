@@ -49,12 +49,8 @@ import com.pixamob.pixacompose.components.actions.PixaChip
 import com.pixamob.pixacompose.components.actions.ChipType
 import com.pixamob.pixacompose.components.actions.ChipVariant
 import com.pixamob.pixacompose.theme.AppTheme
-import com.pixamob.pixacompose.theme.BorderSize
 import com.pixamob.pixacompose.theme.ColorPalette
-import com.pixamob.pixacompose.theme.ComponentSize
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.RadiusSize
-import com.pixamob.pixacompose.theme.Spacing
 import com.pixamob.pixacompose.utils.AnimationUtils.standardSpring
 import com.pixamob.pixacompose.utils.DateTimeUtils
 import com.pixamob.pixacompose.utils.DateTimeUtils.toEpochMillis
@@ -261,7 +257,7 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
         DatePickerSize.Small -> DatePickerSizeConfig(
             height = HierarchicalSize.Container.Massive * 3f,
             padding = HierarchicalSize.Spacing.Medium,
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             titleTextStyle = typography.bodyLight,
             itemTextStyle = typography.bodyLight,
             dayTextStyle = typography.labelSmall,
@@ -271,7 +267,7 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
         DatePickerSize.Medium -> DatePickerSizeConfig(
             height = HierarchicalSize.Container.Massive * 3.5f,
             padding = HierarchicalSize.Spacing.Large,
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             titleTextStyle = typography.bodyBold,
             itemTextStyle = typography.bodyBold,
             dayTextStyle = typography.labelMedium,
@@ -281,7 +277,7 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
         DatePickerSize.Large -> DatePickerSizeConfig(
             height = HierarchicalSize.Container.Massive * 4f,
             padding = HierarchicalSize.Spacing.Huge,
-            cornerRadius = RadiusSize.Large,
+            cornerRadius = HierarchicalSize.Radius.Large,
             titleTextStyle = typography.titleBold,
             itemTextStyle = typography.titleRegular,
             dayTextStyle = typography.labelLarge,
@@ -621,7 +617,7 @@ private fun CalendarGrid(
         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
         if (calendarConfig.showWeekdayHeaders) {
             WeekdayHeaderRow(sizeConfig, colors, strings)
-            Spacer(modifier = Modifier.height(Spacing.Tiny))
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
         }
         DaysGrid(sizeConfig, colors, strings, currentMonth, enabled, minDate, maxDate, calendarConfig,
             selectedDates, rangeStart, rangeEnd, onDateClick, dayContent)
@@ -694,7 +690,7 @@ private fun DaysGrid(
                             isRangeEdge = isRangeEdge
                         )
 
-                        Box(modifier = Modifier.weight(1f).aspectRatio(1f).padding(Spacing.Micro)
+                        Box(modifier = Modifier.weight(1f).aspectRatio(1f).padding(HierarchicalSize.Spacing.Nano)
                             .scale(if (calendarConfig.dayItemStyle.animateSelection) scale else 1f)
                             .clip(calendarConfig.dayItemStyle.shape)
                             .background(when {
@@ -767,7 +763,7 @@ private fun HeatMapCalendarContent(
             weekHeader = {
                Text(text = strings.weekdayShortNames.getOrElse(it.ordinal) { "" }.take(1),
                     style = sizeConfig.dayTextStyle, color = colors.unselectedText.copy(alpha = 0.6f),
-                    modifier = Modifier.padding(end = Spacing.Small))
+                    modifier = Modifier.padding(end = HierarchicalSize.Spacing.Small))
             },
             dayContent = { day, _ ->
                 val date = LocalDate(day.date.year, day.date.month, day.date.day)
@@ -777,7 +773,7 @@ private fun HeatMapCalendarContent(
                 val alpha = (0.2f + (0.8f * count.coerceIn(0f, 1f))).coerceIn(0f, 1f)
                 val isToday = date == DateTimeUtils.now() && calendarConfig.highlightToday
                 
-                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(Spacing.Micro)
+                Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(HierarchicalSize.Spacing.Nano)
                     .aspectRatio(1f)
                     .clip(calendarConfig.dayItemStyle.shape)
                     .background(when {
@@ -785,7 +781,7 @@ private fun HeatMapCalendarContent(
                         isToday -> colors.todayHighlight.copy(alpha = 0.1f)
                         else -> colors.surface
                     })
-                    .border(width = if (isToday) calendarConfig.dayItemStyle.todayBorderWidth else BorderSize.Tiny,
+                    .border(width = if (isToday) calendarConfig.dayItemStyle.todayBorderWidth else HierarchicalSize.Border.Compact,
                             color = if (isToday) colors.todayHighlight else colors.divider,
                             shape = calendarConfig.dayItemStyle.shape)
                     .clickable(enabled = enabled) { onDateSelected?.invoke(date.toEpochDays() * 86400000L) },
@@ -831,7 +827,7 @@ private fun MonthDayPickerContent(
                     animationSpec = standardSpring(), label = "dayScale")
                 Box(modifier = Modifier.aspectRatio(1f).scale(scale).clip(CircleShape)
                     .background(if (isSelected) colors.selectedBackground else colors.surface)
-                    .border(width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
+                    .border(width = if (isSelected) HierarchicalSize.Border.Medium else HierarchicalSize.Border.Compact,
                         color = if (isSelected) colors.selectedBackground else colors.divider, shape = CircleShape)
                     .clickable(enabled = enabled) {
                         selectedDays = if (isMultiSelect) { if (isSelected) selectedDays - day else selectedDays + day } else { setOf(day) }
@@ -909,11 +905,11 @@ private fun MonthPickerContent(
             modifier = Modifier.heightIn(max = sizeConfig.height)) {
             items(strings.monthNames.indices.toList()) { index ->
                 val isSelected = index in selectedMonths
-                Box(modifier = Modifier.clip(RoundedCornerShape(RadiusSize.Medium))
+                Box(modifier = Modifier.clip(RoundedCornerShape(HierarchicalSize.Radius.Medium))
                     .background(if (isSelected) colors.selectedBackground else colors.surface)
-                    .border(width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
+                    .border(width = if (isSelected) HierarchicalSize.Border.Medium else HierarchicalSize.Border.Compact,
                         color = if (isSelected) colors.selectedBackground else colors.divider,
-                        shape = RoundedCornerShape(RadiusSize.Medium))
+                        shape = RoundedCornerShape(HierarchicalSize.Radius.Medium))
                     .clickable(enabled = enabled) {
                         selectedMonths = if (isMultiSelect) { if (isSelected) selectedMonths - index else selectedMonths + index } else { setOf(index) }
                         onMonthsSelected?.invoke(selectedMonths)
@@ -946,7 +942,7 @@ private fun DayCountPickerContent(
         horizontalAlignment = Alignment.CenterHorizontally) {
         Text(text = if (dayCount == 1) strings.repeatLabelSingular else strings.repeatLabelPlural(dayCount),
             style = sizeConfig.itemTextStyle.copy(fontWeight = FontWeight.Bold), color = colors.selectedText,
-            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(RadiusSize.Medium))
+            modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(HierarchicalSize.Radius.Medium))
                 .background(colors.selectedBackground).padding(HierarchicalSize.Spacing.Large),
             textAlign = TextAlign.Center)
         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
@@ -970,7 +966,7 @@ private fun DayCountPickerContent(
 @Composable
 private fun StepperButton(text: String, enabled: Boolean, colors: DatePickerColors,
     contentDescription: String, onClick: () -> Unit) {
-    Box(modifier = Modifier.size(ComponentSize.ExtraLarge).clip(CircleShape)
+    Box(modifier = Modifier.size(HierarchicalSize.Container.Huge).clip(CircleShape)
         .background(if (enabled) colors.surface else colors.surface.copy(alpha = 0.3f))
         .clickable(enabled = enabled, onClick = onClick)
         .semantics { this.contentDescription = contentDescription },
@@ -1009,7 +1005,7 @@ private fun RangeSelectorItem(
         Text(text = value, style = sizeConfig.itemTextStyle,
             color = if (isSelected) colors.selectedText else colors.unselectedText,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            modifier = Modifier.clip(RoundedCornerShape(RadiusSize.Small))
+            modifier = Modifier.clip(RoundedCornerShape(HierarchicalSize.Radius.Small))
                 .background(if (isSelected) colors.selectedBackground else Color.Transparent)
                 .padding(HierarchicalSize.Spacing.Small).clickable(onClick = onClick))
     }
@@ -1111,8 +1107,8 @@ private fun ScheduleFrequencyTabs(
     colors: DatePickerColors,
     sizeConfig: DatePickerSizeConfig,
     enabled: Boolean,
-    tabShape: Shape = RoundedCornerShape(RadiusSize.Small),
-    tabContainerShape: Shape = RoundedCornerShape(RadiusSize.Medium)
+    tabShape: Shape = RoundedCornerShape(HierarchicalSize.Radius.Small),
+    tabContainerShape: Shape = RoundedCornerShape(HierarchicalSize.Radius.Medium)
 ) {
     val frequencies = listOf(
         ScheduleFrequency.Daily to strings.dailyLabel,
@@ -1125,8 +1121,8 @@ private fun ScheduleFrequencyTabs(
             .fillMaxWidth()
             .clip(tabContainerShape)
             .background(colors.surface)
-            .padding(Spacing.Tiny),
-        horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+            .padding(HierarchicalSize.Spacing.Compact),
+        horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
     ) {
         frequencies.forEach { (frequency, label) ->
             val isSelected = selectedFrequency == frequency
@@ -1166,7 +1162,7 @@ private fun DailyScheduleContent(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(RadiusSize.Medium))
+            .clip(RoundedCornerShape(HierarchicalSize.Radius.Medium))
             .background(colors.surface)
             .padding(HierarchicalSize.Spacing.Large),
         contentAlignment = Alignment.Center
@@ -1214,7 +1210,7 @@ private fun WeeklyScheduleContent(
             WeekdayChipStyle.Horizontal -> {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+                    horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
                 ) {
                     strings.weekdayShortNames.forEachIndexed { index, dayName ->
                         val isSelected = index in selectedWeekdays
@@ -1317,7 +1313,7 @@ private fun WeekdayChipItem(
             .clip(shape)
             .background(if (isSelected) colors.selectedBackground else colors.surface)
             .border(
-                width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
+                width = if (isSelected) HierarchicalSize.Border.Medium else HierarchicalSize.Border.Compact,
                 color = if (isSelected) colors.selectedBackground else colors.divider,
                 shape = shape
             )
@@ -1358,8 +1354,8 @@ private fun MonthlyScheduleContent(
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(7),
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny),
-            verticalArrangement = Arrangement.spacedBy(Spacing.Tiny),
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact),
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact),
             modifier = Modifier.heightIn(max = sizeConfig.height)
         ) {
             items((1..31).toList()) { day ->
@@ -1377,7 +1373,7 @@ private fun MonthlyScheduleContent(
                         .clip(itemShape)
                         .background(if (isSelected) colors.selectedBackground else colors.surface)
                         .border(
-                            width = if (isSelected) BorderSize.Standard else BorderSize.Tiny,
+                            width = if (isSelected) HierarchicalSize.Border.Medium else HierarchicalSize.Border.Compact,
                             color = if (isSelected) colors.selectedBackground else colors.divider,
                             shape = itemShape
                         )

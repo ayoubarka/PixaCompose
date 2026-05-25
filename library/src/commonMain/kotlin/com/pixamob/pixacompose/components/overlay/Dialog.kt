@@ -35,8 +35,6 @@ import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
 import com.pixamob.pixacompose.theme.SizeVariant
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -97,30 +95,30 @@ private fun getDialogSizeConfig(size: DialogSize): DialogSizeConfig {
             minWidth = 240.dp,
             maxWidth = 300.dp,
             padding = HierarchicalSize.Spacing.Medium,
-            iconSize = IconSize.Medium,
+            iconSize = HierarchicalSize.Icon.Medium,
             titleStyle = typography.bodyBold,
             messageStyle = typography.captionBold,
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             elevation = HierarchicalSize.Shadow.Large
         )
         DialogSize.Medium -> DialogSizeConfig(
             minWidth = 280.dp,
             maxWidth = 360.dp,
             padding = HierarchicalSize.Spacing.Large,
-            iconSize = IconSize.Large,
+            iconSize = HierarchicalSize.Icon.Large,
             titleStyle = typography.subtitleBold,
             messageStyle = typography.bodyRegular,
-            cornerRadius = RadiusSize.Large,
+            cornerRadius = HierarchicalSize.Radius.Large,
             elevation = HierarchicalSize.Shadow.Huge
         )
         DialogSize.Large -> DialogSizeConfig(
             minWidth = 320.dp,
             maxWidth = 420.dp,
             padding = HierarchicalSize.Spacing.Huge,
-            iconSize = IconSize.Huge,
+            iconSize = HierarchicalSize.Icon.Huge,
             titleStyle = typography.titleBold,
             messageStyle = typography.bodyBold,
-            cornerRadius = RadiusSize.ExtraLarge,
+            cornerRadius = HierarchicalSize.Radius.Huge,
             elevation = HierarchicalSize.Shadow.Massive
         )
     }

@@ -105,37 +105,37 @@ private fun getSearchBarSizeConfig(size: SearchBarSize): SearchBarSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
         SearchBarSize.Small -> SearchBarSizeConfig(
-            height = ComponentSize.InputSmall,
+            height = HierarchicalSize.Input.Small,
             horizontalPadding = HierarchicalSize.Spacing.Medium,
             verticalPadding = HierarchicalSize.Spacing.Compact,
             textStyle = typography.bodyLight,
             suggestionTextStyle = typography.bodyLight,
-            iconSize = IconSize.Small,
-            borderWidth = BorderWidth.Thin,
-            cornerRadius = CornerRadius.Small,
-            elevation = Elevation.Small
+            iconSize = HierarchicalSize.Icon.Small,
+            borderWidth = HierarchicalSize.Border.Compact,
+            cornerRadius = HierarchicalSize.Radius.Small,
+            elevation = HierarchicalSize.Shadow.Small
         )
         SearchBarSize.Medium -> SearchBarSizeConfig(
-            height = ComponentSize.InputMedium,
+            height = HierarchicalSize.Input.Medium,
             horizontalPadding = HierarchicalSize.Spacing.Large,
             verticalPadding = HierarchicalSize.Spacing.Small,
             textStyle = typography.bodyRegular,
             suggestionTextStyle = typography.bodyRegular,
-            iconSize = IconSize.Medium,
-            borderWidth = BorderWidth.Medium,
-            cornerRadius = CornerRadius.Medium,
-            elevation = Elevation.Medium
+            iconSize = HierarchicalSize.Icon.Medium,
+            borderWidth = HierarchicalSize.Border.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
+            elevation = HierarchicalSize.Shadow.Medium
         )
         SearchBarSize.Large -> SearchBarSizeConfig(
-            height = ComponentSize.InputLarge,
+            height = HierarchicalSize.Input.Large,
             horizontalPadding = HierarchicalSize.Spacing.Huge,
             verticalPadding = HierarchicalSize.Spacing.Medium,
             textStyle = typography.bodyBold,
             suggestionTextStyle = typography.bodyBold,
-            iconSize = IconSize.Large,
-            borderWidth = BorderWidth.Thick,
-            cornerRadius = CornerRadius.Large,
-            elevation = Elevation.Large
+            iconSize = HierarchicalSize.Icon.Large,
+            borderWidth = HierarchicalSize.Border.Large,
+            cornerRadius = HierarchicalSize.Radius.Large,
+            elevation = HierarchicalSize.Shadow.Large
         )
     }
 }
@@ -491,7 +491,7 @@ private fun SuggestionDropdown(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(DividerSize.Thin)
+                        .height(HierarchicalSize.Divider.Compact)
                         .background(colors.divider)
                 )
             }

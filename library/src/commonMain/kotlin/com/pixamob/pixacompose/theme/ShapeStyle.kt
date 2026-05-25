@@ -22,123 +22,123 @@ data class CustomShapes(
 
 // Standard rounded corner shapes
 val roundedCornerShapes = Shapes(
-    extraSmall = RoundedCornerShape(RadiusSize.ExtraSmall),
-    small = RoundedCornerShape(RadiusSize.Small),
-    medium = RoundedCornerShape(RadiusSize.Medium),
-    large = RoundedCornerShape(RadiusSize.Large),
-    extraLarge = RoundedCornerShape(RadiusSize.ExtraLarge)
+    extraSmall = RoundedCornerShape(HierarchicalSize.Radius.Compact),
+    small = RoundedCornerShape(HierarchicalSize.Radius.Small),
+    medium = RoundedCornerShape(HierarchicalSize.Radius.Medium),
+    large = RoundedCornerShape(HierarchicalSize.Radius.Large),
+    extraLarge = RoundedCornerShape(HierarchicalSize.Radius.Huge)
 )
 
 // Cut corner shapes
 val cutCornerShapes = Shapes(
-    extraSmall = CutCornerShape(RadiusSize.ExtraSmall),
-    small = CutCornerShape(RadiusSize.Small),
-    medium = CutCornerShape(RadiusSize.Medium),
-    large = CutCornerShape(RadiusSize.Large),
-    extraLarge = CutCornerShape(RadiusSize.ExtraLarge)
+    extraSmall = CutCornerShape(HierarchicalSize.Radius.Compact),
+    small = CutCornerShape(HierarchicalSize.Radius.Small),
+    medium = CutCornerShape(HierarchicalSize.Radius.Medium),
+    large = CutCornerShape(HierarchicalSize.Radius.Large),
+    extraLarge = CutCornerShape(HierarchicalSize.Radius.Huge)
 )
 
 // Concave shapes - curves dip inward
 val concaveTopShapes = CustomShapes(
-    extraSmall = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.08f, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.10f, cornerRadius = RadiusSize.Small.value),
-    medium = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.15f, cornerRadius = RadiusSize.Medium.value),
-    large = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.20f, cornerRadius = RadiusSize.Large.value),
-    extraLarge = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.25f, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.08f, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.10f, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.15f, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.20f, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = ConcaveShape(position = ShapePosition.Top, curveDepth = 0.25f, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 val concaveBottomShapes = CustomShapes(
-    extraSmall = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.08f, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.10f, cornerRadius = RadiusSize.Small.value),
-    medium = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.15f, cornerRadius = RadiusSize.Medium.value),
-    large = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.20f, cornerRadius = RadiusSize.Large.value),
-    extraLarge = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.25f, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.08f, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.10f, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.15f, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.20f, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = ConcaveShape(position = ShapePosition.Bottom, curveDepth = 0.25f, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 // Convex shapes - curves bulge outward
 val convexTopShapes = CustomShapes(
-    extraSmall = ConvexShape(position = ShapePosition.Top, curveDepth = 0.10f, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = ConvexShape(position = ShapePosition.Top, curveDepth = 0.15f, cornerRadius = RadiusSize.Small.value),
-    medium = ConvexShape(position = ShapePosition.Top, curveDepth = 0.20f, cornerRadius = RadiusSize.Medium.value),
-    large = ConvexShape(position = ShapePosition.Top, curveDepth = 0.25f, cornerRadius = RadiusSize.Large.value),
-    extraLarge = ConvexShape(position = ShapePosition.Top, curveDepth = 0.30f, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = ConvexShape(position = ShapePosition.Top, curveDepth = 0.10f, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = ConvexShape(position = ShapePosition.Top, curveDepth = 0.15f, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = ConvexShape(position = ShapePosition.Top, curveDepth = 0.20f, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = ConvexShape(position = ShapePosition.Top, curveDepth = 0.25f, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = ConvexShape(position = ShapePosition.Top, curveDepth = 0.30f, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 val convexBottomShapes = CustomShapes(
-    extraSmall = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.10f, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.15f, cornerRadius = RadiusSize.Small.value),
-    medium = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.20f, cornerRadius = RadiusSize.Medium.value),
-    large = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.25f, cornerRadius = RadiusSize.Large.value),
-    extraLarge = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.30f, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.10f, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.15f, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.20f, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.25f, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = ConvexShape(position = ShapePosition.Bottom, curveDepth = 0.30f, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 // Wave shapes - smooth wave patterns
 val waveShapes = CustomShapes(
-    extraSmall = WaveShape(position = ShapePosition.Bottom, wavelength = 2, amplitude = 0.05f, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = WaveShape(position = ShapePosition.Bottom, wavelength = 2, amplitude = 0.08f, cornerRadius = RadiusSize.Small.value),
-    medium = WaveShape(position = ShapePosition.Bottom, wavelength = 2, amplitude = 0.10f, cornerRadius = RadiusSize.Medium.value),
-    large = WaveShape(position = ShapePosition.Bottom, wavelength = 3, amplitude = 0.12f, cornerRadius = RadiusSize.Large.value),
-    extraLarge = WaveShape(position = ShapePosition.Bottom, wavelength = 3, amplitude = 0.15f, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = WaveShape(position = ShapePosition.Bottom, wavelength = 2, amplitude = 0.05f, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = WaveShape(position = ShapePosition.Bottom, wavelength = 2, amplitude = 0.08f, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = WaveShape(position = ShapePosition.Bottom, wavelength = 2, amplitude = 0.10f, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = WaveShape(position = ShapePosition.Bottom, wavelength = 3, amplitude = 0.12f, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = WaveShape(position = ShapePosition.Bottom, wavelength = 3, amplitude = 0.15f, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 // Arch shapes - dome/arch curves
 val archTopShapes = CustomShapes(
-    extraSmall = ArchShape(position = ShapePosition.Top, curvature = 0.3f, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = ArchShape(position = ShapePosition.Top, curvature = 0.35f, cornerRadius = RadiusSize.Small.value),
-    medium = ArchShape(position = ShapePosition.Top, curvature = 0.4f, cornerRadius = RadiusSize.Medium.value),
-    large = ArchShape(position = ShapePosition.Top, curvature = 0.45f, cornerRadius = RadiusSize.Large.value),
-    extraLarge = ArchShape(position = ShapePosition.Top, curvature = 0.5f, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = ArchShape(position = ShapePosition.Top, curvature = 0.3f, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = ArchShape(position = ShapePosition.Top, curvature = 0.35f, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = ArchShape(position = ShapePosition.Top, curvature = 0.4f, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = ArchShape(position = ShapePosition.Top, curvature = 0.45f, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = ArchShape(position = ShapePosition.Top, curvature = 0.5f, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 val archBottomShapes = CustomShapes(
-    extraSmall = ArchShape(position = ShapePosition.Bottom, curvature = 0.3f, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = ArchShape(position = ShapePosition.Bottom, curvature = 0.35f, cornerRadius = RadiusSize.Small.value),
-    medium = ArchShape(position = ShapePosition.Bottom, curvature = 0.4f, cornerRadius = RadiusSize.Medium.value),
-    large = ArchShape(position = ShapePosition.Bottom, curvature = 0.45f, cornerRadius = RadiusSize.Large.value),
-    extraLarge = ArchShape(position = ShapePosition.Bottom, curvature = 0.5f, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = ArchShape(position = ShapePosition.Bottom, curvature = 0.3f, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = ArchShape(position = ShapePosition.Bottom, curvature = 0.35f, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = ArchShape(position = ShapePosition.Bottom, curvature = 0.4f, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = ArchShape(position = ShapePosition.Bottom, curvature = 0.45f, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = ArchShape(position = ShapePosition.Bottom, curvature = 0.5f, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 // Tab shapes - like browser tabs
 val tabShapes = CustomShapes(
-    extraSmall = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.9f, tabHeight = 30f, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.85f, tabHeight = 35f, cornerRadius = RadiusSize.Small.value),
-    medium = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.8f, tabHeight = 40f, cornerRadius = RadiusSize.Medium.value),
-    large = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.75f, tabHeight = 45f, cornerRadius = RadiusSize.Large.value),
-    extraLarge = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.7f, tabHeight = 50f, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.9f, tabHeight = 30f, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.85f, tabHeight = 35f, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.8f, tabHeight = 40f, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.75f, tabHeight = 45f, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = TabShape(position = ShapePosition.Top, tabWidthFraction = 0.7f, tabHeight = 50f, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 // Notch shapes - with cutouts
 val notchRoundedShapes = CustomShapes(
-    extraSmall = NotchShape(position = ShapePosition.Top, notchSize = 0.15f, style = NotchStyle.Rounded, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = NotchShape(position = ShapePosition.Top, notchSize = 0.18f, style = NotchStyle.Rounded, cornerRadius = RadiusSize.Small.value),
-    medium = NotchShape(position = ShapePosition.Top, notchSize = 0.20f, style = NotchStyle.Rounded, cornerRadius = RadiusSize.Medium.value),
-    large = NotchShape(position = ShapePosition.Top, notchSize = 0.22f, style = NotchStyle.Rounded, cornerRadius = RadiusSize.Large.value),
-    extraLarge = NotchShape(position = ShapePosition.Top, notchSize = 0.25f, style = NotchStyle.Rounded, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = NotchShape(position = ShapePosition.Top, notchSize = 0.15f, style = NotchStyle.Rounded, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = NotchShape(position = ShapePosition.Top, notchSize = 0.18f, style = NotchStyle.Rounded, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = NotchShape(position = ShapePosition.Top, notchSize = 0.20f, style = NotchStyle.Rounded, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = NotchShape(position = ShapePosition.Top, notchSize = 0.22f, style = NotchStyle.Rounded, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = NotchShape(position = ShapePosition.Top, notchSize = 0.25f, style = NotchStyle.Rounded, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 val notchSharpShapes = CustomShapes(
-    extraSmall = NotchShape(position = ShapePosition.Top, notchSize = 0.15f, style = NotchStyle.Sharp, cornerRadius = RadiusSize.ExtraSmall.value),
-    small = NotchShape(position = ShapePosition.Top, notchSize = 0.18f, style = NotchStyle.Sharp, cornerRadius = RadiusSize.Small.value),
-    medium = NotchShape(position = ShapePosition.Top, notchSize = 0.20f, style = NotchStyle.Sharp, cornerRadius = RadiusSize.Medium.value),
-    large = NotchShape(position = ShapePosition.Top, notchSize = 0.22f, style = NotchStyle.Sharp, cornerRadius = RadiusSize.Large.value),
-    extraLarge = NotchShape(position = ShapePosition.Top, notchSize = 0.25f, style = NotchStyle.Sharp, cornerRadius = RadiusSize.ExtraLarge.value)
+    extraSmall = NotchShape(position = ShapePosition.Top, notchSize = 0.15f, style = NotchStyle.Sharp, cornerRadius = HierarchicalSize.Radius.Compact.value),
+    small = NotchShape(position = ShapePosition.Top, notchSize = 0.18f, style = NotchStyle.Sharp, cornerRadius = HierarchicalSize.Radius.Small.value),
+    medium = NotchShape(position = ShapePosition.Top, notchSize = 0.20f, style = NotchStyle.Sharp, cornerRadius = HierarchicalSize.Radius.Medium.value),
+    large = NotchShape(position = ShapePosition.Top, notchSize = 0.22f, style = NotchStyle.Sharp, cornerRadius = HierarchicalSize.Radius.Large.value),
+    extraLarge = NotchShape(position = ShapePosition.Top, notchSize = 0.25f, style = NotchStyle.Sharp, cornerRadius = HierarchicalSize.Radius.Huge.value)
 )
 
 // Bubble shapes - chat bubble with tail
 val bubbleLeftShapes = CustomShapes(
-    extraSmall = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 8f, cornerRadius = RadiusSize.ExtraSmall.value, tailOffset = 0.8f),
-    small = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 10f, cornerRadius = RadiusSize.Small.value, tailOffset = 0.8f),
-    medium = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 12f, cornerRadius = RadiusSize.Medium.value, tailOffset = 0.8f),
-    large = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 14f, cornerRadius = RadiusSize.Large.value, tailOffset = 0.8f),
-    extraLarge = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 16f, cornerRadius = RadiusSize.ExtraLarge.value, tailOffset = 0.8f)
+    extraSmall = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 8f, cornerRadius = HierarchicalSize.Radius.Compact.value, tailOffset = 0.8f),
+    small = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 10f, cornerRadius = HierarchicalSize.Radius.Small.value, tailOffset = 0.8f),
+    medium = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 12f, cornerRadius = HierarchicalSize.Radius.Medium.value, tailOffset = 0.8f),
+    large = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 14f, cornerRadius = HierarchicalSize.Radius.Large.value, tailOffset = 0.8f),
+    extraLarge = BubbleShape(tailPosition = ShapePosition.Left, tailSize = 16f, cornerRadius = HierarchicalSize.Radius.Huge.value, tailOffset = 0.8f)
 )
 
 val bubbleRightShapes = CustomShapes(
-    extraSmall = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 8f, cornerRadius = RadiusSize.ExtraSmall.value, tailOffset = 0.8f),
-    small = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 10f, cornerRadius = RadiusSize.Small.value, tailOffset = 0.8f),
-    medium = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 12f, cornerRadius = RadiusSize.Medium.value, tailOffset = 0.8f),
-    large = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 14f, cornerRadius = RadiusSize.Large.value, tailOffset = 0.8f),
-    extraLarge = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 16f, cornerRadius = RadiusSize.ExtraLarge.value, tailOffset = 0.8f)
+    extraSmall = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 8f, cornerRadius = HierarchicalSize.Radius.Compact.value, tailOffset = 0.8f),
+    small = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 10f, cornerRadius = HierarchicalSize.Radius.Small.value, tailOffset = 0.8f),
+    medium = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 12f, cornerRadius = HierarchicalSize.Radius.Medium.value, tailOffset = 0.8f),
+    large = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 14f, cornerRadius = HierarchicalSize.Radius.Large.value, tailOffset = 0.8f),
+    extraLarge = BubbleShape(tailPosition = ShapePosition.Right, tailSize = 16f, cornerRadius = HierarchicalSize.Radius.Huge.value, tailOffset = 0.8f)
 )
 
 /**

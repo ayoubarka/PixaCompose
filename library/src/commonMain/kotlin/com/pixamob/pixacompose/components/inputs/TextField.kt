@@ -77,39 +77,39 @@ private fun TextFieldSize.config(): TextFieldConfig {
     val typography = AppTheme.typography
     return when (this) {
         TextFieldSize.Small -> TextFieldConfig(
-            height = ComponentSize.InputSmall,
+            height = HierarchicalSize.Input.Small,
             horizontalPadding = HierarchicalSize.Spacing.Medium,
             verticalPadding = HierarchicalSize.Spacing.Compact,
             textStyle = typography.bodyLight,
             labelTextStyle = typography.labelSmall,
             helperTextStyle = typography.captionLight,
-            iconSize = IconSize.Small,
-            borderWidth = BorderWidth.Thin,
-            cornerRadius = CornerRadius.Small
+            iconSize = HierarchicalSize.Icon.Small,
+            borderWidth = HierarchicalSize.Border.Compact,
+            cornerRadius = HierarchicalSize.Radius.Small
         )
 
         TextFieldSize.Medium -> TextFieldConfig(
-            height = ComponentSize.InputMedium,
+            height = HierarchicalSize.Input.Medium,
             horizontalPadding = HierarchicalSize.Spacing.Large,
             verticalPadding = HierarchicalSize.Spacing.Small,
             textStyle = typography.bodyRegular,
             labelTextStyle = typography.labelMedium,
             helperTextStyle = typography.captionRegular,
-            iconSize = IconSize.Medium,
-            borderWidth = BorderWidth.Medium,
-            cornerRadius = CornerRadius.Medium
+            iconSize = HierarchicalSize.Icon.Medium,
+            borderWidth = HierarchicalSize.Border.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium
         )
 
         TextFieldSize.Large -> TextFieldConfig(
-            height = ComponentSize.InputLarge,
+            height = HierarchicalSize.Input.Large,
             horizontalPadding = HierarchicalSize.Spacing.Huge,
             verticalPadding = HierarchicalSize.Spacing.Medium,
             textStyle = typography.bodyBold,
             labelTextStyle = typography.labelLarge,
             helperTextStyle = typography.captionBold,
-            iconSize = IconSize.Large,
-            borderWidth = BorderWidth.Thick,
-            cornerRadius = CornerRadius.Large
+            iconSize = HierarchicalSize.Icon.Large,
+            borderWidth = HierarchicalSize.Border.Large,
+            cornerRadius = HierarchicalSize.Radius.Large
         )
     }
 }

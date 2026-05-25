@@ -40,8 +40,6 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -133,9 +131,9 @@ private fun getAccordionSizeConfig(): AccordionSizeConfig {
     return AccordionSizeConfig(
         headerPadding = HierarchicalSize.Spacing.Medium,
         contentPadding = HierarchicalSize.Spacing.Medium,
-        iconSize = IconSize.Small,
+        iconSize = HierarchicalSize.Icon.Small,
         titleStyle = typography.bodyBold,
-        cornerRadius = RadiusSize.Medium,
+        cornerRadius = HierarchicalSize.Radius.Medium,
         borderWidth = 1.dp,
         spacing = HierarchicalSize.Spacing.Small
     )

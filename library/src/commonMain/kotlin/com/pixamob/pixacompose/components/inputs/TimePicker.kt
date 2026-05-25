@@ -45,7 +45,6 @@ import com.pixamob.pixacompose.components.actions.ChipVariant
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.RadiusSize
 import dev.darkokoa.datetimewheelpicker.WheelTimePicker
 import dev.darkokoa.datetimewheelpicker.core.WheelPickerDefaults
 import dev.darkokoa.datetimewheelpicker.core.format.timeFormatter
@@ -153,7 +152,7 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
         TimePickerSize.Small -> TimePickerSizeConfig(
             height = 280.dp,
             padding = HierarchicalSize.Spacing.Medium,
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             titleTextStyle = typography.bodyLight,
             itemTextStyle = typography.bodyLight,
             selectorShape = RoundedCornerShape(12.dp),
@@ -163,7 +162,7 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
         TimePickerSize.Medium -> TimePickerSizeConfig(
             height = 320.dp,
             padding = HierarchicalSize.Spacing.Large,
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             titleTextStyle = typography.bodyBold,
             itemTextStyle = typography.bodyBold,
             selectorShape = RoundedCornerShape(16.dp),
@@ -173,7 +172,7 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
         TimePickerSize.Large -> TimePickerSizeConfig(
             height = 360.dp,
             padding = HierarchicalSize.Spacing.Huge,
-            cornerRadius = RadiusSize.Large,
+            cornerRadius = HierarchicalSize.Radius.Large,
             titleTextStyle = typography.titleBold,
             itemTextStyle = typography.titleRegular,
             selectorShape = RoundedCornerShape(20.dp),
@@ -675,7 +674,7 @@ private fun RangeSelectorItem(
             color = if (isSelected) colors.selectedText else colors.unselectedText,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             modifier = Modifier
-                .clip(RoundedCornerShape(RadiusSize.Small))
+                .clip(RoundedCornerShape(HierarchicalSize.Radius.Small))
                 .background(if (isSelected) colors.selectedBackground else Color.Transparent)
                 .padding(HierarchicalSize.Spacing.Small)
                 .clickable(onClick = onClick)

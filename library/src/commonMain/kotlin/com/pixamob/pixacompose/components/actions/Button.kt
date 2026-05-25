@@ -484,7 +484,7 @@ fun PixaButton(
     enabled: Boolean = true,
     loading: Boolean = false,
     loadingIcon: Painter? = null,
-    isLoading: Boolean = false,
+    showSkeleton: Boolean = false,
     size: SizeVariant = SizeVariant.Medium,
     shape: ButtonShape = ButtonShape.Default,
     leadingIcon: Painter? = null,
@@ -498,8 +498,7 @@ fun PixaButton(
 ) {
     val sizeConfig = getButtonSizeConfig(size)
 
-    // Show skeleton when isLoading = true
-    if (isLoading) {
+    if (showSkeleton) {
         val cornerRadius = when (shape) {
             ButtonShape.Default -> sizeConfig.cornerRadius
             ButtonShape.Pill -> sizeConfig.height / 2

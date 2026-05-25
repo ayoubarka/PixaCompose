@@ -384,7 +384,7 @@ fun PixaAlert(
                         // Actions (multi-action support)
                         if (actions != null) {
                             Row(
-                                modifier = Modifier.padding(top = Spacing.Tiny),
+                                modifier = Modifier.padding(top = HierarchicalSize.Spacing.Compact),
                                 horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
                             ) {
                                 actions()
@@ -396,7 +396,7 @@ fun PixaAlert(
                                 style = config.actionStyle(),
                                 color = colors.action,
                                 modifier = Modifier
-                                    .padding(top = Spacing.Tiny)
+                                    .padding(top = HierarchicalSize.Spacing.Compact)
                                     .clickable(
                                         onClick = { onAction?.invoke() },
                                         indication = ripple(bounded = false),

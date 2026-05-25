@@ -42,8 +42,6 @@ import androidx.compose.ui.window.PopupProperties
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -154,27 +152,27 @@ private fun getDropdownSizeConfig(size: DropdownSize): DropdownSizeConfig {
         DropdownSize.Small -> DropdownSizeConfig(
             height = 36.dp,
             padding = HierarchicalSize.Spacing.Small,
-            iconSize = IconSize.Small,
+            iconSize = HierarchicalSize.Icon.Small,
             textStyle = typography.bodyRegular,
-            cornerRadius = RadiusSize.Small,
+            cornerRadius = HierarchicalSize.Radius.Small,
             borderWidth = 1.dp,
             menuMaxHeight = 200.dp
         )
         DropdownSize.Medium -> DropdownSizeConfig(
             height = 44.dp,
             padding = HierarchicalSize.Spacing.Medium,
-            iconSize = IconSize.Small,
+            iconSize = HierarchicalSize.Icon.Small,
             textStyle = typography.bodyRegular,
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             borderWidth = 1.dp,
             menuMaxHeight = 250.dp
         )
         DropdownSize.Large -> DropdownSizeConfig(
             height = 52.dp,
             padding = HierarchicalSize.Spacing.Medium,
-            iconSize = IconSize.Medium,
+            iconSize = HierarchicalSize.Icon.Medium,
             textStyle = typography.bodyBold,
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             borderWidth = 1.dp,
             menuMaxHeight = 300.dp
         )

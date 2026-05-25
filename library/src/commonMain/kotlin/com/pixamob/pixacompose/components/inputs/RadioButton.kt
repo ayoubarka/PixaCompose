@@ -96,23 +96,23 @@ private fun getRadioButtonSizeConfig(size: RadioButtonSize): RadioButtonSizeConf
     val typography = AppTheme.typography
     return when (size) {
         RadioButtonSize.Small -> RadioButtonSizeConfig(
-            outerCircleSize = IconSize.VerySmall,
+            outerCircleSize = HierarchicalSize.Icon.Compact,
             innerCircleSize = HierarchicalSize.Spacing.Compact,
-            borderWidth = BorderSize.Tiny,
-            labelSpacing = Spacing.Micro,
+            borderWidth = HierarchicalSize.Border.Compact,
+            labelSpacing = HierarchicalSize.Spacing.Nano,
             labelStyle = { typography.bodyBold }
         )
         RadioButtonSize.Medium -> RadioButtonSizeConfig(
-            outerCircleSize = IconSize.Small,
-            innerCircleSize = IconSize.Tiny / 1.2f,
-            borderWidth = BorderSize.Standard,
+            outerCircleSize = HierarchicalSize.Icon.Small,
+            innerCircleSize = HierarchicalSize.Icon.Nano / 1.2f,
+            borderWidth = HierarchicalSize.Border.Medium,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyRegular }
         )
         RadioButtonSize.Large -> RadioButtonSizeConfig(
-            outerCircleSize = IconSize.Medium,
+            outerCircleSize = HierarchicalSize.Icon.Medium,
             innerCircleSize = HierarchicalSize.Spacing.Small,
-            borderWidth = BorderSize.Thick,
+            borderWidth = HierarchicalSize.Border.Large,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyLight }
         )

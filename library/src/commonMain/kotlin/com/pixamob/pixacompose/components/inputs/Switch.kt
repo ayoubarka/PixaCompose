@@ -94,32 +94,32 @@ private fun getSwitchSizeConfig(size: SwitchSize): SwitchSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
         SwitchSize.Small -> SwitchSizeConfig(
-            width = ComponentSize.VerySmall,
-            height = ComponentSize.Minimal - HierarchicalSize.Spacing.Small,
-            thumbSize = IconSize.Tiny,
-            thumbPadding = Spacing.Micro,
-            thumbElevation = ShadowSize.Medium,
-            borderWidth = BorderSize.Tiny,
+            width = HierarchicalSize.Container.Compact,
+            height = 20.dp - HierarchicalSize.Spacing.Small,
+            thumbSize = HierarchicalSize.Icon.Nano,
+            thumbPadding = HierarchicalSize.Spacing.Nano,
+            thumbElevation = HierarchicalSize.Shadow.Medium,
+            borderWidth = HierarchicalSize.Border.Compact,
             labelStyle = typography.bodyLight,
             labelSpacing = HierarchicalSize.Spacing.Small
         )
         SwitchSize.Medium -> SwitchSizeConfig(
-            width = ComponentSize.Medium,
-            height = IconSize.Medium,
-            thumbSize = IconSize.Small,
-            thumbPadding = Spacing.Micro,
-            thumbElevation = ShadowSize.Large,
-            borderWidth = BorderSize.SlightlyThicker,
+            width = HierarchicalSize.Container.Medium,
+            height = HierarchicalSize.Icon.Medium,
+            thumbSize = HierarchicalSize.Icon.Small,
+            thumbPadding = HierarchicalSize.Spacing.Nano,
+            thumbElevation = HierarchicalSize.Shadow.Large,
+            borderWidth = 2.5.dp,
             labelStyle = typography.bodyRegular,
             labelSpacing = HierarchicalSize.Spacing.Medium
         )
         SwitchSize.Large -> SwitchSizeConfig(
-            width = ComponentSize.ExtraLarge,
+            width = HierarchicalSize.Container.Huge,
             height = HierarchicalSize.Button.Small - HierarchicalSize.Spacing.Small,
-            thumbSize = IconSize.Large,
-            thumbPadding = Spacing.Micro,
+            thumbSize = HierarchicalSize.Icon.Large,
+            thumbPadding = HierarchicalSize.Spacing.Nano,
             thumbElevation = HierarchicalSize.Shadow.Huge,
-            borderWidth = BorderSize.Standard,
+            borderWidth = HierarchicalSize.Border.Medium,
             labelStyle = typography.bodyBold,
             labelSpacing = HierarchicalSize.Spacing.Large
         )

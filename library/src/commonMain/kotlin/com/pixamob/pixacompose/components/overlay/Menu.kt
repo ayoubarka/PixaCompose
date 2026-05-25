@@ -36,8 +36,6 @@ import androidx.compose.ui.window.PopupProperties
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -128,10 +126,10 @@ private fun getMenuSizeConfig(): MenuSizeConfig {
         maxHeight = 320.dp,
         itemHeight = 44.dp,
         itemPadding = HierarchicalSize.Spacing.Medium,
-        iconSize = IconSize.Small,
+        iconSize = HierarchicalSize.Icon.Small,
         textStyle = typography.bodyRegular,
         headerStyle = typography.captionBold,
-        cornerRadius = RadiusSize.Medium,
+        cornerRadius = HierarchicalSize.Radius.Medium,
         elevation = HierarchicalSize.Shadow.Medium,
         spacing = HierarchicalSize.Spacing.Small
     )

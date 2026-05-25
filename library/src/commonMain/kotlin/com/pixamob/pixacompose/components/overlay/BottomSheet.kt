@@ -61,7 +61,6 @@ import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.RadiusSize
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -123,7 +122,7 @@ private fun BottomSheetSizeVariant.toSizeConfig(): BottomSheetSizeConfig = when 
         maxHeightFraction = 0.4f,
         horizontalPadding = HierarchicalSize.Spacing.Medium,
         verticalPadding = HierarchicalSize.Spacing.Medium,
-        cornerRadius = RadiusSize.Large,
+        cornerRadius = HierarchicalSize.Radius.Large,
         dragHandleHeight = 4.dp,
         dragHandleWidth = 32.dp
     )
@@ -131,7 +130,7 @@ private fun BottomSheetSizeVariant.toSizeConfig(): BottomSheetSizeConfig = when 
         maxHeightFraction = 0.6f,
         horizontalPadding = HierarchicalSize.Spacing.Large,
         verticalPadding = HierarchicalSize.Spacing.Large,
-        cornerRadius = RadiusSize.ExtraLarge,
+        cornerRadius = HierarchicalSize.Radius.Huge,
         dragHandleHeight = 4.dp,
         dragHandleWidth = 40.dp
     )
@@ -139,7 +138,7 @@ private fun BottomSheetSizeVariant.toSizeConfig(): BottomSheetSizeConfig = when 
         maxHeightFraction = 0.75f,
         horizontalPadding = HierarchicalSize.Spacing.Huge,
         verticalPadding = HierarchicalSize.Spacing.Huge,
-        cornerRadius = RadiusSize.ExtraLarge,
+        cornerRadius = HierarchicalSize.Radius.Huge,
         dragHandleHeight = 4.dp,
         dragHandleWidth = 48.dp
     )
@@ -147,7 +146,7 @@ private fun BottomSheetSizeVariant.toSizeConfig(): BottomSheetSizeConfig = when 
         maxHeightFraction = 0.95f,
         horizontalPadding = HierarchicalSize.Spacing.Huge,
         verticalPadding = HierarchicalSize.Spacing.Huge,
-        cornerRadius = RadiusSize.ExtraLarge,
+        cornerRadius = HierarchicalSize.Radius.Huge,
         dragHandleHeight = 4.dp,
         dragHandleWidth = 48.dp
     )

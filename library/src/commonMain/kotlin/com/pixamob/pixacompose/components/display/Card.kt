@@ -135,7 +135,7 @@ data class CardBorderConfig(
     /** Border color (null = use theme default based on variant) */
     val color: Color? = null,
     /** Border width */
-    val width: Dp = BorderSize.Standard,
+    val width: Dp = HierarchicalSize.Border.Medium,
     /** Border style - solid or dashed pattern */
     val style: CardBorderStyle = CardBorderStyle.Solid
 )
@@ -292,8 +292,8 @@ private fun getBaseCardElevationDp(elevation: BaseCardElevation): Dp {
 
 private fun getBaseCardPaddingDp(padding: BaseCardPadding): Dp {
     return when (padding) {
-        BaseCardPadding.None -> Spacing.None
-        BaseCardPadding.Compact -> Spacing.Tiny
+        BaseCardPadding.None -> HierarchicalSize.Spacing.None
+        BaseCardPadding.Compact -> HierarchicalSize.Spacing.Compact
         BaseCardPadding.Small -> HierarchicalSize.Spacing.Small
         BaseCardPadding.Medium -> HierarchicalSize.Spacing.Medium
         BaseCardPadding.Large -> HierarchicalSize.Spacing.Large
@@ -313,7 +313,7 @@ private fun InternalCard(
     variant: BaseCardVariant = BaseCardVariant.Elevated,
     elevation: BaseCardElevation = BaseCardElevation.Medium,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     colors: BaseCardStateColors,
     borderConfig: CardBorderConfig? = null,
     shadowConfig: CardShadowConfig? = null,
@@ -367,7 +367,7 @@ private fun InternalCard(
         }
         borderColor != Color.Transparent -> {
             Modifier.border(
-                width = borderConfig?.width ?: BorderSize.Standard,
+                width = borderConfig?.width ?: HierarchicalSize.Border.Medium,
                 color = borderColor,
                 shape = shape
             )
@@ -436,7 +436,7 @@ private fun InternalCard(
  * @param enabled Whether card is enabled (affects colors and clickability)
  * @param elevation Shadow depth (only applies to Elevated variant)
  * @param padding Internal padding
- * @param cornerRadius Corner radius override (default: RadiusSize.Medium)
+ * @param cornerRadius Corner radius override (default: HierarchicalSize.Radius.Medium)
  * @param backgroundColor Optional background color override
  * @param borderConfig Optional border configuration (color, width, style)
  * @param shadowConfig Optional shadow configuration (elevation, color, offsets)
@@ -502,7 +502,7 @@ fun PixaCard(
     isLoading: Boolean = false,
     elevation: BaseCardElevation = BaseCardElevation.Medium,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     backgroundColor: Color? = null,
     borderConfig: CardBorderConfig? = null,
     shadowConfig: CardShadowConfig? = null,
@@ -565,7 +565,7 @@ fun ElevatedCard(
     isLoading: Boolean = false,
     elevation: BaseCardElevation = BaseCardElevation.Medium,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     content: @Composable ConstraintLayoutScope.() -> Unit
 ) = PixaCard(
     modifier = modifier,
@@ -590,7 +590,7 @@ fun OutlinedCard(
     enabled: Boolean = true,
     isLoading: Boolean = false,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     content: @Composable ConstraintLayoutScope.() -> Unit
 ) = PixaCard(
     modifier = modifier,
@@ -614,7 +614,7 @@ fun FilledCard(
     enabled: Boolean = true,
     isLoading: Boolean = false,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     backgroundColor: Color? = null,
     content: @Composable ConstraintLayoutScope.() -> Unit
 ) = PixaCard(
@@ -639,7 +639,7 @@ fun GhostCard(
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     content: @Composable ConstraintLayoutScope.() -> Unit
 ) = PixaCard(
     modifier = modifier,
@@ -819,8 +819,8 @@ fun ProductCard(
                 },
             contentScale = ContentScale.Crop,
             shape = RoundedCornerShape(
-                topStart = RadiusSize.Medium,
-                topEnd = RadiusSize.Medium
+                topStart = HierarchicalSize.Radius.Medium,
+                topEnd = HierarchicalSize.Radius.Medium
             )
         )
 
@@ -857,7 +857,7 @@ fun ProductCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(Spacing.Tiny))
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
 
             // Price and Rating Row
             Row(
@@ -943,8 +943,8 @@ fun ArticleCard(
                 },
             contentScale = ContentScale.Crop,
             shape = RoundedCornerShape(
-                topStart = RadiusSize.Medium,
-                topEnd = RadiusSize.Medium
+                topStart = HierarchicalSize.Radius.Medium,
+                topEnd = HierarchicalSize.Radius.Medium
             )
         )
 
@@ -979,7 +979,7 @@ fun ArticleCard(
                 overflow = TextOverflow.Ellipsis
             )
 
-            Spacer(modifier = Modifier.height(Spacing.Tiny))
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
 
             // Description
             Text(
@@ -996,7 +996,7 @@ fun ArticleCard(
                 // Metadata Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+                    horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
                 ) {
                     author?.let {
                         Text(
@@ -1209,7 +1209,7 @@ fun NotificationCard(
         PixaIcon(
             source = icon,
             contentDescription = null,
-            size = IconSize.Medium,
+            size = HierarchicalSize.Icon.Medium,
             tint = AppTheme.colors.brandContentDefault,
             modifier = Modifier.constrainAs(iconRef) {
                 top.linkTo(parent.top)
@@ -1268,7 +1268,7 @@ fun NotificationCard(
             style = AppTheme.typography.captionRegular,
             color = AppTheme.colors.baseContentCaption,
             modifier = Modifier.constrainAs(timeText) {
-                top.linkTo(contentCol.bottom, margin = Spacing.Tiny)
+                top.linkTo(contentCol.bottom, margin = HierarchicalSize.Spacing.Compact)
                 start.linkTo(contentCol.start)
             }
         )
@@ -1313,7 +1313,7 @@ fun StatsCard(
         PixaIcon(
             source = icon,
             contentDescription = null,
-            size = IconSize.Medium,
+            size = HierarchicalSize.Icon.Medium,
             tint = AppTheme.colors.brandContentDefault,
             modifier = Modifier.constrainAs(iconRef) {
                 top.linkTo(parent.top)
@@ -1396,7 +1396,7 @@ fun ActionCard(
         PixaIcon(
             source = icon,
             contentDescription = null,
-            size = IconSize.Large,
+            size = HierarchicalSize.Icon.Large,
             tint = AppTheme.colors.brandContentDefault,
             modifier = Modifier.constrainAs(iconRef) {
                 top.linkTo(parent.top)
@@ -1423,7 +1423,7 @@ fun ActionCard(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(Spacing.Tiny))
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
 
             Text(
                 text = description,
@@ -1553,9 +1553,9 @@ fun MediaCard(
                     .padding(HierarchicalSize.Spacing.Small)
                     .background(
                         Color.Black.copy(alpha = 0.8f),
-                        shape = RoundedCornerShape(RadiusSize.Small)
+                        shape = RoundedCornerShape(HierarchicalSize.Radius.Small)
                     )
-                    .padding(horizontal = Spacing.Tiny, vertical = 4.dp)
+                    .padding(horizontal = HierarchicalSize.Spacing.Compact, vertical = 4.dp)
                     .constrainAs(durationBadge) {
                         bottom.linkTo(image.bottom, margin = HierarchicalSize.Spacing.Small)
                         end.linkTo(image.end, margin = HierarchicalSize.Spacing.Small)
@@ -1795,7 +1795,7 @@ fun PricingCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .constrainAs(priceText) {
-                    top.linkTo(planText.bottom, margin = Spacing.Tiny)
+                    top.linkTo(planText.bottom, margin = HierarchicalSize.Spacing.Compact)
                     start.linkTo(parent.start)
                     end.linkTo(parent.end)
                 }
@@ -1815,7 +1815,7 @@ fun PricingCard(
             features.forEach { feature ->
                 Row(
                     verticalAlignment = Alignment.Top,
-                    horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+                    horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
                 ) {
                     Text(
                         text = "✓",
@@ -1862,7 +1862,7 @@ fun PricingCard(
  * @param trailingIcon Optional trailing icon
  * @param variant Card visual style (default: Elevated)
  * @param padding Card padding (default: Medium)
- * @param cornerRadius Corner radius (default: RadiusSize.Medium)
+ * @param cornerRadius Corner radius (default: HierarchicalSize.Radius.Medium)
  * @param isLoading Loading state
  *
  * @sample
@@ -1885,7 +1885,7 @@ fun InfoCard(
     trailingIcon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     isLoading: Boolean = false
 ) {
     PixaCard(
@@ -1909,14 +1909,14 @@ fun InfoCard(
                     icon != null -> PixaIcon(
                         source = IconSource.Vector(icon),
                         contentDescription = title,
-                        size = IconSize.Large,
+                        size = HierarchicalSize.Icon.Large,
                         tint = AppTheme.colors.brandContentDefault
                     )
 
                     iconUrl != null -> PixaIcon(
                         source = IconSource.Url(iconUrl),
                         contentDescription = title,
-                        size = IconSize.Large
+                        size = HierarchicalSize.Icon.Large
                     )
                 }
             }
@@ -1944,7 +1944,7 @@ fun InfoCard(
             )
 
             if (subtitle != null) {
-                Spacer(modifier = Modifier.height(Spacing.Micro))
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
                 Text(
                     text = subtitle,
                     style = AppTheme.typography.bodyBold,
@@ -1953,7 +1953,7 @@ fun InfoCard(
             }
 
             if (description != null) {
-                Spacer(modifier = Modifier.height(Spacing.Tiny))
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
                 Text(
                     text = description,
                     style = AppTheme.typography.bodyRegular,
@@ -1973,7 +1973,7 @@ fun InfoCard(
                 PixaIcon(
                     source = IconSource.Vector(trailingIcon),
                     contentDescription = "More",
-                    size = IconSize.Medium,
+                    size = HierarchicalSize.Icon.Medium,
                     tint = AppTheme.colors.baseContentCaption
                 )
             }
@@ -1997,7 +1997,7 @@ fun InfoCard(
  * @param enabled Whether the card is enabled
  * @param variant Card visual style (default: Filled)
  * @param padding Card padding (default: Medium)
- * @param cornerRadius Corner radius (default: RadiusSize.Medium)
+ * @param cornerRadius Corner radius (default: HierarchicalSize.Radius.Medium)
  * @param isLoading Loading state
  *
  * @sample
@@ -2024,7 +2024,7 @@ fun ActionCard(
     enabled: Boolean = true,
     variant: BaseCardVariant = BaseCardVariant.Filled,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     isLoading: Boolean = false
 ) {
     PixaCard(
@@ -2050,14 +2050,14 @@ fun ActionCard(
                     icon != null -> PixaIcon(
                         source = IconSource.Vector(icon),
                         contentDescription = title,
-                        size = IconSize.Large,
+                        size = HierarchicalSize.Icon.Large,
                         tint = if (enabled) AppTheme.colors.brandContentDefault else AppTheme.colors.baseContentDisabled
                     )
 
                     iconUrl != null -> PixaIcon(
                         source = IconSource.Url(iconUrl),
                         contentDescription = title,
-                        size = IconSize.Large
+                        size = HierarchicalSize.Icon.Large
                     )
                 }
             }
@@ -2085,7 +2085,7 @@ fun ActionCard(
             )
 
             if (subtitle != null) {
-                Spacer(modifier = Modifier.height(Spacing.Micro))
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
                 Text(
                     text = subtitle,
                     style = AppTheme.typography.bodyBold,
@@ -2094,7 +2094,7 @@ fun ActionCard(
             }
 
             if (description != null) {
-                Spacer(modifier = Modifier.height(Spacing.Tiny))
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
                 Text(
                     text = description,
                     style = AppTheme.typography.bodyRegular,
@@ -2114,7 +2114,7 @@ fun ActionCard(
                 PixaIcon(
                     source = IconSource.Vector(trailingIcon),
                     contentDescription = "Action",
-                    size = IconSize.Medium,
+                    size = HierarchicalSize.Icon.Medium,
                     tint = if (enabled) AppTheme.colors.baseContentCaption else AppTheme.colors.baseContentDisabled
                 )
             }
@@ -2146,7 +2146,7 @@ fun ActionCard(
  * @param enabled Whether the card is enabled
  * @param variant Card visual style (auto-styled based on selection if null)
  * @param padding Card padding (default: Medium)
- * @param cornerRadius Corner radius (default: RadiusSize.Medium)
+ * @param cornerRadius Corner radius (default: HierarchicalSize.Radius.Medium)
  * @param isLoading Loading state
  *
  * @sample
@@ -2187,13 +2187,13 @@ fun SelectCard(
     description: String? = null,
     icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
     iconUrl: String? = null,
-    iconSize: Dp = IconSize.ExtraLarge,
+    iconSize: Dp = HierarchicalSize.Icon.Huge,
     iconTint: Color? = null,
     isSelected: Boolean = false,
     enabled: Boolean = true,
     variant: BaseCardVariant? = null,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     isLoading: Boolean = false
 ) {
     // Auto-style based on selection state if variant not provided
@@ -2203,7 +2203,7 @@ fun SelectCard(
     // Custom border color for selected state
     val borderModifier = if (isSelected && variant == null) {
         Modifier.border(
-            width = BorderSize.Thick,
+            width = HierarchicalSize.Border.Large,
             color = AppTheme.colors.brandBorderFocus,
             shape = RoundedCornerShape(cornerRadius)
         )
@@ -2281,7 +2281,7 @@ fun SelectCard(
                 }
 
                 if (description != null) {
-                    Spacer(modifier = Modifier.height(Spacing.Micro))
+                    Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
                     Text(
                         text = description,
                         style = AppTheme.typography.bodyRegular,
@@ -2335,7 +2335,7 @@ fun SelectCard(
  * @param onClick Optional click handler
  * @param enabled Whether the card is enabled
  * @param variant Card visual style (default: Elevated)
- * @param cornerRadius Corner radius (default: RadiusSize.Medium)
+ * @param cornerRadius Corner radius (default: HierarchicalSize.Radius.Medium)
  * @param isLoading Loading state
  *
  * @sample
@@ -2360,7 +2360,7 @@ fun MediaCard(
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     isLoading: Boolean = false
 ) {
     PixaCard(
@@ -2411,7 +2411,7 @@ fun MediaCard(
                         style = AppTheme.typography.captionBold,
                         color = AppTheme.colors.brandContentDefault
                     )
-                    Spacer(modifier = Modifier.height(Spacing.Micro))
+                    Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
                 }
 
                 if (title != null) {
@@ -2425,7 +2425,7 @@ fun MediaCard(
                 }
 
                 if (description != null) {
-                    Spacer(modifier = Modifier.height(Spacing.Tiny))
+                    Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
                     Text(
                         text = description,
                         style = AppTheme.typography.bodyRegular,
@@ -2453,7 +2453,7 @@ fun MediaCard(
  * @param onClick Optional click handler
  * @param variant Card visual style (default: Filled)
  * @param padding Card padding (default: Medium)
- * @param cornerRadius Corner radius (default: RadiusSize.Medium)
+ * @param cornerRadius Corner radius (default: HierarchicalSize.Radius.Medium)
  * @param isLoading Loading state
  *
  * @sample
@@ -2489,7 +2489,7 @@ fun StatCard(
     onClick: (() -> Unit)? = null,
     variant: BaseCardVariant = BaseCardVariant.Filled,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     isLoading: Boolean = false
 ) {
     PixaCard(
@@ -2514,7 +2514,7 @@ fun StatCard(
                         PixaIcon(
                             source = IconSource.Vector(icon),
                             contentDescription = label,
-                            size = IconSize.Medium,
+                            size = HierarchicalSize.Icon.Medium,
                             tint = AppTheme.colors.brandContentDefault
                         )
                     }
@@ -2540,7 +2540,7 @@ fun StatCard(
                 color = AppTheme.colors.baseContentTitle
             )
 
-            Spacer(modifier = Modifier.height(Spacing.Micro))
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
 
             // Label
             Text(
@@ -2568,7 +2568,7 @@ fun StatCard(
  * @param enabled Whether the item is enabled
  * @param variant Card visual style (default: Ghost)
  * @param padding Card padding (default: Small)
- * @param cornerRadius Corner radius (default: RadiusSize.Small)
+ * @param cornerRadius Corner radius (default: HierarchicalSize.Radius.Small)
  * @param isLoading Loading state
  *
  * @sample
@@ -2595,7 +2595,7 @@ fun ListItemCard(
     enabled: Boolean = true,
     variant: BaseCardVariant = BaseCardVariant.Ghost,
     padding: BaseCardPadding = BaseCardPadding.Small,
-    cornerRadius: Dp = RadiusSize.Small,
+    cornerRadius: Dp = HierarchicalSize.Radius.Small,
     isLoading: Boolean = false
 ) {
     PixaCard(
@@ -2623,7 +2623,7 @@ fun ListItemCard(
                     leadingIcon != null -> PixaIcon(
                         source = IconSource.Vector(leadingIcon),
                         contentDescription = title,
-                        size = IconSize.Medium,
+                        size = HierarchicalSize.Icon.Medium,
                         tint = if (enabled) AppTheme.colors.baseContentBody else AppTheme.colors.baseContentDisabled
                     )
                 }
@@ -2653,7 +2653,7 @@ fun ListItemCard(
             )
 
             if (subtitle != null) {
-                Spacer(modifier = Modifier.height(Spacing.Micro))
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Nano))
                 Text(
                     text = subtitle,
                     style = AppTheme.typography.captionRegular,
@@ -2676,7 +2676,7 @@ fun ListItemCard(
                     trailingIcon != null -> PixaIcon(
                         source = IconSource.Vector(trailingIcon),
                         contentDescription = "More",
-                        size = IconSize.Medium,
+                        size = HierarchicalSize.Icon.Medium,
                         tint = if (enabled) AppTheme.colors.baseContentCaption else AppTheme.colors.baseContentDisabled
                     )
                 }
@@ -2699,7 +2699,7 @@ fun ListItemCard(
  * @param onClick Optional click handler
  * @param variant Card visual style (default: Outlined)
  * @param padding Card padding (default: Medium)
- * @param cornerRadius Corner radius (default: RadiusSize.Medium)
+ * @param cornerRadius Corner radius (default: HierarchicalSize.Radius.Medium)
  * @param isLoading Loading state
  *
  * @sample
@@ -2732,7 +2732,7 @@ fun FeatureCard(
     onClick: (() -> Unit)? = null,
     variant: BaseCardVariant = BaseCardVariant.Outlined,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     isLoading: Boolean = false
 ) {
     PixaCard(
@@ -2750,7 +2750,7 @@ fun FeatureCard(
             // Icon with optional background
             Box(
                 modifier = Modifier
-                    .size(ComponentSize.Huge)
+                    .size(HierarchicalSize.ListItem.Huge)
                     .background(
                         color = iconBackgroundColor ?: AppTheme.colors.brandSurfaceSubtle,
                         shape = CircleShape
@@ -2760,7 +2760,7 @@ fun FeatureCard(
                 PixaIcon(
                     source = IconSource.Vector(icon),
                     contentDescription = title,
-                    size = IconSize.ExtraLarge,
+                    size = HierarchicalSize.Icon.Huge,
                     tint = iconTint ?: AppTheme.colors.brandContentDefault
                 )
             }
@@ -2775,7 +2775,7 @@ fun FeatureCard(
                 textAlign = TextAlign.Center
             )
 
-            Spacer(modifier = Modifier.height(Spacing.Tiny))
+            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
 
             // Description
             Text(
@@ -2799,7 +2799,7 @@ fun FeatureCard(
  * @param onClick Optional click handler
  * @param enabled Whether the card is enabled
  * @param variant Card visual style (default: Filled)
- * @param cornerRadius Corner radius (default: RadiusSize.Small)
+ * @param cornerRadius Corner radius (default: HierarchicalSize.Radius.Small)
  * @param isLoading Loading state
  *
  * @sample
@@ -2824,7 +2824,7 @@ fun CompactCard(
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     variant: BaseCardVariant = BaseCardVariant.Filled,
-    cornerRadius: Dp = RadiusSize.Small,
+    cornerRadius: Dp = HierarchicalSize.Radius.Small,
     isLoading: Boolean = false
 ) {
     PixaCard(
@@ -2838,13 +2838,13 @@ fun CompactCard(
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
         ) {
             if (icon != null) {
                 PixaIcon(
                     source = IconSource.Vector(icon),
                     contentDescription = title,
-                    size = IconSize.Small,
+                    size = HierarchicalSize.Icon.Small,
                     tint = if (enabled) AppTheme.colors.baseContentBody else AppTheme.colors.baseContentDisabled
                 )
             }
@@ -2870,7 +2870,7 @@ fun CompactCard(
  * @param onClick Optional click handler
  * @param variant Card visual style (default: Elevated)
  * @param padding Card padding (default: Medium)
- * @param cornerRadius Corner radius (default: RadiusSize.Medium)
+ * @param cornerRadius Corner radius (default: HierarchicalSize.Radius.Medium)
  * @param isLoading Loading state
  *
  * @sample
@@ -2896,7 +2896,7 @@ fun SummaryCard(
     onClick: (() -> Unit)? = null,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
     padding: BaseCardPadding = BaseCardPadding.Medium,
-    cornerRadius: Dp = RadiusSize.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     isLoading: Boolean = false
 ) {
     PixaCard(
@@ -2919,7 +2919,7 @@ fun SummaryCard(
                     PixaIcon(
                         source = IconSource.Vector(icon),
                         contentDescription = title,
-                        size = IconSize.Medium,
+                        size = HierarchicalSize.Icon.Medium,
                         tint = AppTheme.colors.brandContentDefault
                     )
                 }

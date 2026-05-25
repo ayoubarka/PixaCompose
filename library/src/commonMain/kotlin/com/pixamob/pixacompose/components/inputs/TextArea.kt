@@ -82,9 +82,9 @@ private fun TextAreaSize.config(): TextAreaConfig {
             textStyle = typography.bodyLight,
             labelTextStyle = typography.labelSmall,
             helperTextStyle = typography.captionRegular,
-            iconSize = IconSize.Small,
-            borderWidth = BorderWidth.Thin,
-            cornerRadius = CornerRadius.Small
+            iconSize = HierarchicalSize.Icon.Small,
+            borderWidth = HierarchicalSize.Border.Compact,
+            cornerRadius = HierarchicalSize.Radius.Small
         )
         TextAreaSize.Medium -> TextAreaConfig(
             minHeight = 128.dp,
@@ -93,9 +93,9 @@ private fun TextAreaSize.config(): TextAreaConfig {
             textStyle = typography.bodyRegular,
             labelTextStyle = typography.labelMedium,
             helperTextStyle = typography.captionRegular,
-            iconSize = IconSize.Medium,
-            borderWidth = BorderWidth.Medium,
-            cornerRadius = CornerRadius.Medium
+            iconSize = HierarchicalSize.Icon.Medium,
+            borderWidth = HierarchicalSize.Border.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium
         )
         TextAreaSize.Large -> TextAreaConfig(
             minHeight = 160.dp,
@@ -104,9 +104,9 @@ private fun TextAreaSize.config(): TextAreaConfig {
             textStyle = typography.bodyBold,
             labelTextStyle = typography.labelLarge,
             helperTextStyle = typography.captionRegular,
-            iconSize = IconSize.Large,
-            borderWidth = BorderWidth.Thick,
-            cornerRadius = CornerRadius.Large
+            iconSize = HierarchicalSize.Icon.Large,
+            borderWidth = HierarchicalSize.Border.Large,
+            cornerRadius = HierarchicalSize.Radius.Large
         )
     }
 }

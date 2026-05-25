@@ -102,26 +102,26 @@ private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
         CheckboxSize.Small -> CheckboxSizeConfig(
-            boxSize = IconSize.VerySmall,
-            cornerRadius = RadiusSize.Tiny,
-            borderWidth = BorderSize.Tiny,
-            checkmarkStroke = BorderSize.SlightlyThicker,
-            labelSpacing = Spacing.Micro,
+            boxSize = HierarchicalSize.Icon.Compact,
+            cornerRadius = HierarchicalSize.Radius.Nano,
+            borderWidth = HierarchicalSize.Border.Compact,
+            checkmarkStroke = 2.5.dp,
+            labelSpacing = HierarchicalSize.Spacing.Nano,
             labelStyle = { typography.bodyBold }
         )
         CheckboxSize.Medium -> CheckboxSizeConfig(
-            boxSize = IconSize.Small,
-            cornerRadius = RadiusSize.Small,
-            borderWidth = BorderSize.Standard,
-            checkmarkStroke = BorderSize.Standard,
+            boxSize = HierarchicalSize.Icon.Small,
+            cornerRadius = HierarchicalSize.Radius.Small,
+            borderWidth = HierarchicalSize.Border.Medium,
+            checkmarkStroke = HierarchicalSize.Border.Medium,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyRegular }
         )
         CheckboxSize.Large -> CheckboxSizeConfig(
-            boxSize = IconSize.Medium,
-            cornerRadius = RadiusSize.Small,
-            borderWidth = BorderSize.Thick,
-            checkmarkStroke = BorderSize.Medium,
+            boxSize = HierarchicalSize.Icon.Medium,
+            cornerRadius = HierarchicalSize.Radius.Small,
+            borderWidth = HierarchicalSize.Border.Large,
+            checkmarkStroke = HierarchicalSize.Border.Medium,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyLight }
         )

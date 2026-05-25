@@ -42,8 +42,6 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -129,10 +127,10 @@ private fun getDrawerSizeConfig(): DrawerSizeConfig {
         width = 280.dp,
         itemHeight = 48.dp,
         itemPadding = HierarchicalSize.Spacing.Medium,
-        iconSize = IconSize.Medium,
+        iconSize = HierarchicalSize.Icon.Medium,
         titleStyle = typography.bodyRegular,
         sectionTitleStyle = typography.captionBold,
-        cornerRadius = RadiusSize.Medium,
+        cornerRadius = HierarchicalSize.Radius.Medium,
         spacing = HierarchicalSize.Spacing.Small
     )
 }
@@ -343,7 +341,7 @@ private fun DrawerItemRow(
                 style = AppTheme.typography.captionBold,
                 color = colors.selectedItemText,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(RadiusSize.Full))
+                    .clip(RoundedCornerShape(HierarchicalSize.Radius.Full))
                     .background(colors.selectedItemBackground)
                     .padding(horizontal = HierarchicalSize.Spacing.Small, vertical = 2.dp)
             )

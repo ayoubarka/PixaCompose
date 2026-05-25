@@ -765,7 +765,7 @@ private fun StepContent(
     val content = @Composable {
         Column(
             modifier = Modifier.padding(start = config.spacing),
-            verticalArrangement = Arrangement.spacedBy(Spacing.Tiny)
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
         ) {
             Text(
                 text = stepData.title,
@@ -991,7 +991,7 @@ private fun VerticalStepper(
 
                     // Connector to next step
                     if (index < steps.size - 1 && connectorStyle != StepConnectorStyle.None) {
-                        Spacer(modifier = Modifier.height(Spacing.Tiny))
+                        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
                         StepConnector(
                             isCompleted = step.isCompleted,
                             config = config,
@@ -999,7 +999,7 @@ private fun VerticalStepper(
                             style = connectorStyle,
                             orientation = StepperOrientation.Vertical
                         )
-                        Spacer(modifier = Modifier.height(Spacing.Tiny))
+                        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
                     }
                 }
 
@@ -1070,7 +1070,7 @@ private fun HorizontalStepper(
                         )
 
                         if (showLabels) {
-                            Spacer(modifier = Modifier.height(Spacing.Tiny))
+                            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
                             Text(
                                 text = step.title,
                                 style = config.titleStyle(),

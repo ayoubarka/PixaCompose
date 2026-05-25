@@ -91,7 +91,7 @@ object AnimationUtils {
     fun <T> infiniteRepeatable(
         animation: DurationBasedAnimationSpec<T> = tween(1000),
         repeatMode: RepeatMode = RepeatMode.Restart
-    ): InfiniteRepeatableSpec<T> = infiniteRepeatable(
+    ): InfiniteRepeatableSpec<T> = androidx.compose.animation.core.infiniteRepeatable(
         animation = animation,
         repeatMode = repeatMode
     )
@@ -178,4 +178,3 @@ fun <T> tweenAnimation(
     durationMillis: Int = 300,
     easing: Easing = FastOutSlowInEasing
 ): TweenSpec<T> = AnimationUtils.standardTween(durationMillis, easing)
-

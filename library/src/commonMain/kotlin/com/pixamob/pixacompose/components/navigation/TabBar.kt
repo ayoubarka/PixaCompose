@@ -39,8 +39,6 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.IconSize
-import com.pixamob.pixacompose.theme.RadiusSize
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -106,30 +104,30 @@ private fun getTabBarSizeConfig(size: TabBarSize): TabBarSizeConfig {
             height = 40.dp,
             horizontalPadding = HierarchicalSize.Spacing.Medium,
             verticalPadding = HierarchicalSize.Spacing.Small,
-            iconSize = IconSize.Small,
+            iconSize = HierarchicalSize.Icon.Small,
             textStyle = typography.labelSmall,
             indicatorHeight = 2.dp,
-            cornerRadius = RadiusSize.Small,
+            cornerRadius = HierarchicalSize.Radius.Small,
             spacing = HierarchicalSize.Spacing.Compact
         )
         TabBarSize.Medium -> TabBarSizeConfig(
             height = 48.dp,
             horizontalPadding = HierarchicalSize.Spacing.Large,
             verticalPadding = HierarchicalSize.Spacing.Small,
-            iconSize = IconSize.Medium,
+            iconSize = HierarchicalSize.Icon.Medium,
             textStyle = typography.labelMedium,
             indicatorHeight = 3.dp,
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             spacing = HierarchicalSize.Spacing.Small
         )
         TabBarSize.Large -> TabBarSizeConfig(
             height = 56.dp,
             horizontalPadding = HierarchicalSize.Spacing.Huge,
             verticalPadding = HierarchicalSize.Spacing.Medium,
-            iconSize = IconSize.Large,
+            iconSize = HierarchicalSize.Icon.Large,
             textStyle = typography.labelLarge,
             indicatorHeight = 4.dp,
-            cornerRadius = RadiusSize.Large,
+            cornerRadius = HierarchicalSize.Radius.Large,
             spacing = HierarchicalSize.Spacing.Medium
         )
     }

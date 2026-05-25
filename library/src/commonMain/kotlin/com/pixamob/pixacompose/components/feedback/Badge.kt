@@ -90,28 +90,28 @@ private fun getBadgeConfig(size: BadgeSize): BadgeConfig {
             size = 8.dp,
             padding = 0.dp,
             textStyle = typography.captionBold,
-            cornerRadius = RadiusSize.Full,
+            cornerRadius = HierarchicalSize.Radius.Full,
             iconSize = 6.dp
         )
         BadgeSize.Small -> BadgeConfig(
             size = 16.dp,
             padding = 3.dp,
             textStyle = typography.labelSmall,  // 10sp - proper Nano text size
-            cornerRadius = RadiusSize.Small,
+            cornerRadius = HierarchicalSize.Radius.Small,
             iconSize = 10.dp
         )
         BadgeSize.Medium -> BadgeConfig(
             size = 20.dp,
             padding = 4.dp,
             textStyle = typography.labelSmall,  // 10sp - proper Nano text size
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             iconSize = 12.dp
         )
         BadgeSize.Large -> BadgeConfig(
             size = 24.dp,
             padding = 5.dp,
             textStyle = typography.labelMedium,  // 12sp - proper Compact text size
-            cornerRadius = RadiusSize.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
             iconSize = 14.dp
         )
     }
@@ -319,7 +319,7 @@ fun PixaBadge(
             .then(
                 if (badgeColors.border != Color.Transparent) {
                     Modifier.border(
-                        width = BorderSize.Standard,
+                        width = HierarchicalSize.Border.Medium,
                         color = badgeColors.border,
                         shape = if (isDot) CircleShape else RoundedCornerShape(config.cornerRadius)
                     )
