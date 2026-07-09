@@ -215,15 +215,19 @@ private fun getButtonTheme(
         if (isDestructive) colors.errorContentDefault else colors.brandContentDefault
     val brandOrErrorSurface =
         if (isDestructive) colors.errorSurfaceDefault else colors.brandSurfaceDefault
+    val brandOrErrorSurfaceSubtle =
+        if (isDestructive) colors.errorSurfaceSubtle else colors.brandSurfaceSubtle
     val brandOrErrorBorder =
         if (isDestructive) colors.errorBorderDefault else colors.brandBorderDefault
 
     return when (variant) {
+        // Surface role = fill/background, Content role = foreground — matches
+        // the Filled/Tonal convention used by PixaIconButton, PixaFAB, Chip, etc.
         ButtonVariant.Filled -> ButtonStateColors(
             default = ButtonColors(
-                background = brandOrErrorContent,
-                content = Color.White,
-                ripple = Color.White.copy(alpha = 0.12f)
+                background = brandOrErrorSurface,
+                content = brandOrErrorContent,
+                ripple = brandOrErrorContent.copy(alpha = 0.12f)
             ),
             disabled = ButtonColors(
                 background = colors.baseSurfaceDisabled,
@@ -234,7 +238,7 @@ private fun getButtonTheme(
 
         ButtonVariant.Tonal -> ButtonStateColors(
             default = ButtonColors(
-                background = brandOrErrorSurface,
+                background = brandOrErrorSurfaceSubtle,
                 content = brandOrErrorContent,
                 ripple = brandOrErrorContent.copy(alpha = 0.12f)
             ),
