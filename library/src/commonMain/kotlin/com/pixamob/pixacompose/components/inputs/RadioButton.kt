@@ -2,7 +2,6 @@ package com.pixamob.pixacompose.components.inputs
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
@@ -34,6 +34,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.*
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -41,13 +42,8 @@ import com.pixamob.pixacompose.theme.*
 
 enum class RadioButtonVariant {
     Filled,
-    Outlined
-}
-
-enum class RadioButtonSize {
-    Small,
-    Medium,
-    Large
+    Outlined,
+    Ghost
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -92,29 +88,36 @@ data class RadioButtonStateColors(
  * Get size configuration for radio button
  */
 @Composable
-private fun getRadioButtonSizeConfig(size: RadioButtonSize): RadioButtonSizeConfig {
+private fun getRadioButtonSizeConfig(size: SizeVariant): RadioButtonSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        RadioButtonSize.Small -> RadioButtonSizeConfig(
+        SizeVariant.Small -> RadioButtonSizeConfig(
             outerCircleSize = HierarchicalSize.Icon.Compact,
             innerCircleSize = HierarchicalSize.Spacing.Compact,
             borderWidth = HierarchicalSize.Border.Compact,
             labelSpacing = HierarchicalSize.Spacing.Nano,
             labelStyle = { typography.bodyBold }
         )
-        RadioButtonSize.Medium -> RadioButtonSizeConfig(
+        SizeVariant.Medium -> RadioButtonSizeConfig(
             outerCircleSize = HierarchicalSize.Icon.Small,
             innerCircleSize = HierarchicalSize.Icon.Nano / 1.2f,
             borderWidth = HierarchicalSize.Border.Medium,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyRegular }
         )
-        RadioButtonSize.Large -> RadioButtonSizeConfig(
+        SizeVariant.Large -> RadioButtonSizeConfig(
             outerCircleSize = HierarchicalSize.Icon.Medium,
             innerCircleSize = HierarchicalSize.Spacing.Small,
             borderWidth = HierarchicalSize.Border.Large,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyLight }
+        )
+        else -> RadioButtonSizeConfig(
+            outerCircleSize = HierarchicalSize.Icon.Small,
+            innerCircleSize = HierarchicalSize.Icon.Nano / 1.2f,
+            borderWidth = HierarchicalSize.Border.Medium,
+            labelSpacing = HierarchicalSize.Spacing.Small,
+            labelStyle = { typography.bodyRegular }
         )
     }
 }
@@ -172,6 +175,26 @@ private fun getRadioButtonTheme(
                 label = colors.baseContentDisabled
             )
         )
+        RadioButtonVariant.Ghost -> RadioButtonStateColors(
+            unselected = RadioButtonColors(
+                outerCircle = Color.Transparent,
+                outerBorder = Color.Transparent,
+                innerCircle = Color.Transparent,
+                label = colors.baseContentBody
+            ),
+            selected = RadioButtonColors(
+                outerCircle = Color.Transparent,
+                outerBorder = Color.Transparent,
+                innerCircle = colors.brandContentDefault,
+                label = colors.baseContentBody
+            ),
+            disabled = RadioButtonColors(
+                outerCircle = Color.Transparent,
+                outerBorder = Color.Transparent,
+                innerCircle = colors.baseContentDisabled,
+                label = colors.baseContentDisabled
+            )
+        )
     }
 }
 
@@ -187,33 +210,41 @@ private fun PixaRadioButtonCircle(
     modifier: Modifier = Modifier,
     selected: Boolean,
     enabled: Boolean,
+    isError: Boolean,
     sizeConfig: RadioButtonSizeConfig,
     colors: RadioButtonStateColors
 ) {
+    val errorColors = AppTheme.colors
     val currentColors = when {
         !enabled -> colors.disabled
+        isError -> RadioButtonColors(
+            outerCircle = if (selected) errorColors.errorSurfaceDefault else Color.Transparent,
+            outerBorder = errorColors.errorBorderDefault,
+            innerCircle = if (selected) errorColors.errorContentDefault else Color.Transparent,
+            label = colors.selected.label
+        )
         selected -> colors.selected
         else -> colors.unselected
     }
 
     val animatedOuterColor by animateColorAsState(
         targetValue = currentColors.outerCircle,
-        animationSpec = tween(150)
+        animationSpec = AnimationUtils.standardTween(150)
     )
 
     val animatedBorderColor by animateColorAsState(
         targetValue = currentColors.outerBorder,
-        animationSpec = tween(150)
+        animationSpec = AnimationUtils.standardTween(150)
     )
 
     val animatedInnerColor by animateColorAsState(
         targetValue = currentColors.innerCircle,
-        animationSpec = tween(150)
+        animationSpec = AnimationUtils.standardTween(150)
     )
 
     val innerCircleScale by animateFloatAsState(
         targetValue = if (selected) 1f else 0f,
-        animationSpec = tween(200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     Box(
@@ -253,7 +284,9 @@ private fun PixaRadioButton(
     selected: Boolean,
     onClick: (() -> Unit)?,
     enabled: Boolean,
+    isError: Boolean,
     label: String?,
+    description: String?,
     labelPosition: RadioButtonLabelPosition,
     sizeConfig: RadioButtonSizeConfig,
     colors: RadioButtonStateColors
@@ -272,26 +305,46 @@ private fun PixaRadioButton(
         )
     } else Modifier
 
-    val content = @Composable {
-        PixaRadioButtonCircle(
-            selected = selected,
-            enabled = enabled,
-            sizeConfig = sizeConfig,
-            colors = colors
-        )
+    val labelContent = @Composable { label?.let { lbl ->
+        val labelColor = if (enabled) colors.selected.label else colors.disabled.label
+        val animatedLabelColor by animateColorAsState(labelColor, AnimationUtils.standardTween(150))
 
-        if (label != null) {
-            val labelColor = if (enabled) colors.selected.label else colors.disabled.label
-            val animatedLabelColor by animateColorAsState(labelColor, tween(150))
+        Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
 
-            Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
-
+        if (description != null) {
+            Column {
+                Text(
+                    text = lbl,
+                    style = sizeConfig.labelStyle(),
+                    color = animatedLabelColor
+                )
+                Text(
+                    text = description,
+                    style = AppTheme.typography.captionRegular,
+                    color = AppTheme.colors.baseContentCaption,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        } else {
             Text(
-                text = label,
+                text = lbl,
                 style = sizeConfig.labelStyle(),
                 color = animatedLabelColor
             )
         }
+    } }
+
+    val content = @Composable {
+        PixaRadioButtonCircle(
+            selected = selected,
+            enabled = enabled,
+            isError = isError,
+            sizeConfig = sizeConfig,
+            colors = colors
+        )
+
+        labelContent()
     }
 
     Row(
@@ -304,11 +357,28 @@ private fun PixaRadioButton(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (labelPosition == RadioButtonLabelPosition.Start && label != null) {
-            Text(
-                text = label,
-                style = sizeConfig.labelStyle(),
-                color = if (enabled) colors.selected.label else colors.disabled.label
-            )
+            if (description != null) {
+                Column {
+                    Text(
+                        text = label,
+                        style = sizeConfig.labelStyle(),
+                        color = if (enabled) colors.selected.label else colors.disabled.label
+                    )
+                    Text(
+                        text = description,
+                        style = AppTheme.typography.captionRegular,
+                        color = AppTheme.colors.baseContentCaption,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            } else {
+                Text(
+                    text = label,
+                    style = sizeConfig.labelStyle(),
+                    color = if (enabled) colors.selected.label else colors.disabled.label
+                )
+            }
             Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
         }
 
@@ -340,7 +410,9 @@ enum class RadioButtonLabelPosition {
  * @param onClick Callback when radio button is clicked (null for read-only)
  * @param modifier Modifier for the radio button
  * @param enabled Whether the radio button is enabled
+ * @param isError Whether to show the radio button in error state
  * @param label Optional text label
+ * @param description Optional descriptive text below the label
  * @param labelPosition Position of the label (Start or End)
  * @param variant Visual style (Filled or Outlined)
  * @param size Size variant (Small, Medium, Large)
@@ -375,10 +447,12 @@ fun RadioButton(
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isError: Boolean = false,
     label: String? = null,
+    description: String? = null,
     labelPosition: RadioButtonLabelPosition = RadioButtonLabelPosition.End,
     variant: RadioButtonVariant = RadioButtonVariant.Filled,
-    size: RadioButtonSize = RadioButtonSize.Medium
+    size: SizeVariant = SizeVariant.Medium
 ) {
     val themeColors = getRadioButtonTheme(variant, AppTheme.colors)
     val sizeConfig = getRadioButtonSizeConfig(size)
@@ -388,7 +462,9 @@ fun RadioButton(
         selected = selected,
         onClick = onClick,
         enabled = enabled,
+        isError = isError,
         label = label,
+        description = description,
         labelPosition = labelPosition,
         sizeConfig = sizeConfig,
         colors = themeColors
@@ -417,9 +493,10 @@ fun <T> RadioGroup(
     onOptionSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isError: Boolean = false,
     optionLabel: (T) -> String = { it.toString() },
     variant: RadioButtonVariant = RadioButtonVariant.Filled,
-    size: RadioButtonSize = RadioButtonSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
 ) {
     Column(
@@ -431,6 +508,7 @@ fun <T> RadioGroup(
                 selected = option == selectedOption,
                 onClick = { onOptionSelected(option) },
                 enabled = enabled,
+                isError = isError,
                 label = optionLabel(option),
                 variant = variant,
                 size = size
@@ -449,9 +527,10 @@ fun <T> HorizontalRadioGroup(
     onOptionSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isError: Boolean = false,
     optionLabel: (T) -> String = { it.toString() },
     variant: RadioButtonVariant = RadioButtonVariant.Filled,
-    size: RadioButtonSize = RadioButtonSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)
 ) {
     Row(
@@ -464,6 +543,7 @@ fun <T> HorizontalRadioGroup(
                 selected = option == selectedOption,
                 onClick = { onOptionSelected(option) },
                 enabled = enabled,
+                isError = isError,
                 label = optionLabel(option),
                 variant = variant,
                 size = size
@@ -485,15 +565,19 @@ fun OutlinedRadioButton(
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isError: Boolean = false,
     label: String? = null,
-    size: RadioButtonSize = RadioButtonSize.Medium
+    description: String? = null,
+    size: SizeVariant = SizeVariant.Medium
 ) {
     RadioButton(
         selected = selected,
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
+        isError = isError,
         label = label,
+        description = description,
         variant = RadioButtonVariant.Outlined,
         size = size
     )
@@ -509,16 +593,20 @@ fun LabeledRadioButton(
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isError: Boolean = false,
+    description: String? = null,
     labelPosition: RadioButtonLabelPosition = RadioButtonLabelPosition.End,
     variant: RadioButtonVariant = RadioButtonVariant.Filled,
-    size: RadioButtonSize = RadioButtonSize.Medium
+    size: SizeVariant = SizeVariant.Medium
 ) {
     RadioButton(
         selected = selected,
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
+        isError = isError,
         label = label,
+        description = description,
         labelPosition = labelPosition,
         variant = variant,
         size = size
@@ -605,7 +693,7 @@ fun LabeledRadioButton(
  *     selected = selected,
  *     onClick = { /* handle */ },
  *     label = "Subtle option",
- *     size = RadioButtonSize.Small
+ *     size = SizeVariant.Small
  * )
  * ```
  *

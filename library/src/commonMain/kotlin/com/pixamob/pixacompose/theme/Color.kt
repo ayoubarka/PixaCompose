@@ -1,5 +1,6 @@
 package com.pixamob.pixacompose.theme
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 
@@ -247,12 +248,12 @@ val dark_base_surface_subtle: Color = baseColor[700]!!
 val dark_base_surface_default: Color = baseColor[800]!!
 val dark_base_surface_focus: Color = baseColor[900]!!
 val dark_base_surface_disabled: Color = baseColor[950]?.copy(0.5F)!!
-val dark_base_surface_shadow: Color = brandColor[950]!!
+val dark_base_surface_shadow: Color = baseColor[950]!!
 
 val dark_base_border_subtle: Color = baseColor[600]!!
 val dark_base_border_default: Color = baseColor[700]!!
 val dark_base_border_focus: Color = baseColor[800]!!
-val dark_base_border_disabled: Color = brandColor[900]!!
+val dark_base_border_disabled: Color = baseColor[900]!!
 
 val dark_base_content_title: Color = baseColor[50]!!         // Lightest - highest emphasis
 val dark_base_content_subtitle: Color = baseColor[200]!!      // Very light
@@ -576,6 +577,161 @@ val LocalColorPalette = staticCompositionLocalOf { ColorPalette() }
  * @param warning Warning/caution color scale (optional, defaults to built-in warning colors)
  * @param error Error/danger color scale (optional, defaults to built-in error colors)
  */
+/**
+ * Semantic color overrides for theme customization.
+ *
+ * Override specific semantic tokens directly without needing to know the
+ * underlying color scale weights (50, 100, 200, ...). Any field left null
+ * falls back to the default palette derived from `colorScales`.
+ *
+ * This is the **primary** customization API. For most apps, you only need
+ * this. Use `ColorScales` only when you need to customize an entire
+ * color family at the scale level.
+ *
+ * **Examples:**
+ *
+ * 1. Override specific brand tokens:
+ * ```
+ * PixaTheme(
+ *     colorOverrides = ColorOverrides(
+ *         brandSurfaceDefault = Color(0xFF0284C7),
+ *         brandContentDefault = Color.White
+ *     )
+ * ) { /* app */ }
+ * ```
+ *
+ * 2. Customize a single semantic color:
+ * ```
+ * PixaTheme(
+ *     colorOverrides = ColorOverrides(
+ *         errorContentDefault = Color(0xFFD32F2F)
+ *     )
+ * ) { /* app */ }
+ * ```
+ *
+ * 3. Combine with `colorScales` for layered customization:
+ * ```
+ * PixaTheme(
+ *     colorScales = ColorScales(brand = myBrandScale),
+ *     colorOverrides = ColorOverrides(
+ *         brandBorderDefault = Color(0xFF123456)  // override derived default
+ *     )
+ * ) { /* app */ }
+ * ```
+ *
+ * @see ColorScales for scale-level customization
+ * @see ColorPalette for the complete list of semantic tokens
+ */
+@Immutable
+data class ColorOverrides(
+    val brandSurfaceSubtle: Color? = null,
+    val brandSurfaceDefault: Color? = null,
+    val brandSurfaceFocus: Color? = null,
+    val brandBorderSubtle: Color? = null,
+    val brandBorderDefault: Color? = null,
+    val brandBorderFocus: Color? = null,
+    val brandContentSubtle: Color? = null,
+    val brandContentDefault: Color? = null,
+    val brandContentFocus: Color? = null,
+
+    val accentSurfaceSubtle: Color? = null,
+    val accentSurfaceDefault: Color? = null,
+    val accentSurfaceFocus: Color? = null,
+    val accentBorderSubtle: Color? = null,
+    val accentBorderDefault: Color? = null,
+    val accentBorderFocus: Color? = null,
+    val accentContentSubtle: Color? = null,
+    val accentContentDefault: Color? = null,
+    val accentContentFocus: Color? = null,
+
+    val baseSurfaceSubtle: Color? = null,
+    val baseSurfaceDefault: Color? = null,
+    val baseSurfaceElevated: Color? = null,
+    val baseSurfaceFocus: Color? = null,
+    val baseSurfaceShadow: Color? = null,
+    val baseSurfaceDisabled: Color? = null,
+    val baseBorderSubtle: Color? = null,
+    val baseBorderDefault: Color? = null,
+    val baseBorderFocus: Color? = null,
+    val baseBorderDisabled: Color? = null,
+    val baseContentTitle: Color? = null,
+    val baseContentSubtitle: Color? = null,
+    val baseContentBody: Color? = null,
+    val baseContentCaption: Color? = null,
+    val baseContentHint: Color? = null,
+    val baseContentNegative: Color? = null,
+    val baseContentDisabled: Color? = null,
+
+    val infoSurfaceSubtle: Color? = null,
+    val infoSurfaceDefault: Color? = null,
+    val infoSurfaceFocus: Color? = null,
+    val infoBorderSubtle: Color? = null,
+    val infoBorderDefault: Color? = null,
+    val infoBorderFocus: Color? = null,
+    val infoContentSubtle: Color? = null,
+    val infoContentDefault: Color? = null,
+    val infoContentFocus: Color? = null,
+
+    val successSurfaceSubtle: Color? = null,
+    val successSurfaceDefault: Color? = null,
+    val successSurfaceFocus: Color? = null,
+    val successBorderSubtle: Color? = null,
+    val successBorderDefault: Color? = null,
+    val successBorderFocus: Color? = null,
+    val successContentSubtle: Color? = null,
+    val successContentDefault: Color? = null,
+    val successContentFocus: Color? = null,
+
+    val warningSurfaceSubtle: Color? = null,
+    val warningSurfaceDefault: Color? = null,
+    val warningSurfaceFocus: Color? = null,
+    val warningBorderSubtle: Color? = null,
+    val warningBorderDefault: Color? = null,
+    val warningBorderFocus: Color? = null,
+    val warningContentSubtle: Color? = null,
+    val warningContentDefault: Color? = null,
+    val warningContentFocus: Color? = null,
+
+    val errorSurfaceSubtle: Color? = null,
+    val errorSurfaceDefault: Color? = null,
+    val errorSurfaceFocus: Color? = null,
+    val errorBorderSubtle: Color? = null,
+    val errorBorderDefault: Color? = null,
+    val errorBorderFocus: Color? = null,
+    val errorContentSubtle: Color? = null,
+    val errorContentDefault: Color? = null,
+    val errorContentFocus: Color? = null
+) {
+    /**
+     * Returns true if no overrides are set. Useful for skipping merge work.
+     */
+    fun isEmpty(): Boolean = listOf(
+        brandSurfaceSubtle, brandSurfaceDefault, brandSurfaceFocus,
+        brandBorderSubtle, brandBorderDefault, brandBorderFocus,
+        brandContentSubtle, brandContentDefault, brandContentFocus,
+        accentSurfaceSubtle, accentSurfaceDefault, accentSurfaceFocus,
+        accentBorderSubtle, accentBorderDefault, accentBorderFocus,
+        accentContentSubtle, accentContentDefault, accentContentFocus,
+        baseSurfaceSubtle, baseSurfaceDefault, baseSurfaceElevated,
+        baseSurfaceFocus, baseSurfaceShadow, baseSurfaceDisabled,
+        baseBorderSubtle, baseBorderDefault, baseBorderFocus, baseBorderDisabled,
+        baseContentTitle, baseContentSubtitle, baseContentBody,
+        baseContentCaption, baseContentHint, baseContentNegative, baseContentDisabled,
+        infoSurfaceSubtle, infoSurfaceDefault, infoSurfaceFocus,
+        infoBorderSubtle, infoBorderDefault, infoBorderFocus,
+        infoContentSubtle, infoContentDefault, infoContentFocus,
+        successSurfaceSubtle, successSurfaceDefault, successSurfaceFocus,
+        successBorderSubtle, successBorderDefault, successBorderFocus,
+        successContentSubtle, successContentDefault, successContentFocus,
+        warningSurfaceSubtle, warningSurfaceDefault, warningSurfaceFocus,
+        warningBorderSubtle, warningBorderDefault, warningBorderFocus,
+        warningContentSubtle, warningContentDefault, warningContentFocus,
+        errorSurfaceSubtle, errorSurfaceDefault, errorSurfaceFocus,
+        errorBorderSubtle, errorBorderDefault, errorBorderFocus,
+        errorContentSubtle, errorContentDefault, errorContentFocus
+    ).all { it == null }
+}
+
 data class ColorScales(
     val brand: Map<Int, Color>? = null,
     val accent: Map<Int, Color>? = null,

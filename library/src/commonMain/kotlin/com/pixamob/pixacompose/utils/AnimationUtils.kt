@@ -12,12 +12,61 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 
 /**
  * Utility object for standardized animations across the library
  * Provides consistent animation specs and helpers
  */
 object AnimationUtils {
+
+    /**
+     * Indicator spring animation (progress sweep/width transitions)
+     */
+    val indicatorSpring = spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMediumLow
+    )
+
+    /**
+     * Selection spring animation (tab/segment selection transitions)
+     */
+    val selectionSpring = spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
+
+    /**
+     * Thumb spring animation (slider/switch thumb movement)
+     */
+    val thumbSpring = spring<Float>(
+        dampingRatio = Spring.DampingRatioMediumBouncy,
+        stiffness = Spring.StiffnessHigh
+    )
+
+    /**
+     * Color spring animation (color transitions)
+     */
+    val colorSpring = spring<Color>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessMedium
+    )
+
+    /**
+     * Fast spring animation preset (quick, snappy transitions)
+     */
+    val fastSpring = spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessHigh
+    )
+
+    /**
+     * Slow spring animation preset (gentle, deliberate transitions)
+     */
+    val slowSpring = spring<Float>(
+        dampingRatio = Spring.DampingRatioNoBouncy,
+        stiffness = Spring.StiffnessLow
+    )
 
     /**
      * Standard spring animation spec (snappier feel)
@@ -31,9 +80,9 @@ object AnimationUtils {
     )
 
     /**
-     * Fast spring animation (for quick transitions)
+     * Fast spring animation factory (generic, for quick transitions at any type)
      */
-    fun <T> fastSpring(): SpringSpec<T> = spring(
+    fun <T> fastSpringSpec(): SpringSpec<T> = spring(
         dampingRatio = Spring.DampingRatioNoBouncy,
         stiffness = Spring.StiffnessHigh
     )

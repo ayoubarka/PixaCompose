@@ -179,19 +179,19 @@ private fun getInitials(name: String): String {
  * // Image avatar with URL
  * Avatar(
  *     imageUrl = "https://example.com/avatar.jpg",
- *     size = AvatarSize.Large
+ *     size = SizeVariant.Large
  * )
  *
  * // Initials avatar
  * Avatar(
  *     text = "John Doe",
- *     size = AvatarSize.Medium
+ *     size = SizeVariant.Medium
  * )
  *
  * // Icon avatar
  * Avatar(
  *     icon = rememberVectorPainter(Icons.Default.Person),
- *     size = AvatarSize.Small
+ *     size = SizeVariant.Small
  * )
  *
  * // Avatar with status badge
@@ -199,7 +199,7 @@ private fun getInitials(name: String): String {
  *     imageUrl = "https://example.com/avatar.jpg",
  *     statusBadge = {
  *         Badge(
- *             size = BadgeSize.Dot,
+ *             dot = true,
  *             variant = BadgeVariant.Success
  *         )
  *     }
@@ -384,7 +384,7 @@ fun PixaAvatar(
  *         AvatarData(imageUrl = "url4")
  *     ),
  *     maxVisible = 3,
- *     size = AvatarSize.Small,
+ *     size = SizeVariant.Small,
  *     spacing = (-8).dp
  * )
  *

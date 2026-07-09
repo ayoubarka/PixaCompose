@@ -50,7 +50,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaCard
 import com.pixamob.pixacompose.components.display.BaseCardElevation
-import com.pixamob.pixacompose.components.display.BaseCardPadding
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.utils.ComponentElevation
@@ -59,6 +58,7 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -563,21 +563,21 @@ private fun getExitTransition(position: ToastPosition): ExitTransition {
         ToastPosition.Top, ToastPosition.TopStart, ToastPosition.TopEnd -> {
             slideOutVertically (
                 targetOffsetY = { -it },
-                animationSpec = AnimationUtils.fastSpring()
+                animationSpec = AnimationUtils.fastSpringSpec()
             ) + fadeOut(animationSpec = AnimationUtils.fastTween())
         }
 
         ToastPosition.Bottom, ToastPosition.BottomStart, ToastPosition.BottomEnd -> {
             slideOutVertically(
                 targetOffsetY = { it },
-                animationSpec = AnimationUtils.fastSpring()
+                animationSpec = AnimationUtils.fastSpringSpec()
             ) + fadeOut(animationSpec = AnimationUtils.fastTween())
         }
 
         ToastPosition.Center -> {
             scaleOut(
                 targetScale = 0.8f,
-                animationSpec = AnimationUtils.fastSpring()
+                animationSpec = AnimationUtils.fastSpringSpec()
             ) + fadeOut(animationSpec = AnimationUtils.fastTween())
         }
     }
@@ -641,7 +641,7 @@ internal fun Toast(
                 else -> BaseCardVariant.Filled
             },
             elevation = BaseCardElevation.None, // Using elevationShadow instead
-            padding = BaseCardPadding.None,
+            padding = SizeVariant.None,
             backgroundColor = colors.background
         ) {
             Row(

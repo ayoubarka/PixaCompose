@@ -49,12 +49,6 @@ enum class DialogVariant {
     Error
 }
 
-enum class DialogSize {
-    Small,
-    Medium,
-    Large
-}
-
 // ════════════════════════════════════════════════════════════════════════════
 // DATA CLASSES
 // ════════════════════════════════════════════════════════════════════════════
@@ -88,10 +82,10 @@ data class DialogSizeConfig(
 // ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun getDialogSizeConfig(size: DialogSize): DialogSizeConfig {
+private fun getDialogSizeConfig(size: SizeVariant): DialogSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        DialogSize.Small -> DialogSizeConfig(
+        SizeVariant.Small -> DialogSizeConfig(
             minWidth = 240.dp,
             maxWidth = 300.dp,
             padding = HierarchicalSize.Spacing.Medium,
@@ -101,7 +95,7 @@ private fun getDialogSizeConfig(size: DialogSize): DialogSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Medium,
             elevation = HierarchicalSize.Shadow.Large
         )
-        DialogSize.Medium -> DialogSizeConfig(
+        SizeVariant.Medium -> DialogSizeConfig(
             minWidth = 280.dp,
             maxWidth = 360.dp,
             padding = HierarchicalSize.Spacing.Large,
@@ -111,7 +105,7 @@ private fun getDialogSizeConfig(size: DialogSize): DialogSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Large,
             elevation = HierarchicalSize.Shadow.Huge
         )
-        DialogSize.Large -> DialogSizeConfig(
+        SizeVariant.Large -> DialogSizeConfig(
             minWidth = 320.dp,
             maxWidth = 420.dp,
             padding = HierarchicalSize.Spacing.Huge,
@@ -120,6 +114,16 @@ private fun getDialogSizeConfig(size: DialogSize): DialogSizeConfig {
             messageStyle = typography.bodyBold,
             cornerRadius = HierarchicalSize.Radius.Huge,
             elevation = HierarchicalSize.Shadow.Massive
+        )
+        else -> DialogSizeConfig(
+            minWidth = 280.dp,
+            maxWidth = 360.dp,
+            padding = HierarchicalSize.Spacing.Large,
+            iconSize = HierarchicalSize.Icon.Large,
+            titleStyle = typography.subtitleBold,
+            messageStyle = typography.bodyRegular,
+            cornerRadius = HierarchicalSize.Radius.Large,
+            elevation = HierarchicalSize.Shadow.Huge
         )
     }
 }
@@ -226,7 +230,7 @@ fun PixaDialog(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     variant: DialogVariant = DialogVariant.Default,
-    size: DialogSize = DialogSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     colors: DialogColors? = null,
     icon: Painter? = null,
     title: String? = null,
@@ -282,7 +286,7 @@ fun PixaDialog(
                             PixaButton(text = dismissText, onClick = { onDismiss?.invoke() ?: onDismissRequest() }, variant = ButtonVariant.Ghost, size = SizeVariant.Medium)
                         }
                         if (confirmText != null) {
-                            PixaButton(text = confirmText, onClick = { onConfirm?.invoke(); onDismissRequest() }, variant = ButtonVariant.Solid, isDestructive = variant == DialogVariant.Error, size = SizeVariant.Medium)
+                            PixaButton(text = confirmText, onClick = { onConfirm?.invoke(); onDismissRequest() }, variant = ButtonVariant.Filled, isDestructive = variant == DialogVariant.Error, size = SizeVariant.Medium)
                         }
                     }
                 }

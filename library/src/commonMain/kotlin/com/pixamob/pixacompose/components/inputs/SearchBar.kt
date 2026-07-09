@@ -50,12 +50,6 @@ enum class SearchBarVariant {
     Elevated
 }
 
-enum class SearchBarSize {
-    Small,
-    Medium,
-    Large
-}
-
 // ════════════════════════════════════════════════════════════════════════════
 // DATA CLASSES
 // ════════════════════════════════════════════════════════════════════════════
@@ -101,10 +95,10 @@ data class SearchSuggestion(
 // ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun getSearchBarSizeConfig(size: SearchBarSize): SearchBarSizeConfig {
+private fun getSearchBarSizeConfig(size: SizeVariant): SearchBarSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        SearchBarSize.Small -> SearchBarSizeConfig(
+        SizeVariant.Small -> SearchBarSizeConfig(
             height = HierarchicalSize.Input.Small,
             horizontalPadding = HierarchicalSize.Spacing.Medium,
             verticalPadding = HierarchicalSize.Spacing.Compact,
@@ -115,7 +109,7 @@ private fun getSearchBarSizeConfig(size: SearchBarSize): SearchBarSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Small,
             elevation = HierarchicalSize.Shadow.Small
         )
-        SearchBarSize.Medium -> SearchBarSizeConfig(
+        SizeVariant.Medium -> SearchBarSizeConfig(
             height = HierarchicalSize.Input.Medium,
             horizontalPadding = HierarchicalSize.Spacing.Large,
             verticalPadding = HierarchicalSize.Spacing.Small,
@@ -126,7 +120,7 @@ private fun getSearchBarSizeConfig(size: SearchBarSize): SearchBarSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Medium,
             elevation = HierarchicalSize.Shadow.Medium
         )
-        SearchBarSize.Large -> SearchBarSizeConfig(
+        SizeVariant.Large -> SearchBarSizeConfig(
             height = HierarchicalSize.Input.Large,
             horizontalPadding = HierarchicalSize.Spacing.Huge,
             verticalPadding = HierarchicalSize.Spacing.Medium,
@@ -136,6 +130,17 @@ private fun getSearchBarSizeConfig(size: SearchBarSize): SearchBarSizeConfig {
             borderWidth = HierarchicalSize.Border.Large,
             cornerRadius = HierarchicalSize.Radius.Large,
             elevation = HierarchicalSize.Shadow.Large
+        )
+        else -> SearchBarSizeConfig(
+            height = HierarchicalSize.Input.Medium,
+            horizontalPadding = HierarchicalSize.Spacing.Large,
+            verticalPadding = HierarchicalSize.Spacing.Small,
+            textStyle = typography.bodyRegular,
+            suggestionTextStyle = typography.bodyRegular,
+            iconSize = HierarchicalSize.Icon.Medium,
+            borderWidth = HierarchicalSize.Border.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium,
+            elevation = HierarchicalSize.Shadow.Medium
         )
     }
 }
@@ -225,7 +230,7 @@ private fun getSearchBarTheme(
  *     value = query,
  *     onValueChange = { query = it },
  *     variant = SearchBarVariant.Elevated,
- *     size = SearchBarSize.Large,
+ *     size = SizeVariant.Large,
  *     onSearch = { performSearch(query) },
  *     onVoiceSearch = { startVoiceInput() }
  * )
@@ -273,7 +278,7 @@ fun PixaSearchBar(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     variant: SearchBarVariant = SearchBarVariant.Filled,
-    size: SearchBarSize = SearchBarSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     colors: SearchBarColors? = null,
     placeholder: String = "Search...",
@@ -310,12 +315,12 @@ fun PixaSearchBar(
 
     val animatedBorderColor by animateColorAsState(
         targetValue = if (isFocused) themeColors.focusedBorder else themeColors.border,
-        animationSpec = tween(durationMillis = 200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     val animatedBorderWidth by animateDpAsState(
         targetValue = if (isFocused && variant == SearchBarVariant.Outlined) sizeConfig.borderWidth * 1.2f else sizeConfig.borderWidth,
-        animationSpec = tween(durationMillis = 200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     Box(
@@ -572,7 +577,7 @@ fun FilledSearchBar(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    size: SearchBarSize = SearchBarSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     placeholder: String = "Search...",
     searchIcon: Painter? = null,
@@ -611,7 +616,7 @@ fun OutlinedSearchBar(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    size: SearchBarSize = SearchBarSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     placeholder: String = "Search...",
     searchIcon: Painter? = null,
@@ -650,7 +655,7 @@ fun ElevatedSearchBar(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    size: SearchBarSize = SearchBarSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     placeholder: String = "Search...",
     searchIcon: Painter? = null,

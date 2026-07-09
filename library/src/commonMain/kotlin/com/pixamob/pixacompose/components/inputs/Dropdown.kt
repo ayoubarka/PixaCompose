@@ -1,7 +1,7 @@
 package com.pixamob.pixacompose.components.inputs
 
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -42,6 +43,8 @@ import androidx.compose.ui.window.PopupProperties
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -51,12 +54,6 @@ enum class DropdownVariant {
     Outlined,
     Filled,
     Ghost
-}
-
-enum class DropdownSize {
-    Small,
-    Medium,
-    Large
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -83,7 +80,9 @@ data class DropdownColors(
     val menuItemHover: Color,
     val selectedBackground: Color,
     val disabledBackground: Color,
-    val disabledText: Color
+    val disabledText: Color,
+    val errorBorder: Color = Color.Transparent,
+    val errorText: Color = Color.Transparent
 )
 
 @Immutable
@@ -116,7 +115,9 @@ private fun getDropdownTheme(variant: DropdownVariant): DropdownColors {
             menuItemHover = colors.baseSurfaceSubtle,
             selectedBackground = colors.brandSurfaceSubtle,
             disabledBackground = colors.baseSurfaceDisabled,
-            disabledText = colors.baseContentDisabled
+            disabledText = colors.baseContentDisabled,
+            errorBorder = colors.errorBorderDefault,
+            errorText = colors.errorContentDefault
         )
         DropdownVariant.Filled -> DropdownColors(
             background = colors.baseSurfaceSubtle,
@@ -128,7 +129,9 @@ private fun getDropdownTheme(variant: DropdownVariant): DropdownColors {
             menuItemHover = colors.baseSurfaceSubtle,
             selectedBackground = colors.brandSurfaceSubtle,
             disabledBackground = colors.baseSurfaceDisabled,
-            disabledText = colors.baseContentDisabled
+            disabledText = colors.baseContentDisabled,
+            errorBorder = colors.errorBorderDefault,
+            errorText = colors.errorContentDefault
         )
         DropdownVariant.Ghost -> DropdownColors(
             background = Color.Transparent,
@@ -140,16 +143,18 @@ private fun getDropdownTheme(variant: DropdownVariant): DropdownColors {
             menuItemHover = colors.baseSurfaceSubtle,
             selectedBackground = colors.brandSurfaceSubtle,
             disabledBackground = Color.Transparent,
-            disabledText = colors.baseContentDisabled
+            disabledText = colors.baseContentDisabled,
+            errorBorder = colors.errorBorderDefault,
+            errorText = colors.errorContentDefault
         )
     }
 }
 
 @Composable
-private fun getDropdownSizeConfig(size: DropdownSize): DropdownSizeConfig {
+private fun getDropdownSizeConfig(size: SizeVariant): DropdownSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        DropdownSize.Small -> DropdownSizeConfig(
+        SizeVariant.Small -> DropdownSizeConfig(
             height = 36.dp,
             padding = HierarchicalSize.Spacing.Small,
             iconSize = HierarchicalSize.Icon.Small,
@@ -158,7 +163,7 @@ private fun getDropdownSizeConfig(size: DropdownSize): DropdownSizeConfig {
             borderWidth = 1.dp,
             menuMaxHeight = 200.dp
         )
-        DropdownSize.Medium -> DropdownSizeConfig(
+        SizeVariant.Medium -> DropdownSizeConfig(
             height = 44.dp,
             padding = HierarchicalSize.Spacing.Medium,
             iconSize = HierarchicalSize.Icon.Small,
@@ -167,7 +172,7 @@ private fun getDropdownSizeConfig(size: DropdownSize): DropdownSizeConfig {
             borderWidth = 1.dp,
             menuMaxHeight = 250.dp
         )
-        DropdownSize.Large -> DropdownSizeConfig(
+        SizeVariant.Large -> DropdownSizeConfig(
             height = 52.dp,
             padding = HierarchicalSize.Spacing.Medium,
             iconSize = HierarchicalSize.Icon.Medium,
@@ -175,6 +180,15 @@ private fun getDropdownSizeConfig(size: DropdownSize): DropdownSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Medium,
             borderWidth = 1.dp,
             menuMaxHeight = 300.dp
+        )
+        else -> DropdownSizeConfig(
+            height = 44.dp,
+            padding = HierarchicalSize.Spacing.Medium,
+            iconSize = HierarchicalSize.Icon.Small,
+            textStyle = typography.bodyRegular,
+            cornerRadius = HierarchicalSize.Radius.Medium,
+            borderWidth = 1.dp,
+            menuMaxHeight = 250.dp
         )
     }
 }
@@ -222,6 +236,10 @@ private fun getDropdownSizeConfig(size: DropdownSize): DropdownSizeConfig {
  * @param trailingIcon Custom trailing icon (chevron)
  * @param enabled Whether dropdown is interactive
  * @param label Optional label above dropdown
+ * @param isError Whether to show error state
+ * @param errorText Optional error message (shown when isError=true)
+ * @param helperText Optional helper text below field
+ * @param required Whether to show required indicator
  */
 @Composable
 fun <T> PixaDropdown(
@@ -231,12 +249,16 @@ fun <T> PixaDropdown(
     modifier: Modifier = Modifier,
     placeholder: String = "Select...",
     variant: DropdownVariant = DropdownVariant.Outlined,
-    size: DropdownSize = DropdownSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     colors: DropdownColors? = null,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
     enabled: Boolean = true,
-    label: String? = null
+    label: String? = null,
+    isError: Boolean = false,
+    errorText: String? = null,
+    helperText: String? = null,
+    required: Boolean = false
 ) {
     val themeColors = colors ?: getDropdownTheme(variant)
     val sizeConfig = getDropdownSizeConfig(size)
@@ -246,7 +268,7 @@ fun <T> PixaDropdown(
 
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     val shape = RoundedCornerShape(sizeConfig.cornerRadius)
@@ -255,14 +277,38 @@ fun <T> PixaDropdown(
         if (selectedLabel != null) themeColors.text else themeColors.placeholder
     } else themeColors.disabledText
 
+    val animatedBorderColor by animateColorAsState(
+        targetValue = when {
+            !enabled -> if (variant == DropdownVariant.Outlined) AppTheme.colors.baseBorderDisabled else Color.Transparent
+            isError -> themeColors.errorBorder
+            else -> themeColors.border
+        },
+        animationSpec = AnimationUtils.standardTween(200)
+    )
+
+    val animatedBackgroundColor by animateColorAsState(
+        targetValue = backgroundColor,
+        animationSpec = AnimationUtils.standardTween(200)
+    )
+
     Column(modifier = modifier) {
         if (label != null) {
-            Text(
-                text = label,
-                style = AppTheme.typography.labelMedium,
-                color = themeColors.text,
-                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = label,
+                    style = AppTheme.typography.labelMedium,
+                    color = if (isError) themeColors.errorText else themeColors.text,
+                    modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
+                )
+                if (required) {
+                    Text(
+                        text = " *",
+                        style = AppTheme.typography.labelMedium,
+                        color = AppTheme.colors.errorContentDefault,
+                        modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
+                    )
+                }
+            }
         }
 
         Box {
@@ -270,10 +316,10 @@ fun <T> PixaDropdown(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(shape)
-                    .background(backgroundColor)
+                    .background(animatedBackgroundColor)
                     .then(
-                        if (variant == DropdownVariant.Outlined) {
-                            Modifier.border(sizeConfig.borderWidth, themeColors.border, shape)
+                        if (animatedBorderColor != Color.Transparent) {
+                            Modifier.border(sizeConfig.borderWidth, animatedBorderColor, shape)
                         } else Modifier
                     )
                     .clickable(
@@ -319,6 +365,19 @@ fun <T> PixaDropdown(
                             .rotate(rotation)
                     )
                 }
+            }
+
+            val bottomText = if (isError && errorText != null) errorText else helperText
+            if (bottomText != null) {
+                Text(
+                    text = bottomText,
+                    style = AppTheme.typography.captionRegular,
+                    color = if (isError) themeColors.errorText else themeColors.text,
+                    modifier = Modifier.padding(
+                        top = HierarchicalSize.Spacing.Compact,
+                        start = HierarchicalSize.Spacing.Compact
+                    )
+                )
             }
 
             if (expanded) {

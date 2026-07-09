@@ -41,7 +41,6 @@ import com.pixamob.pixacompose.components.actions.ButtonColors
 import com.pixamob.pixacompose.components.actions.ButtonStateColors
 import com.pixamob.pixacompose.components.display.PixaAvatar
 import com.pixamob.pixacompose.components.feedback.PixaBadge
-import com.pixamob.pixacompose.components.feedback.BadgeSize
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.theme.*
 
@@ -58,12 +57,6 @@ data class TopNavAction(
     val badge: Int? = null,
     val tint: Color? = null
 )
-
-enum class TopNavSize {
-    Small,
-    Medium,
-    Large
-}
 
 /**
  * Title alignment options
@@ -96,8 +89,8 @@ private data class TopNavSizeConfig(
 /**
  * Maps size variant to concrete dimensions
  */
-private fun TopNavSize.toSizeConfig(): TopNavSizeConfig = when (this) {
-    TopNavSize.Small -> TopNavSizeConfig(
+private fun SizeVariant.toSizeConfig(): TopNavSizeConfig = when (this) {
+    SizeVariant.Small -> TopNavSizeConfig(
         height = HierarchicalSize.Container.Medium  ,
         iconSize =  HierarchicalSize.Icon.Small,
         avatarSize = SizeVariant.Small,
@@ -106,7 +99,7 @@ private fun TopNavSize.toSizeConfig(): TopNavSizeConfig = when (this) {
         actionSpacing = HierarchicalSize.Spacing.Compact,
         titleFontScale = 0.9f
     )
-    TopNavSize.Medium -> TopNavSizeConfig(
+    SizeVariant.Medium -> TopNavSizeConfig(
         height = HierarchicalSize.Container.Large  ,
         iconSize =  HierarchicalSize.Icon.Medium,
         avatarSize = SizeVariant.Medium,
@@ -115,7 +108,7 @@ private fun TopNavSize.toSizeConfig(): TopNavSizeConfig = when (this) {
         actionSpacing = HierarchicalSize.Spacing.Small,
         titleFontScale = 1.0f
     )
-    TopNavSize.Large -> TopNavSizeConfig(
+    SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> TopNavSizeConfig(
         height = HierarchicalSize.Container.Huge  ,
         iconSize =  HierarchicalSize.Icon.Large,
         avatarSize = SizeVariant.Large,
@@ -123,6 +116,15 @@ private fun TopNavSize.toSizeConfig(): TopNavSizeConfig = when (this) {
         verticalPadding = HierarchicalSize.Spacing.Medium,
         actionSpacing = HierarchicalSize.Spacing.Medium,
         titleFontScale = 1.15f
+    )
+    else -> TopNavSizeConfig(
+        height = HierarchicalSize.Container.Large,
+        iconSize = HierarchicalSize.Icon.Medium,
+        avatarSize = SizeVariant.Medium,
+        horizontalPadding = HierarchicalSize.Spacing.Medium,
+        verticalPadding = HierarchicalSize.Spacing.Small,
+        actionSpacing = HierarchicalSize.Spacing.Small,
+        titleFontScale = 1.0f
     )
 }
 
@@ -180,7 +182,7 @@ private fun ActionButton(
             PixaBadge(
                 content = action.badge.toString(),
                 variant = BadgeVariant.Error,
-                size = BadgeSize.Small,
+                size = SizeVariant.Small,
                 modifier = Modifier.align(Alignment.TopEnd)
             )
         }
@@ -325,7 +327,7 @@ private fun TopNavTitleSection(
  *             Text("MyApp", style = AppTheme.typography.headerBold)
  *         }
  *     },
- *     size = TopNavSize.Large,
+ *     size = SizeVariant.Large,
  *     elevation = 4.dp,
  *     bottomDivider = true
  * )
@@ -375,7 +377,7 @@ fun PixaTopNavBar(
     profileImageUrl: String? = null,
     containerColor: Color = AppTheme.colors.baseSurfaceDefault,
     contentColor: Color = AppTheme.colors.baseContentTitle,
-    size: TopNavSize = TopNavSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     elevation: Dp = 0.dp,
     bottomDivider: Boolean = false,
     includeSafeAreaPadding: Boolean = false,

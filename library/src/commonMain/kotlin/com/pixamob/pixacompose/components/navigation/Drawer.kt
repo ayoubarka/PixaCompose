@@ -1,7 +1,6 @@
 package com.pixamob.pixacompose.components.navigation
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -42,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -206,8 +206,8 @@ fun PixaDrawer(
 
     AnimatedVisibility(
         visible = visible,
-        enter = fadeIn(tween(200)),
-        exit = fadeOut(tween(200))
+        enter = fadeIn(AnimationUtils.standardTween(200)),
+        exit = fadeOut(AnimationUtils.standardTween(200))
     ) {
         Box(
             modifier = modifier.fillMaxSize()
@@ -227,8 +227,8 @@ fun PixaDrawer(
             // Drawer content
             AnimatedVisibility(
                 visible = visible,
-                enter = slideInHorizontally(tween(300)) { slideDirection * it },
-                exit = slideOutHorizontally(tween(300)) { slideDirection * it },
+                enter = slideInHorizontally(AnimationUtils.standardTween(300)) { slideDirection * it },
+                exit = slideOutHorizontally(AnimationUtils.standardTween(300)) { slideDirection * it },
                 modifier = Modifier.align(
                     if (position == DrawerPosition.Start) Alignment.CenterStart else Alignment.CenterEnd
                 )

@@ -13,7 +13,8 @@ import androidx.compose.ui.graphics.Color
  * Provides centralized theming with simplified color and typography customization.
  *
  * **Color Customization:**
- * - Provide partial or complete color scales via `colorScales` parameter
+ * - **Primary**: Use `colorOverrides` to set specific semantic tokens directly
+ * - **Advanced**: Use `colorScales` to override entire color families at the scale level
  * - Light and dark palettes are automatically derived from the scales
  * - Missing colors fall back to elegant defaults
  *
@@ -23,7 +24,17 @@ import androidx.compose.ui.graphics.Color
  *
  * **Examples:**
  *
- * 1. Customize only brand colors:
+ * 1. Override specific semantic colors (primary API):
+ * ```
+ * PixaTheme(
+ *     colorOverrides = ColorOverrides(
+ *         brandContentDefault = Color(0xFF0284C7),
+ *         brandBorderDefault = Color(0xFF0369A1)
+ *     )
+ * ) { /* App content */ }
+ * ```
+ *
+ * 2. Customize an entire color scale (advanced):
  * ```
  * PixaTheme(
  *     colorScales = ColorScales(
@@ -36,16 +47,17 @@ import androidx.compose.ui.graphics.Color
  * ) { /* App content */ }
  * ```
  *
- * 2. Modify specific colors while keeping defaults:
+ * 3. Combine both for layered customization:
  * ```
  * PixaTheme(
- *     colorScales = ColorScales(
- *         brand = DefaultColorScales.brand!! + mapOf(500 to MyCustomColor)
+ *     colorScales = ColorScales(brand = myBrandScale),
+ *     colorOverrides = ColorOverrides(
+ *         brandBorderDefault = Color(0xFF123456)  // overrides the scale-derived value
  *     )
  * ) { /* App content */ }
  * ```
  *
- * 3. Custom font with all weights:
+ * 4. Custom font with all weights:
  * ```
  * PixaTheme(
  *     fontFamily = FontFamilyConfig(
@@ -63,19 +75,21 @@ import androidx.compose.ui.graphics.Color
  * ```
  *
  * @param useDarkTheme Whether to use dark theme (defaults to system preference)
- * @param colorScales Optional color scales for customization. Provide partial or complete scales.
+ * @param colorOverrides Optional semantic color overrides (primary customization API)
+ * @param colorScales Optional color scales for advanced full-family customization
  * @param fontFamily Optional font family configuration with all 9 weights
  * @param content The composable content to wrap with theme
  */
 @Composable
 fun PixaTheme(
     useDarkTheme: Boolean = isSystemInDarkTheme(),
+    colorOverrides: ColorOverrides? = null,
     colorScales: ColorScales? = null,
     fontFamily: FontFamilyConfig? = null,
     content: @Composable () -> Unit
 ) {
     // Build color palette from scales with smart merging
-    val colorPalette = if (colorScales != null) {
+    val basePalette = if (colorScales != null) {
         buildColorPaletteFromScales(
             useDarkTheme = useDarkTheme,
             colorScales = colorScales
@@ -83,6 +97,13 @@ fun PixaTheme(
     } else {
         // Use default palettes
         if (useDarkTheme) localDarkColorScheme else localLightColorScheme
+    }
+
+    // Apply semantic color overrides on top of the scale-derived palette
+    val colorPalette = if (colorOverrides != null && !colorOverrides.isEmpty()) {
+        applyColorOverrides(basePalette, colorOverrides)
+    } else {
+        basePalette
     }
 
     val typography = provideTextTypography(fontFamily)
@@ -365,5 +386,98 @@ private fun mergeColorScale(
         defaultScale
     }
 }
+
+/**
+ * Applies semantic color overrides to a base palette.
+ *
+ * Any non-null field in [overrides] replaces the corresponding field in
+ * the base palette. Null fields are kept from the base palette.
+ *
+ * @param base The base palette (typically derived from colorScales)
+ * @param overrides The semantic color overrides to apply
+ * @return A new ColorPalette with overrides applied
+ */
+private fun applyColorOverrides(
+    base: ColorPalette,
+    overrides: ColorOverrides
+): ColorPalette = base.copy(
+    brandSurfaceSubtle = overrides.brandSurfaceSubtle ?: base.brandSurfaceSubtle,
+    brandSurfaceDefault = overrides.brandSurfaceDefault ?: base.brandSurfaceDefault,
+    brandSurfaceFocus = overrides.brandSurfaceFocus ?: base.brandSurfaceFocus,
+    brandBorderSubtle = overrides.brandBorderSubtle ?: base.brandBorderSubtle,
+    brandBorderDefault = overrides.brandBorderDefault ?: base.brandBorderDefault,
+    brandBorderFocus = overrides.brandBorderFocus ?: base.brandBorderFocus,
+    brandContentSubtle = overrides.brandContentSubtle ?: base.brandContentSubtle,
+    brandContentDefault = overrides.brandContentDefault ?: base.brandContentDefault,
+    brandContentFocus = overrides.brandContentFocus ?: base.brandContentFocus,
+
+    accentSurfaceSubtle = overrides.accentSurfaceSubtle ?: base.accentSurfaceSubtle,
+    accentSurfaceDefault = overrides.accentSurfaceDefault ?: base.accentSurfaceDefault,
+    accentSurfaceFocus = overrides.accentSurfaceFocus ?: base.accentSurfaceFocus,
+    accentBorderSubtle = overrides.accentBorderSubtle ?: base.accentBorderSubtle,
+    accentBorderDefault = overrides.accentBorderDefault ?: base.accentBorderDefault,
+    accentBorderFocus = overrides.accentBorderFocus ?: base.accentBorderFocus,
+    accentContentSubtle = overrides.accentContentSubtle ?: base.accentContentSubtle,
+    accentContentDefault = overrides.accentContentDefault ?: base.accentContentDefault,
+    accentContentFocus = overrides.accentContentFocus ?: base.accentContentFocus,
+
+    baseSurfaceSubtle = overrides.baseSurfaceSubtle ?: base.baseSurfaceSubtle,
+    baseSurfaceDefault = overrides.baseSurfaceDefault ?: base.baseSurfaceDefault,
+    baseSurfaceElevated = overrides.baseSurfaceElevated ?: base.baseSurfaceElevated,
+    baseSurfaceFocus = overrides.baseSurfaceFocus ?: base.baseSurfaceFocus,
+    baseSurfaceShadow = overrides.baseSurfaceShadow ?: base.baseSurfaceShadow,
+    baseSurfaceDisabled = overrides.baseSurfaceDisabled ?: base.baseSurfaceDisabled,
+    baseBorderSubtle = overrides.baseBorderSubtle ?: base.baseBorderSubtle,
+    baseBorderDefault = overrides.baseBorderDefault ?: base.baseBorderDefault,
+    baseBorderFocus = overrides.baseBorderFocus ?: base.baseBorderFocus,
+    baseBorderDisabled = overrides.baseBorderDisabled ?: base.baseBorderDisabled,
+    baseContentTitle = overrides.baseContentTitle ?: base.baseContentTitle,
+    baseContentSubtitle = overrides.baseContentSubtitle ?: base.baseContentSubtitle,
+    baseContentBody = overrides.baseContentBody ?: base.baseContentBody,
+    baseContentCaption = overrides.baseContentCaption ?: base.baseContentCaption,
+    baseContentHint = overrides.baseContentHint ?: base.baseContentHint,
+    baseContentNegative = overrides.baseContentNegative ?: base.baseContentNegative,
+    baseContentDisabled = overrides.baseContentDisabled ?: base.baseContentDisabled,
+
+    infoSurfaceSubtle = overrides.infoSurfaceSubtle ?: base.infoSurfaceSubtle,
+    infoSurfaceDefault = overrides.infoSurfaceDefault ?: base.infoSurfaceDefault,
+    infoSurfaceFocus = overrides.infoSurfaceFocus ?: base.infoSurfaceFocus,
+    infoBorderSubtle = overrides.infoBorderSubtle ?: base.infoBorderSubtle,
+    infoBorderDefault = overrides.infoBorderDefault ?: base.infoBorderDefault,
+    infoBorderFocus = overrides.infoBorderFocus ?: base.infoBorderFocus,
+    infoContentSubtle = overrides.infoContentSubtle ?: base.infoContentSubtle,
+    infoContentDefault = overrides.infoContentDefault ?: base.infoContentDefault,
+    infoContentFocus = overrides.infoContentFocus ?: base.infoContentFocus,
+
+    successSurfaceSubtle = overrides.successSurfaceSubtle ?: base.successSurfaceSubtle,
+    successSurfaceDefault = overrides.successSurfaceDefault ?: base.successSurfaceDefault,
+    successSurfaceFocus = overrides.successSurfaceFocus ?: base.successSurfaceFocus,
+    successBorderSubtle = overrides.successBorderSubtle ?: base.successBorderSubtle,
+    successBorderDefault = overrides.successBorderDefault ?: base.successBorderDefault,
+    successBorderFocus = overrides.successBorderFocus ?: base.successBorderFocus,
+    successContentSubtle = overrides.successContentSubtle ?: base.successContentSubtle,
+    successContentDefault = overrides.successContentDefault ?: base.successContentDefault,
+    successContentFocus = overrides.successContentFocus ?: base.successContentFocus,
+
+    warningSurfaceSubtle = overrides.warningSurfaceSubtle ?: base.warningSurfaceSubtle,
+    warningSurfaceDefault = overrides.warningSurfaceDefault ?: base.warningSurfaceDefault,
+    warningSurfaceFocus = overrides.warningSurfaceFocus ?: base.warningSurfaceFocus,
+    warningBorderSubtle = overrides.warningBorderSubtle ?: base.warningBorderSubtle,
+    warningBorderDefault = overrides.warningBorderDefault ?: base.warningBorderDefault,
+    warningBorderFocus = overrides.warningBorderFocus ?: base.warningBorderFocus,
+    warningContentSubtle = overrides.warningContentSubtle ?: base.warningContentSubtle,
+    warningContentDefault = overrides.warningContentDefault ?: base.warningContentDefault,
+    warningContentFocus = overrides.warningContentFocus ?: base.warningContentFocus,
+
+    errorSurfaceSubtle = overrides.errorSurfaceSubtle ?: base.errorSurfaceSubtle,
+    errorSurfaceDefault = overrides.errorSurfaceDefault ?: base.errorSurfaceDefault,
+    errorSurfaceFocus = overrides.errorSurfaceFocus ?: base.errorSurfaceFocus,
+    errorBorderSubtle = overrides.errorBorderSubtle ?: base.errorBorderSubtle,
+    errorBorderDefault = overrides.errorBorderDefault ?: base.errorBorderDefault,
+    errorBorderFocus = overrides.errorBorderFocus ?: base.errorBorderFocus,
+    errorContentSubtle = overrides.errorContentSubtle ?: base.errorContentSubtle,
+    errorContentDefault = overrides.errorContentDefault ?: base.errorContentDefault,
+    errorContentFocus = overrides.errorContentFocus ?: base.errorContentFocus
+)
 
 

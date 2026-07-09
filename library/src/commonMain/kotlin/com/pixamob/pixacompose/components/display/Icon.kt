@@ -2,7 +2,6 @@ package com.pixamob.pixacompose.components.display
 
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.LocalContentColor
@@ -27,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // DATA CLASSES
@@ -59,7 +60,7 @@ sealed class IconSource {
  *     source = IconSource.Vector(Icons.Default.Home),
  *     contentDescription = "Home",
  *     tint = Color.Blue,
- *     size = 32.dp,
+ *     size = SizeVariant.Large,
  *     animation = true
  * )
  *
@@ -76,7 +77,7 @@ sealed class IconSource {
  *     contentDescription = "Remote Logo",
  *     placeholder = painterResource(R.drawable.placeholder),
  *     error = painterResource(R.drawable.error),
- *     size = 48.dp
+ *     customSize = 48.dp
  * )
  * ```
  *
@@ -84,7 +85,8 @@ sealed class IconSource {
  * @param contentDescription Accessibility description
  * @param modifier Modifier for the icon container
  * @param tint Tint color (null for original colors)
- * @param size Icon size in Dp
+ * @param size Icon size variant (maps to HierarchicalSize.Icon)
+ * @param customSize Optional exact Dp size override
  * @param animation Enable scale+fade animation
  * @param placeholder Placeholder painter for URL icons
  * @param error Error painter for URL icons
@@ -96,7 +98,8 @@ fun PixaIcon(
     contentDescription: String? = null,
     modifier: Modifier = Modifier,
     tint: Color? = LocalContentColor.current,
-    size: Dp = HierarchicalSize.Icon.Small,
+    size: SizeVariant = SizeVariant.Medium,
+    customSize: Dp? = null,
     animation: Boolean = false,
     placeholder: Painter? = null,
     error: Painter? = null,
@@ -108,11 +111,14 @@ fun PixaIcon(
         }
     }
 
+    // Resolve effective size
+    val effectiveSize = customSize ?: HierarchicalSize.Icon.forVariant(size)
+
     // Animation state
     var isVisible by remember { mutableStateOf(!animation) }
     val scale by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0.8f,
-        animationSpec = spring(
+        animationSpec = AnimationUtils.standardSpring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
         ),
@@ -120,10 +126,7 @@ fun PixaIcon(
     )
     val alpha by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = spring(
-            dampingRatio = Spring.DampingRatioNoBouncy,
-            stiffness = Spring.StiffnessMedium
-        ),
+        animationSpec = AnimationUtils.selectionSpring,
         label = "iconAlpha"
     )
 
@@ -135,11 +138,11 @@ fun PixaIcon(
 
     val animationModifier = if (animation) {
         modifier
-            .size(size)
+            .size(effectiveSize)
             .scale(scale)
             .alpha(alpha)
     } else {
-        modifier.size(size)
+        modifier.size(effectiveSize)
     }
 
     when (source) {
@@ -264,7 +267,8 @@ fun PixaIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color? = LocalContentColor.current,
-    size: Dp = HierarchicalSize.Icon.Small,
+    size: SizeVariant = SizeVariant.Medium,
+    customSize: Dp? = null,
     animation: Boolean = false
 ) {
     PixaIcon(
@@ -273,6 +277,7 @@ fun PixaIcon(
         modifier = modifier,
         tint = tint,
         size = size,
+        customSize = customSize,
         animation = animation
     )
 }
@@ -286,7 +291,8 @@ fun PixaIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color? = LocalContentColor.current,
-    size: Dp = HierarchicalSize.Icon.Small,
+    size: SizeVariant = SizeVariant.Medium,
+    customSize: Dp? = null,
     animation: Boolean = false
 ) {
     PixaIcon(
@@ -295,6 +301,7 @@ fun PixaIcon(
         modifier = modifier,
         tint = tint,
         size = size,
+        customSize = customSize,
         animation = animation
     )
 }
@@ -308,7 +315,8 @@ fun PixaIcon(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     tint: Color? = null,
-    size: Dp = HierarchicalSize.Icon.Small,
+    size: SizeVariant = SizeVariant.Medium,
+    customSize: Dp? = null,
     animation: Boolean = false,
     placeholder: Painter? = null,
     error: Painter? = null
@@ -319,6 +327,7 @@ fun PixaIcon(
         modifier = modifier,
         tint = tint,
         size = size,
+        customSize = customSize,
         animation = animation,
         placeholder = placeholder,
         error = error
@@ -346,7 +355,7 @@ fun PixaIcon(
  *     source = IconSource.Vector(Icons.Filled.Favorite),
  *     contentDescription = "Favorite",
  *     tint = Color.Red,
- *     size = 32.dp,
+ *     size = SizeVariant.Large,
  *     animation = true
  * )
  * ```
@@ -357,7 +366,7 @@ fun PixaIcon(
  *     source = IconSource.Resource(painterResource(R.drawable.logo)),
  *     contentDescription = "App Logo",
  *     tint = null, // Preserve original colors
- *     size = 40.dp
+ *     customSize = 40.dp
  * )
  * ```
  *
@@ -368,7 +377,7 @@ fun PixaIcon(
  *     contentDescription = "Remote Logo",
  *     placeholder = painterResource(R.drawable.placeholder),
  *     error = painterResource(R.drawable.error),
- *     size = 48.dp,
+ *     customSize = 48.dp,
  *     animation = true
  * )
  * ```
@@ -379,7 +388,7 @@ fun PixaIcon(
  *     source = IconSource.Vector(Icons.Default.Settings),
  *     contentDescription = "Settings",
  *     // tint will automatically use LocalContentColor
- *     size = 20.dp
+ *     customSize = 20.dp
  * )
  * ```
  *
@@ -398,7 +407,7 @@ fun PixaIcon(
  * PixaIcon(
  *     painter = painterResource(R.drawable.custom_icon),
  *     contentDescription = "Custom",
- *     size = 24.dp
+ *     customSize = 24.dp
  * )
  * ```
  *

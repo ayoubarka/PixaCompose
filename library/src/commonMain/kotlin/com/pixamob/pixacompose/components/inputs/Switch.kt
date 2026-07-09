@@ -26,6 +26,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.*
@@ -38,13 +39,7 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 enum class SwitchVariant {
     Filled,
     Outlined,
-    Minimal
-}
-
-enum class SwitchSize {
-    Small,
-    Medium,
-    Large
+    Ghost
 }
 
 enum class LabelPosition {
@@ -90,10 +85,10 @@ data class SwitchColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun getSwitchSizeConfig(size: SwitchSize): SwitchSizeConfig {
+private fun getSwitchSizeConfig(size: SizeVariant): SwitchSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        SwitchSize.Small -> SwitchSizeConfig(
+        SizeVariant.Small -> SwitchSizeConfig(
             width = HierarchicalSize.Container.Compact,
             height = 20.dp - HierarchicalSize.Spacing.Small,
             thumbSize = HierarchicalSize.Icon.Nano,
@@ -103,7 +98,7 @@ private fun getSwitchSizeConfig(size: SwitchSize): SwitchSizeConfig {
             labelStyle = typography.bodyLight,
             labelSpacing = HierarchicalSize.Spacing.Small
         )
-        SwitchSize.Medium -> SwitchSizeConfig(
+        SizeVariant.Medium -> SwitchSizeConfig(
             width = HierarchicalSize.Container.Medium,
             height = HierarchicalSize.Icon.Medium,
             thumbSize = HierarchicalSize.Icon.Small,
@@ -113,7 +108,7 @@ private fun getSwitchSizeConfig(size: SwitchSize): SwitchSizeConfig {
             labelStyle = typography.bodyRegular,
             labelSpacing = HierarchicalSize.Spacing.Medium
         )
-        SwitchSize.Large -> SwitchSizeConfig(
+        SizeVariant.Large -> SwitchSizeConfig(
             width = HierarchicalSize.Container.Huge,
             height = HierarchicalSize.Button.Small - HierarchicalSize.Spacing.Small,
             thumbSize = HierarchicalSize.Icon.Large,
@@ -122,6 +117,16 @@ private fun getSwitchSizeConfig(size: SwitchSize): SwitchSizeConfig {
             borderWidth = HierarchicalSize.Border.Medium,
             labelStyle = typography.bodyBold,
             labelSpacing = HierarchicalSize.Spacing.Large
+        )
+        else -> SwitchSizeConfig(
+            width = HierarchicalSize.Container.Medium,
+            height = HierarchicalSize.Icon.Medium,
+            thumbSize = HierarchicalSize.Icon.Small,
+            thumbPadding = HierarchicalSize.Spacing.Nano,
+            thumbElevation = HierarchicalSize.Shadow.Large,
+            borderWidth = 2.5.dp,
+            labelStyle = typography.bodyRegular,
+            labelSpacing = HierarchicalSize.Spacing.Medium
         )
     }
 }
@@ -156,7 +161,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
             disabledThumb = colors.baseContentDisabled,
             disabledBorder = colors.baseBorderDisabled
         )
-        SwitchVariant.Minimal -> SwitchColors(
+        SwitchVariant.Ghost -> SwitchColors(
             trackOn = colors.baseSurfaceElevated,
             trackOff = colors.baseSurfaceSubtle,
             thumbOn = colors.baseContentTitle,
@@ -204,7 +209,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
  *     checked = notifications,
  *     onCheckedChange = { notifications = it },
  *     variant = SwitchVariant.Outlined,
- *     size = SwitchSize.Large
+ *     size = SizeVariant.Large
  * )
  *
  * // Custom colors
@@ -225,9 +230,11 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
  * @param variant Visual style variant (Filled, Outlined, Minimal)
  * @param size Size preset (Small, Medium, Large)
  * @param enabled Whether the switch is enabled
+ * @param isError Whether the switch is in error state (overrides variant colors, not disabled colors)
  * @param colors Custom colors (null = use theme)
  * @param label Optional label text
  * @param labelPosition Position of label (Start or End)
+ * @param description Optional secondary text below label
  * @param interactionSource Interaction source for state
  * @param contentDescription Accessibility description
  */
@@ -237,57 +244,69 @@ fun PixaSwitch(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     variant: SwitchVariant = SwitchVariant.Filled,
-    size: SwitchSize = SwitchSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
+    isError: Boolean = false,
     colors: SwitchColors? = null,
     label: String? = null,
     labelPosition: LabelPosition = LabelPosition.End,
+    description: String? = null,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     contentDescription: String? = null
 ) {
     val sizeConfig = getSwitchSizeConfig(size)
     val themeColors = colors ?: getSwitchTheme(variant)
 
+    val errorColors = AppTheme.colors
+
     val trackColor by animateColorAsState(
         targetValue = when {
             !enabled && checked -> themeColors.disabledTrackOn
             !enabled -> themeColors.disabledTrackOff
+            isError && checked -> errorColors.errorSurfaceDefault
             checked -> themeColors.trackOn
             else -> themeColors.trackOff
         },
-        animationSpec = AnimationUtils.smoothSpring()
+        animationSpec = AnimationUtils.colorSpring,
+        label = "switch_track"
     )
 
     val thumbColor by animateColorAsState(
         targetValue = when {
             !enabled -> themeColors.disabledThumb
+            isError -> errorColors.errorContentDefault
             checked -> themeColors.thumbOn
             else -> themeColors.thumbOff
         },
-        animationSpec = AnimationUtils.smoothSpring()
+        animationSpec = AnimationUtils.colorSpring,
+        label = "switch_thumb_color"
     )
 
     val borderColor by animateColorAsState(
         targetValue = when {
             !enabled -> themeColors.disabledBorder
+            isError -> errorColors.errorBorderDefault
             checked -> themeColors.borderOn
             else -> themeColors.borderOff
         },
-        animationSpec = AnimationUtils.smoothSpring()
+        animationSpec = AnimationUtils.colorSpring,
+        label = "switch_border"
     )
 
-    val thumbOffset by animateDpAsState(
+    val thumbOffset by animateFloatAsState(
         targetValue = if (checked) {
-            sizeConfig.width - sizeConfig.thumbSize - sizeConfig.thumbPadding
+            (sizeConfig.width - sizeConfig.thumbSize - sizeConfig.thumbPadding).value
         } else {
-            sizeConfig.thumbPadding
+            sizeConfig.thumbPadding.value
         },
-        animationSpec = AnimationUtils.smoothSpring()
+        animationSpec = AnimationUtils.thumbSpring,
+        label = "switch_thumb"
     )
 
     val thumbScale by animateFloatAsState(
         targetValue = if (enabled) 1f else 0.9f,
-        animationSpec = AnimationUtils.smoothSpring()
+        animationSpec = AnimationUtils.selectionSpring,
+        label = "switch_scale"
     )
 
     Row(
@@ -310,11 +329,22 @@ fun PixaSwitch(
         horizontalArrangement = Arrangement.spacedBy(sizeConfig.labelSpacing)
     ) {
         if (label != null && labelPosition == LabelPosition.Start) {
-            Text(
-                text = label,
-                style = sizeConfig.labelStyle,
-                color = if (enabled) themeColors.label else themeColors.disabledThumb
-            )
+            Column {
+                Text(
+                    text = label,
+                    style = sizeConfig.labelStyle,
+                    color = if (enabled) themeColors.label else themeColors.disabledThumb
+                )
+                if (description != null) {
+                    Text(
+                        text = description,
+                        style = AppTheme.typography.captionRegular,
+                        color = AppTheme.colors.baseContentCaption,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
 
         Box(
@@ -335,7 +365,7 @@ fun PixaSwitch(
         ) {
             Box(
                 modifier = Modifier
-                    .offset(x = thumbOffset)
+                    .offset(x = thumbOffset.dp)
                     .size(sizeConfig.thumbSize)
                     .shadow(
                         elevation = if (enabled) sizeConfig.thumbElevation else 0.dp,
@@ -347,11 +377,22 @@ fun PixaSwitch(
         }
 
         if (label != null && labelPosition == LabelPosition.End) {
-            Text(
-                text = label,
-                style = sizeConfig.labelStyle,
-                color = if (enabled) themeColors.label else themeColors.disabledThumb
-            )
+            Column {
+                Text(
+                    text = label,
+                    style = sizeConfig.labelStyle,
+                    color = if (enabled) themeColors.label else themeColors.disabledThumb
+                )
+                if (description != null) {
+                    Text(
+                        text = description,
+                        style = AppTheme.typography.captionRegular,
+                        color = AppTheme.colors.baseContentCaption,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
         }
     }
 }
@@ -368,9 +409,11 @@ fun FilledSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    size: SwitchSize = SwitchSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
+    isError: Boolean = false,
     label: String? = null,
+    description: String? = null,
     labelPosition: LabelPosition = LabelPosition.End,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     contentDescription: String? = null
@@ -382,7 +425,9 @@ fun FilledSwitch(
         variant = SwitchVariant.Filled,
         size = size,
         enabled = enabled,
+        isError = isError,
         label = label,
+        description = description,
         labelPosition = labelPosition,
         interactionSource = interactionSource,
         contentDescription = contentDescription
@@ -397,9 +442,11 @@ fun OutlinedSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    size: SwitchSize = SwitchSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
+    isError: Boolean = false,
     label: String? = null,
+    description: String? = null,
     labelPosition: LabelPosition = LabelPosition.End,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     contentDescription: String? = null
@@ -411,7 +458,9 @@ fun OutlinedSwitch(
         variant = SwitchVariant.Outlined,
         size = size,
         enabled = enabled,
+        isError = isError,
         label = label,
+        description = description,
         labelPosition = labelPosition,
         interactionSource = interactionSource,
         contentDescription = contentDescription
@@ -426,9 +475,11 @@ fun MinimalSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    size: SwitchSize = SwitchSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
+    isError: Boolean = false,
     label: String? = null,
+    description: String? = null,
     labelPosition: LabelPosition = LabelPosition.End,
     interactionSource: MutableInteractionSource = remember { MutableInteractionSource() },
     contentDescription: String? = null
@@ -437,10 +488,12 @@ fun MinimalSwitch(
         checked = checked,
         onCheckedChange = onCheckedChange,
         modifier = modifier,
-        variant = SwitchVariant.Minimal,
+        variant = SwitchVariant.Ghost,
         size = size,
         enabled = enabled,
+        isError = isError,
         label = label,
+        description = description,
         labelPosition = labelPosition,
         interactionSource = interactionSource,
         contentDescription = contentDescription
@@ -459,7 +512,7 @@ fun ToggleSwitch(
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
-    size: SwitchSize = SwitchSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     contentDescription: String? = null
 ) {
@@ -483,16 +536,21 @@ fun SettingSwitch(
     onCheckedChange: (Boolean) -> Unit,
     label: String,
     modifier: Modifier = Modifier,
-    size: SwitchSize = SwitchSize.Medium,
-    enabled: Boolean = true
+    size: SizeVariant = SizeVariant.Medium,
+    enabled: Boolean = true,
+    isError: Boolean = false,
+    description: String? = null
 ) {
-    FilledSwitch(
+    PixaSwitch(
         checked = checked,
         onCheckedChange = onCheckedChange,
         modifier = modifier.fillMaxWidth(),
+        variant = SwitchVariant.Filled,
         size = size,
         enabled = enabled,
+        isError = isError,
         label = label,
-        labelPosition = LabelPosition.Start
+        labelPosition = LabelPosition.Start,
+        description = description
     )
 }

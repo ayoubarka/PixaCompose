@@ -1,17 +1,19 @@
 package com.pixamob.pixacompose.components.actions
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -42,19 +44,19 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.components.feedback.PixaCircularIndicator
 import com.pixamob.pixacompose.components.feedback.ProgressColors
-import com.pixamob.pixacompose.components.feedback.ProgressSize
 import com.pixamob.pixacompose.components.feedback.Skeleton
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
 enum class ButtonVariant {
-    Solid,
+    Filled,
     Tonal,
     Outlined,
     Ghost
@@ -64,6 +66,12 @@ enum class ButtonShape {
     Default,
     Pill,
     Circle
+}
+
+sealed class ButtonWidthPolicy {
+    data object Flexible : ButtonWidthPolicy()
+    data object Fixed : ButtonWidthPolicy()
+    data object FullBleed : ButtonWidthPolicy()
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -211,7 +219,7 @@ private fun getButtonTheme(
         if (isDestructive) colors.errorBorderDefault else colors.brandBorderDefault
 
     return when (variant) {
-        ButtonVariant.Solid -> ButtonStateColors(
+        ButtonVariant.Filled -> ButtonStateColors(
             default = ButtonColors(
                 background = brandOrErrorContent,
                 content = Color.White,
@@ -288,9 +296,12 @@ private fun InternalButton(
     contentAlignment: Alignment = Alignment.Center,
     arrangement: Arrangement.Horizontal = Arrangement.Center,
     description: String? = null,
+    cornerRadiusOverride: Dp? = null,
     content: @Composable RowScope.() -> Unit
 ) {
     val sizeConfig = getButtonSizeConfig(size)
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     // Determine current colors based on state
     val currentColors = when {
@@ -302,24 +313,24 @@ private fun InternalButton(
     // Animate color transitions
     val backgroundColor by animateColorAsState(
         targetValue = currentColors.background,
-        animationSpec = tween(150),
+        animationSpec = AnimationUtils.standardTween(150),
         label = "button_bg"
     )
 
     val contentColor by animateColorAsState(
         targetValue = currentColors.content,
-        animationSpec = tween(150),
+        animationSpec = AnimationUtils.standardTween(150),
         label = "button_content"
     )
 
     val borderColor by animateColorAsState(
         targetValue = currentColors.border,
-        animationSpec = tween(150),
+        animationSpec = AnimationUtils.standardTween(150),
         label = "button_border"
     )
 
-    // Determine corner radius based on shape
-    val cornerRadius = when (shape) {
+    // Determine corner radius based on shape, with override for FullBleed
+    val cornerRadius = cornerRadiusOverride ?: when (shape) {
         ButtonShape.Default -> sizeConfig.cornerRadius
         ButtonShape.Pill -> sizeConfig.height / 2
         ButtonShape.Circle -> sizeConfig.height / 2
@@ -355,8 +366,17 @@ private fun InternalButton(
                         )
                     } else Modifier
                 )
+                .focusable(interactionSource = interactionSource)
+                .then(
+                    if (isFocused && enabled) {
+                        Modifier.border(
+                            BorderStroke(2.dp, colors.default.content),
+                            buttonShape
+                        )
+                    } else Modifier
+                )
                 .clickable(
-                    interactionSource = remember { MutableInteractionSource() },
+                    interactionSource = interactionSource,
                     indication = ripple(bounded = true, color = currentColors.ripple),
                     enabled = enabled && !loading,
                     role = Role.Button,
@@ -378,14 +398,14 @@ private fun InternalButton(
                     PixaIcon(
                         painter = loadingIcon,
                         contentDescription = "Loading",
-                        size = sizeConfig.iconSize,
+                        customSize = sizeConfig.iconSize,
                         tint = contentColor
                     )
                 } else {
                     PixaCircularIndicator(
                         progress = null,
                         modifier = Modifier.size(sizeConfig.iconSize),
-                        sizePreset = ProgressSize.Small,
+                        sizePreset = SizeVariant.Small,
                         customColors = ProgressColors(
                             progress = contentColor,
                             track = contentColor.copy(alpha = 0.2f),
@@ -393,6 +413,8 @@ private fun InternalButton(
                         )
                     )
                 }
+                Spacer(modifier = Modifier.width(sizeConfig.iconSpacing))
+                content()
             } else {
                 content()
             }
@@ -451,7 +473,7 @@ private fun InternalButton(
  * // Button with custom colors
  * PixaButton(
  *     text = "Custom",
- *     variant = ButtonVariant.Solid,
+ *     variant = ButtonVariant.Filled,
  *     customColors = ButtonStateColors(
  *         default = ButtonColors(
  *             background = Color.Magenta,
@@ -479,7 +501,7 @@ fun PixaButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
-    variant: ButtonVariant = ButtonVariant.Solid,
+    variant: ButtonVariant = ButtonVariant.Filled,
     isDestructive: Boolean = false,
     enabled: Boolean = true,
     loading: Boolean = false,
@@ -487,6 +509,8 @@ fun PixaButton(
     showSkeleton: Boolean = false,
     size: SizeVariant = SizeVariant.Medium,
     shape: ButtonShape = ButtonShape.Default,
+    widthPolicy: ButtonWidthPolicy = ButtonWidthPolicy.Flexible,
+    selected: Boolean = false,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
     elevation: Dp? = null,
@@ -530,9 +554,26 @@ fun PixaButton(
         getButtonTheme(variant, AppTheme.colors, isDestructive)
     }
 
+    // Selected state overrides variant colors (but not disabled)
+    val effectiveColors = if (selected && enabled) {
+        val brandFocus = AppTheme.colors.brandSurfaceFocus
+        val brandContent = AppTheme.colors.brandContentDefault
+        ButtonStateColors(
+            default = ButtonColors(
+                background = brandFocus,
+                content = brandContent,
+                ripple = brandContent.copy(alpha = 0.12f)
+            ),
+            disabled = colors.disabled,
+            loading = colors.loading
+        )
+    } else {
+        colors
+    }
+
     // Auto-elevation for Solid and Tonal variants (Material 3 style)
     val buttonElevation = elevation ?: when (variant) {
-        ButtonVariant.Solid, ButtonVariant.Tonal -> HierarchicalSize.Shadow.Nano  // 1dp
+        ButtonVariant.Filled, ButtonVariant.Tonal -> HierarchicalSize.Shadow.Nano  // 1dp
         else -> 0.dp
     }
 
@@ -543,22 +584,32 @@ fun PixaButton(
     // For icon-only buttons without explicit circle shape, suggest circle shape
     val effectiveShape = if (!hasText && hasIcons && shape == ButtonShape.Default) {
         ButtonShape.Circle
+    } else if (widthPolicy == ButtonWidthPolicy.FullBleed) {
+        ButtonShape.Default
     } else {
         shape
     }
 
+    // Apply full bleed modifier when widthPolicy is FullBleed
+    val effectiveModifier = if (widthPolicy == ButtonWidthPolicy.FullBleed) {
+        modifier.fillMaxWidth()
+    } else {
+        modifier
+    }
+
     InternalButton(
         onClick = onClick,
-        modifier = modifier,
+        modifier = effectiveModifier,
         enabled = enabled,
         loading = loading,
         loadingIcon = loadingIcon,
         size = size,
         shape = effectiveShape,
-        colors = colors,
+        colors = effectiveColors,
         elevation = buttonElevation,
         arrangement = arrangement,
-        description = description
+        description = description,
+        cornerRadiusOverride = if (widthPolicy == ButtonWidthPolicy.FullBleed) 0.dp else null
     ) {
         ButtonContent(
             text = text,
@@ -600,7 +651,7 @@ private fun RowScope.ButtonContent(
         PixaIcon(
             painter = leadingIcon,
             contentDescription = null,
-            size = iconSize
+            customSize = iconSize
         )
 
         if (hasText && shape != ButtonShape.Circle) {
@@ -627,7 +678,7 @@ private fun RowScope.ButtonContent(
         PixaIcon(
             painter = trailingIcon,
             contentDescription = null,
-            size = iconSize
+            customSize = iconSize
         )
     }
 }

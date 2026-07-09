@@ -1,11 +1,12 @@
 package com.pixamob.pixacompose.components.actions
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Text
@@ -47,6 +49,7 @@ import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ============================================================================
 // CONFIGURATION
@@ -57,8 +60,8 @@ import com.pixamob.pixacompose.theme.SizeVariant
  * Chips are compact elements that represent an attribute, text, entity, or action
  */
 enum class ChipVariant {
-    /** Solid background with high emphasis - Selected filters, primary tags */
-    Solid,
+    /** Filled background with high emphasis - Selected filters, primary tags */
+    Filled,
     /** Subtle tonal background - Default filter state, categories */
     Tonal,
     /** Border only with transparent background - Unselected filters, options */
@@ -210,7 +213,7 @@ private fun getChipTheme(
     colors: ColorPalette
 ): ChipStateColors {
     return when (variant) {
-        ChipVariant.Solid -> ChipStateColors(
+        ChipVariant.Filled -> ChipStateColors(
             default = ChipColors(
                 background = colors.baseSurfaceDefault,
                 content = colors.baseContentBody,
@@ -267,7 +270,7 @@ private fun getChipTheme(
         ChipVariant.Ghost -> ChipStateColors(
             default = ChipColors(
                 background = Color.Transparent,
-                content = colors.baseContentBody,
+                content = colors.brandContentSubtle,
                 border = Color.Transparent
             ),
             selected = ChipColors(
@@ -383,23 +386,25 @@ fun PixaChip(
     // Animated colors with spring for snappier feel
     val animatedBackgroundColor by animateColorAsState(
         targetValue = finalColors.background,
-        animationSpec = spring(),
+        animationSpec = AnimationUtils.colorSpring,
         label = "chipBackgroundColor"
     )
 
     val animatedContentColor by animateColorAsState(
         targetValue = finalColors.content,
-        animationSpec = spring(),
+        animationSpec = AnimationUtils.colorSpring,
         label = "chipContentColor"
     )
 
     val animatedBorderColor by animateColorAsState(
         targetValue = finalColors.border,
-        animationSpec = spring(),
+        animationSpec = AnimationUtils.colorSpring,
         label = "chipBorderColor"
     )
 
     val isClickable = enabled && onClick != null && type != ChipType.Static
+    val chipInteractionSource = remember { MutableInteractionSource() }
+    val isChipFocused by chipInteractionSource.collectIsFocusedAsState()
 
     Box(
         modifier = modifier
@@ -430,12 +435,23 @@ fun PixaChip(
             .then(
                 if (isClickable) {
                     @Suppress("UNNECESSARY_NOT_NULL_ASSERTION")
-                    Modifier.clickable(
-                        enabled = enabled,
-                        onClick = onClick!!,
-                        indication = ripple(color = finalColors.ripple),
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
+                    Modifier
+                        .focusable(interactionSource = chipInteractionSource)
+                        .then(
+                            if (isChipFocused && enabled) {
+                                Modifier.border(
+                                    width = 2.dp,
+                                    color = finalColors.content,
+                                    shape = RoundedCornerShape(config.cornerRadius)
+                                )
+                            } else Modifier
+                        )
+                        .clickable(
+                            enabled = enabled,
+                            onClick = onClick!!,
+                            indication = ripple(color = finalColors.ripple),
+                            interactionSource = chipInteractionSource
+                        )
                 } else Modifier
             )
             .padding(horizontal = config.horizontalPadding),
@@ -497,9 +513,11 @@ fun PixaChip(
                     ) {
                         Text(
                             text = "×",
+                            modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true),
                             style = androidx.compose.ui.text.TextStyle(
-                                fontSize = config.iconSize.value.sp,
-                                color = animatedContentColor
+                                fontSize = (config.iconSize.value * 0.7f).sp,
+                                color = animatedContentColor,
+                                textAlign = TextAlign.Center
                             )
                         )
                     }

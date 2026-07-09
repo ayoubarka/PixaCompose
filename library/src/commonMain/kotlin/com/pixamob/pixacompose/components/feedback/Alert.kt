@@ -24,7 +24,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaCard
 import com.pixamob.pixacompose.components.display.BaseCardElevation
-import com.pixamob.pixacompose.components.display.BaseCardPadding
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
@@ -319,7 +318,7 @@ fun PixaAlert(
                     else -> BaseCardVariant.Filled
                 },
                 elevation = BaseCardElevation.None,
-                padding = BaseCardPadding.None,
+                padding = SizeVariant.None,
                 backgroundColor = colors.background
             ) {
                 Row(

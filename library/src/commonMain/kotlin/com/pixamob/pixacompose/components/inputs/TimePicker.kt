@@ -45,6 +45,7 @@ import com.pixamob.pixacompose.components.actions.ChipVariant
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 import dev.darkokoa.datetimewheelpicker.WheelTimePicker
 import dev.darkokoa.datetimewheelpicker.core.WheelPickerDefaults
 import dev.darkokoa.datetimewheelpicker.core.format.timeFormatter
@@ -60,8 +61,6 @@ enum class TimePickerVariant {
     Clock,
     TimeOfDayPicker
 }
-
-enum class TimePickerSize { Small, Medium, Large }
 
 enum class TimeFormat { Hour12, Hour24 }
 
@@ -145,11 +144,11 @@ private fun getTimePickerTheme(colors: ColorPalette): TimePickerColors {
 }
 
 @Composable
-private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig {
+private fun getTimePickerSizeConfig(size: SizeVariant): TimePickerSizeConfig {
     val typography = AppTheme.typography
     val colors = AppTheme.colors
     return when (size) {
-        TimePickerSize.Small -> TimePickerSizeConfig(
+        SizeVariant.Small -> TimePickerSizeConfig(
             height = 280.dp,
             padding = HierarchicalSize.Spacing.Medium,
             cornerRadius = HierarchicalSize.Radius.Medium,
@@ -159,7 +158,7 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
             selectorBorder = BorderStroke(1.5.dp, colors.baseBorderDefault)
         )
 
-        TimePickerSize.Medium -> TimePickerSizeConfig(
+        SizeVariant.Medium -> TimePickerSizeConfig(
             height = 320.dp,
             padding = HierarchicalSize.Spacing.Large,
             cornerRadius = HierarchicalSize.Radius.Medium,
@@ -169,7 +168,7 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
             selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
 
-        TimePickerSize.Large -> TimePickerSizeConfig(
+        SizeVariant.Large -> TimePickerSizeConfig(
             height = 360.dp,
             padding = HierarchicalSize.Spacing.Huge,
             cornerRadius = HierarchicalSize.Radius.Large,
@@ -177,6 +176,16 @@ private fun getTimePickerSizeConfig(size: TimePickerSize): TimePickerSizeConfig 
             itemTextStyle = typography.titleRegular,
             selectorShape = RoundedCornerShape(20.dp),
             selectorBorder = BorderStroke(2.5.dp, colors.baseBorderDefault)
+        )
+
+        else -> TimePickerSizeConfig(
+            height = 320.dp,
+            padding = HierarchicalSize.Spacing.Large,
+            cornerRadius = HierarchicalSize.Radius.Medium,
+            titleTextStyle = typography.bodyBold,
+            itemTextStyle = typography.bodyBold,
+            selectorShape = RoundedCornerShape(16.dp),
+            selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
     }
 }
@@ -268,7 +277,7 @@ fun PixaTimePicker(
     variant: TimePickerVariant,
     modifier: Modifier = Modifier,
     mode: TimeSelectionMode = TimeSelectionMode.Single,
-    size: TimePickerSize = TimePickerSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     format: TimeFormat = TimeFormat.Hour12,
     enabled: Boolean = true,
     colors: TimePickerColors? = null,
@@ -612,7 +621,7 @@ private fun TimeOfDayPickerContent(
                 val isSelected = slotName in selectedSlots
                 PixaChip(
                     text = "$slotName (${time})",
-                    variant = if (isSelected) ChipVariant.Solid else ChipVariant.Outlined,
+                    variant = if (isSelected) ChipVariant.Filled else ChipVariant.Outlined,
                     type = ChipType.Selectable,
                     selected = isSelected,
                     enabled = enabled,

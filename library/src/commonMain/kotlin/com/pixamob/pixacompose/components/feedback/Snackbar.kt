@@ -993,7 +993,7 @@ fun SnackbarHost(
             ) + fadeIn(animationSpec = AnimationUtils.standardTween()),
             exit = slideOutVertically(
                 targetOffsetY = { it },
-                animationSpec = AnimationUtils.fastSpring()
+                animationSpec = AnimationUtils.fastSpringSpec()
             ) + fadeOut(animationSpec = AnimationUtils.fastTween())
         ) {
             currentSnackbar?.let { snackbar ->

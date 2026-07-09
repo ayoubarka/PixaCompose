@@ -286,7 +286,7 @@ fun PixaButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     text: String? = null,
-    variant: ButtonVariant = ButtonVariant.Solid,
+    variant: ButtonVariant = ButtonVariant.Filled,
     isDestructive: Boolean = false,
     enabled: Boolean = true,
     loading: Boolean = false,
@@ -362,7 +362,7 @@ fun PixaButton(
    There's no `PixaScaffold` globally defined. However, components like `TopNavBar`, `BottomNavBar`, `Drawer`, and `TabBar` are natively provided under `navigation/` to assemble a full screen.
 
 5. **Are component variants handled via sealed classes, enums, or separate composables?**
-   Variants are stringently configured via **enums** (e.g., `ButtonVariant.Solid`, `SizeVariant.Medium`, `ButtonShape.Pill`) and evaluated internally rather than using multiple root public functions. (Though helper inline extensions like `SolidButton` might exist, the backing logic relies heavily on Enums defining the property configs).
+   Variants are stringently configured via **enums** (e.g., `ButtonVariant.Filled`, `SizeVariant.Medium`, `ButtonShape.Pill`) and evaluated internally rather than using multiple root public functions. (Though helper inline extensions like `FilledButton` might exist, the backing logic relies heavily on Enums defining the property configs).
 
 6. **Does each component have a preview function or dedicated preview file?**
    Preview files are typically kept internal to Android preview tooling or app tests and are not shipped natively in commonMain KMP. Previews rely on UI playground catalog implementations rather than raw isolated in-file `@Preview` stubs in `commonMain`.

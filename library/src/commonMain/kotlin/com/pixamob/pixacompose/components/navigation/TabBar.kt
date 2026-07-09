@@ -1,7 +1,6 @@
 package com.pixamob.pixacompose.components.navigation
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -22,6 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -30,6 +30,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
@@ -39,6 +40,8 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -48,12 +51,6 @@ enum class TabBarVariant {
     Underline,
     Filled,
     Pill
-}
-
-enum class TabBarSize {
-    Small,
-    Medium,
-    Large
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -97,10 +94,10 @@ data class TabBarSizeConfig(
 // ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun getTabBarSizeConfig(size: TabBarSize): TabBarSizeConfig {
+private fun getTabBarSizeConfig(size: SizeVariant): TabBarSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        TabBarSize.Small -> TabBarSizeConfig(
+        SizeVariant.Small -> TabBarSizeConfig(
             height = 40.dp,
             horizontalPadding = HierarchicalSize.Spacing.Medium,
             verticalPadding = HierarchicalSize.Spacing.Small,
@@ -110,7 +107,7 @@ private fun getTabBarSizeConfig(size: TabBarSize): TabBarSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Small,
             spacing = HierarchicalSize.Spacing.Compact
         )
-        TabBarSize.Medium -> TabBarSizeConfig(
+        SizeVariant.Medium -> TabBarSizeConfig(
             height = 48.dp,
             horizontalPadding = HierarchicalSize.Spacing.Large,
             verticalPadding = HierarchicalSize.Spacing.Small,
@@ -120,7 +117,7 @@ private fun getTabBarSizeConfig(size: TabBarSize): TabBarSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Medium,
             spacing = HierarchicalSize.Spacing.Small
         )
-        TabBarSize.Large -> TabBarSizeConfig(
+        SizeVariant.Large -> TabBarSizeConfig(
             height = 56.dp,
             horizontalPadding = HierarchicalSize.Spacing.Huge,
             verticalPadding = HierarchicalSize.Spacing.Medium,
@@ -129,6 +126,16 @@ private fun getTabBarSizeConfig(size: TabBarSize): TabBarSizeConfig {
             indicatorHeight = 4.dp,
             cornerRadius = HierarchicalSize.Radius.Large,
             spacing = HierarchicalSize.Spacing.Medium
+        )
+        else -> TabBarSizeConfig(
+            height = 48.dp,
+            horizontalPadding = HierarchicalSize.Spacing.Large,
+            verticalPadding = HierarchicalSize.Spacing.Small,
+            iconSize = HierarchicalSize.Icon.Medium,
+            textStyle = typography.labelMedium,
+            indicatorHeight = 3.dp,
+            cornerRadius = HierarchicalSize.Radius.Medium,
+            spacing = HierarchicalSize.Spacing.Small
         )
     }
 }
@@ -228,16 +235,29 @@ fun PixaTabBar(
     onTabSelected: (Int) -> Unit,
     modifier: Modifier = Modifier,
     variant: TabBarVariant = TabBarVariant.Underline,
-    size: TabBarSize = TabBarSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     colors: TabBarColors? = null,
     scrollable: Boolean = false
 ) {
     val sizeConfig = getTabBarSizeConfig(size)
     val themeColors = colors ?: getTabBarTheme(variant)
+    val scrollState = rememberScrollState()
+
+    // Auto-center selected tab when scrollable
+    if (scrollable) {
+        val density = LocalDensity.current
+        val estimatedTabWidthPx = with(density) {
+            (sizeConfig.horizontalPadding * 2 + sizeConfig.iconSize + sizeConfig.spacing + 40.dp).roundToPx()
+        }
+        LaunchedEffect(selectedIndex) {
+            val targetScroll = selectedIndex * estimatedTabWidthPx - (estimatedTabWidthPx / 2)
+            scrollState.animateScrollTo(targetScroll.coerceAtLeast(0))
+        }
+    }
 
     val rowModifier = if (scrollable) {
         modifier
-            .horizontalScroll(rememberScrollState())
+            .horizontalScroll(scrollState)
             .background(themeColors.background)
     } else {
         modifier
@@ -282,12 +302,12 @@ private fun TabBarItemContent(
             selected -> colors.selectedContent
             else -> colors.unselectedContent
         },
-        animationSpec = tween(200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     val backgroundColor by animateColorAsState(
         targetValue = if (selected && variant != TabBarVariant.Underline) colors.selectedBackground else Color.Transparent,
-        animationSpec = tween(200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     val shape = when (variant) {

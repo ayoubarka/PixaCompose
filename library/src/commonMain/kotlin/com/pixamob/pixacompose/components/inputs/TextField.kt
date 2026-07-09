@@ -2,9 +2,9 @@ package com.pixamob.pixacompose.components.inputs
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
@@ -45,15 +45,6 @@ enum class TextFieldVariant {
 }
 
 /**
- * TextField size enum
- */
-enum class TextFieldSize {
-    Small,     // Compact (36dp height)
-    Medium,    // Standard (44dp height)
-    Large      // Comfortable (52dp height)
-}
-
-/**
  * Configuration for TextField appearance
  */
 @Stable
@@ -73,10 +64,10 @@ private data class TextFieldConfig(
  * Get configuration for given size
  */
 @Composable
-private fun TextFieldSize.config(): TextFieldConfig {
+private fun SizeVariant.config(): TextFieldConfig {
     val typography = AppTheme.typography
     return when (this) {
-        TextFieldSize.Small -> TextFieldConfig(
+        SizeVariant.Small -> TextFieldConfig(
             height = HierarchicalSize.Input.Small,
             horizontalPadding = HierarchicalSize.Spacing.Medium,
             verticalPadding = HierarchicalSize.Spacing.Compact,
@@ -88,7 +79,7 @@ private fun TextFieldSize.config(): TextFieldConfig {
             cornerRadius = HierarchicalSize.Radius.Small
         )
 
-        TextFieldSize.Medium -> TextFieldConfig(
+        SizeVariant.Medium -> TextFieldConfig(
             height = HierarchicalSize.Input.Medium,
             horizontalPadding = HierarchicalSize.Spacing.Large,
             verticalPadding = HierarchicalSize.Spacing.Small,
@@ -100,7 +91,7 @@ private fun TextFieldSize.config(): TextFieldConfig {
             cornerRadius = HierarchicalSize.Radius.Medium
         )
 
-        TextFieldSize.Large -> TextFieldConfig(
+        SizeVariant.Large -> TextFieldConfig(
             height = HierarchicalSize.Input.Large,
             horizontalPadding = HierarchicalSize.Spacing.Huge,
             verticalPadding = HierarchicalSize.Spacing.Medium,
@@ -110,6 +101,18 @@ private fun TextFieldSize.config(): TextFieldConfig {
             iconSize = HierarchicalSize.Icon.Large,
             borderWidth = HierarchicalSize.Border.Large,
             cornerRadius = HierarchicalSize.Radius.Large
+        )
+
+        else -> TextFieldConfig(
+            height = HierarchicalSize.Input.Medium,
+            horizontalPadding = HierarchicalSize.Spacing.Large,
+            verticalPadding = HierarchicalSize.Spacing.Small,
+            textStyle = typography.bodyRegular,
+            labelTextStyle = typography.labelMedium,
+            helperTextStyle = typography.captionRegular,
+            iconSize = HierarchicalSize.Icon.Medium,
+            borderWidth = HierarchicalSize.Border.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium
         )
     }
 }
@@ -262,7 +265,7 @@ private fun TextFieldVariant.colors(
  * PixaTextField(
  *     value = bio,
  *     onValueChange = { bio = it },
- *     size = TextFieldSize.Large,
+ *     size = SizeVariant.Large,
  *     maxLength = 150,
  *     helperText = "${bio.length}/150"
  * )
@@ -282,6 +285,7 @@ private fun TextFieldVariant.colors(
  * @param errorText Optional error text (shown when isError=true)
  * @param leadingIcon Optional leading icon
  * @param trailingIcon Optional trailing icon
+ * @param onClear Optional clear callback — when set, shows a clear icon when text is non-empty
  * @param visualTransformation Visual transformation (e.g., password)
  * @param keyboardOptions Keyboard configuration
  * @param keyboardActions Keyboard actions
@@ -298,7 +302,7 @@ fun PixaTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     variant: TextFieldVariant = TextFieldVariant.Outlined,
-    size: TextFieldSize = TextFieldSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
@@ -308,6 +312,7 @@ fun PixaTextField(
     errorText: String? = null,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
+    onClear: (() -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
@@ -348,7 +353,7 @@ fun PixaTextField(
 
     val animatedBorderWidth by animateDpAsState(
         targetValue = if (isFocused && variant == TextFieldVariant.Outlined) config.borderWidth * 1.2f else config.borderWidth,
-        animationSpec = tween(durationMillis = 200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     Column(
@@ -442,7 +447,7 @@ fun PixaTextField(
                             innerTextField()
                         }
 
-                        // Trailing icon
+                        // Trailing icon / Clear icon
                         if (trailingIcon != null) {
                             PixaIcon(
                                 painter = trailingIcon,
@@ -450,6 +455,29 @@ fun PixaTextField(
                                 tint = colors.label,
                                 modifier = Modifier.size(config.iconSize)
                             )
+                        }
+                        if (onClear != null && value.isNotEmpty() && enabled && !readOnly) {
+                            Box(
+                                modifier = Modifier
+                                    .size(config.iconSize)
+                                    .clickable(
+                                        interactionSource = remember { MutableInteractionSource() },
+                                        indication = null
+                                    ) {
+                                        onValueChange("")
+                                        onClear()
+                                    }
+                                    .semantics {
+                                        contentDescription ?: "Clear text"
+                                    },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "✕",
+                                    style = AppTheme.typography.bodyRegular,
+                                    color = colors.label
+                                )
+                            }
                         }
                     }
                 }
@@ -499,7 +527,7 @@ fun FilledTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    size: TextFieldSize = TextFieldSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
@@ -546,7 +574,7 @@ fun OutlinedTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    size: TextFieldSize = TextFieldSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
@@ -593,7 +621,7 @@ fun GhostTextField(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    size: TextFieldSize = TextFieldSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
@@ -645,7 +673,7 @@ fun EmailTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     variant: TextFieldVariant = TextFieldVariant.Outlined,
-    size: TextFieldSize = TextFieldSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     isError: Boolean = false,
     label: String = "Email",
@@ -682,7 +710,7 @@ fun PasswordTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     variant: TextFieldVariant = TextFieldVariant.Outlined,
-    size: TextFieldSize = TextFieldSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     isError: Boolean = false,
     label: String = "Password",
@@ -721,7 +749,7 @@ fun SearchTextField(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     variant: TextFieldVariant = TextFieldVariant.Filled,
-    size: TextFieldSize = TextFieldSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     placeholder: String = "Search...",
     onSearch: (() -> Unit)? = null

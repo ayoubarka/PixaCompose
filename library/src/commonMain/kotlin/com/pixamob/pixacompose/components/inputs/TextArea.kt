@@ -44,15 +44,6 @@ enum class TextAreaVariant {
 }
 
 /**
- * TextArea size enum
- */
-enum class TextAreaSize {
-    Small,     // Compact (96dp default height)
-    Medium,    // Standard (128dp default height)
-    Large      // Comfortable (160dp default height)
-}
-
-/**
  * Configuration for TextArea appearance
  */
 @Stable
@@ -72,10 +63,10 @@ private data class TextAreaConfig(
  * Get configuration for given size
  */
 @Composable
-private fun TextAreaSize.config(): TextAreaConfig {
+private fun SizeVariant.config(): TextAreaConfig {
     val typography = AppTheme.typography
     return when (this) {
-        TextAreaSize.Small -> TextAreaConfig(
+        SizeVariant.Small -> TextAreaConfig(
             minHeight = 96.dp,
             horizontalPadding = HierarchicalSize.Spacing.Medium,
             verticalPadding = HierarchicalSize.Spacing.Small,
@@ -86,7 +77,7 @@ private fun TextAreaSize.config(): TextAreaConfig {
             borderWidth = HierarchicalSize.Border.Compact,
             cornerRadius = HierarchicalSize.Radius.Small
         )
-        TextAreaSize.Medium -> TextAreaConfig(
+        SizeVariant.Medium -> TextAreaConfig(
             minHeight = 128.dp,
             horizontalPadding = HierarchicalSize.Spacing.Large,
             verticalPadding = HierarchicalSize.Spacing.Medium,
@@ -97,7 +88,7 @@ private fun TextAreaSize.config(): TextAreaConfig {
             borderWidth = HierarchicalSize.Border.Medium,
             cornerRadius = HierarchicalSize.Radius.Medium
         )
-        TextAreaSize.Large -> TextAreaConfig(
+        SizeVariant.Large -> TextAreaConfig(
             minHeight = 160.dp,
             horizontalPadding = HierarchicalSize.Spacing.Huge,
             verticalPadding = HierarchicalSize.Spacing.Large,
@@ -107,6 +98,17 @@ private fun TextAreaSize.config(): TextAreaConfig {
             iconSize = HierarchicalSize.Icon.Large,
             borderWidth = HierarchicalSize.Border.Large,
             cornerRadius = HierarchicalSize.Radius.Large
+        )
+        else -> TextAreaConfig(
+            minHeight = 128.dp,
+            horizontalPadding = HierarchicalSize.Spacing.Large,
+            verticalPadding = HierarchicalSize.Spacing.Medium,
+            textStyle = typography.bodyRegular,
+            labelTextStyle = typography.labelMedium,
+            helperTextStyle = typography.captionRegular,
+            iconSize = HierarchicalSize.Icon.Medium,
+            borderWidth = HierarchicalSize.Border.Medium,
+            cornerRadius = HierarchicalSize.Radius.Medium
         )
     }
 }
@@ -215,6 +217,8 @@ private fun TextAreaVariant.colors(
  *
  * Multi-line text input with variants, sizes, and full customization.
  * Follows Material 3 design with theme integration.
+ * Auto-height behavior: height grows from minHeight (based on minLines) up to maxLines,
+ * then the content becomes scrollable. Default minLines=3, maxLines=Int.MAX_VALUE (unlimited).
  *
  * @param value Current text value
  * @param onValueChange Callback when text changes
@@ -259,7 +263,7 @@ fun PixaTextArea(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     variant: TextAreaVariant = TextAreaVariant.Outlined,
-    size: TextAreaSize = TextAreaSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
@@ -299,17 +303,17 @@ fun PixaTextArea(
             isFocused -> colors.focusedBorder
             else -> colors.border
         },
-        animationSpec = tween(durationMillis = 200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     val animatedBackgroundColor by animateColorAsState(
         targetValue = if (!enabled) colors.disabledBackground else colors.background,
-        animationSpec = tween(durationMillis = 200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     val animatedBorderWidth by animateDpAsState(
         targetValue = if (isFocused && variant == TextAreaVariant.Outlined) config.borderWidth * 1.2f else config.borderWidth,
-        animationSpec = tween(durationMillis = 200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     Column(
@@ -462,7 +466,7 @@ fun FilledTextArea(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    size: TextAreaSize = TextAreaSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
@@ -509,7 +513,7 @@ fun OutlinedTextArea(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    size: TextAreaSize = TextAreaSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
@@ -556,7 +560,7 @@ fun GhostTextArea(
     value: String,
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    size: TextAreaSize = TextAreaSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
@@ -608,7 +612,7 @@ fun CommentTextArea(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     variant: TextAreaVariant = TextAreaVariant.Outlined,
-    size: TextAreaSize = TextAreaSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     label: String = "Comment",
     placeholder: String = "Write your comment...",
@@ -645,7 +649,7 @@ fun BioTextArea(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     variant: TextAreaVariant = TextAreaVariant.Outlined,
-    size: TextAreaSize = TextAreaSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     label: String = "Bio",
     placeholder: String = "Tell us about yourself...",
@@ -682,7 +686,7 @@ fun NoteTextArea(
     onValueChange: (String) -> Unit,
     modifier: Modifier = Modifier,
     variant: TextAreaVariant = TextAreaVariant.Filled,
-    size: TextAreaSize = TextAreaSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     placeholder: String = "Take a note...",
     maxLength: Int? = null

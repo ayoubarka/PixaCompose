@@ -2,6 +2,7 @@ package com.pixamob.pixacompose.components.inputs
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -36,6 +37,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.disabled
 import androidx.compose.ui.semantics.semantics
@@ -43,9 +45,11 @@ import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlin.math.roundToInt
 
@@ -56,13 +60,7 @@ import kotlin.math.roundToInt
 enum class SliderVariant {
     Filled,
     Outlined,
-    Minimal
-}
-
-enum class SliderSize {
-    Small,
-    Medium,
-    Large
+    Ghost
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -129,7 +127,7 @@ private fun getSliderTheme(variant: SliderVariant, colors: ColorPalette): Slider
             disabledInactiveTrack = colors.baseBorderDisabled,
             disabledThumb = colors.baseSurfaceDisabled
         )
-        SliderVariant.Minimal -> SliderColors(
+        SliderVariant.Ghost -> SliderColors(
             activeTrack = colors.baseContentCaption,
             inactiveTrack = colors.baseSurfaceElevated,
             thumb = colors.baseContentTitle,
@@ -144,29 +142,36 @@ private fun getSliderTheme(variant: SliderVariant, colors: ColorPalette): Slider
 }
 
 @Composable
-private fun getSliderSizeConfig(size: SliderSize): SliderSizeConfig {
+private fun getSliderSizeConfig(size: SizeVariant): SliderSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        SliderSize.Small -> SliderSizeConfig(
+        SizeVariant.Small -> SliderSizeConfig(
             trackHeight = HierarchicalSize.SliderTrack.Medium,
             thumbSize = HierarchicalSize.Icon.Compact,
             thumbElevation = HierarchicalSize.Shadow.Medium,
             labelStyle = typography.labelSmall,
             valueStyle = typography.bodyBold
         )
-        SliderSize.Medium -> SliderSizeConfig(
+        SizeVariant.Medium -> SliderSizeConfig(
             trackHeight = HierarchicalSize.SliderTrack.Large,
             thumbSize = HierarchicalSize.Icon.Small,
             thumbElevation = HierarchicalSize.Shadow.Large,
             labelStyle = typography.labelMedium,
             valueStyle = typography.bodyRegular
         )
-        SliderSize.Large -> SliderSizeConfig(
+        SizeVariant.Large -> SliderSizeConfig(
             trackHeight = HierarchicalSize.SliderTrack.Large + HierarchicalSize.Spacing.Nano,
             thumbSize = HierarchicalSize.Icon.Medium,
             thumbElevation = HierarchicalSize.Shadow.Huge,
             labelStyle = typography.labelLarge,
             valueStyle = typography.bodyLight
+        )
+        else -> SliderSizeConfig(
+            trackHeight = HierarchicalSize.SliderTrack.Large,
+            thumbSize = HierarchicalSize.Icon.Small,
+            thumbElevation = HierarchicalSize.Shadow.Large,
+            labelStyle = typography.labelMedium,
+            valueStyle = typography.bodyRegular
         )
     }
 }
@@ -206,7 +211,7 @@ private fun getSliderSizeConfig(size: SliderSize): SliderSizeConfig {
  *     value = brightness,
  *     onValueChange = { brightness = it },
  *     variant = SliderVariant.Outlined,
- *     size = SliderSize.Large
+ *     size = SizeVariant.Large
  * )
  *
  * // Gradient slider for color selection
@@ -247,6 +252,10 @@ private fun getSliderSizeConfig(size: SliderSize): SliderSizeConfig {
  * @param onValueChangeFinished Callback when user finishes changing value
  * @param gradientBrush Optional gradient for track background
  * @param thumbColorOverride Optional custom thumb color
+ * @param minIcon Optional icon displayed at the minimum end of the slider track
+ * @param maxIcon Optional icon displayed at the maximum end of the slider track
+ * @param minValueText Optional text displayed at the minimum end of the slider track
+ * @param maxValueText Optional text displayed at the maximum end of the slider track
  */
 @Composable
 fun PixaSlider(
@@ -254,7 +263,7 @@ fun PixaSlider(
     onValueChange: (Float) -> Unit,
     modifier: Modifier = Modifier,
     variant: SliderVariant = SliderVariant.Filled,
-    size: SliderSize = SliderSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     valueRange: ClosedFloatingPointRange<Float> = 0f..1f,
     steps: Int = 0,
@@ -264,7 +273,11 @@ fun PixaSlider(
     valueFormatter: (Float) -> String = { it.roundToInt().toString() },
     onValueChangeFinished: (() -> Unit)? = null,
     gradientBrush: Brush? = null,
-    thumbColorOverride: Color? = null
+    thumbColorOverride: Color? = null,
+    minIcon: Painter? = null,
+    maxIcon: Painter? = null,
+    minValueText: String? = null,
+    maxValueText: String? = null
 ) {
     val themeColors = getSliderTheme(variant, AppTheme.colors)
     val finalColors = colors ?: themeColors
@@ -274,11 +287,17 @@ fun PixaSlider(
         ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
     }
 
+    val animatedFraction by animateFloatAsState(
+        targetValue = normalizedValue,
+        animationSpec = AnimationUtils.fastSpring,
+        label = "slider_fraction"
+    )
+
     var isDragging by remember { mutableStateOf(false) }
 
     val thumbSize by animateDpAsState(
         targetValue = if (isDragging) sizeConfig.thumbSize * config.thumbScaleOnDrag else sizeConfig.thumbSize,
-        animationSpec = AnimationUtils.fastSpring()
+        animationSpec = AnimationUtils.fastSpringSpec()
     )
 
     val activeTrackColor by animateColorAsState(
@@ -321,57 +340,97 @@ fun PixaSlider(
             Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
         }
 
-        BoxWithConstraints(modifier = Modifier.fillMaxWidth().height(sizeConfig.thumbSize)) {
-            val trackWidth = constraints.maxWidth.toFloat()
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(sizeConfig.thumbSize)
-                    .pointerInput(enabled) {
-                        if (!enabled) return@pointerInput
-                        detectTapGestures { offset ->
-                            val newNormalizedValue = calculateNormalizedValue(offset.x, trackWidth, steps)
-                            val newValue = valueRange.start + (newNormalizedValue * (valueRange.endInclusive - valueRange.start))
-                            onValueChange(newValue.coerceIn(valueRange))
-                            onValueChangeFinished?.invoke()
-                        }
-                    }
-                    .pointerInput(enabled) {
-                        if (!enabled) return@pointerInput
-                        detectDragGestures(
-                            onDragStart = { isDragging = true },
-                            onDragEnd = { isDragging = false; onValueChangeFinished?.invoke() },
-                            onDragCancel = { isDragging = false }
-                        ) { change, _ ->
-                            change.consume()
-                            val newNormalizedValue = calculateNormalizedValue(change.position.x, trackWidth, steps)
-                            val newValue = valueRange.start + (newNormalizedValue * (valueRange.endInclusive - valueRange.start))
-                            onValueChange(newValue.coerceIn(valueRange))
-                        }
-                    },
-                contentAlignment = Alignment.CenterStart
-            ) {
-                TrackContent(
-                    sizeConfig = sizeConfig,
-                    normalizedValue = normalizedValue,
-                    activeTrackColor = activeTrackColor,
-                    inactiveTrackColor = inactiveTrackColor,
-                    gradientBrush = gradientBrush,
-                    steps = steps,
-                    enabled = enabled,
-                    showStepIndicators = config.showStepIndicators
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
+        ) {
+            if (minIcon != null) {
+                PixaIcon(
+                    painter = minIcon,
+                    contentDescription = null,
+                    tint = finalColors.label,
+                    modifier = Modifier.size(sizeConfig.thumbSize)
                 )
+            }
+            if (minValueText != null) {
+                Text(
+                    text = minValueText,
+                    style = sizeConfig.labelStyle,
+                    color = finalColors.label
+                )
+            }
 
-                ThumbContent(
-                    thumbSize = thumbSize,
-                    thumbColor = thumbColorOverride ?: thumbColor,
-                    sizeConfig = sizeConfig,
-                    enabled = enabled,
-                    normalizedValue = normalizedValue,
-                    variant = variant,
-                    config = config,
-                    maxWidth = this@BoxWithConstraints.maxWidth
+            BoxWithConstraints(
+                modifier = Modifier.weight(1f).height(sizeConfig.thumbSize)
+            ) {
+                val trackWidth = constraints.maxWidth.toFloat()
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .pointerInput(enabled) {
+                            if (!enabled) return@pointerInput
+                            detectTapGestures { offset ->
+                                val newNormalizedValue = calculateNormalizedValue(offset.x, trackWidth, steps)
+                                val newValue = valueRange.start + (newNormalizedValue * (valueRange.endInclusive - valueRange.start))
+                                onValueChange(newValue.coerceIn(valueRange))
+                                onValueChangeFinished?.invoke()
+                            }
+                        }
+                        .pointerInput(enabled) {
+                            if (!enabled) return@pointerInput
+                            detectDragGestures(
+                                onDragStart = { isDragging = true },
+                                onDragEnd = { isDragging = false; onValueChangeFinished?.invoke() },
+                                onDragCancel = { isDragging = false }
+                            ) { change, _ ->
+                                change.consume()
+                                val newNormalizedValue = calculateNormalizedValue(change.position.x, trackWidth, steps)
+                                val newValue = valueRange.start + (newNormalizedValue * (valueRange.endInclusive - valueRange.start))
+                                onValueChange(newValue.coerceIn(valueRange))
+                            }
+                        },
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    TrackContent(
+                        sizeConfig = sizeConfig,
+                        normalizedValue = normalizedValue,
+                        activeTrackColor = activeTrackColor,
+                        inactiveTrackColor = inactiveTrackColor,
+                        gradientBrush = gradientBrush,
+                        steps = steps,
+                        enabled = enabled,
+                        showStepIndicators = config.showStepIndicators,
+                        animatedFraction = animatedFraction
+                    )
+
+                    ThumbContent(
+                        thumbSize = thumbSize,
+                        thumbColor = thumbColorOverride ?: thumbColor,
+                        sizeConfig = sizeConfig,
+                        enabled = enabled,
+                        normalizedValue = animatedFraction,
+                        variant = variant,
+                        config = config,
+                        maxWidth = this@BoxWithConstraints.maxWidth
+                    )
+                }
+            }
+
+            if (maxValueText != null) {
+                Text(
+                    text = maxValueText,
+                    style = sizeConfig.labelStyle,
+                    color = finalColors.label
+                )
+            }
+            if (maxIcon != null) {
+                PixaIcon(
+                    painter = maxIcon,
+                    contentDescription = null,
+                    tint = finalColors.label,
+                    modifier = Modifier.size(sizeConfig.thumbSize)
                 )
             }
         }
@@ -401,14 +460,15 @@ private fun TrackContent(
     gradientBrush: Brush?,
     steps: Int,
     enabled: Boolean,
-    showStepIndicators: Boolean
+    showStepIndicators: Boolean,
+    animatedFraction: Float
 ) {
     Box(modifier = Modifier.fillMaxWidth().height(sizeConfig.trackHeight)) {
         if (gradientBrush != null) {
             Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(gradientBrush))
         } else {
             Box(modifier = Modifier.fillMaxSize().clip(CircleShape).background(inactiveTrackColor))
-            Box(modifier = Modifier.fillMaxWidth(normalizedValue).fillMaxHeight().clip(CircleShape).background(activeTrackColor))
+            Box(modifier = Modifier.fillMaxWidth(animatedFraction).fillMaxHeight().clip(CircleShape).background(activeTrackColor))
         }
     }
 

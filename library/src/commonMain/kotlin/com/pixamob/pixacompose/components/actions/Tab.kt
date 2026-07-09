@@ -3,19 +3,22 @@ import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
@@ -30,10 +33,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
@@ -50,12 +56,12 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.feedback.PixaBadge
-import com.pixamob.pixacompose.components.feedback.BadgeSize
 import com.pixamob.pixacompose.components.feedback.BadgeStyle
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ============================================================================
 // CONFIGURATION & MODELS
@@ -90,6 +96,18 @@ enum class TabShape {
 enum class TabOrientation {
     Horizontal, // Icon and text side by side
     Vertical    // Icon above text
+}
+
+/**
+ * Tab icon mode - controls which icons are shown for TextWithIcons/TextWithPainters
+ */
+enum class TabIconMode {
+    /** Show only leading icon */
+    Leading,
+    /** Show only trailing icon */
+    Trailing,
+    /** Show both leading and trailing icons */
+    Both
 }
 
 /**
@@ -146,7 +164,7 @@ data class TabIndicatorConfig(
 )
 
 /**
- * Tab content - can be text, icon, or both
+ * Tab content - can be text, icon, or both with leading/trailing icon support
  */
 sealed class TabContent {
     data class Text(val text: String) : TabContent()
@@ -154,6 +172,16 @@ sealed class TabContent {
     data class IconPainter(val painter: Painter) : TabContent()
     data class TextWithIcon(val text: String, val icon: ImageVector) : TabContent()
     data class TextWithPainter(val text: String, val painter: Painter) : TabContent()
+    data class TextWithIcons(
+        val text: String,
+        val leadingIcon: ImageVector? = null,
+        val trailingIcon: ImageVector? = null
+    ) : TabContent()
+    data class TextWithPainters(
+        val text: String,
+        val leadingIcon: Painter? = null,
+        val trailingIcon: Painter? = null
+    ) : TabContent()
 }
 
 /**
@@ -222,7 +250,10 @@ data class TabContentStyle(
     val iconSize: Dp? = null,
     val iconTint: Color? = null,
     val textStyle: TextStyle? = null,
-    val textColor: Color? = null
+    val textColor: Color? = null,
+    val textAlign: TextAlign? = null,
+    val iconMode: TabIconMode = TabIconMode.Both,
+    val contentAlignment: Alignment? = null
 )
 
 // ============================================================================
@@ -364,7 +395,7 @@ private fun getTabStyle(
                 background = Color.Transparent,
                 content = colors.baseContentDisabled
             ),
-            enableRipple = true
+            enableRipple = false
         )
     }
 
@@ -387,7 +418,7 @@ private fun getTabStyle(
                 background = Color.Transparent,
                 content = colors.baseContentDisabled
             ),
-            enableRipple = true
+            enableRipple = false
         )
         TabVariant.Secondary -> TabStyle(
             default = TabColors(
@@ -410,7 +441,7 @@ private fun getTabStyle(
                 content = colors.baseContentDisabled,
                 border = colors.baseBorderDisabled
             ),
-            enableRipple = true
+            enableRipple = false
         )
         TabVariant.Segmented -> TabStyle(
             default = TabColors(
@@ -429,7 +460,7 @@ private fun getTabStyle(
                 background = Color.Transparent,
                 content = colors.baseContentDisabled
             ),
-            enableRipple = true
+            enableRipple = false
         )
         TabVariant.Vertical -> TabStyle(
             default = TabColors(
@@ -449,7 +480,7 @@ private fun getTabStyle(
                 background = Color.Transparent,
                 content = colors.baseContentDisabled
             ),
-            enableRipple = true
+            enableRipple = false
         )
     }
 }
@@ -514,14 +545,17 @@ fun PixaTab(
     indicatorConfig: TabIndicatorConfig = TabIndicatorConfig(),
     modifier: Modifier = Modifier
 ) {
-    // Animated colors with spring for snappier feel
+    val tabInteractionSource = remember { MutableInteractionSource() }
+    val isTabFocused by tabInteractionSource.collectIsFocusedAsState()
+
+    // Animated colors with spring for smooth feel
     val backgroundColor by animateColorAsState(
         targetValue = when {
             !enabled -> style.disabled.background
             selected -> style.selected.background
             else -> style.default.background
         },
-        animationSpec = spring(),
+        animationSpec = AnimationUtils.colorSpring,
         label = "tab_bg"
     )
 
@@ -531,7 +565,7 @@ fun PixaTab(
             selected -> style.selected.content
             else -> style.default.content
         },
-        animationSpec = spring(),
+        animationSpec = AnimationUtils.colorSpring,
         label = "tab_content"
     )
 
@@ -541,7 +575,7 @@ fun PixaTab(
             selected -> style.selected.border
             else -> style.default.border
         },
-        animationSpec = spring(),
+        animationSpec = AnimationUtils.colorSpring,
         label = "tab_border"
     )
 
@@ -552,7 +586,7 @@ fun PixaTab(
         } else {
             Color.Transparent
         },
-        animationSpec = tween(durationMillis = indicatorConfig.animationDurationMs),
+        animationSpec = AnimationUtils.colorSpring,
         label = "tab_indicator"
     )
 
@@ -564,10 +598,9 @@ fun PixaTab(
 
     // Determine badge size based on tab size
     val badgeSize = when (size) {
-        SizeVariant.None -> BadgeSize.Small
-        SizeVariant.Nano, SizeVariant.Compact -> BadgeSize.Small
-        SizeVariant.Small, SizeVariant.Medium -> BadgeSize.Medium
-        SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> BadgeSize.Large
+        SizeVariant.None, SizeVariant.Nano, SizeVariant.Compact -> SizeVariant.Small
+        SizeVariant.Small, SizeVariant.Medium -> SizeVariant.Medium
+        SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> SizeVariant.Large
     }
 
     // Determine if indicator should show
@@ -587,6 +620,8 @@ fun PixaTab(
                             is TabContent.IconPainter -> this.contentDescription = "Tab"
                             is TabContent.TextWithIcon -> this.contentDescription = content.text
                             is TabContent.TextWithPainter -> this.contentDescription = content.text
+                            is TabContent.TextWithIcons -> this.contentDescription = content.text
+                            is TabContent.TextWithPainters -> this.contentDescription = content.text
                         }
                     }
             ) {
@@ -607,6 +642,16 @@ fun PixaTab(
                                 Modifier
                             }
                         )
+                        .focusable(interactionSource = tabInteractionSource)
+                        .then(
+                            if (isTabFocused && enabled) {
+                                Modifier.border(
+                                    width = 2.dp,
+                                    color = contentColor,
+                                    shape = RoundedCornerShape(cornerRadius)
+                                )
+                            } else Modifier
+                        )
                         .clickable(
                             enabled = enabled,
                             onClick = onClick,
@@ -614,17 +659,17 @@ fun PixaTab(
                                 val ripple = if (style.rippleColor != Color.Unspecified) {
                                     style.rippleColor
                                 } else {
-                                    contentColor.copy(alpha = 0.12f)
+                                    contentColor.copy(alpha = 0.06f)
                                 }
                                 ripple(bounded = true, color = ripple)
                             } else null,
-                            interactionSource = remember { MutableInteractionSource() }
+                            interactionSource = tabInteractionSource
                         )
                         .padding(
                             horizontal = config.horizontalPadding,
                             vertical = config.verticalPadding
                         ),
-                    contentAlignment = contentAlignment
+                    contentAlignment = customContentStyle?.contentAlignment ?: contentAlignment
                 ) {
                     // Render content based on orientation
                     if (orientation == TabOrientation.Vertical) {
@@ -693,16 +738,28 @@ fun PixaTab(
                         role = Role.Tab
                         this.selected = selected
                         when (content) {
-                            is TabContent.Text -> this.contentDescription = content.text
-                            is TabContent.Icon -> this.contentDescription = "Tab"
-                            is TabContent.IconPainter -> this.contentDescription = "Tab"
-                            is TabContent.TextWithIcon -> this.contentDescription = content.text
-                            is TabContent.TextWithPainter -> this.contentDescription = content.text
-                        }
+                        is TabContent.Text -> this.contentDescription = content.text
+                        is TabContent.Icon -> this.contentDescription = "Tab"
+                        is TabContent.IconPainter -> this.contentDescription = "Tab"
+                        is TabContent.TextWithIcon -> this.contentDescription = content.text
+                        is TabContent.TextWithPainter -> this.contentDescription = content.text
+                        is TabContent.TextWithIcons -> this.contentDescription = content.text
+                        is TabContent.TextWithPainters -> this.contentDescription = content.text
                     }
+                }
                     .height(config.height)
                     .clip(RoundedCornerShape(config.height / 2))
                     .background(backgroundColor)
+                    .focusable(interactionSource = tabInteractionSource)
+                    .then(
+                        if (isTabFocused && enabled) {
+                            Modifier.border(
+                                width = 2.dp,
+                                color = contentColor,
+                                shape = RoundedCornerShape(config.height / 2)
+                            )
+                        } else Modifier
+                    )
                     .clickable(
                         enabled = enabled,
                         onClick = onClick,
@@ -710,16 +767,16 @@ fun PixaTab(
                             val ripple = if (style.rippleColor != Color.Unspecified) {
                                 style.rippleColor
                             } else {
-                                contentColor.copy(alpha = 0.12f)
+                                contentColor.copy(alpha = 0.06f)
                             }
-                            ripple(bounded = true, color = ripple)
-                        } else null,
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
-                    .padding(
-                        horizontal = config.horizontalPadding,
-                        vertical = config.verticalPadding
-                    ),
+                                ripple(bounded = true, color = ripple)
+                            } else null,
+                            interactionSource = tabInteractionSource
+                        )
+                        .padding(
+                            horizontal = config.horizontalPadding,
+                            vertical = config.verticalPadding
+                        ),
                 contentAlignment = contentAlignment
             ) {
                 Row(
@@ -752,6 +809,8 @@ fun PixaTab(
                             is TabContent.IconPainter -> this.contentDescription = "Tab"
                             is TabContent.TextWithIcon -> this.contentDescription = content.text
                             is TabContent.TextWithPainter -> this.contentDescription = content.text
+                            is TabContent.TextWithIcons -> this.contentDescription = content.text
+                            is TabContent.TextWithPainters -> this.contentDescription = content.text
                         }
                     }
             ) {
@@ -787,6 +846,16 @@ fun PixaTab(
                                 Modifier
                             }
                         )
+                        .focusable(interactionSource = tabInteractionSource)
+                        .then(
+                            if (isTabFocused && enabled) {
+                                Modifier.border(
+                                    width = 2.dp,
+                                    color = contentColor,
+                                    shape = RoundedCornerShape(cornerRadius)
+                                )
+                            } else Modifier
+                        )
                         .clickable(
                             enabled = enabled,
                             onClick = onClick,
@@ -794,17 +863,17 @@ fun PixaTab(
                                 val ripple = if (style.rippleColor != Color.Unspecified) {
                                     style.rippleColor
                                 } else {
-                                    contentColor.copy(alpha = 0.12f)
+                                    contentColor.copy(alpha = 0.06f)
                                 }
                                 ripple(bounded = true, color = ripple)
                             } else null,
-                            interactionSource = remember { MutableInteractionSource() }
+                            interactionSource = tabInteractionSource
                         )
                         .padding(
                             horizontal = config.horizontalPadding,
                             vertical = config.verticalPadding
                         ),
-                    contentAlignment = contentAlignment
+                    contentAlignment = customContentStyle?.contentAlignment ?: contentAlignment
                 ) {
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -836,7 +905,7 @@ private fun RowScope.RenderTabContentRow(
     contentColor: Color,
     selected: Boolean,
     badge: String?,
-    badgeSize: BadgeSize,
+    badgeSize: SizeVariant,
     badgeVariant: BadgeVariant,
     config: TabConfig,
     customContentStyle: TabContentStyle?
@@ -845,6 +914,8 @@ private fun RowScope.RenderTabContentRow(
     val iconTint = customContentStyle?.iconTint ?: contentColor
     val textStyle = customContentStyle?.textStyle ?: config.textStyle
     val textColor = customContentStyle?.textColor ?: contentColor
+    val textAlign = customContentStyle?.textAlign ?: TextAlign.Center
+    val iconMode = customContentStyle?.iconMode ?: TabIconMode.Both
 
     when (content) {
         is TabContent.Text -> {
@@ -853,7 +924,7 @@ private fun RowScope.RenderTabContentRow(
                 style = textStyle,
                 color = textColor,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = TextAlign.Center,
+                textAlign = textAlign,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -886,7 +957,7 @@ private fun RowScope.RenderTabContentRow(
                 style = textStyle,
                 color = textColor,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = TextAlign.Center,
+                textAlign = textAlign,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -903,10 +974,72 @@ private fun RowScope.RenderTabContentRow(
                 style = textStyle,
                 color = textColor,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = TextAlign.Center,
+                textAlign = textAlign,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+        is TabContent.TextWithIcons -> {
+            if (iconMode != TabIconMode.Trailing) {
+                content.leadingIcon?.let {
+                    PixaIcon(
+                        imageVector = it,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            }
+            Text(
+                text = content.text,
+                style = textStyle,
+                color = textColor,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                textAlign = textAlign,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (iconMode != TabIconMode.Leading) {
+                content.trailingIcon?.let {
+                    PixaIcon(
+                        imageVector = it,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            }
+        }
+        is TabContent.TextWithPainters -> {
+            if (iconMode != TabIconMode.Trailing) {
+                content.leadingIcon?.let {
+                    PixaIcon(
+                        painter = it,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            }
+            Text(
+                text = content.text,
+                style = textStyle,
+                color = textColor,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                textAlign = textAlign,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (iconMode != TabIconMode.Leading) {
+                content.trailingIcon?.let {
+                    PixaIcon(
+                        painter = it,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            }
         }
     }
 
@@ -930,7 +1063,7 @@ private fun ColumnScope.RenderTabContentColumn(
     contentColor: Color,
     selected: Boolean,
     badge: String?,
-    badgeSize: BadgeSize,
+    badgeSize: SizeVariant,
     badgeVariant: BadgeVariant,
     config: TabConfig,
     customContentStyle: TabContentStyle?
@@ -939,6 +1072,8 @@ private fun ColumnScope.RenderTabContentColumn(
     val iconTint = customContentStyle?.iconTint ?: contentColor
     val textStyle = customContentStyle?.textStyle ?: config.textStyle
     val textColor = customContentStyle?.textColor ?: contentColor
+    val textAlign = customContentStyle?.textAlign ?: TextAlign.Center
+    val iconMode = customContentStyle?.iconMode ?: TabIconMode.Both
 
     when (content) {
         is TabContent.Text -> {
@@ -947,7 +1082,7 @@ private fun ColumnScope.RenderTabContentColumn(
                 style = textStyle,
                 color = textColor,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = TextAlign.Center,
+                textAlign = textAlign,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -966,7 +1101,7 @@ private fun ColumnScope.RenderTabContentColumn(
                         content = it,
                         variant = badgeVariant,
                         size = badgeSize,
-                        style = BadgeStyle.Solid,
+                        style = BadgeStyle.Filled,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = 4.dp, y = (-4).dp)
@@ -988,7 +1123,7 @@ private fun ColumnScope.RenderTabContentColumn(
                         content = it,
                         variant = badgeVariant,
                         size = badgeSize,
-                        style = BadgeStyle.Solid,
+                        style = BadgeStyle.Filled,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = 4.dp, y = (-4).dp)
@@ -1010,7 +1145,7 @@ private fun ColumnScope.RenderTabContentColumn(
                         content = it,
                         variant = badgeVariant,
                         size = badgeSize,
-                        style = BadgeStyle.Solid,
+                        style = BadgeStyle.Filled,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = 4.dp, y = (-4).dp)
@@ -1022,7 +1157,7 @@ private fun ColumnScope.RenderTabContentColumn(
                 style = textStyle,
                 color = textColor,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = TextAlign.Center,
+                textAlign = textAlign,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1041,7 +1176,7 @@ private fun ColumnScope.RenderTabContentColumn(
                         content = it,
                         variant = badgeVariant,
                         size = badgeSize,
-                        style = BadgeStyle.Solid,
+                        style = BadgeStyle.Filled,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = 4.dp, y = (-4).dp)
@@ -1053,10 +1188,72 @@ private fun ColumnScope.RenderTabContentColumn(
                 style = textStyle,
                 color = textColor,
                 fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = TextAlign.Center,
+                textAlign = textAlign,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+        is TabContent.TextWithIcons -> {
+            if (iconMode != TabIconMode.Trailing) {
+                content.leadingIcon?.let {
+                    PixaIcon(
+                        imageVector = it,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            }
+            Text(
+                text = content.text,
+                style = textStyle,
+                color = textColor,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                textAlign = textAlign,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (iconMode != TabIconMode.Leading) {
+                content.trailingIcon?.let {
+                    PixaIcon(
+                        imageVector = it,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            }
+        }
+        is TabContent.TextWithPainters -> {
+            if (iconMode != TabIconMode.Trailing) {
+                content.leadingIcon?.let {
+                    PixaIcon(
+                        painter = it,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            }
+            Text(
+                text = content.text,
+                style = textStyle,
+                color = textColor,
+                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                textAlign = textAlign,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (iconMode != TabIconMode.Leading) {
+                content.trailingIcon?.let {
+                    PixaIcon(
+                        painter = it,
+                        contentDescription = null,
+                        tint = iconTint,
+                        modifier = Modifier.size(iconSize)
+                    )
+                }
+            }
         }
     }
 }
@@ -1269,33 +1466,63 @@ fun ScrollableTabs(
 ) {
     val config = getTabConfig(size)
     val style = getTabStyle(TabVariant.Secondary, customColors, AppTheme.colors)
+    val scrollState = rememberScrollState()
+
+    // Track actual widths of each tab
+    val tabWidths = remember { mutableListOf<Int>() }
+    val containerState = remember { mutableStateOf(0) }
+
+    // Auto-center selected tab when it changes
+    LaunchedEffect(selectedTabIndex) {
+        val containerW = containerState.value
+        if (tabWidths.isNotEmpty() && containerW > 0 && selectedTabIndex < tabWidths.size) {
+            val cumulativeWidth = tabWidths.take(selectedTabIndex).sum()
+            val tabWidth = tabWidths[selectedTabIndex]
+            val targetScroll = (cumulativeWidth + tabWidth / 2 - containerW / 2)
+                .coerceAtLeast(0)
+            scrollState.animateScrollTo(targetScroll)
+        }
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .background(AppTheme.colors.baseSurfaceDefault)
+            .onGloballyPositioned { containerState.value = it.size.width }
     ) {
         Row(
             modifier = Modifier
-                .horizontalScroll(rememberScrollState())
-                .padding(horizontal = HierarchicalSize.Spacing.Medium, vertical = HierarchicalSize.Spacing.Small),
+                .horizontalScroll(scrollState)
+                .padding(horizontal = HierarchicalSize.Spacing.Medium, vertical = HierarchicalSize.Spacing.Small)
+                .fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
         ) {
             tabs.forEachIndexed { index, tab ->
-                PixaTab(
-                    selected = index == selectedTabIndex,
-                    onClick = { if (tab.enabled) onTabSelected(index) },
-                    content = tab.content,
-                    style = style,
-                    config = config,
-                    size = size,
-                    shape = TabShape.Pill,
-                    orientation = orientation,
-                    customContentStyle = customContentStyle,
-                    badge = tab.badge,
-                    enabled = tab.enabled,
-                    indicatorStyle = TabIndicatorStyle.Pill
-                )
+                Box(
+                    modifier = Modifier.onGloballyPositioned { coords ->
+                        val width = coords.size.width
+                        if (index >= tabWidths.size) {
+                            tabWidths.add(width)
+                        } else {
+                            tabWidths[index] = width
+                        }
+                    }
+                ) {
+                    PixaTab(
+                        selected = index == selectedTabIndex,
+                        onClick = { if (tab.enabled) onTabSelected(index) },
+                        content = tab.content,
+                        style = style,
+                        config = config,
+                        size = size,
+                        shape = TabShape.Pill,
+                        orientation = orientation,
+                        customContentStyle = customContentStyle,
+                        badge = tab.badge,
+                        enabled = tab.enabled,
+                        indicatorStyle = TabIndicatorStyle.Pill
+                    )
+                }
             }
         }
     }

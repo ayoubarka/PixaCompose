@@ -51,6 +51,7 @@ import com.pixamob.pixacompose.components.actions.ChipVariant
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils.standardSpring
 import com.pixamob.pixacompose.utils.DateTimeUtils
 import com.pixamob.pixacompose.utils.DateTimeUtils.toEpochMillis
@@ -96,8 +97,6 @@ enum class ScheduleFrequency {
     Weekly,
     Monthly
 }
-
-enum class DatePickerSize { Small, Medium, Large }
 
 enum class DateSelectionMode { Single, Multiple, Range }
 
@@ -250,11 +249,11 @@ private fun getDatePickerTheme(colors: ColorPalette): DatePickerColors {
 }
 
 @Composable
-private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig {
+private fun getDatePickerSizeConfig(size: SizeVariant): DatePickerSizeConfig {
     val typography = AppTheme.typography
     val colors = AppTheme.colors
     return when (size) {
-        DatePickerSize.Small -> DatePickerSizeConfig(
+        SizeVariant.Small -> DatePickerSizeConfig(
             height = HierarchicalSize.Container.Massive * 3f,
             padding = HierarchicalSize.Spacing.Medium,
             cornerRadius = HierarchicalSize.Radius.Medium,
@@ -264,7 +263,7 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
             selectorShape = RoundedCornerShape(12.dp),
             selectorBorder = BorderStroke(1.5.dp, colors.baseBorderDefault)
         )
-        DatePickerSize.Medium -> DatePickerSizeConfig(
+        SizeVariant.Medium -> DatePickerSizeConfig(
             height = HierarchicalSize.Container.Massive * 3.5f,
             padding = HierarchicalSize.Spacing.Large,
             cornerRadius = HierarchicalSize.Radius.Medium,
@@ -274,7 +273,7 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
             selectorShape = RoundedCornerShape(16.dp),
             selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
-        DatePickerSize.Large -> DatePickerSizeConfig(
+        SizeVariant.Large -> DatePickerSizeConfig(
             height = HierarchicalSize.Container.Massive * 4f,
             padding = HierarchicalSize.Spacing.Huge,
             cornerRadius = HierarchicalSize.Radius.Large,
@@ -283,6 +282,16 @@ private fun getDatePickerSizeConfig(size: DatePickerSize): DatePickerSizeConfig 
             dayTextStyle = typography.labelLarge,
             selectorShape = RoundedCornerShape(20.dp),
             selectorBorder = BorderStroke(2.5.dp, colors.baseBorderDefault)
+        )
+        else -> DatePickerSizeConfig(
+            height = HierarchicalSize.Container.Massive * 3.5f,
+            padding = HierarchicalSize.Spacing.Large,
+            cornerRadius = HierarchicalSize.Radius.Medium,
+            titleTextStyle = typography.bodyBold,
+            itemTextStyle = typography.bodyBold,
+            dayTextStyle = typography.labelMedium,
+            selectorShape = RoundedCornerShape(16.dp),
+            selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
     }
 }
@@ -392,7 +401,7 @@ fun PixaDatePicker(
     variant: DatePickerVariant,
     modifier: Modifier = Modifier,
     mode: DateSelectionMode = DateSelectionMode.Single,
-    size: DatePickerSize = DatePickerSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     colors: DatePickerColors? = null,
     strings: DatePickerStrings = DatePickerStrings(),
@@ -863,7 +872,7 @@ private fun WeekdayPickerContent(
                 val isSelected = index in selectedDays
                 PixaChip(
                     text = dayName,
-                    variant = if (isSelected) ChipVariant.Solid else ChipVariant.Outlined,
+                    variant = if (isSelected) ChipVariant.Filled else ChipVariant.Outlined,
                     type = ChipType.Selectable,
                     selected = isSelected,
                     enabled = enabled,
@@ -1266,7 +1275,7 @@ private fun WeeklyScheduleContent(
                         val isSelected = index in selectedWeekdays
                         PixaChip(
                             text = dayName,
-                            variant = if (isSelected) ChipVariant.Solid else ChipVariant.Outlined,
+                            variant = if (isSelected) ChipVariant.Filled else ChipVariant.Outlined,
                             type = ChipType.Selectable,
                             selected = isSelected,
                             enabled = enabled,

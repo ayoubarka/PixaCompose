@@ -164,15 +164,6 @@ enum class StateCategory {
 /**
  * Empty state size variants
  */
-enum class EmptyStateSize {
-    /** Compact - 80dp icon, smaller spacing */
-    Compact,
-    /** Medium - 120dp icon, standard spacing */
-    Medium,
-    /** Large - 160dp icon, large spacing */
-    Large
-}
-
 /**
  * Empty state colors
  */
@@ -257,18 +248,18 @@ private fun getEmptyStateColors(
  * Get empty state configuration based on size
  */
 @Composable
-private fun getEmptyStateConfig(size: EmptyStateSize): EmptyStateConfig {
+private fun getEmptyStateConfig(size: SizeVariant): EmptyStateConfig {
     val typography = AppTheme.typography
     return when (size) {
-        EmptyStateSize.Compact -> EmptyStateConfig(
+        SizeVariant.Compact, SizeVariant.Small, SizeVariant.Nano -> EmptyStateConfig(
             iconSize = HierarchicalSize.Icon.Massive, // 48dp
             titleStyle = { typography.bodyBold },
             descriptionStyle = { typography.captionRegular },
             spacing = HierarchicalSize.Spacing.Small,
             contentSpacing = HierarchicalSize.Spacing.Compact,
-            maxWidth = HierarchicalSize.Container.DialogMaxWidth // 560.dp
+            maxWidth = HierarchicalSize.Container.DialogMaxWidth
         )
-        EmptyStateSize.Medium -> EmptyStateConfig(
+        SizeVariant.Medium -> EmptyStateConfig(
             iconSize = HierarchicalSize.Image.Small, // 80dp
             titleStyle = { typography.subtitleBold },
             descriptionStyle = { typography.bodyBold },
@@ -276,12 +267,20 @@ private fun getEmptyStateConfig(size: EmptyStateSize): EmptyStateConfig {
             contentSpacing = HierarchicalSize.Spacing.Small,
             maxWidth = HierarchicalSize.Container.DialogMaxWidth
         )
-        EmptyStateSize.Large -> EmptyStateConfig(
+        SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> EmptyStateConfig(
             iconSize = HierarchicalSize.Image.Medium, // 120dp
             titleStyle = { typography.titleBold },
             descriptionStyle = { typography.bodyRegular },
             spacing = HierarchicalSize.Spacing.Large,
             contentSpacing = HierarchicalSize.Spacing.Medium,
+            maxWidth = HierarchicalSize.Container.DialogMaxWidth
+        )
+        else -> EmptyStateConfig(
+            iconSize = HierarchicalSize.Image.Small,
+            titleStyle = { typography.subtitleBold },
+            descriptionStyle = { typography.bodyBold },
+            spacing = HierarchicalSize.Spacing.Medium,
+            contentSpacing = HierarchicalSize.Spacing.Small,
             maxWidth = HierarchicalSize.Container.DialogMaxWidth
         )
     }
@@ -400,7 +399,7 @@ fun PixaEmptyState(
     description: String? = null,
     icon: Painter? = null,
     showIcon: Boolean = true,
-    size: EmptyStateSize = EmptyStateSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     primaryActionText: String? = null,
     onPrimaryAction: (() -> Unit)? = null,
     secondaryActionText: String? = null,
@@ -488,7 +487,7 @@ fun PixaEmptyState(
                     PixaButton(
                         text = it,
                         onClick = { onPrimaryAction?.invoke() },
-                        variant = ButtonVariant.Solid,
+                        variant = ButtonVariant.Filled,
                         size = SizeVariant.Medium,
                         modifier = Modifier.widthIn(min = HierarchicalSize.Button.Medium.times(3))
                     )
@@ -698,7 +697,7 @@ fun PermissionDenied(
  * ```
  * EmptyState(
  *     type = EmptyStateType.Server.Maintenance,
- *     size = EmptyStateSize.Large
+ *     size = SizeVariant.Large
  * )
  * ```
  *
@@ -706,7 +705,7 @@ fun PermissionDenied(
  * ```
  * EmptyState(
  *     type = EmptyStateType.Empty.NoResults,
- *     size = EmptyStateSize.Compact,
+ *     size = SizeVariant.Compact,
  *     showIcon = false
  * )
  * ```

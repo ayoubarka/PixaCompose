@@ -48,9 +48,9 @@ import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.display.PixaCard
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.BaseCardElevation
-import com.pixamob.pixacompose.components.display.BaseCardPadding
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // DATA CLASSES
@@ -83,15 +83,6 @@ enum class NavIconStyle {
 /**
  * Size variant for bottom navigation bar
  */
-enum class BottomNavBarSize {
-    /** Small size: 48dp height, suitable for compact layouts */
-    Small,
-    /** Medium size: 56dp height, standard navigation bar */
-    Medium,
-    /** Large size: 64dp height, prominent navigation */
-    Large
-}
-
 /**
  * Orientation for navigation items
  */
@@ -120,27 +111,34 @@ private data class NavBarSizeConfig(
 /**
  * Maps size variant to concrete dimensions
  */
-private fun BottomNavBarSize.toSizeConfig(): NavBarSizeConfig = when (this) {
-    BottomNavBarSize.Small -> NavBarSizeConfig(
+private fun SizeVariant.toNavBarSizeConfig(): NavBarSizeConfig = when (this) {
+    SizeVariant.Small -> NavBarSizeConfig(
         height = 48.dp,
         iconSize = 20.dp,
         buttonSize = SizeVariant.Medium,
         horizontalPadding = HierarchicalSize.Spacing.Small,
         verticalPadding = HierarchicalSize.Spacing.Compact
     )
-    BottomNavBarSize.Medium -> NavBarSizeConfig(
+    SizeVariant.Medium -> NavBarSizeConfig(
         height = 56.dp,
         iconSize = 24.dp,
         buttonSize = SizeVariant.Large,
         horizontalPadding = HierarchicalSize.Spacing.Medium,
         verticalPadding = HierarchicalSize.Spacing.Small
     )
-    BottomNavBarSize.Large -> NavBarSizeConfig(
+    SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> NavBarSizeConfig(
         height = 64.dp,
         iconSize = 28.dp,
         buttonSize = SizeVariant.Large,
         horizontalPadding = HierarchicalSize.Spacing.Medium,
         verticalPadding = HierarchicalSize.Spacing.Medium
+    )
+    else -> NavBarSizeConfig(
+        height = 56.dp,
+        iconSize = 24.dp,
+        buttonSize = SizeVariant.Large,
+        horizontalPadding = HierarchicalSize.Spacing.Medium,
+        verticalPadding = HierarchicalSize.Spacing.Small
     )
 }
 
@@ -162,27 +160,41 @@ private fun AnimatedNavItem(
 ) {
     val iconPainter = if (isSelected) item.iconSelected else item.iconUnselected
 
-    // Animate color transition
+    // Animate color transition with spring
     val contentColor by animateColorAsState(
         targetValue = if (isSelected) {
             AppTheme.colors.brandContentDefault
         } else {
             AppTheme.colors.baseContentBody.copy(alpha = 0.5f)
         },
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = AnimationUtils.colorSpring,
         label = "navItemColor"
     )
 
-    // Animate scale for subtle selection feedback
+    // Animate scale for subtle selection feedback with spring
     val scale by animateFloatAsState(
         targetValue = if (isSelected) 1.0f else 0.95f,
-        animationSpec = tween(durationMillis = 200),
+        animationSpec = AnimationUtils.selectionSpring,
         label = "navItemScale"
+    )
+
+    // Animate icon scale for selected state emphasis
+    val iconScale by animateFloatAsState(
+        targetValue = if (isSelected) 1.1f else 1.0f,
+        animationSpec = AnimationUtils.selectionSpring,
+        label = "navIconScale"
+    )
+
+    // Animate label alpha for IconWithText display style
+    val labelAlpha by animateFloatAsState(
+        targetValue = if (isSelected) 1f else 0f,
+        animationSpec = AnimationUtils.selectionSpring,
+        label = "navLabelAlpha"
     )
 
     Box(
         modifier = modifier
-           // .scale(scale)
+            .scale(scale)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = ripple(bounded = true),
@@ -201,15 +213,15 @@ private fun AnimatedNavItem(
                 PixaIcon(
                     painter = iconPainter,
                     contentDescription = item.contentDescription ?: item.title,
-                    modifier = Modifier.size(iconSize),
+                    modifier = Modifier.size(iconSize).scale(iconScale),
                     tint = contentColor
                 )
             }
             TabDisplayStyle.TextOnly -> {
                 Text(
                     text = item.title,
-                    style = AppTheme.typography.labelMedium,  // 12sp - proper nav label size
-                    color = contentColor,
+                    style = AppTheme.typography.labelMedium,
+                    color = contentColor.copy(alpha = labelAlpha),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -219,22 +231,20 @@ private fun AnimatedNavItem(
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
-                    PixaIcon(
-                        painter = iconPainter,
-                        contentDescription = null,
-                        modifier = Modifier.size(iconSize),
-                        tint = contentColor
-                    )
-                    if (isSelected) {
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = item.title,
-                            style = AppTheme.typography.labelMedium,  // 12sp - proper nav label size
-                            color = contentColor,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
+                PixaIcon(
+                    painter = iconPainter,
+                    contentDescription = null,
+                    modifier = Modifier.size(iconSize).scale(iconScale),
+                    tint = contentColor
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = item.title,
+                    style = AppTheme.typography.labelMedium,
+                    color = contentColor.copy(alpha = labelAlpha),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
                 }
             }
         }
@@ -255,7 +265,7 @@ private fun CenterActionButton(
 ) {
     if (centerIcon != null) {
         PixaButton(
-            variant = ButtonVariant.Solid,
+            variant = ButtonVariant.Filled,
             onClick = onCenterAction,
             modifier = modifier
                 .zIndex(1f)
@@ -333,7 +343,7 @@ private fun CenterActionButton(
  *     selectedIndex = currentTab,
  *     onItemSelected = { index -> handleNavigation(index) },
  *     withCenterAction = false,
- *     size = BottomNavBarSize.Large
+ *     size = SizeVariant.Large
  * )
  * ```
  *
@@ -349,7 +359,7 @@ private fun CenterActionButton(
  *     withCenterAction = true,
  *     centerIcon = cameraIcon,
  *     onCenterAction = { openCamera() },
- *     size = BottomNavBarSize.Medium
+ *     size = SizeVariant.Medium
  * )
  * ```
  *
@@ -402,7 +412,7 @@ fun PixaBottomNavBar(
     centerIcon: Painter? = null,
     centerContentDescription: String? = null,
     centerEnabled: Boolean = true,
-    size: BottomNavBarSize = BottomNavBarSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     iconStyle: NavIconStyle = NavIconStyle.BoldLine,
     orientation: NavOrientation = NavOrientation.Horizontal,
     showBackground: Boolean = true,
@@ -428,7 +438,7 @@ fun PixaBottomNavBar(
         }
     }
 
-    val sizeConfig = size.toSizeConfig()
+    val sizeConfig = size.toNavBarSizeConfig()
     val shouldScroll = enableScrolling && items.size > 5
     val scrollState = rememberScrollState()
 
@@ -538,7 +548,7 @@ fun PixaBottomNavBar(
                 BaseCardVariant.Elevated -> BaseCardElevation.Medium
                 else -> BaseCardElevation.None
             },
-            padding = BaseCardPadding.None
+            padding = SizeVariant.None
         ) {
             content()
         }

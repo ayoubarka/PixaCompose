@@ -2,7 +2,6 @@ package com.pixamob.pixacompose.components.actions
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
@@ -40,6 +39,7 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -49,6 +49,13 @@ enum class AccordionVariant {
     Default,
     Outlined,
     Filled
+}
+
+enum class AccordionExpansionMode {
+    /** Only one item can be expanded at a time; expanding another collapses the current one */
+    Single,
+    /** Multiple items can be expanded simultaneously */
+    Multiple
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -96,9 +103,9 @@ private fun getAccordionTheme(variant: AccordionVariant): AccordionColors {
     val colors = AppTheme.colors
     return when (variant) {
         AccordionVariant.Default -> AccordionColors(
-            background = Color.Transparent,
-            headerBackground = Color.Transparent,
-            contentBackground = Color.Transparent,
+            background = colors.baseSurfaceSubtle,
+            headerBackground = colors.baseSurfaceSubtle,
+            contentBackground = colors.baseSurfaceSubtle,
             title = colors.baseContentTitle,
             icon = colors.baseContentBody,
             border = Color.Transparent,
@@ -199,7 +206,7 @@ fun PixaAccordion(
 
     val rotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(200)
+        animationSpec = AnimationUtils.standardTween(200)
     )
 
     val shape = RoundedCornerShape(sizeConfig.cornerRadius)
@@ -266,8 +273,8 @@ fun PixaAccordion(
         // Content
         AnimatedVisibility(
             visible = expanded,
-            enter = expandVertically(animationSpec = tween(200)),
-            exit = shrinkVertically(animationSpec = tween(200))
+            enter = expandVertically(animationSpec = AnimationUtils.standardTween(200)),
+            exit = shrinkVertically(animationSpec = AnimationUtils.standardTween(200))
         ) {
             Column(
                 modifier = Modifier
@@ -290,7 +297,7 @@ fun PixaAccordionGroup(
     items: List<AccordionItem>,
     modifier: Modifier = Modifier,
     variant: AccordionVariant = AccordionVariant.Default,
-    allowMultiple: Boolean = false,
+    expansionMode: AccordionExpansionMode = AccordionExpansionMode.Single,
     colors: AccordionColors? = null,
     expandIcon: Painter? = null
 ) {
@@ -308,7 +315,7 @@ fun PixaAccordionGroup(
                 expanded = isExpanded,
                 onExpandedChange = { expanded ->
                     expandedIndices = if (expanded) {
-                        if (allowMultiple) expandedIndices + index
+                        if (expansionMode == AccordionExpansionMode.Multiple) expandedIndices + index
                         else setOf(index)
                     } else {
                         expandedIndices - index

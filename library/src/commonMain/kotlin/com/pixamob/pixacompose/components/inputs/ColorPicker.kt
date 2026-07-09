@@ -3,7 +3,6 @@ import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -372,8 +371,8 @@ fun PixaColorPicker(
         AnimatedContent(
             targetState = state.mode,
             transitionSpec = {
-                fadeIn(animationSpec = tween(300)) togetherWith
-                        fadeOut(animationSpec = tween(300))
+                fadeIn(animationSpec = AnimationUtils.standardTween(300)) togetherWith
+                        fadeOut(animationSpec = AnimationUtils.standardTween(300))
             }
         ) { pickerMode ->
             when (pickerMode) {
@@ -1058,7 +1057,7 @@ private fun ColorChannelSlider(
                 variant = when {
                     label == "H" -> SliderVariant.Filled  // Hue slider - filled style
                     gradientColors != null || gradientBrush != null -> SliderVariant.Outlined  // Gradient sliders - outlined
-                    else -> SliderVariant.Minimal  // Simple sliders - minimal
+                    else -> SliderVariant.Ghost  // Simple sliders - minimal
                 },
                 gradientBrush = gradientBrush ?: (gradientColors?.let { colors ->
                     Brush.horizontalGradient(colors)

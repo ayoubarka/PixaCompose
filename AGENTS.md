@@ -75,7 +75,7 @@ fun Component(text: String, onClick: () -> Unit, ...)
 
 // 5. CONVENIENCE VARIANTS - Shortcuts for common combinations
 @Composable
-fun SolidButton(...) = Button(variant = ButtonVariant.Solid, ...)
+fun FilledButton(...) = Button(variant = ButtonVariant.Filled, ...)
 ```
 
 **Critical Principles**:
@@ -125,7 +125,7 @@ fun SolidButton(...) = Button(variant = ButtonVariant.Solid, ...)
 2. **Enum Variants**: All style/size/shape options are enums, never string parameters
 3. **State Management**: Only three states in components - Default, Disabled, Loading
 4. **Accessibility**: All components include `semantic(role = Role.Button)` or equivalent; descriptions via `contentDescription`
-5. **Documentation**: Every component requires KDoc comments + usage examples at file end (see `COMPONENTS.md` format)
+5. **Documentation**: Every component requires KDoc comments + usage examples at file end (see `DOCUMENTATION.md` format)
 6. **Global Feedback**: Toast and Snackbar use global managers (`PixaToastManager`, `PixaSnackbarManager`) - not local state
 
 ## 🎯 Common Tasks & Quick Answers
@@ -134,7 +134,7 @@ fun SolidButton(...) = Button(variant = ButtonVariant.Solid, ...)
 1. Create file in appropriate `components/[category]/` folder
 2. Follow single-file pattern with 5 sections above
 3. Use theme values from `AppTheme`
-4. Add examples to `COMPONENTS.md` and `AI_COMPONENTS_GUIDE.md`
+4. Add examples to `DOCUMENTATION.md`
 
 **Add a new color or typography style?**
 - Modify `theme/Color.kt` (color palettes) or `theme/Typography.kt`
@@ -158,11 +158,9 @@ fun SolidButton(...) = Button(variant = ButtonVariant.Solid, ...)
 
 ## 📖 References & Agent Guides
 
-- **CONTRIBUTING.md**: Component standards, naming conventions, PR process
-- **AI_COMPONENTS_GUIDE.md**: Quick finder "need to show a button?" → components
+- **DOCUMENTATION.md**: Complete library reference — install, theme, all components, patterns, contributing
+- **CHANGELOG.md**: Version history and release notes
 - **ui-expert.agent.md**: Existing agent guide (theme architecture, MVI patterns)
-- **README.md**: Feature overview, installation, quick start examples
-- **COMPONENTS.md**: Full parameter reference for all 30+ components
 
 ---
 

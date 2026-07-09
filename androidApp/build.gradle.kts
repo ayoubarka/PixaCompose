@@ -48,4 +48,8 @@ dependencies {
     implementation(libs.compose.ui)
     implementation(libs.compose.components.resources)
     implementation(libs.compose.components.uiToolingPreview)
+
+    implementation(libs.androidx.navigation.compose)
+    implementation(libs.compose.materialIconsExtended)
+    implementation(libs.cmp.constraintlayout)
 }

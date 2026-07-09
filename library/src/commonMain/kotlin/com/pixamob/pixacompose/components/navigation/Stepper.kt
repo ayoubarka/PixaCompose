@@ -35,11 +35,9 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaCard
 import com.pixamob.pixacompose.components.display.BaseCardElevation
-import com.pixamob.pixacompose.components.display.BaseCardPadding
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.components.feedback.SkeletonCircle
-import com.pixamob.pixacompose.components.feedback.SkeletonSize
 import com.pixamob.pixacompose.components.feedback.SkeletonText
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
@@ -133,17 +131,6 @@ enum class StepCardShape {
 /**
  * Stepper size presets
  */
-enum class StepperSize {
-    /** Small - 24dp indicator */
-    Small,
-
-    /** Medium - 32dp indicator (default) */
-    Medium,
-
-    /** Large - 40dp indicator */
-    Large
-}
-
 /**
  * Step data
  */
@@ -219,10 +206,10 @@ data class StepColors(
  * Get stepper configuration based on size
  */
 @Composable
-private fun getStepperConfig(size: StepperSize): StepperConfig {
+private fun getStepperConfig(size: SizeVariant): StepperConfig {
     val typography = AppTheme.typography
     return when (size) {
-        StepperSize.Small -> StepperConfig(
+        SizeVariant.Small -> StepperConfig(
             indicatorSize = 24.dp,
             iconSize = 14.dp,
             connectorWidth = 40.dp,
@@ -233,7 +220,7 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             spacing = HierarchicalSize.Spacing.Small
         )
 
-        StepperSize.Medium -> StepperConfig(
+        SizeVariant.Medium -> StepperConfig(
             indicatorSize = 32.dp,
             iconSize = 18.dp,
             connectorWidth = 48.dp,
@@ -244,7 +231,7 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             spacing = HierarchicalSize.Spacing.Medium
         )
 
-        StepperSize.Large -> StepperConfig(
+        SizeVariant.Large -> StepperConfig(
             indicatorSize = 40.dp,
             iconSize = 22.dp,
             connectorWidth = 56.dp,
@@ -252,6 +239,17 @@ private fun getStepperConfig(size: StepperSize): StepperConfig {
             titleStyle = { typography.bodyBold },
             subTitleStyle = { typography.bodyRegular },
             numberStyle = { typography.bodyBold.copy(fontWeight = FontWeight.Bold) },
+            spacing = HierarchicalSize.Spacing.Medium
+        )
+
+        else -> StepperConfig(
+            indicatorSize = 32.dp,
+            iconSize = 18.dp,
+            connectorWidth = 48.dp,
+            connectorThickness = 2.dp,
+            titleStyle = { typography.bodyRegular },
+            subTitleStyle = { typography.bodyLight },
+            numberStyle = { typography.bodyRegular.copy(fontWeight = FontWeight.Bold) },
             spacing = HierarchicalSize.Spacing.Medium
         )
     }
@@ -346,7 +344,7 @@ private fun StepIndicator(
             StepState.Error -> colors.error
             StepState.Pending -> colors.pending
         },
-        animationSpec = AnimationUtils.standardTween(),
+        animationSpec = AnimationUtils.colorSpring,
         label = "step_background"
     )
 
@@ -357,7 +355,7 @@ private fun StepIndicator(
             StepState.Error -> colors.errorContent
             StepState.Pending -> colors.pendingContent
         },
-        animationSpec = AnimationUtils.standardTween(),
+        animationSpec = AnimationUtils.colorSpring,
         label = "step_content"
     )
 
@@ -429,7 +427,7 @@ private fun StepIndicator(
                         painter = icon,
                         contentDescription = null,
                         tint = contentColor,
-                        size = config.iconSize
+                        customSize = config.iconSize
                     )
                 }
             }
@@ -461,7 +459,7 @@ private fun StepIndicator(
                             painter = icon,
                             contentDescription = null,
                             tint = contentColor.copy(alpha = 0.5f),
-                            size = config.iconSize
+                            customSize = config.iconSize
                         )
                     }
                     Text(
@@ -549,7 +547,7 @@ private fun StepConnector(
     val progress by animateFloatAsState(
         targetValue = if (isCompleted && config.animateConnector) 1f else if (isCompleted) 1f else 0f,
         animationSpec = if (config.animateConnector) {
-            AnimationUtils.standardSpring()
+            AnimationUtils.slowSpring
         } else {
             AnimationUtils.fastTween()
         },
@@ -794,7 +792,7 @@ private fun StepContent(
                 modifier = modifier,
                 variant = if (isCurrentStep) BaseCardVariant.Elevated else BaseCardVariant.Ghost,
                 elevation = if (isCurrentStep) BaseCardElevation.Low else BaseCardElevation.None,
-                padding = BaseCardPadding.Small
+                padding = SizeVariant.Small
             ) {
                 content()
             }
@@ -842,7 +840,7 @@ fun PixaStepper(
     connectorStyle: StepConnectorStyle = StepConnectorStyle.Line,
     contentStyle: StepContentStyle = StepContentStyle.Simple,
     cardShape: StepCardShape = StepCardShape.Rounded,
-    size: StepperSize = StepperSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     showLabels: Boolean = true,
     showSubLabels: Boolean = true,
     showHeader: Boolean = false,
@@ -873,13 +871,13 @@ fun PixaStepper(
                     ) {
                         SkeletonText(
                             width = 120.dp,
-                            size = SkeletonSize.Medium
+                            size = SizeVariant.Medium
                         )
                         if (showSubLabels) {
                             Spacer(modifier = Modifier.height(4.dp))
                             SkeletonText(
                                 width = 80.dp,
-                                size = SkeletonSize.Small
+                                size = SizeVariant.Small
                             )
                         }
                     }
@@ -1284,7 +1282,7 @@ fun StepProgressHeader(
  *     currentStep = currentStep,
  *     indicatorType = StepIndicatorType.Dot,
  *     showLabels = false,
- *     size = StepperSize.Small
+ *     size = SizeVariant.Small
  * )
  * ```
  *

@@ -2,7 +2,6 @@ package com.pixamob.pixacompose.components.inputs
 
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -10,9 +9,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -35,9 +37,11 @@ import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.*
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -51,13 +55,25 @@ enum class CheckboxState {
 
 enum class CheckboxVariant {
     Filled,
-    Outlined
+    Outlined,
+    Ghost
 }
 
-enum class CheckboxSize {
-    Small,
-    Medium,
-    Large
+/**
+ * Hierarchical checkbox tree item for nested selection groups.
+ * Supports automatic parent indeterminate state computation from children.
+ */
+@Stable
+data class CheckboxTreeItem<T>(
+    val id: String,
+    val label: String,
+    val children: List<CheckboxTreeItem<T>> = emptyList(),
+    val data: T? = null,
+    val enabled: Boolean = true,
+    val description: String? = null
+) {
+    val isLeaf: Boolean
+        get() = children.isEmpty()
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -98,10 +114,10 @@ data class CheckboxStateColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
+private fun getCheckboxSizeConfig(size: SizeVariant): CheckboxSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        CheckboxSize.Small -> CheckboxSizeConfig(
+        SizeVariant.Small -> CheckboxSizeConfig(
             boxSize = HierarchicalSize.Icon.Compact,
             cornerRadius = HierarchicalSize.Radius.Nano,
             borderWidth = HierarchicalSize.Border.Compact,
@@ -109,7 +125,7 @@ private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
             labelSpacing = HierarchicalSize.Spacing.Nano,
             labelStyle = { typography.bodyBold }
         )
-        CheckboxSize.Medium -> CheckboxSizeConfig(
+        SizeVariant.Medium -> CheckboxSizeConfig(
             boxSize = HierarchicalSize.Icon.Small,
             cornerRadius = HierarchicalSize.Radius.Small,
             borderWidth = HierarchicalSize.Border.Medium,
@@ -117,13 +133,21 @@ private fun getCheckboxSizeConfig(size: CheckboxSize): CheckboxSizeConfig {
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyRegular }
         )
-        CheckboxSize.Large -> CheckboxSizeConfig(
+        SizeVariant.Large -> CheckboxSizeConfig(
             boxSize = HierarchicalSize.Icon.Medium,
             cornerRadius = HierarchicalSize.Radius.Small,
             borderWidth = HierarchicalSize.Border.Large,
             checkmarkStroke = HierarchicalSize.Border.Medium,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyLight }
+        )
+        else -> CheckboxSizeConfig(
+            boxSize = HierarchicalSize.Icon.Small,
+            cornerRadius = HierarchicalSize.Radius.Small,
+            borderWidth = HierarchicalSize.Border.Medium,
+            checkmarkStroke = HierarchicalSize.Border.Medium,
+            labelSpacing = HierarchicalSize.Spacing.Small,
+            labelStyle = { typography.bodyRegular }
         )
     }
 }
@@ -193,6 +217,32 @@ private fun getCheckboxTheme(
                 label = colors.baseContentDisabled
             )
         )
+        CheckboxVariant.Ghost -> CheckboxStateColors(
+            unchecked = CheckboxColors(
+                box = Color.Transparent,
+                border = colors.baseBorderDefault,
+                checkmark = Color.Transparent,
+                label = colors.baseContentBody
+            ),
+            checked = CheckboxColors(
+                box = Color.Transparent,
+                border = Color.Transparent,
+                checkmark = colors.brandContentDefault,
+                label = colors.baseContentBody
+            ),
+            indeterminate = CheckboxColors(
+                box = Color.Transparent,
+                border = Color.Transparent,
+                checkmark = colors.brandContentDefault,
+                label = colors.baseContentBody
+            ),
+            disabled = CheckboxColors(
+                box = Color.Transparent,
+                border = Color.Transparent,
+                checkmark = colors.baseContentDisabled,
+                label = colors.baseContentDisabled
+            )
+        )
     }
 }
 
@@ -208,29 +258,50 @@ private fun PixaCheckboxBox(
     modifier: Modifier = Modifier,
     state: CheckboxState,
     enabled: Boolean,
+    isError: Boolean,
     sizeConfig: CheckboxSizeConfig,
     colors: CheckboxStateColors
 ) {
+    val errorColors = AppTheme.colors
+
     val currentColors = when {
         !enabled -> colors.disabled
+        isError && state == CheckboxState.Unchecked -> CheckboxColors(
+            box = errorColors.errorSurfaceDefault.copy(alpha = 0.1f),
+            border = errorColors.errorBorderDefault,
+            checkmark = Color.Transparent,
+            label = colors.unchecked.label
+        )
+        isError && (state == CheckboxState.Checked || state == CheckboxState.Indeterminate) -> CheckboxColors(
+            box = errorColors.errorSurfaceDefault,
+            border = errorColors.errorBorderDefault,
+            checkmark = errorColors.errorContentDefault,
+            label = colors.checked.label
+        )
         state == CheckboxState.Checked -> colors.checked
         state == CheckboxState.Indeterminate -> colors.indeterminate
         else -> colors.unchecked
     }
 
+    val currentBorder = currentColors.border
+    val currentCheckmark = currentColors.checkmark
+
     val animatedBoxColor by animateColorAsState(
         targetValue = currentColors.box,
-        animationSpec = tween(150)
+        animationSpec = AnimationUtils.colorSpring,
+        label = "checkbox_box"
     )
 
     val animatedBorderColor by animateColorAsState(
-        targetValue = currentColors.border,
-        animationSpec = tween(150)
+        targetValue = currentBorder,
+        animationSpec = AnimationUtils.colorSpring,
+        label = "checkbox_border"
     )
 
     val animatedCheckmarkColor by animateColorAsState(
-        targetValue = currentColors.checkmark,
-        animationSpec = tween(150)
+        targetValue = currentCheckmark,
+        animationSpec = AnimationUtils.colorSpring,
+        label = "checkbox_checkmark"
     )
 
     val checkmarkProgress by animateFloatAsState(
@@ -238,7 +309,8 @@ private fun PixaCheckboxBox(
             CheckboxState.Checked, CheckboxState.Indeterminate -> 1f
             CheckboxState.Unchecked -> 0f
         },
-        animationSpec = tween(200)
+        animationSpec = AnimationUtils.selectionSpring,
+        label = "checkbox_progress"
     )
 
     Box(
@@ -315,7 +387,9 @@ private fun PixaCheckbox(
     state: CheckboxState,
     onCheckedChange: ((CheckboxState) -> Unit)?,
     enabled: Boolean,
+    isError: Boolean,
     label: String?,
+    description: String?,
     labelPosition: CheckboxLabelPosition,
     sizeConfig: CheckboxSizeConfig,
     colors: CheckboxStateColors
@@ -340,26 +414,46 @@ private fun PixaCheckbox(
         )
     } else Modifier
 
-    val content = @Composable {
-        PixaCheckboxBox(
-            state = state,
-            enabled = enabled,
-            sizeConfig = sizeConfig,
-            colors = colors
-        )
+    val labelContent = @Composable { label?.let { lbl ->
+        val labelColor = if (enabled) colors.checked.label else colors.disabled.label
+        val animatedLabelColor by animateColorAsState(labelColor, AnimationUtils.colorSpring, label = "checkbox_label")
 
-        if (label != null) {
-            val labelColor = if (enabled) colors.checked.label else colors.disabled.label
-            val animatedLabelColor by animateColorAsState(labelColor, tween(150))
+        Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
 
-            Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
-
+        if (description != null) {
+            Column {
+                Text(
+                    text = lbl,
+                    style = sizeConfig.labelStyle(),
+                    color = animatedLabelColor
+                )
+                Text(
+                    text = description,
+                    style = AppTheme.typography.captionRegular,
+                    color = AppTheme.colors.baseContentCaption,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+        } else {
             Text(
-                text = label,
+                text = lbl,
                 style = sizeConfig.labelStyle(),
                 color = animatedLabelColor
             )
         }
+    } }
+
+    val content = @Composable {
+        PixaCheckboxBox(
+            state = state,
+            enabled = enabled,
+            isError = isError,
+            sizeConfig = sizeConfig,
+            colors = colors
+        )
+
+        labelContent()
     }
 
     Row(
@@ -372,11 +466,28 @@ private fun PixaCheckbox(
         verticalAlignment = Alignment.CenterVertically
     ) {
         if (labelPosition == CheckboxLabelPosition.Start && label != null) {
-            Text(
-                text = label,
-                style = sizeConfig.labelStyle(),
-                color = if (enabled) colors.checked.label else colors.disabled.label
-            )
+            if (description != null) {
+                Column {
+                    Text(
+                        text = label,
+                        style = sizeConfig.labelStyle(),
+                        color = if (enabled) colors.checked.label else colors.disabled.label
+                    )
+                    Text(
+                        text = description,
+                        style = AppTheme.typography.captionRegular,
+                        color = AppTheme.colors.baseContentCaption,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            } else {
+                Text(
+                    text = label,
+                    style = sizeConfig.labelStyle(),
+                    color = if (enabled) colors.checked.label else colors.disabled.label
+                )
+            }
             Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
         }
 
@@ -451,10 +562,12 @@ fun PixaCheckbox(
     onCheckedChange: ((Boolean) -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isError: Boolean = false,
     label: String? = null,
+    description: String? = null,
     labelPosition: CheckboxLabelPosition = CheckboxLabelPosition.End,
     variant: CheckboxVariant = CheckboxVariant.Filled,
-    size: CheckboxSize = CheckboxSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     state: CheckboxState? = null
 ) {
     val themeColors = getCheckboxTheme(variant, AppTheme.colors)
@@ -473,7 +586,9 @@ fun PixaCheckbox(
         state = checkboxState,
         onCheckedChange = stateChangeHandler,
         enabled = enabled,
+        isError = isError,
         label = label,
+        description = description,
         labelPosition = labelPosition,
         sizeConfig = sizeConfig,
         colors = themeColors
@@ -489,10 +604,12 @@ fun TriStateCheckbox(
     onStateChange: ((CheckboxState) -> Unit)?,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
+    isError: Boolean = false,
     label: String? = null,
+    description: String? = null,
     labelPosition: CheckboxLabelPosition = CheckboxLabelPosition.End,
     variant: CheckboxVariant = CheckboxVariant.Filled,
-    size: CheckboxSize = CheckboxSize.Medium
+    size: SizeVariant = SizeVariant.Medium
 ) {
     val themeColors = getCheckboxTheme(variant, AppTheme.colors)
     val sizeConfig = getCheckboxSizeConfig(size)
@@ -502,7 +619,9 @@ fun TriStateCheckbox(
         state = state,
         onCheckedChange = onStateChange,
         enabled = enabled,
+        isError = isError,
         label = label,
+        description = description,
         labelPosition = labelPosition,
         sizeConfig = sizeConfig,
         colors = themeColors
@@ -523,7 +642,7 @@ fun OutlinedCheckbox(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     label: String? = null,
-    size: CheckboxSize = CheckboxSize.Medium
+    size: SizeVariant = SizeVariant.Medium
 ) {
     PixaCheckbox(
         checked = checked,
@@ -548,7 +667,7 @@ fun LabeledCheckbox(
     enabled: Boolean = true,
     labelPosition: CheckboxLabelPosition = CheckboxLabelPosition.End,
     variant: CheckboxVariant = CheckboxVariant.Filled,
-    size: CheckboxSize = CheckboxSize.Medium
+    size: SizeVariant = SizeVariant.Medium
 ) {
     PixaCheckbox(
         checked = checked,
@@ -596,7 +715,7 @@ fun LabeledCheckbox(
  *         checked = offers,
  *         onCheckedChange = { offers = it },
  *         label = "Special offers (optional)",
- *         size = CheckboxSize.Small
+ *         size = SizeVariant.Small
  *     )
  * }
  * ```
@@ -640,7 +759,7 @@ fun LabeledCheckbox(
  *             checked = checked,
  *             onCheckedChange = { childStates[index] = it },
  *             label = "Child $index",
- *             size = CheckboxSize.Small
+ *             size = SizeVariant.Small
  *         )
  *     }
  * }
@@ -689,8 +808,222 @@ fun LabeledCheckbox(
  *     selected = enabledFeatures,
  *     onSelectionChange = { enabledFeatures = it },
  *     optionLabel = { "${it.name}${if (it.isPro) " (Pro)" else ""}" },
- *     size = CheckboxSize.Small,
+ *     size = SizeVariant.Small,
  *     variant = CheckboxVariant.Outlined
  * )
  * ```
+ *
+ * 8. Hierarchical checkbox tree with parent/child indeterminate propagation:
+ * ```
+ * val tree = listOf(
+ *     CheckboxTreeItem("all", "All Features", children = listOf(
+ *         CheckboxTreeItem("basic", "Basic", children = listOf(
+ *             CheckboxTreeItem("view", "View Only"),
+ *             CheckboxTreeItem("edit", "Edit Access")
+ *         )),
+ *         CheckboxTreeItem("premium", "Premium", children = listOf(
+ *             CheckboxTreeItem("export", "Export Data"),
+ *             CheckboxTreeItem("analytics", "Analytics")
+ *         ))
+ *     ))
+ * )
+ * var selectedIds by remember { mutableStateOf(setOf<String>()) }
+ * PixaCheckboxTree(
+ *     items = tree,
+ *     selectedIds = selectedIds,
+ *     onSelectionChange = { selectedIds = it }
+ * )
+ * ```
  */
+
+// ============================================================================
+// CHECKBOX GROUP & TREE
+// ============================================================================
+
+/**
+ * CheckboxGroup - Multi-select checkbox list with optional "Select All" toggle.
+ */
+@Composable
+fun <T> CheckboxGroup(
+    options: List<T>,
+    selected: Set<T>,
+    onSelectionChange: (Set<T>) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    showSelectAll: Boolean = false,
+    selectAllLabel: String = "Select All",
+    optionLabel: (T) -> String = { it.toString() },
+    variant: CheckboxVariant = CheckboxVariant.Filled,
+    size: SizeVariant = SizeVariant.Medium,
+    verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = verticalArrangement
+    ) {
+        if (showSelectAll) {
+            val allSelected = options.all { it in selected }
+            val noneSelected = options.none { it in selected }
+
+            PixaCheckbox(
+                checked = allSelected,
+                onCheckedChange = {
+                    onSelectionChange(if (allSelected) emptySet() else options.toSet())
+                },
+                enabled = enabled,
+                label = selectAllLabel,
+                state = when {
+                    allSelected -> CheckboxState.Checked
+                    noneSelected -> CheckboxState.Unchecked
+                    else -> CheckboxState.Indeterminate
+                },
+                variant = variant,
+                size = size
+            )
+        }
+
+        options.forEach { option ->
+            PixaCheckbox(
+                checked = option in selected,
+                onCheckedChange = { checked ->
+                    onSelectionChange(
+                        if (checked) selected + option else selected - option
+                    )
+                },
+                enabled = enabled,
+                label = optionLabel(option),
+                variant = variant,
+                size = size
+            )
+        }
+    }
+}
+
+private fun computeParentState(childIds: Set<String>, children: List<CheckboxTreeItem<*>>): CheckboxState {
+    if (children.isEmpty()) return CheckboxState.Unchecked
+    val allChildIds = collectAllChildIds(children)
+    val selectedChildIds = allChildIds.intersect(childIds)
+    return when {
+        selectedChildIds.isEmpty() -> CheckboxState.Unchecked
+        selectedChildIds.size == allChildIds.size -> CheckboxState.Checked
+        else -> CheckboxState.Indeterminate
+    }
+}
+
+private fun collectAllChildIds(items: List<CheckboxTreeItem<*>>): Set<String> {
+    val ids = mutableSetOf<String>()
+    for (item in items) {
+        ids.add(item.id)
+        ids.addAll(collectAllChildIds(item.children))
+    }
+    return ids
+}
+
+private fun toggleChildIds(children: List<CheckboxTreeItem<*>>, select: Boolean): Set<String> {
+    val allIds = collectAllChildIds(children)
+    return if (select) allIds else emptySet()
+}
+
+/**
+ * PixaCheckboxTree - Hierarchical checkbox group with automatic parent indeterminate state.
+ */
+@Composable
+fun PixaCheckboxTree(
+    items: List<CheckboxTreeItem<*>>,
+    selectedIds: Set<String>,
+    onSelectionChange: (Set<String>) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    variant: CheckboxVariant = CheckboxVariant.Filled,
+    size: SizeVariant = SizeVariant.Medium,
+    indent: Dp = HierarchicalSize.Spacing.Medium
+) {
+    Column(
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
+    ) {
+        items.forEach { item ->
+            PixaCheckboxTreeItem(
+                item = item,
+                selectedIds = selectedIds,
+                onSelectionChange = onSelectionChange,
+                enabled = enabled,
+                variant = variant,
+                size = size,
+                indent = indent,
+                depth = 0
+            )
+        }
+    }
+}
+
+@Composable
+private fun PixaCheckboxTreeItem(
+    item: CheckboxTreeItem<*>,
+    selectedIds: Set<String>,
+    onSelectionChange: (Set<String>) -> Unit,
+    enabled: Boolean,
+    variant: CheckboxVariant,
+    size: SizeVariant,
+    indent: Dp,
+    depth: Int
+) {
+    val isSelected = item.id in selectedIds
+
+    if (item.isLeaf) {
+        PixaCheckbox(
+            checked = isSelected,
+            onCheckedChange = { checked ->
+                onSelectionChange(
+                    if (checked) selectedIds + item.id else selectedIds - item.id
+                )
+            },
+            enabled = enabled && item.enabled,
+            label = item.label,
+            description = item.description,
+            variant = variant,
+            size = size,
+            modifier = Modifier.padding(start = indent * depth)
+        )
+    } else {
+        val childAllIds = collectAllChildIds(item.children)
+        val childSelectedIds = childAllIds.intersect(selectedIds)
+        val allChecked = childSelectedIds.size == childAllIds.size && childAllIds.isNotEmpty()
+
+        PixaCheckbox(
+            checked = allChecked,
+            onCheckedChange = { checked ->
+                val childIds = toggleChildIds(item.children, checked)
+                val selfChange = if (checked) setOf(item.id) else emptySet()
+                val allChanges = if (checked) childIds + selfChange else childIds
+                onSelectionChange(
+                    if (checked) selectedIds + allChanges else selectedIds - allChanges
+                )
+            },
+            enabled = enabled && item.enabled,
+            label = item.label,
+            description = item.description,
+            state = when {
+                childSelectedIds.isEmpty() && !isSelected -> CheckboxState.Unchecked
+                childSelectedIds.size == childAllIds.size && childAllIds.isNotEmpty() -> CheckboxState.Checked
+                else -> CheckboxState.Indeterminate
+            },
+            variant = variant,
+            size = size,
+            modifier = Modifier.padding(start = indent * depth)
+        )
+
+        item.children.forEach { child ->
+            PixaCheckboxTreeItem(
+                item = child,
+                selectedIds = selectedIds,
+                onSelectionChange = onSelectionChange,
+                enabled = enabled,
+                variant = variant,
+                size = size,
+                indent = indent,
+                depth = depth + 1
+            )
+        }
+    }
+}

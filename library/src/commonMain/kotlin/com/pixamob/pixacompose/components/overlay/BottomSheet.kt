@@ -3,9 +3,6 @@ package com.pixamob.pixacompose.components.overlay
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.MutableTransitionState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -61,6 +58,7 @@ import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
@@ -206,20 +204,20 @@ private const val SHEET_ANIM_DURATION = 300
 /** Sheet slide-in from bottom enter transition. */
 private val SheetEnterTransition = slideInVertically(
     initialOffsetY = { it },
-    animationSpec = tween(SHEET_ANIM_DURATION)
+    animationSpec = AnimationUtils.standardTween(SHEET_ANIM_DURATION)
 )
 
 /** Sheet slide-out to bottom exit transition. */
 private val SheetExitTransition = slideOutVertically(
     targetOffsetY = { it },
-    animationSpec = tween(SHEET_ANIM_DURATION)
+    animationSpec = AnimationUtils.standardTween(SHEET_ANIM_DURATION)
 )
 
 /** Scrim fade-in enter transition. */
-private val ScrimEnterTransition = fadeIn(animationSpec = tween(SHEET_ANIM_DURATION))
+private val ScrimEnterTransition = fadeIn(animationSpec = AnimationUtils.standardTween(SHEET_ANIM_DURATION))
 
 /** Scrim fade-out exit transition. */
-private val ScrimExitTransition = fadeOut(animationSpec = tween(SHEET_ANIM_DURATION))
+private val ScrimExitTransition = fadeOut(animationSpec = AnimationUtils.standardTween(SHEET_ANIM_DURATION))
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // BASE - Internal composables
@@ -420,10 +418,7 @@ fun PixaBottomSheet(
                                             } else {
                                                 dragOffset.animateTo(
                                                     targetValue = 0f,
-                                                    animationSpec = spring(
-                                                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                        stiffness = Spring.StiffnessMedium
-                                                    )
+                                                    animationSpec = AnimationUtils.standardSpring()
                                                 )
                                             }
                                         }
@@ -733,7 +728,7 @@ fun ConfirmationBottomSheet(
                     onConfirm()
                     onDismiss()
                 },
-                variant = ButtonVariant.Solid,
+                variant = ButtonVariant.Filled,
                 isDestructive = isDestructive,
                 modifier = Modifier.weight(1f)
             )

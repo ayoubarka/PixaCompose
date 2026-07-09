@@ -7,7 +7,6 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -50,20 +49,6 @@ enum class ProgressVariant {
     Error,
     Info,
     Neutral
-}
-
-/**
- * Progress indicator size presets
- */
-enum class ProgressSize {
-    /** 16dp - Small inline indicator */
-    Small,
-    /** 24dp - Medium size (default) */
-    Medium,
-    /** 40dp - Large prominent indicator */
-    Large,
-    /** 48dp - Extra large for loading screens (mobile-optimized) */
-    ExtraLarge
 }
 
 /**
@@ -195,28 +180,33 @@ private fun getProgressColors(
  * Get progress configuration based on size
  */
 @Composable
-private fun getProgressConfig(size: ProgressSize): ProgressConfig {
+private fun getProgressConfig(size: SizeVariant): ProgressConfig {
     val typography = AppTheme.typography
     return when (size) {
-        ProgressSize.Small -> ProgressConfig(
+        SizeVariant.Small, SizeVariant.Compact, SizeVariant.Nano -> ProgressConfig(
             size = HierarchicalSize.Icon.Compact,
             strokeWidth = HierarchicalSize.Border.Nano,
             labelStyle = { typography.footnoteBold }
         )
-        ProgressSize.Medium -> ProgressConfig(
+        SizeVariant.Medium -> ProgressConfig(
             size = HierarchicalSize.Icon.Small,
             strokeWidth = HierarchicalSize.Border.Nano,
             labelStyle = { typography.captionBold }
         )
-        ProgressSize.Large -> ProgressConfig(
+        SizeVariant.Large, SizeVariant.Huge -> ProgressConfig(
             size = HierarchicalSize.Icon.Medium,
             strokeWidth = HierarchicalSize.Border.Nano,
             labelStyle = { typography.bodyBold }
         )
-        ProgressSize.ExtraLarge -> ProgressConfig(
+        SizeVariant.Massive -> ProgressConfig(
             size = HierarchicalSize.Icon.Large,
             strokeWidth = HierarchicalSize.Border.Nano,
             labelStyle = { typography.subtitleBold }
+        )
+        else -> ProgressConfig(
+            size = HierarchicalSize.Icon.Small,
+            strokeWidth = HierarchicalSize.Border.Nano,
+            labelStyle = { typography.captionBold }
         )
     }
 }
@@ -241,7 +231,7 @@ fun PixaCircularIndicator(
     progress: Float? = null,
     modifier: Modifier = Modifier,
     variant: ProgressVariant = ProgressVariant.Primary,
-    sizePreset: ProgressSize = ProgressSize.Medium,
+    sizePreset: SizeVariant = SizeVariant.Medium,
     showPercentage: Boolean = false,
     customColors: ProgressColors? = null,
     contentDescription: String? = null
@@ -287,7 +277,7 @@ fun PixaCircularIndicator(
                 initialValue = 0f,
                 targetValue = 360f,
                 animationSpec = AnimationUtils.infiniteRepeatable(
-                    animation = tween(1200, easing = LinearEasing)
+                    animation = AnimationUtils.standardTween(1200, LinearEasing)
                 ),
                 label = "rotation"
             )
@@ -356,7 +346,7 @@ fun PixaCircularIndicator(
             }
 
             // Percentage label
-            if (showPercentage && sizePreset != ProgressSize.Small) {
+            if (showPercentage && sizePreset != SizeVariant.Small) {
                 val percentage = (progressValue * 100).toInt()
                 val percentageText = config.percentageFormat.replace("%d", percentage.toString())
                 Text(
@@ -466,7 +456,7 @@ fun PixaLinearIndicator(
                             initialValue = 0f,
                             targetValue = 1f,
                             animationSpec = AnimationUtils.infiniteRepeatable(
-                                animation = tween(1500, easing = FastOutSlowInEasing)
+                                animation = AnimationUtils.standardTween(1500)
                             ),
                             label = "progress"
                         )
@@ -527,7 +517,7 @@ fun PixaLinearIndicator(
                                 initialValue = 0f,
                                 targetValue = 1f,
                                 animationSpec = AnimationUtils.infiniteRepeatable(
-                                    animation = tween(1500, easing = FastOutSlowInEasing)
+                                    animation = AnimationUtils.standardTween(1500)
                                 ),
                                 label = "progress"
                             )
@@ -579,7 +569,7 @@ fun PixaLinearIndicator(
 @Composable
 fun LoadingIndicator(
     modifier: Modifier = Modifier,
-    sizePreset: ProgressSize = ProgressSize.Medium,
+    sizePreset: SizeVariant = SizeVariant.Medium,
     variant: ProgressVariant = ProgressVariant.Primary
 ) {
     PixaCircularIndicator(
@@ -813,7 +803,7 @@ fun PagerIndicator(
  *     progress = downloadProgress,
  *     showPercentage = true,
  *     variant = ProgressVariant.Success,
- *     sizePreset = ProgressSize.Large
+ *     sizePreset = SizeVariant.Large
  * )
  * ```
  *
@@ -895,7 +885,7 @@ fun PagerIndicator(
  *
  * if (isLoading) {
  *     LoadingIndicator(
- *         sizePreset = ProgressSize.Large,
+ *         sizePreset = SizeVariant.Large,
  *         variant = ProgressVariant.Primary
  *     )
  * }

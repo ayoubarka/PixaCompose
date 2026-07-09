@@ -214,7 +214,7 @@ fun PixaChart(
     zoomBehavior: ChartZoomBehavior = ChartZoomBehavior.None,
     isLoading: Boolean = false,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
-    padding: BaseCardPadding = BaseCardPadding.Medium,
+    padding: SizeVariant = SizeVariant.Medium,
     cornerRadius: Dp = HierarchicalSize.Radius.Medium
 ) {
     if (isLoading) {
@@ -329,7 +329,7 @@ fun PixaLineChart(
     zoomBehavior: ChartZoomBehavior = ChartZoomBehavior.None,
     isLoading: Boolean = false,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
-    padding: BaseCardPadding = BaseCardPadding.Medium,
+    padding: SizeVariant = SizeVariant.Medium,
     cornerRadius: Dp = HierarchicalSize.Radius.Medium
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
@@ -416,7 +416,7 @@ fun PixaColumnChart(
     zoomBehavior: ChartZoomBehavior = ChartZoomBehavior.None,
     isLoading: Boolean = false,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
-    padding: BaseCardPadding = BaseCardPadding.Medium,
+    padding: SizeVariant = SizeVariant.Medium,
     cornerRadius: Dp = HierarchicalSize.Radius.Medium
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
@@ -510,7 +510,7 @@ fun PixaCandlestickChart(
     zoomBehavior: ChartZoomBehavior = ChartZoomBehavior.None,
     isLoading: Boolean = false,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
-    padding: BaseCardPadding = BaseCardPadding.Medium,
+    padding: SizeVariant = SizeVariant.Medium,
     cornerRadius: Dp = HierarchicalSize.Radius.Medium
 ) {
     val modelProducer = remember { CartesianChartModelProducer() }
@@ -662,7 +662,7 @@ fun ComparisonChart(
     PixaCard(
         modifier = modifier.fillMaxWidth(),
         variant = variant,
-        padding = BaseCardPadding.Medium
+        padding = SizeVariant.Medium
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Header
@@ -788,7 +788,7 @@ fun MultiLineChart(
     PixaCard(
         modifier = modifier.fillMaxWidth(),
         variant = variant,
-        padding = BaseCardPadding.Medium
+        padding = SizeVariant.Medium
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {
             // Header

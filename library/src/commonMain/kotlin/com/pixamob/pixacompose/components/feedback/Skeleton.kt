@@ -53,7 +53,7 @@ import com.valentinilk.shimmer.shimmer
  *         Spacer(Modifier.width(12.dp))
  *         Column {
  *             SkeletonText(width = 120.dp)
- *             SkeletonText(width = 80.dp, size = SkeletonSize.Small)
+ *             SkeletonText(width = 80.dp, size = SizeVariant.Small)
  *         }
  *     }
  * }
@@ -63,13 +63,6 @@ import com.valentinilk.shimmer.shimmer
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
-
-enum class SkeletonSize {
-    Small,
-    Medium,
-    Large,
-    ExtraLarge
-}
 
 enum class ShimmerDirection {
     Horizontal,
@@ -99,23 +92,27 @@ data class SkeletonConfig(
  * Get skeleton configuration based on size
  */
 @Composable
-private fun getSkeletonConfig(size: SkeletonSize): SkeletonConfig {
+private fun getSkeletonConfig(size: SizeVariant): SkeletonConfig {
     return when (size) {
-        SkeletonSize.Small -> SkeletonConfig(
+        SizeVariant.Small, SizeVariant.Compact, SizeVariant.Nano -> SkeletonConfig(
             height = HierarchicalSize.Icon.Compact,
             cornerRadius = HierarchicalSize.Radius.Compact
         )
-        SkeletonSize.Medium -> SkeletonConfig(
+        SizeVariant.Medium -> SkeletonConfig(
             height = HierarchicalSize.Icon.Small,
             cornerRadius = HierarchicalSize.Radius.Medium
         )
-        SkeletonSize.Large -> SkeletonConfig(
+        SizeVariant.Large, SizeVariant.Huge -> SkeletonConfig(
             height = HierarchicalSize.Icon.Medium,
             cornerRadius = HierarchicalSize.Radius.Medium
         )
-        SkeletonSize.ExtraLarge -> SkeletonConfig(
+        SizeVariant.Massive -> SkeletonConfig(
             height = HierarchicalSize.Container.Massive,
             cornerRadius = HierarchicalSize.Radius.Large
+        )
+        else -> SkeletonConfig(
+            height = HierarchicalSize.Icon.Small,
+            cornerRadius = HierarchicalSize.Radius.Medium
         )
     }
 }
@@ -141,7 +138,7 @@ fun Skeleton(
     height: Dp = HierarchicalSize.Icon.Small,
     shape: Shape = RoundedCornerShape(HierarchicalSize.Radius.Medium),
     shimmerEnabled: Boolean = true,
-    baseColor: Color = AppTheme.colors.baseSurfaceSubtle
+    baseColor: Color = AppTheme.colors.baseSurfaceDefault
 ) {
     Box(
         modifier = modifier
@@ -200,7 +197,7 @@ fun SkeletonCircle(
 fun SkeletonText(
     modifier: Modifier = Modifier,
     width: Dp? = null,
-    size: SkeletonSize = SkeletonSize.Medium,
+    size: SizeVariant = SizeVariant.Medium,
     shimmerEnabled: Boolean = true
 ) {
     val config = getSkeletonConfig(size)
@@ -624,7 +621,7 @@ fun SkeletonList(
  *         Spacer(Modifier.width(12.dp))
  *         Column {
  *             SkeletonText(width = 150.dp)
- *             SkeletonText(width = 100.dp, size = SkeletonSize.Small)
+ *             SkeletonText(width = 100.dp, size = SizeVariant.Small)
  *         }
  *     }
  * }
@@ -727,8 +724,8 @@ fun SkeletonCustom(
  *             modifier = Modifier.weight(1f),
  *             verticalArrangement = Arrangement.spacedBy(8.dp)
  *         ) {
- *             SkeletonText(size = SkeletonSize.Large)
- *             SkeletonText(width = 200.dp, size = SkeletonSize.Small)
+ *             SkeletonText(size = SizeVariant.Large)
+ *             SkeletonText(width = 200.dp, size = SizeVariant.Small)
  *         }
  *     }
  * }
@@ -761,8 +758,8 @@ fun SkeletonCustom(
  *         ) {
  *             SkeletonCircle(size = 80.dp)
  *             Spacer(Modifier.height(12.dp))
- *             SkeletonText(width = 150.dp, size = SkeletonSize.Large)
- *             SkeletonText(width = 100.dp, size = SkeletonSize.Small)
+ *             SkeletonText(width = 150.dp, size = SizeVariant.Large)
+ *             SkeletonText(width = 100.dp, size = SizeVariant.Small)
  *         }
  *     }
  *     SkeletonList(itemCount = 3, showAvatar = false)

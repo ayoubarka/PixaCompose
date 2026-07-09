@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
+import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -43,15 +44,8 @@ enum class BadgeVariant {
     Info
 }
 
-enum class BadgeSize {
-    Dot,
-    Small,
-    Medium,
-    Large
-}
-
 enum class BadgeStyle {
-    Solid,
+    Filled,
     Outlined,
     Subtle
 }
@@ -83,38 +77,50 @@ data class BadgeConfig(
 // ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun getBadgeConfig(size: BadgeSize): BadgeConfig {
+private fun getBadgeConfig(size: SizeVariant): BadgeConfig {
     val typography = AppTheme.typography
     return when (size) {
-        BadgeSize.Dot -> BadgeConfig(
-            size = 8.dp,
-            padding = 0.dp,
-            textStyle = typography.captionBold,
-            cornerRadius = HierarchicalSize.Radius.Full,
-            iconSize = 6.dp
-        )
-        BadgeSize.Small -> BadgeConfig(
+        SizeVariant.Small -> BadgeConfig(
             size = 16.dp,
             padding = 3.dp,
-            textStyle = typography.labelSmall,  // 10sp - proper Nano text size
+            textStyle = typography.labelSmall,
             cornerRadius = HierarchicalSize.Radius.Small,
             iconSize = 10.dp
         )
-        BadgeSize.Medium -> BadgeConfig(
+        SizeVariant.Medium -> BadgeConfig(
             size = 20.dp,
             padding = 4.dp,
-            textStyle = typography.labelSmall,  // 10sp - proper Nano text size
+            textStyle = typography.labelSmall,
             cornerRadius = HierarchicalSize.Radius.Medium,
             iconSize = 12.dp
         )
-        BadgeSize.Large -> BadgeConfig(
+        SizeVariant.Large -> BadgeConfig(
             size = 24.dp,
             padding = 5.dp,
-            textStyle = typography.labelMedium,  // 12sp - proper Compact text size
+            textStyle = typography.labelMedium,
             cornerRadius = HierarchicalSize.Radius.Medium,
             iconSize = 14.dp
         )
+        else -> BadgeConfig(
+            size = 20.dp,
+            padding = 4.dp,
+            textStyle = typography.labelSmall,
+            cornerRadius = HierarchicalSize.Radius.Medium,
+            iconSize = 12.dp
+        )
     }
+}
+
+@Composable
+private fun getDotBadgeConfig(): BadgeConfig {
+    val typography = AppTheme.typography
+    return BadgeConfig(
+        size = 8.dp,
+        padding = 0.dp,
+        textStyle = typography.captionBold,
+        cornerRadius = HierarchicalSize.Radius.Full,
+        iconSize = 6.dp
+    )
 }
 
 /**
@@ -127,7 +133,7 @@ private fun getBadgeColors(
     colors: ColorPalette
 ): BadgeColors {
     return when (style) {
-        BadgeStyle.Solid -> when (variant) {
+        BadgeStyle.Filled -> when (variant) {
             BadgeVariant.Primary -> BadgeColors(
                 background = colors.brandContentDefault,
                 content = colors.baseContentNegative
@@ -233,7 +239,7 @@ private fun getBadgeColors(
  * @sample
  * ```
  * // Dot indicator
- * Badge(size = BadgeSize.Dot, variant = BadgeVariant.Error)
+ * Badge(dot = true, variant = BadgeVariant.Error)
  *
  * // Notification count
  * Badge(content = "5", variant = BadgeVariant.Primary)
@@ -259,8 +265,9 @@ private fun getBadgeColors(
 fun PixaBadge(
     content: String? = null,
     variant: BadgeVariant = BadgeVariant.Error,
-    size: BadgeSize = BadgeSize.Medium,
-    style: BadgeStyle = BadgeStyle.Solid,
+    size: SizeVariant = SizeVariant.Medium,
+    style: BadgeStyle = BadgeStyle.Filled,
+    dot: Boolean = false,
     modifier: Modifier = Modifier,
     onClick: (() -> Unit)? = null,
     icon: Painter? = null,
@@ -269,7 +276,7 @@ fun PixaBadge(
     contentDescription: String? = null
 ) {
     val colors = AppTheme.colors
-    val config = getBadgeConfig(size)
+    val config = if (dot) getDotBadgeConfig() else getBadgeConfig(size)
     val badgeColors = getBadgeColors(variant, style, colors)
 
     // Process content with maxCount logic
@@ -279,7 +286,7 @@ fun PixaBadge(
         } ?: text
     }
 
-    val isDot = size == BadgeSize.Dot || (displayContent == null && icon == null)
+    val isDot = dot || (displayContent == null && icon == null)
 
     // Pulse animation for dot badges
     val infiniteTransition = rememberInfiniteTransition(label = "badge_pulse")
@@ -287,7 +294,7 @@ fun PixaBadge(
         initialValue = 1f,
         targetValue = if (pulse && isDot) 1.3f else 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
+            animation = AnimationUtils.standardTween(1000),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulse_scale"
