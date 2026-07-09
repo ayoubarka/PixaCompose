@@ -83,9 +83,6 @@ kotlin {
             implementation(libs.compose.components.resources)
             implementation(libs.compose.components.uiToolingPreview)
 
-            // Material3 Adaptive Components
-            implementation(libs.bundles.material3.adaptive.suite)
-
             // Kotlinx libraries
             implementation(libs.kotlinx.datetime)
 

@@ -8,6 +8,7 @@ import androidx.compose.ui.layout.SubcomposeLayout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.pixamob.pixacompose.theme.SizeVariant
 
 /**
  * Screen Utilities
@@ -158,6 +159,16 @@ object ScreenUtil {
     fun getLargestDimension(): Dp {
         return maxOf(getScreenWidth(), getScreenHeight())
     }
+
+    /**
+     * Get the current [WindowSizeClass], derived from the measured screen width.
+     *
+     * @return The window size class for the current screen width
+     */
+    @Composable
+    fun getWindowSizeClass(): WindowSizeClass {
+        return windowSizeClassOf(getScreenWidth())
+    }
 }
 
 /**
@@ -237,3 +248,59 @@ fun getScreenHeight(): Dp = ScreenUtil.getScreenHeight()
  */
 @Composable
 fun getScreenWidth(): Dp = ScreenUtil.getScreenWidth()
+
+// ============================================================================
+// BREAKPOINTS - Lightweight adaptive size-class system
+// ============================================================================
+//
+// A minimal replacement for `material3-adaptive`'s WindowSizeClass, built on
+// the screen measurements [ScreenUtil] already provides. No extra dependency
+// required.
+
+/** Screen width below which a device is considered [WindowSizeClass.Compact]. */
+private val CompactMaxWidth = 600.dp
+
+/** Screen width below which a device is considered [WindowSizeClass.Medium]. */
+private val MediumMaxWidth = 840.dp
+
+/**
+ * Coarse screen-width tiers used to pick adaptive defaults across the library.
+ *
+ * Breakpoints mirror the widely-used Material window size classes:
+ * - [Compact]: phones in portrait (< 600dp)
+ * - [Medium]: phones in landscape, foldables, small tablets in portrait (600-840dp)
+ * - [Expanded]: large tablets, desktop (>= 840dp)
+ */
+enum class WindowSizeClass {
+    Compact,
+    Medium,
+    Expanded
+}
+
+/**
+ * Resolves a [WindowSizeClass] from a raw screen width.
+ */
+fun windowSizeClassOf(width: Dp): WindowSizeClass = when {
+    width < CompactMaxWidth -> WindowSizeClass.Compact
+    width < MediumMaxWidth -> WindowSizeClass.Medium
+    else -> WindowSizeClass.Expanded
+}
+
+/**
+ * Maps a [WindowSizeClass] to a default [SizeVariant], so components can scale
+ * up on larger screens without every call site hand-rolling its own breakpoint
+ * logic.
+ */
+fun WindowSizeClass.toAdaptiveSizeVariant(): SizeVariant = when (this) {
+    WindowSizeClass.Compact -> SizeVariant.Medium
+    WindowSizeClass.Medium -> SizeVariant.Large
+    WindowSizeClass.Expanded -> SizeVariant.Huge
+}
+
+/**
+ * Composition local for the current [WindowSizeClass].
+ *
+ * Provided automatically by [com.pixamob.pixacompose.theme.PixaTheme]; falls
+ * back to [WindowSizeClass.Compact] if read outside of it.
+ */
+val LocalWindowSizeClass = compositionLocalOf { WindowSizeClass.Compact }

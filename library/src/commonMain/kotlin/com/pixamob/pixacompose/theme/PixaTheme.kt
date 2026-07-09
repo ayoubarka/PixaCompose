@@ -6,6 +6,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import com.pixamob.pixacompose.utils.LocalWindowSizeClass
+import com.pixamob.pixacompose.utils.ScreenSizeProvider
+import com.pixamob.pixacompose.utils.ScreenUtil
+import com.pixamob.pixacompose.utils.WindowSizeClass
+import com.pixamob.pixacompose.utils.toAdaptiveSizeVariant
 
 /**
  * App Theme Configuration - Optimized Version
@@ -112,9 +117,15 @@ fun PixaTheme(
         LocalColorPalette provides colorPalette,
         LocalTextTypography provides typography,
         LocalShapeStyle provides shapeStyles,
-        LocalIsDarkTheme provides useDarkTheme,
-        content = content
-    )
+        LocalIsDarkTheme provides useDarkTheme
+    ) {
+        ScreenSizeProvider {
+            CompositionLocalProvider(
+                LocalWindowSizeClass provides ScreenUtil.getWindowSizeClass(),
+                content = content
+            )
+        }
+    }
 }
 
 /**
@@ -159,6 +170,24 @@ object AppTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalIsDarkTheme.current
+
+    /**
+     * Current [WindowSizeClass], derived from the measured screen width.
+     */
+    val windowSizeClass: WindowSizeClass
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalWindowSizeClass.current
+
+    /**
+     * Adaptive default [SizeVariant] for the current window size class.
+     * Components can use this as their `size` default instead of a fixed
+     * [SizeVariant.Medium] to scale up on larger screens.
+     */
+    val adaptiveSizeVariant: SizeVariant
+        @Composable
+        @ReadOnlyComposable
+        get() = LocalWindowSizeClass.current.toAdaptiveSizeVariant()
 }
 
 // Local provider for dark theme state
