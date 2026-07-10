@@ -1363,7 +1363,7 @@ fun StatsCard(
 }
 
 /**
- * ActionCard - Display action prompt with icon, title, description, CTA
+ * ActionCtaCard - Display action prompt with icon, title, description, CTA
  *
  * @param icon Icon source for action type
  * @param title Action title
@@ -1376,7 +1376,7 @@ fun StatsCard(
  * @param isLoading Loading state
  */
 @Composable
-fun ActionCard(
+fun ActionCtaCard(
     icon: IconSource,
     title: String,
     description: String,
@@ -1457,7 +1457,7 @@ fun ActionCard(
 }
 
 /**
- * MediaCard - Display media with overlay content
+ * VideoCard - Display media with overlay content (play button, duration badge)
  *
  * @param imageUrl Media image/thumbnail URL
  * @param title Media title
@@ -1470,7 +1470,7 @@ fun ActionCard(
  * @param isLoading Loading state
  */
 @Composable
-fun MediaCard(
+fun VideoCard(
     imageUrl: String,
     title: String,
     modifier: Modifier = Modifier,
@@ -2793,7 +2793,7 @@ fun FeatureCard(
 }
 
 /**
- * CompactCard - Small cards for compact layouts
+ * CompactInfoCard - Small labeled cards for compact layouts
  *
  * **Use Cases:** Tags and chips, quick actions, compact lists, filter options
  *
@@ -2809,11 +2809,11 @@ fun FeatureCard(
  * @sample
  * ```
  * Row(horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)) {
- *     CompactCard(
+ *     CompactInfoCard(
  *         title = "Health",
  *         icon = Icons.Default.FavoriteBorder
  *     )
- *     CompactCard(
+ *     CompactInfoCard(
  *         title = "Fitness",
  *         icon = Icons.Default.FitnessCenter
  *     )
@@ -2821,7 +2821,7 @@ fun FeatureCard(
  * ```
  */
 @Composable
-fun CompactCard(
+fun CompactInfoCard(
     title: String,
     modifier: Modifier = Modifier,
     icon: androidx.compose.ui.graphics.vector.ImageVector? = null,
