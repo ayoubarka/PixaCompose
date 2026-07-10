@@ -1188,8 +1188,10 @@ PixaCard(
 ```kotlin
 InfoCard(title = "Info", description = "Static information", icon = Icons.Default.Info)
 ActionCard(title = "Settings", onClick = { navigate() }, icon = Icons.Default.Settings)
+ActionCtaCard(icon = IconSource.Vector(Icons.Default.Star), title = "Go Premium", description = "Unlock all features", ctaText = "Upgrade", onCtaClick = { upgrade() })
 SelectCard(title = "Option", isSelected = selected, onClick = { toggle() })
 MediaCard(imageUrl = url, title = "Article", subtitle = "Category")
+VideoCard(imageUrl = url, title = "Tutorial", duration = "4:12", showPlayButton = true, onClick = { play() })
 StatCard(value = "42", label = "Active", trend = "+12%", trendPositive = true)
 ListItemCard(title = "Notifications", leadingIcon = Icons.Default.Notifications)
 FeatureCard(title = "Fast Setup", description = "Get started in minutes", icon = Icons.Default.Speed)

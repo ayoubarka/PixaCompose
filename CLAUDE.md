@@ -75,10 +75,10 @@ Top-level `springAnimation()`/`tweenAnimation()` are thin delegates into the obj
 **Fixed already:**
 - Animation duplication (`AnimationSpecs.kt` vs `AnimationUtils.kt`) — resolved by merge; 0 raw `spring()`/`tween()` calls remain across `components/`, 28 files import `AnimationUtils`.
 - No adaptive-sizing mechanism existed — `WindowSizeClass` + `AppTheme.adaptiveSizeVariant` now exist (see above). Adoption is the open item, not the mechanism.
+- `Card.kt` had duplicate composable definitions — `ActionCard`, `MediaCard`, `CompactCard` were each defined twice with incompatible signatures. Resolved: the generic definition kept the original name, the specialized preset was renamed (`ActionCard`→`ActionCtaCard`, `MediaCard`→`VideoCard`, `CompactCard`→`CompactInfoCard`). Zero call sites existed for either half of any pair, so this was a pure rename, no behavior change.
 
 **Still outstanding (verified against current source):**
 - **9 components have no `SizeVariant` param at all**: `Alert.kt`, `According.kt`, `Menu.kt`, `Popover.kt`, `Tooltip.kt`, `Drawer.kt`, `Snackbar.kt`, `Toast.kt`, `Divider.kt`.
-- **`Card.kt` has duplicate composable definitions** — `ActionCard`, `MediaCard`, `CompactCard` are each defined twice (currently at lines ~683/2824, ~1379/2019, ~1473/2357) — real copy-paste bug, not a style split.
 - **Raw `.dp` literals**: 386 occurrences across 35 of 40 component files (grew, not shrank, since the last audit — new files like `PixaFAB.kt`/`PixaIconButton.kt` added more). `Tab.kt`, `Skeleton.kt`, `Card.kt`, `Stepper.kt` are the worst offenders.
 - **`HierarchicalSize.forVariant()` is barely adopted** — only `Icon.kt` calls it; every other component hand-rolls its own local `when(size)` block, several with hardcoded fallback literals for uncovered enum cases.
 - **Elevation is fragmented three ways**: `ElevationUtils.ComponentElevation` is used only by `Toast.kt`/`Snackbar.kt`; `Card.kt` still duplicates the identical 0/1/2/4/8dp ladder in its own private `BaseCardElevation`; `Button.kt` uses a raw nullable `Dp` with no enum.
