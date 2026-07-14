@@ -6,6 +6,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.Dp
 import com.pixamob.pixacompose.utils.LocalWindowSizeClass
 import com.pixamob.pixacompose.utils.ScreenSizeProvider
 import com.pixamob.pixacompose.utils.ScreenUtil
@@ -188,6 +189,37 @@ object AppTheme {
         @Composable
         @ReadOnlyComposable
         get() = LocalWindowSizeClass.current.toAdaptiveSizeVariant()
+
+    /**
+     * Adaptive outer page padding (screen-edge margin) for the current
+     * [WindowSizeClass]. Mirrors the "margin" concept from column-grid
+     * systems, expressed through [HierarchicalSize.Spacing] instead of a
+     * separate grid unit. Use on the root padding of a screen-level
+     * `Column`/`Box`, not on individual components.
+     */
+    val pageMargin: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() = when (LocalWindowSizeClass.current) {
+            WindowSizeClass.Compact -> HierarchicalSize.Spacing.Large    // 16dp
+            WindowSizeClass.Medium -> HierarchicalSize.Spacing.Huge     // 24dp
+            WindowSizeClass.Expanded -> HierarchicalSize.Spacing.Massive // 48dp
+        }
+
+    /**
+     * Adaptive gap between major page sections for the current
+     * [WindowSizeClass]. Mirrors the "gutter" concept from column-grid
+     * systems. Use between top-level sections of a screen, not between
+     * items inside a list or the internal padding of a component.
+     */
+    val sectionSpacing: Dp
+        @Composable
+        @ReadOnlyComposable
+        get() = when (LocalWindowSizeClass.current) {
+            WindowSizeClass.Compact -> HierarchicalSize.Spacing.Huge     // 24dp
+            WindowSizeClass.Medium -> HierarchicalSize.Spacing.Massive   // 48dp
+            WindowSizeClass.Expanded -> HierarchicalSize.Spacing.Massive // 48dp
+        }
 }
 
 // Local provider for dark theme state

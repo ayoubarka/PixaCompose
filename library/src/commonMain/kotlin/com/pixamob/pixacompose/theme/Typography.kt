@@ -74,7 +74,8 @@ data class FontFamilyConfig(
  * Mathematical Scaling System aligned with HierarchicalSize:
  * - Base size: 16sp (matches Medium variant ~48dp container with 3:1 ratio)
  * - Progression: Each level scales by ~1.25x (25% increase)
- * - Line height: fontSize × 1.4 (optimal readability)
+ * - Line height: fontSize × ~1.4, then rounded to the nearest 4sp so every
+ *   style lands on the same 4dp baseline grid HierarchicalSize.Spacing uses
  * - Letter spacing: Decreases as size increases (tighter at large sizes)
  *
  * Size Hierarchy (Bottom-up):
@@ -181,21 +182,21 @@ fun provideTextTypography(fontConfig: FontFamilyConfig? = null): TextTypography 
         // Subtitle styles - for secondary headings (Medium+ scale: 18sp)
         subtitleBold = TextStyle(
             fontSize = 18.sp,          // Base × 1.125 (between Medium-Large)
-            lineHeight = 26.sp,        // 18 × 1.44
+            lineHeight = 28.sp,        // 18 × 1.44, rounded to 4sp grid
             fontFamily = fontFamily,
             fontWeight = FontWeight.W600,
             letterSpacing = 0.15.sp
         ),
         subtitleRegular = TextStyle(
             fontSize = 18.sp,
-            lineHeight = 26.sp,
+            lineHeight = 28.sp,
             fontFamily = fontFamily,
             fontWeight = FontWeight.W500,
             letterSpacing = 0.15.sp
         ),
         subtitleLight = TextStyle(
             fontSize = 18.sp,
-            lineHeight = 26.sp,
+            lineHeight = 28.sp,
             fontFamily = fontFamily,
             fontWeight = FontWeight.W400,
             letterSpacing = 0.15.sp
@@ -282,14 +283,14 @@ fun provideTextTypography(fontConfig: FontFamilyConfig? = null): TextTypography 
         ),
         labelMedium = TextStyle(
             fontSize = 12.sp,          // Compact scale
-            lineHeight = 18.sp,        // 12 × 1.5
+            lineHeight = 20.sp,        // 12 × 1.5, rounded to 4sp grid
             fontFamily = fontFamily,
             fontWeight = FontWeight.W600,
             letterSpacing = 0.5.sp
         ),
         labelSmall = TextStyle(
             fontSize = 10.sp,          // Nano scale
-            lineHeight = 14.sp,        // 10 × 1.4
+            lineHeight = 16.sp,        // 10 × 1.4, rounded to 4sp grid
             fontFamily = fontFamily,
             fontWeight = FontWeight.W600,
             letterSpacing = 0.5.sp
@@ -299,7 +300,7 @@ fun provideTextTypography(fontConfig: FontFamilyConfig? = null): TextTypography 
         // Aligned with Button sizes in HierarchicalSize
         actionMini = TextStyle(
             fontSize = 10.sp,          // Nano (micro buttons - 24dp)
-            lineHeight = 14.sp,        // 10 × 1.4
+            lineHeight = 16.sp,        // 10 × 1.4, rounded to 4sp grid
             fontFamily = fontFamily,
             fontWeight = FontWeight.W700,
             letterSpacing = 0.5.sp
@@ -313,7 +314,7 @@ fun provideTextTypography(fontConfig: FontFamilyConfig? = null): TextTypography 
         ),
         actionSmall = TextStyle(
             fontSize = 14.sp,          // Small (secondary buttons - 36dp)
-            lineHeight = 18.sp,        // 14 × 1.29
+            lineHeight = 20.sp,        // 14 × 1.29, rounded to 4sp grid
             fontFamily = fontFamily,
             fontWeight = FontWeight.W700,
             letterSpacing = 0.46.sp
@@ -334,14 +335,14 @@ fun provideTextTypography(fontConfig: FontFamilyConfig? = null): TextTypography 
         ),
         actionExtraLarge = TextStyle(
             fontSize = 20.sp,          // Huge (hero CTAs - 56dp)
-            lineHeight = 26.sp,        // 20 × 1.3
+            lineHeight = 28.sp,        // 20 × 1.3, rounded to 4sp grid
             fontFamily = fontFamily,
             fontWeight = FontWeight.W800,
             letterSpacing = 0.2.sp
         ),
         actionHuge = TextStyle(
             fontSize = 24.sp,          // Massive (marketing buttons - 64dp)
-            lineHeight = 30.sp,        // 24 × 1.25
+            lineHeight = 32.sp,        // 24 × 1.25, rounded to 4sp grid
             fontFamily = fontFamily,
             fontWeight = FontWeight.W900,
             letterSpacing = 0.15.sp

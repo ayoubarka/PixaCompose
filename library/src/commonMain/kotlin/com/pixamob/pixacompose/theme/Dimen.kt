@@ -253,15 +253,20 @@ object HierarchicalSize {
      * Avatar Sizes - Profile pictures, user representations
      * Circular or rounded square elements
      */
+    // Compact..Massive pin exactly to Uber Base's Avatar spec ("Available sizes
+    // (6 predetermined)": 24/36/48/64/80/112px) — this category is Avatar.kt's
+    // exclusive consumer, so it was retuned in place rather than left mismatched.
+    // Nano (16dp) sits below Uber's documented floor as a Pixa-only extension
+    // for micro use cases (inline comment threads, etc.) Uber doesn't cover.
     object Avatar {
         val None = 0.dp            // No avatar
-        val Nano = 16.dp           // Micro user indicators
-        val Compact = 24.dp        // Tiny avatars (comments, badges)
-        val Small = 32.dp          // Compact avatars (lists)
-        val Medium = 40.dp         // Standard avatars ⭐
-        val Large = 48.dp          // Prominent avatars
-        val Huge = 64.dp           // Profile headers
-        val Massive = 96.dp        // Hero profile images
+        val Nano = 16.dp           // Pixa extension — below Uber Base's 24dp floor
+        val Compact = 24.dp        // Uber Base: Label Xsmall, single-initial only
+        val Small = 36.dp          // Uber Base: Label medium
+        val Medium = 48.dp         // Uber Base: Heading Xsmall ⭐
+        val Large = 64.dp          // Uber Base: Heading medium (icon fallback cap)
+        val Huge = 80.dp           // Uber Base: Heading Xlarge (icon fallback unsupported)
+        val Massive = 112.dp       // Uber Base: Display medium (icon fallback unsupported)
 
         fun forVariant(variant: SizeVariant): Dp = when (variant) {
             SizeVariant.None -> None
@@ -412,7 +417,7 @@ object HierarchicalSize {
      */
     object BottomNav {
         val None = 0.dp            // No bottom nav
-        val Nano = 48.dp           // Minimal (not recommended)
+        val Nano = 44.dp           // Minimal (not recommended, below WCAG)
         val Compact = 48.dp        // Compact bottom nav
         val Small = 56.dp          // Dense bottom nav
         val Medium = 64.dp         // Standard bottom nav (recommended) ⭐
@@ -566,7 +571,7 @@ object HierarchicalSize {
         val None = 0.dp
         val Nano = 1.dp            // Subtle shadow
         val Compact = 2.dp         // Light elevation (cards at rest)
-        val Small = 2.dp           // Standard elevation
+        val Small = 3.dp           // Standard elevation
         val Medium = 4.dp          // Moderate elevation (raised buttons) ⭐
         val Large = 8.dp           // High elevation (dialogs, menus)
         val Huge = 12.dp           // Very high elevation (modals)
@@ -601,7 +606,7 @@ object HierarchicalSize {
         val Nano = 40.dp           // Below WCAG (use only for dense professional tools)
         val Compact = 44.dp        // Slightly below WCAG (use with caution)
         val Small = 48.dp          // WCAG minimum (recommended minimum) ⭐
-        val Medium = 48.dp         // Standard touch target
+        val Medium = 52.dp         // Standard touch target, above WCAG minimum
         val Large = 56.dp          // Comfortable touch target (recommended default)
         val Huge = 64.dp           // Spacious touch target
         val Massive = 72.dp        // Very comfortable (tablet, accessibility++)
@@ -729,8 +734,6 @@ object HierarchicalSize {
 }
 
 // ============================================
-// LEGACY ALIASES (Maintained for backward compatibility)
-// ============================================
 // HELPER FUNCTIONS & DATA CLASSES
 // ============================================
 
@@ -853,17 +856,6 @@ fun getSizesFor(variant: SizeVariant) = ComponentSizes(
  *     modifier = Modifier.padding(HierarchicalSize.Spacing.Large),  // Always 16dp
  *     shape = RoundedCornerShape(HierarchicalSize.Radius.Large)   // Always 12dp
  * )
- * ```
- *
- * ### 3. Using Legacy Aliases (During Migration)
- * Keep existing code working while you migrate:
- *
- * ```kotlin
- * // Old code (still works)
- * Icon(modifier = Modifier.size(HierarchicalSize.Icon.Medium))
- *
- * // New code (preferred)
- * Icon(modifier = Modifier.size(HierarchicalSize.Icon.Medium))
  * ```
  *
  * ## COMPONENT ADAPTATION EXAMPLES

@@ -78,9 +78,12 @@ release.keystore
 
 # Sensitive documentation (contains credentials/keys)
 GITHUB_SECRETS.md
+CLAUDE.md
 *.key
 *.asc
 gpg-key-base64.txt
 private.key
 temp-key.txt
 revoke.asc
+
+/.claude/

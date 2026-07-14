@@ -20,6 +20,37 @@ data class CustomShapes(
     val extraLarge: Shape
 )
 
+/**
+ * Resolves a [Shape] from a 5-tier [CustomShapes] family using an 8-tier
+ * [SizeVariant], so components can pull a themed shape straight from
+ * `AppTheme.shapes.<family>.forVariant(size)` instead of separately
+ * resolving `HierarchicalSize.Radius.forVariant(size)` and wrapping it in a
+ * raw `RoundedCornerShape`/custom shape constructor themselves.
+ *
+ * Bucketing: [SizeVariant.None]/[SizeVariant.Nano] → extraSmall,
+ * [SizeVariant.Compact] → small, [SizeVariant.Small]/[SizeVariant.Medium] → medium,
+ * [SizeVariant.Large] → large, [SizeVariant.Huge]/[SizeVariant.Massive] → extraLarge.
+ */
+fun CustomShapes.forVariant(variant: SizeVariant): Shape = when (variant) {
+    SizeVariant.None, SizeVariant.Nano -> extraSmall
+    SizeVariant.Compact -> small
+    SizeVariant.Small, SizeVariant.Medium -> medium
+    SizeVariant.Large -> large
+    SizeVariant.Huge, SizeVariant.Massive -> extraLarge
+}
+
+/**
+ * Same bridge as [CustomShapes.forVariant] but for the Material3 [Shapes]
+ * container used by [ShapeStyles.rounded]/[ShapeStyles.cut].
+ */
+fun Shapes.forVariant(variant: SizeVariant): Shape = when (variant) {
+    SizeVariant.None, SizeVariant.Nano -> extraSmall
+    SizeVariant.Compact -> small
+    SizeVariant.Small, SizeVariant.Medium -> medium
+    SizeVariant.Large -> large
+    SizeVariant.Huge, SizeVariant.Massive -> extraLarge
+}
+
 // Standard rounded corner shapes
 val roundedCornerShapes = Shapes(
     extraSmall = RoundedCornerShape(HierarchicalSize.Radius.Compact),
@@ -187,6 +218,11 @@ data class ShapeStyles(
     val rounded: Shapes,
     val cut: Shapes,
 
+    // Fully rounded pill/stadium shape. Size-invariant by design (a pill's
+    // corner radius is always "as round as possible", not tied to a
+    // SizeVariant tier) — use for chips, pill buttons, pill badges.
+    val pill: Shape,
+
     // Concave shapes (inward curves) - CustomShapes
     val concaveTop: CustomShapes,
     val concaveBottom: CustomShapes,
@@ -220,6 +256,7 @@ data class ShapeStyles(
 val shapeStyles = ShapeStyles(
     rounded = roundedCornerShapes,
     cut = cutCornerShapes,
+    pill = RoundedCornerShape(HierarchicalSize.Radius.Full),
     concaveTop = concaveTopShapes,
     concaveBottom = concaveBottomShapes,
     convexTop = convexTopShapes,
