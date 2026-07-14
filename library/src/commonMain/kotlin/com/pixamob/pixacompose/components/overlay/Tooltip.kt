@@ -19,7 +19,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
@@ -29,6 +28,8 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.elevationShadow
 import kotlinx.coroutines.delay
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -186,12 +187,12 @@ fun PixaTooltip(
             ) {
                 AnimatedVisibility(
                     visible = isVisible,
-                    enter = fadeIn(),
-                    exit = fadeOut()
+                    enter = fadeIn(AnimationUtils.standardTween()),
+                    exit = fadeOut(AnimationUtils.fastTween())
                 ) {
                     Box(
                         modifier = Modifier
-                            .shadow(sizeConfig.elevation, RoundedCornerShape(sizeConfig.cornerRadius))
+                            .elevationShadow(sizeConfig.elevation, RoundedCornerShape(sizeConfig.cornerRadius))
                             .clip(RoundedCornerShape(sizeConfig.cornerRadius))
                             .background(themeColors.background)
                             .padding(

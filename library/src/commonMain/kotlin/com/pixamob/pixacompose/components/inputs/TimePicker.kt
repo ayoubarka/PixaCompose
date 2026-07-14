@@ -91,7 +91,7 @@ data class TimePickerSizeConfig(
     val cornerRadius: Dp,
     val titleTextStyle: TextStyle,
     val itemTextStyle: TextStyle,
-    val selectorShape: Shape = RoundedCornerShape(16.dp),
+    val selectorShape: Shape = RoundedCornerShape(HierarchicalSize.Radius.Huge),
     val selectorBorder: BorderStroke? = null
 )
 
@@ -154,7 +154,7 @@ private fun getTimePickerSizeConfig(size: SizeVariant): TimePickerSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Medium,
             titleTextStyle = typography.bodyLight,
             itemTextStyle = typography.bodyLight,
-            selectorShape = RoundedCornerShape(12.dp),
+            selectorShape = RoundedCornerShape(HierarchicalSize.Radius.Large),
             selectorBorder = BorderStroke(1.5.dp, colors.baseBorderDefault)
         )
 
@@ -164,7 +164,7 @@ private fun getTimePickerSizeConfig(size: SizeVariant): TimePickerSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Medium,
             titleTextStyle = typography.bodyBold,
             itemTextStyle = typography.bodyBold,
-            selectorShape = RoundedCornerShape(16.dp),
+            selectorShape = RoundedCornerShape(HierarchicalSize.Radius.Huge),
             selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
 
@@ -174,7 +174,7 @@ private fun getTimePickerSizeConfig(size: SizeVariant): TimePickerSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Large,
             titleTextStyle = typography.titleBold,
             itemTextStyle = typography.titleRegular,
-            selectorShape = RoundedCornerShape(20.dp),
+            selectorShape = RoundedCornerShape(20.dp),  // intentional one-off between Huge(16)/Massive(24), no exact token match
             selectorBorder = BorderStroke(2.5.dp, colors.baseBorderDefault)
         )
 
@@ -184,7 +184,7 @@ private fun getTimePickerSizeConfig(size: SizeVariant): TimePickerSizeConfig {
             cornerRadius = HierarchicalSize.Radius.Medium,
             titleTextStyle = typography.bodyBold,
             itemTextStyle = typography.bodyBold,
-            selectorShape = RoundedCornerShape(16.dp),
+            selectorShape = RoundedCornerShape(HierarchicalSize.Radius.Huge),
             selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
     }

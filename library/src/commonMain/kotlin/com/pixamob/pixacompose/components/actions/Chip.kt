@@ -503,7 +503,7 @@ fun PixaChip(
                     Box(
                         modifier = Modifier
                             .size(config.iconSize)
-                            .clip(RoundedCornerShape(HierarchicalSize.Radius.Full))
+                            .clip(AppTheme.shapes.pill)
                             .clickable(
                                 onClick = onDismiss,
                                 indication = ripple(bounded = true, color = animatedContentColor.copy(alpha = 0.2f)),

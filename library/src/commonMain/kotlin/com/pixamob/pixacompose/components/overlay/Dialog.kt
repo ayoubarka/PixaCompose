@@ -19,7 +19,6 @@ import androidx.compose.runtime.Stable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.contentDescription
@@ -35,6 +34,7 @@ import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.utils.elevationShadow
 import com.pixamob.pixacompose.theme.SizeVariant
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -256,7 +256,7 @@ fun PixaDialog(
         Box(
             modifier = modifier
                 .widthIn(min = sizeConfig.minWidth, max = sizeConfig.maxWidth)
-                .shadow(sizeConfig.elevation, RoundedCornerShape(sizeConfig.cornerRadius))
+                .elevationShadow(sizeConfig.elevation, RoundedCornerShape(sizeConfig.cornerRadius))
                 .clip(RoundedCornerShape(sizeConfig.cornerRadius))
                 .background(themeColors.background)
                 .padding(sizeConfig.padding)

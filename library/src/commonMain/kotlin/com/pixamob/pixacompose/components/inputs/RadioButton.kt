@@ -229,22 +229,22 @@ private fun PixaRadioButtonCircle(
 
     val animatedOuterColor by animateColorAsState(
         targetValue = currentColors.outerCircle,
-        animationSpec = AnimationUtils.standardTween(150)
+        animationSpec = AnimationUtils.colorSpring
     )
 
     val animatedBorderColor by animateColorAsState(
         targetValue = currentColors.outerBorder,
-        animationSpec = AnimationUtils.standardTween(150)
+        animationSpec = AnimationUtils.colorSpring
     )
 
     val animatedInnerColor by animateColorAsState(
         targetValue = currentColors.innerCircle,
-        animationSpec = AnimationUtils.standardTween(150)
+        animationSpec = AnimationUtils.colorSpring
     )
 
     val innerCircleScale by animateFloatAsState(
         targetValue = if (selected) 1f else 0f,
-        animationSpec = AnimationUtils.standardTween(200)
+        animationSpec = AnimationUtils.selectionSpring
     )
 
     Box(
@@ -307,7 +307,7 @@ private fun PixaRadioButton(
 
     val labelContent = @Composable { label?.let { lbl ->
         val labelColor = if (enabled) colors.selected.label else colors.disabled.label
-        val animatedLabelColor by animateColorAsState(labelColor, AnimationUtils.standardTween(150))
+        val animatedLabelColor by animateColorAsState(labelColor, AnimationUtils.colorSpring, label = "radio_label")
 
         Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
 

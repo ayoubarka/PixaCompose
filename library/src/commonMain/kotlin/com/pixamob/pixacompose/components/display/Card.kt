@@ -46,12 +46,13 @@ import androidx.constraintlayout.compose.ConstraintLayoutScope
 import androidx.constraintlayout.compose.Dimension
 import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
-import com.pixamob.pixacompose.components.feedback.BadgeStyle
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
-import com.pixamob.pixacompose.components.feedback.PixaBadge
+import com.pixamob.pixacompose.components.feedback.PixaNotificationBadge
 import com.pixamob.pixacompose.components.feedback.Skeleton
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.ComponentElevation
+import com.pixamob.pixacompose.utils.toDp
 
 // ============================================================================
 // CONFIGURATION
@@ -75,26 +76,6 @@ enum class BaseCardVariant {
 
     /** Transparent card with subtle border (for overlays or grouped content) */
     Ghost
-}
-
-/**
- * BaseCard elevation levels for shadow depth
- */
-enum class BaseCardElevation {
-    /** No elevation (flat) */
-    None,
-
-    /** Subtle elevation - 1dp */
-    Low,
-
-    /** Standard elevation - 2dp (DEFAULT) */
-    Medium,
-
-    /** Prominent elevation - 4dp */
-    High,
-
-    /** Very prominent elevation - 8dp */
-    Highest
 }
 
 /**
@@ -292,16 +273,6 @@ private fun getBaseCardTheme(
     }
 }
 
-private fun getBaseCardElevationDp(elevation: BaseCardElevation): Dp {
-    return when (elevation) {
-        BaseCardElevation.None -> 0.dp
-        BaseCardElevation.Low -> 1.dp
-        BaseCardElevation.Medium -> 2.dp
-        BaseCardElevation.High -> 4.dp
-        BaseCardElevation.Highest -> 8.dp
-    }
-}
-
 @Composable
 private fun getBaseCardPaddingDp(padding: SizeVariant): Dp = padding.cardPadding()
 
@@ -315,7 +286,7 @@ private fun InternalCard(
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     variant: BaseCardVariant = BaseCardVariant.Elevated,
-    elevation: BaseCardElevation = BaseCardElevation.Medium,
+    elevation: ComponentElevation = ComponentElevation.Medium,
     padding: SizeVariant = SizeVariant.Medium,
     cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     colors: BaseCardStateColors,
@@ -343,7 +314,7 @@ private fun InternalCard(
     // Determine elevation - priority: shadowConfig > elevation enum
     val elevationDp = when {
         shadowConfig != null -> shadowConfig.elevation
-        variant == BaseCardVariant.Elevated && enabled -> getBaseCardElevationDp(elevation)
+        variant == BaseCardVariant.Elevated && enabled -> elevation.toDp()
         else -> 0.dp
     }
 
@@ -504,7 +475,7 @@ fun PixaCard(
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     isLoading: Boolean = false,
-    elevation: BaseCardElevation = BaseCardElevation.Medium,
+    elevation: ComponentElevation = ComponentElevation.Medium,
     padding: SizeVariant = SizeVariant.Medium,
     cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     backgroundColor: Color? = null,
@@ -567,7 +538,7 @@ fun ElevatedCard(
     onClick: (() -> Unit)? = null,
     enabled: Boolean = true,
     isLoading: Boolean = false,
-    elevation: BaseCardElevation = BaseCardElevation.Medium,
+    elevation: ComponentElevation = ComponentElevation.Medium,
     padding: SizeVariant = SizeVariant.Medium,
     cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     content: @Composable ConstraintLayoutScope.() -> Unit
@@ -755,7 +726,7 @@ fun CompactCard(
  * ```
  * PixaCard(
  *     variant = BaseCardVariant.Elevated,
- *     elevation = BaseCardElevation.Highest
+ *     elevation = ComponentElevation.Highest
  * ) {
  *     Text("Prominent card")
  * }
@@ -830,10 +801,9 @@ fun ProductCard(
 
         // Badge overlay
         if (badgeText != null) {
-            PixaBadge(
-                content = badgeText,
+            PixaNotificationBadge(
+                text = badgeText,
                 variant = BadgeVariant.Error,
-                style = BadgeStyle.Filled,
                 modifier = Modifier.constrainAs(badge) {
                     top.linkTo(image.top, margin = HierarchicalSize.Spacing.Small)
                     end.linkTo(image.end, margin = HierarchicalSize.Spacing.Small)
@@ -953,10 +923,9 @@ fun ArticleCard(
         )
 
         // Category Badge
-        PixaBadge(
-            content = category,
-            variant = BadgeVariant.Primary,
-            style = BadgeStyle.Filled,
+        PixaNotificationBadge(
+            text = category,
+            variant = BadgeVariant.Accent,
             modifier = Modifier.constrainAs(badge) {
                 top.linkTo(image.top, margin = HierarchicalSize.Spacing.Small)
                 start.linkTo(image.start, margin = HierarchicalSize.Spacing.Small)
@@ -1760,10 +1729,9 @@ fun PricingCard(
 
         // Popular Badge
         if (isPopular) {
-            PixaBadge(
-                content = "Popular",
-                variant = BadgeVariant.Primary,
-                style = BadgeStyle.Filled,
+            PixaNotificationBadge(
+                text = "Popular",
+                variant = BadgeVariant.Accent,
                 modifier = Modifier.constrainAs(popularBadge) {
                     top.linkTo(parent.top)
                     start.linkTo(parent.start)

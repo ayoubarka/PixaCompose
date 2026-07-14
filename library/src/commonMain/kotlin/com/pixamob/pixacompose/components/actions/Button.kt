@@ -9,22 +9,20 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -32,8 +30,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -50,16 +48,32 @@ import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.ComponentElevation
+import com.pixamob.pixacompose.utils.WindowSizeClass
+import com.pixamob.pixacompose.utils.elevationShadow
+import com.pixamob.pixacompose.utils.toDp
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Button hierarchy, mapped from Uber Base's Primary/Secondary/Tertiary/Outline/OnBrand
+ * types onto Pixa's existing Filled/Tonal/Outlined/Ghost naming (kept per Pixa
+ * convention rather than renamed to match Uber terms):
+ * - [Filled] = Primary — single main action per screen.
+ * - [Tonal] = Secondary — gray/tinted background, the most commonly used type.
+ * - [Ghost] = Tertiary — low-emphasis dismissive actions (cancel, skip, dismiss).
+ * - [Outlined] = Outline — for actions available only within button groups.
+ * - [OnBrand] = OnBrand — for buttons placed on brand-colored surfaces (membership,
+ *   special offers), where a colored fill would lose contrast.
+ */
 enum class ButtonVariant {
     Filled,
     Tonal,
     Outlined,
-    Ghost
+    Ghost,
+    OnBrand
 }
 
 enum class ButtonShape {
@@ -68,6 +82,16 @@ enum class ButtonShape {
     Circle
 }
 
+/**
+ * Width behavior, mapped from Uber Base's Fill/Hug-content model:
+ * - [Flexible] = Hug content — width auto-adjusts to label/icon length, single-line,
+ *   truncates with ellipsis once it hits the layout edge.
+ * - [Fixed] = the explicit-fixed-width case — content wraps to additional lines
+ *   instead of truncating (override the line cap with `PixaButton(maxLines = ...)`).
+ *   Combine with `Modifier.width(...)` on the call site to actually fix the width.
+ * - [FullBleed] = Fill — spans the full container width, label/leading icon centered,
+ *   trailing icon pinned to the end.
+ */
 sealed class ButtonWidthPolicy {
     data object Flexible : ButtonWidthPolicy()
     data object Fixed : ButtonWidthPolicy()
@@ -112,16 +136,16 @@ data class ButtonStateColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
+internal fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
     val typography = AppTheme.typography
     return when (size) {
         SizeVariant.None -> ButtonSizeConfig(
-            height = 0.dp,
-            horizontalPadding = 0.dp,
-            iconSize = 0.dp,
-            iconSpacing = 0.dp,
-            minWidth = 0.dp,
-            cornerRadius = 0.dp,
+            height = HierarchicalSize.Button.None,
+            horizontalPadding = HierarchicalSize.Padding.None,
+            iconSize = HierarchicalSize.Icon.None,
+            iconSpacing = HierarchicalSize.Spacing.None,
+            minWidth = HierarchicalSize.Spacing.None,  // no minimum — hug content
+            cornerRadius = HierarchicalSize.Radius.None,
             textStyle = { typography.labelSmall }
         )
 
@@ -130,7 +154,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             horizontalPadding = HierarchicalSize.Padding.Nano,
             iconSize = HierarchicalSize.Icon.Nano,  // 12dp
             iconSpacing = HierarchicalSize.Spacing.Nano,  // 2dp
-            minWidth = 0.dp,
+            minWidth = HierarchicalSize.Spacing.None,  // no minimum — hug content
             cornerRadius = HierarchicalSize.Radius.Nano,  // 2dp
             textStyle = { typography.actionMini }  // 10sp for 24dp button
         )
@@ -140,7 +164,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             horizontalPadding = HierarchicalSize.Padding.Small,  // 8dp
             iconSize = HierarchicalSize.Icon.Compact,  // 16dp
             iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
-            minWidth = 0.dp,
+            minWidth = HierarchicalSize.Spacing.None,  // no minimum — hug content
             cornerRadius = HierarchicalSize.Radius.Compact,  // 4dp
             textStyle = { typography.actionExtraSmall }  // 12sp for 32dp button
         )
@@ -150,7 +174,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             horizontalPadding = HierarchicalSize.Padding.Medium,  // 12dp
             iconSize = HierarchicalSize.Icon.Small,  // 20dp
             iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
-            minWidth = 0.dp,
+            minWidth = HierarchicalSize.Spacing.None,  // no minimum — hug content
             cornerRadius = HierarchicalSize.Radius.Small,  // 6dp
             textStyle = { typography.actionSmall }  // 14sp for 36dp button
         )
@@ -170,7 +194,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             horizontalPadding = HierarchicalSize.Padding.Large,  // 16dp
             iconSize = HierarchicalSize.Icon.Large,  // 28dp
             iconSpacing = HierarchicalSize.Spacing.Compact,  // 4dp
-            minWidth = 120.dp,
+            minWidth = 120.dp,  // no HierarchicalSize category for button minWidth; per-tier floor keeps large CTAs from reading as too narrow
             cornerRadius = HierarchicalSize.Radius.Large,  // 12dp
             textStyle = { typography.actionLarge }  // 18sp for 48dp button
         )
@@ -180,7 +204,7 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             horizontalPadding = HierarchicalSize.Padding.Huge,  // 20dp
             iconSize = HierarchicalSize.Icon.Huge,  // 32dp
             iconSpacing = HierarchicalSize.Spacing.Small,  // 8dp
-            minWidth = 160.dp,
+            minWidth = 160.dp,  // no HierarchicalSize category for button minWidth; see Large tier above
             cornerRadius = HierarchicalSize.Radius.Huge,  // 16dp
             textStyle = { typography.actionExtraLarge }  // 20sp for 56dp button
         )
@@ -190,11 +214,38 @@ private fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
             horizontalPadding = HierarchicalSize.Padding.Massive,  // 24dp
             iconSize = HierarchicalSize.Icon.Massive,  // 48dp
             iconSpacing = HierarchicalSize.Spacing.Medium,  // 12dp
-            minWidth = 200.dp,
+            minWidth = 200.dp,  // no HierarchicalSize category for button minWidth; see Large tier above
             cornerRadius = HierarchicalSize.Radius.Massive,  // 24dp
             textStyle = { typography.actionHuge }
         )
     }
+}
+
+/**
+ * Resolves the button's clip/border shape.
+ *
+ * [ButtonShape.Pill]/[ButtonShape.Circle] reuse [AppTheme.shapes.pill] instead
+ * of a raw `RoundedCornerShape(sizeConfig.height / 2)`: `Radius.Full` (9999dp)
+ * is clamped by Compose to half the shortest side at draw time, so it renders
+ * an identical stadium/circle for any given box size — same pixels, token-backed.
+ * [ButtonShape.Default] still builds a raw `RoundedCornerShape` from
+ * [sizeConfig]'s per-tier [HierarchicalSize.Radius] value (already a token,
+ * just not wrapped in an `AppTheme.shapes.*` preset) because the 5-tier
+ * `AppTheme.shapes.rounded` family doesn't line up with Button's own
+ * per-`SizeVariant` radius ladder — swapping it in would change the actual
+ * rendered corner radius on several size tiers. [cornerRadiusOverride] (only
+ * used for the FullBleed rectangular case) also has no `AppTheme.shapes`
+ * equivalent since it's a caller-supplied one-off value, not a themed tier.
+ */
+@Composable
+private fun buttonShapeFor(
+    shape: ButtonShape,
+    sizeConfig: ButtonSizeConfig,
+    cornerRadiusOverride: Dp?
+): Shape = when {
+    cornerRadiusOverride != null -> RoundedCornerShape(cornerRadiusOverride)
+    shape == ButtonShape.Pill || shape == ButtonShape.Circle -> AppTheme.shapes.pill
+    else -> RoundedCornerShape(sizeConfig.cornerRadius)
 }
 
 // ============================================================================
@@ -276,6 +327,21 @@ private fun getButtonTheme(
                 ripple = Color.Transparent
             )
         )
+
+        // Neutral base surface + brand content reads clearly against a brand-colored
+        // parent — same reasoning as BadgeVariant.OnBrand in feedback/Badge.kt.
+        ButtonVariant.OnBrand -> ButtonStateColors(
+            default = ButtonColors(
+                background = colors.baseSurfaceDefault,
+                content = if (isDestructive) colors.errorContentDefault else colors.brandContentDefault,
+                ripple = colors.brandContentDefault.copy(alpha = 0.12f)
+            ),
+            disabled = ButtonColors(
+                background = colors.baseSurfaceDisabled,
+                content = colors.baseContentDisabled,
+                ripple = Color.Transparent
+            )
+        )
     }
 }
 
@@ -296,12 +362,17 @@ private fun InternalButton(
     size: SizeVariant = SizeVariant.Medium,
     shape: ButtonShape = ButtonShape.Default,
     colors: ButtonStateColors,
-    elevation: Dp = 0.dp,
+    elevation: Dp = ComponentElevation.None.toDp(),
     contentAlignment: Alignment = Alignment.Center,
     arrangement: Arrangement.Horizontal = Arrangement.Center,
     description: String? = null,
     cornerRadiusOverride: Dp? = null,
-    content: @Composable RowScope.() -> Unit
+    // Fixed-width buttons grow past sizeConfig.height to fit wrapped label lines;
+    // every other width policy stays pinned to the single-line size-tier height.
+    allowMultilineHeight: Boolean = false,
+    // Passed explicitly (rather than read from LocalContentColor) so text/icon
+    // content can be colored without a CompositionLocalProvider wrapper.
+    content: @Composable RowScope.(contentColor: Color) -> Unit
 ) {
     val sizeConfig = getButtonSizeConfig(size)
     val interactionSource = remember { MutableInteractionSource() }
@@ -333,95 +404,93 @@ private fun InternalButton(
         label = "button_border"
     )
 
-    // Determine corner radius based on shape, with override for FullBleed
-    val cornerRadius = cornerRadiusOverride ?: when (shape) {
-        ButtonShape.Default -> sizeConfig.cornerRadius
-        ButtonShape.Pill -> sizeConfig.height / 2
-        ButtonShape.Circle -> sizeConfig.height / 2
-    }
-
-    val buttonShape = RoundedCornerShape(cornerRadius)
+    val buttonShape = buttonShapeFor(shape, sizeConfig, cornerRadiusOverride)
 
     // For circle shape, width equals height
     val buttonModifier = if (shape == ButtonShape.Circle) {
         modifier.size(sizeConfig.height)
+    } else if (allowMultilineHeight) {
+        modifier
+            .heightIn(min = sizeConfig.height)
+            .widthIn(min = sizeConfig.minWidth)
+            // Breathing room around wrapped lines now that height isn't fixed.
+            .padding(vertical = HierarchicalSize.Spacing.Nano)
     } else {
         modifier
             .height(sizeConfig.height)
             .widthIn(min = sizeConfig.minWidth)
     }
 
-    CompositionLocalProvider(LocalContentColor provides contentColor) {
-        // ✅ Use Row directly instead of Box + Row
-        Row(
-            modifier = buttonModifier
-                .shadow(
-                    elevation = if (enabled) elevation else 0.dp,
-                    shape = buttonShape,
-                    clip = false
-                )
-                .clip(buttonShape)
-                .background(backgroundColor)
-                .then(
-                    if (currentColors.border != Color.Transparent) {
-                        Modifier.border(
-                            BorderStroke(HierarchicalSize.Border.Compact, borderColor),
-                            buttonShape
-                        )
-                    } else Modifier
-                )
-                .focusable(interactionSource = interactionSource)
-                .then(
-                    if (isFocused && enabled) {
-                        Modifier.border(
-                            BorderStroke(2.dp, colors.default.content),
-                            buttonShape
-                        )
-                    } else Modifier
-                )
-                .clickable(
-                    interactionSource = interactionSource,
-                    indication = ripple(bounded = true, color = currentColors.ripple),
-                    enabled = enabled && !loading,
-                    role = Role.Button,
-                    onClick = onClick,
-                    onClickLabel = description
-                )
-                .padding(
-                    horizontal = if (shape == ButtonShape.Circle) {
-                        0.dp
-                    } else {
-                        sizeConfig.horizontalPadding
-                    }
-                ),
-            horizontalArrangement = arrangement,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (loading) {
-                if (loadingIcon != null) {
-                    PixaIcon(
-                        painter = loadingIcon,
-                        contentDescription = "Loading",
-                        customSize = sizeConfig.iconSize,
-                        tint = contentColor
+    // ✅ Use Row directly instead of Box + Row
+    Row(
+        modifier = buttonModifier
+            .elevationShadow(
+                elevation = elevation,
+                shape = buttonShape,
+                clip = false,
+                enabled = enabled
+            )
+            .clip(buttonShape)
+            .background(backgroundColor)
+            .then(
+                if (currentColors.border != Color.Transparent) {
+                    Modifier.border(
+                        BorderStroke(HierarchicalSize.Border.Compact, borderColor),
+                        buttonShape
                     )
+                } else Modifier
+            )
+            .focusable(interactionSource = interactionSource)
+            .then(
+                if (isFocused && enabled) {
+                    Modifier.border(
+                        BorderStroke(HierarchicalSize.Border.Medium, colors.default.content),
+                        buttonShape
+                    )
+                } else Modifier
+            )
+            .clickable(
+                interactionSource = interactionSource,
+                indication = ripple(bounded = true, color = currentColors.ripple),
+                enabled = enabled && !loading,
+                role = Role.Button,
+                onClick = onClick,
+                onClickLabel = description
+            )
+            .padding(
+                horizontal = if (shape == ButtonShape.Circle) {
+                    HierarchicalSize.Padding.None
                 } else {
-                    PixaCircularIndicator(
-                        progress = null,
-                        modifier = Modifier.size(sizeConfig.iconSize),
-                        sizePreset = SizeVariant.Small,
-                        customColors = ProgressColors(
-                            progress = contentColor,
-                            track = contentColor.copy(alpha = 0.2f),
-                            label = contentColor
-                        )
-                    )
+                    sizeConfig.horizontalPadding
                 }
-                Spacer(modifier = Modifier.width(sizeConfig.iconSpacing))
-                content()
+            ),
+        horizontalArrangement = arrangement,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        if (loading) {
+            if (loadingIcon != null) {
+                PixaIcon(
+                    painter = loadingIcon,
+                    contentDescription = "Loading",
+                    customSize = sizeConfig.iconSize,
+                    tint = contentColor
+                )
             } else {
-                content()
+                PixaCircularIndicator(
+                    progress = null,
+                    modifier = Modifier.size(sizeConfig.iconSize),
+                    sizePreset = SizeVariant.Small,
+                    customColors = ProgressColors(
+                        progress = contentColor,
+                        track = contentColor.copy(alpha = 0.2f),
+                        label = contentColor
+                    )
+                )
             }
+            Spacer(modifier = Modifier.width(sizeConfig.iconSpacing))
+            content(contentColor)
+        } else {
+            content(contentColor)
         }
     }
 }
@@ -430,41 +499,74 @@ private fun InternalButton(
 // ============================================================================
 
 /**
- * BaseButton - Main button component with full customization
+ * PixaButton — interactive control for triggering actions, confirming choices,
+ * and navigating flows. Migrated from Uber Base's Button spec.
  *
- * A flexible button component built from Compose primitives supporting:
- * - Multiple visual variants (Solid, Tonal, Outlined, Ghost)
- * - Destructive mode for critical actions
- * - Six size options from Mini to Huge
- * - Three shape variants (Default, Pill, Circle)
- * - Optional text with leading and trailing icons
- * - Icon-only buttons (when text is null or empty)
- * - Loading state with progress indicator
- * - Disabled state
- * - Smooth animations
- * - Full theme integration
- * - Elevation support
- * - Accessibility support with contentDescription
- * - Content alignment and spacing control
- * - Custom colors via ButtonColors
+ * ### Anatomy
+ * WithLabel (text + optional leading/trailing icon) or IconOnly (a single icon,
+ * or ≤2 characters for [ButtonShape.Circle]) — never combine an icon with text
+ * on a circular button; the icon wins and the text is dropped if both are given.
+ *
+ * ### Variants
+ * [ButtonVariant.Filled] (Primary — one per screen), [ButtonVariant.Tonal]
+ * (Secondary — the default workhorse), [ButtonVariant.Ghost] (Tertiary —
+ * dismissive escapes: "Not now", "Skip", "Go back"), [ButtonVariant.Outlined]
+ * (Outline — button-group-only), [ButtonVariant.OnBrand] (branded surfaces).
+ * [isDestructive] swaps brand tokens for error tokens on any variant — for the
+ * two-step danger flow Uber Base recommends, start with `Tonal + isDestructive`
+ * (caution) and confirm with `Filled + isDestructive` (commit).
+ *
+ * ### Sizes
+ * [SizeVariant] resolves through [HierarchicalSize.Button]; Uber Base's own
+ * 4-tier button scale maps onto it as: xSmall(28dp)→[SizeVariant.Compact]
+ * (32dp, nearest tier at/above the 28dp web click-target minimum — the ladder
+ * has no exact 28dp step), Small(36dp)→[SizeVariant.Small] (exact),
+ * Medium(48dp, Uber's default)→[SizeVariant.Large] (exact — note this is
+ * *not* Pixa's own default tier name), Large(56dp)→[SizeVariant.Huge] (exact).
+ *
+ * ### Width & content wrapping
+ * [ButtonWidthPolicy.Flexible] (hug content, single line, ellipsis-truncates),
+ * [ButtonWidthPolicy.FullBleed] (fills the container, rectangular corners,
+ * centers label/leading icon, pins trailing icon to the end), and
+ * [ButtonWidthPolicy.Fixed] (wraps to [maxLines] lines instead of truncating —
+ * pair with an explicit `Modifier.width(...)`).
+ *
+ * ### Adaptive behavior
+ * [adaptiveWidth] opts a [ButtonWidthPolicy.Flexible] button into Uber Base's
+ * narrow-viewport rule (scale to full width below the 600dp breakpoint, keep
+ * intrinsic size above it) via [AppTheme.windowSizeClass]. Off by default —
+ * an explicit [widthPolicy] always wins, adaptive behavior is opt-in, never a
+ * hidden override.
+ *
+ * ### Usage notes
+ * - One [ButtonVariant.Filled] button per screen (Uber Base's primary-button
+ *   placement rule); multiple primary buttons are only sanctioned one-per-panel
+ *   in multi-panel web tools.
+ * - Labels: 1-3 words, sentence case, one action per button, no symbols/digits/
+ *   punctuation/pronouns — this isn't enforced at runtime, it's a content rule.
+ * - Prefer leaving buttons enabled with inline validation/errors over disabling
+ *   them — a disabled button doesn't explain what's missing.
  *
  * @param onClick Callback when button is clicked
  * @param modifier Modifier for styling
  * @param text Optional button text content (null or empty for icon-only buttons)
- * @param variant Visual style variant (Default: Solid)
+ * @param variant Visual hierarchy (Default: [ButtonVariant.Filled])
  * @param isDestructive Whether this is a destructive action (uses error colors)
  * @param enabled Whether the button is enabled (Default: true)
  * @param loading Whether the button shows loading state (Default: false)
- * @param size Size variant (Default: Medium)
+ * @param size Size variant (Default: Medium — see size mapping table above)
  * @param shape Shape variant (Default: Default)
+ * @param widthPolicy Width behavior — hug content, fill, or fixed-with-wrap
  * @param leadingIcon Optional icon before text
  * @param trailingIcon Optional icon after text
- * @param elevation Shadow elevation (Default: 0dp, 1dp for Solid/Tonal)
+ * @param elevation Shadow elevation override (Default: auto — Low for filled-background variants)
  * @param description Accessibility description (recommended for icon-only buttons)
  * @param customColors Optional custom ButtonStateColors to override theme defaults
  * @param customIconSize Optional custom icon size to override size config
  * @param customTextStyle Optional custom text style to override size config
  * @param arrangement Content arrangement in the Row (Default: Center)
+ * @param maxLines Line cap override; defaults to 1 (Flexible/FullBleed) or unlimited (Fixed)
+ * @param adaptiveWidth Opt in to auto-fill width below the 600dp breakpoint (see Adaptive behavior above)
  *
  * @sample
  * ```
@@ -474,28 +576,16 @@ private fun InternalButton(
  *     onClick = { }
  * )
  *
- * // Button with custom colors
- * PixaButton(
- *     text = "Custom",
- *     variant = ButtonVariant.Filled,
- *     customColors = ButtonStateColors(
- *         default = ButtonColors(
- *             background = Color.Magenta,
- *             content = Color.White
- *         ),
- *         disabled = ButtonColors(
- *             background = Color.Gray,
- *             content = Color.LightGray
- *         )
- *     ),
- *     onClick = { }
- * )
+ * // Two-step danger flow
+ * PixaButton(text = "Delete", variant = ButtonVariant.Tonal, isDestructive = true, onClick = { })
+ * PixaButton(text = "Confirm delete", variant = ButtonVariant.Filled, isDestructive = true, onClick = { })
  *
- * // Button with space between content
+ * // Fixed-width button that wraps instead of truncating
  * PixaButton(
- *     text = "Options",
- *     trailingIcon = painterResource(R.drawable.ic_arrow),
- *     horizontalArrangement = Arrangement.SpaceBetween,
+ *     text = "A longer supporting label",
+ *     widthPolicy = ButtonWidthPolicy.Fixed,
+ *     maxLines = 2,
+ *     modifier = Modifier.width(120.dp),
  *     onClick = { }
  * )
  * ```
@@ -523,16 +613,13 @@ fun PixaButton(
     customTextStyle: TextStyle? = null,
     arrangement: Arrangement.Horizontal = Arrangement.Center,
     description: String? = null,
+    maxLines: Int? = null,
+    adaptiveWidth: Boolean = false,
 ) {
     val sizeConfig = getButtonSizeConfig(size)
+    val windowSizeClass = AppTheme.windowSizeClass
 
     if (showSkeleton) {
-        val cornerRadius = when (shape) {
-            ButtonShape.Default -> sizeConfig.cornerRadius
-            ButtonShape.Pill -> sizeConfig.height / 2
-            ButtonShape.Circle -> sizeConfig.height / 2
-        }
-
         val buttonModifier = if (shape == ButtonShape.Circle) {
             modifier.size(sizeConfig.height)
         } else {
@@ -544,7 +631,7 @@ fun PixaButton(
         Skeleton(
             modifier = buttonModifier,
             height = sizeConfig.height,
-            shape = RoundedCornerShape(cornerRadius),
+            shape = buttonShapeFor(shape, sizeConfig, cornerRadiusOverride = null),
             shimmerEnabled = true
         )
         return
@@ -575,27 +662,39 @@ fun PixaButton(
         colors
     }
 
-    // Auto-elevation for Solid and Tonal variants (Material 3 style)
+    // Auto-elevation: filled-background variants (Filled/Tonal/OnBrand) rest at a
+    // subtle Low lift; Outlined/Ghost rely on border/tonal emphasis instead of a
+    // shadow (see ElevationUtils.kt).
     val buttonElevation = elevation ?: when (variant) {
-        ButtonVariant.Filled, ButtonVariant.Tonal -> HierarchicalSize.Shadow.Nano  // 1dp
-        else -> 0.dp
+        ButtonVariant.Filled, ButtonVariant.Tonal, ButtonVariant.OnBrand -> ComponentElevation.Low.toDp()
+        else -> ComponentElevation.None.toDp()
     }
 
     // Determine if this is icon-only button
     val hasText = !text.isNullOrBlank()
     val hasIcons = leadingIcon != null || trailingIcon != null
 
+    // Uber Base's narrow-viewport rule: below the 600dp breakpoint a button scales
+    // up to fill its container width; above it, the button keeps its intrinsic
+    // (hug-content) size. Opt-in only — explicit widthPolicy stays authoritative,
+    // this never overrides an explicit FullBleed/Fixed choice, only Flexible.
+    val effectiveWidthPolicy = if (adaptiveWidth && widthPolicy == ButtonWidthPolicy.Flexible && windowSizeClass == WindowSizeClass.Compact) {
+        ButtonWidthPolicy.FullBleed
+    } else {
+        widthPolicy
+    }
+
     // For icon-only buttons without explicit circle shape, suggest circle shape
     val effectiveShape = if (!hasText && hasIcons && shape == ButtonShape.Default) {
         ButtonShape.Circle
-    } else if (widthPolicy == ButtonWidthPolicy.FullBleed) {
+    } else if (effectiveWidthPolicy == ButtonWidthPolicy.FullBleed) {
         ButtonShape.Default
     } else {
         shape
     }
 
     // Apply full bleed modifier when widthPolicy is FullBleed
-    val effectiveModifier = if (widthPolicy == ButtonWidthPolicy.FullBleed) {
+    val effectiveModifier = if (effectiveWidthPolicy == ButtonWidthPolicy.FullBleed) {
         modifier.fillMaxWidth()
     } else {
         modifier
@@ -613,8 +712,13 @@ fun PixaButton(
         elevation = buttonElevation,
         arrangement = arrangement,
         description = description,
-        cornerRadiusOverride = if (widthPolicy == ButtonWidthPolicy.FullBleed) 0.dp else null
-    ) {
+        cornerRadiusOverride = if (effectiveWidthPolicy == ButtonWidthPolicy.FullBleed) {
+            HierarchicalSize.Radius.None
+        } else {
+            null
+        },
+        allowMultilineHeight = effectiveWidthPolicy == ButtonWidthPolicy.Fixed
+    ) { contentColor ->
         ButtonContent(
             text = text,
             leadingIcon = leadingIcon,
@@ -622,13 +726,23 @@ fun PixaButton(
             iconSize = customIconSize ?: sizeConfig.iconSize,
             iconSpacing = sizeConfig.iconSpacing,
             textStyle = customTextStyle ?: sizeConfig.textStyle(),
-            shape = effectiveShape
+            shape = effectiveShape,
+            contentColor = contentColor,
+            // Hug-content/fill truncate at one line; Fixed-width wraps by default,
+            // per Uber Base's "fixed-width buttons wrap to next line" rule.
+            maxLines = maxLines ?: if (effectiveWidthPolicy == ButtonWidthPolicy.Fixed) Int.MAX_VALUE else 1
         )
     }
 }
 
 /**
- * Button content layout helper
+ * Button content layout helper.
+ *
+ * Circular buttons follow Uber Base's constraint: a single icon, OR up to 2
+ * characters of text (initials/a digit) — never both combined. When both an
+ * icon and text are supplied to a [ButtonShape.Circle] button, the icon wins
+ * and the text is dropped, matching "icon-only" precedence elsewhere in this
+ * file (see `effectiveShape` in [PixaButton]).
  */
 @Composable
 private fun RowScope.ButtonContent(
@@ -638,12 +752,19 @@ private fun RowScope.ButtonContent(
     iconSize: Dp,
     iconSpacing: Dp,
     textStyle: TextStyle,
-    shape: ButtonShape
+    shape: ButtonShape,
+    contentColor: Color,
+    maxLines: Int = 1
 ) {
-    val hasText = !text.isNullOrBlank()
     val hasLeadingIcon = leadingIcon != null
     val hasTrailingIcon = trailingIcon != null
-    val hasAnyContent = hasText || hasLeadingIcon || hasTrailingIcon
+    val hasAnyIcon = hasLeadingIcon || hasTrailingIcon
+    val isCircle = shape == ButtonShape.Circle
+
+    // Circular content is icon-only or a max-2-character label, never a full label.
+    val circleText = text?.takeIf { !hasAnyIcon }?.trim()?.take(2)?.takeIf { it.isNotBlank() }
+    val hasText = if (isCircle) circleText != null else !text.isNullOrBlank()
+    val hasAnyContent = hasText || hasAnyIcon
 
     // Fallback: ensure minimum width for empty buttons
     if (!hasAnyContent) {
@@ -655,34 +776,39 @@ private fun RowScope.ButtonContent(
         PixaIcon(
             painter = leadingIcon,
             contentDescription = null,
-            customSize = iconSize
+            customSize = iconSize,
+            tint = contentColor
         )
 
-        if (hasText && shape != ButtonShape.Circle) {
+        if (hasText && !isCircle) {
             Spacer(modifier = Modifier.width(iconSpacing))
         }
     }
 
-    if (hasText && shape != ButtonShape.Circle) {
-        Text(
-            text = text,
-            style = textStyle.copy(lineHeight = textStyle.fontSize),
-            textAlign = TextAlign.Center,
+    if (hasText) {
+        BasicText(
+            text = if (isCircle) circleText!! else text!!,
+            style = textStyle.copy(
+                lineHeight = textStyle.fontSize,
+                color = contentColor,
+                textAlign = TextAlign.Center
+            ),
             overflow = TextOverflow.Ellipsis,
-            maxLines = 1,
+            maxLines = if (isCircle) 1 else maxLines,
             modifier = Modifier.align(Alignment.CenterVertically)
         )
     }
 
     if (hasTrailingIcon) {
-        if (hasText && shape != ButtonShape.Circle) {
+        if (hasText && !isCircle) {
             Spacer(modifier = Modifier.width(iconSpacing))
         }
 
         PixaIcon(
             painter = trailingIcon,
             contentDescription = null,
-            customSize = iconSize
+            customSize = iconSize,
+            tint = contentColor
         )
     }
 }

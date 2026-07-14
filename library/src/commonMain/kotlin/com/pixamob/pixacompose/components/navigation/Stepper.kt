@@ -34,7 +34,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaCard
-import com.pixamob.pixacompose.components.display.BaseCardElevation
+import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.components.feedback.SkeletonCircle
@@ -791,7 +791,7 @@ private fun StepContent(
             PixaCard(
                 modifier = modifier,
                 variant = if (isCurrentStep) BaseCardVariant.Elevated else BaseCardVariant.Ghost,
-                elevation = if (isCurrentStep) BaseCardElevation.Low else BaseCardElevation.None,
+                elevation = if (isCurrentStep) ComponentElevation.Low else ComponentElevation.None,
                 padding = SizeVariant.Small
             ) {
                 content()

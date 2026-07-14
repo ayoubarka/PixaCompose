@@ -1,19 +1,21 @@
 package com.pixamob.pixacompose.components.feedback
 
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -36,7 +38,11 @@ import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.MotionDuration
+import com.pixamob.pixacompose.utils.QuinticEaseInOutEasing
+import com.pixamob.pixacompose.utils.QuinticEaseOutEasing
 import kotlin.math.min
+import kotlin.math.sin
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -59,6 +65,19 @@ enum class ProgressOrientation {
     Horizontal,
     /** Vertical progress bar */
     Vertical
+}
+
+/**
+ * Fill direction for determinate progress, mapped from Uber Base's Progress
+ * Circle spec: "Clockwise: Forward progress communication" / "Counterclockwise:
+ * Countdown timer context." [PixaProgressPill] has no literal rotation, so it
+ * maps [CounterClockwise] onto the standard countdown-bar convention instead —
+ * the fill depletes from the end (right) edge rather than growing from the
+ * start (left) edge.
+ */
+enum class ProgressDirection {
+    Clockwise,
+    CounterClockwise
 }
 
 /**
@@ -89,7 +108,12 @@ enum class PagerIndicatorWidthMode {
 data class ProgressSegment(
     val progress: Float,
     val variant: ProgressVariant = ProgressVariant.Primary,
-    val color: Color? = null
+    val color: Color? = null,
+    // Spec: "the active step loops a fill from left to right and fades
+    // back" — marks the one currently-in-progress segment (as opposed to
+    // already-complete or not-yet-started ones) so it gets that loop
+    // animation instead of a static fill.
+    val isActive: Boolean = false
 )
 
 /**
@@ -114,6 +138,18 @@ data class ProgressConfig(
     val trackOpacity: Float = 0.2f,
     val labelStyle: @Composable () -> TextStyle,
     val percentageFormat: String = "%d%%"
+)
+
+/**
+ * Linear progress bar configuration — Uber Base's Progress Bar spec names 3
+ * sizes (Small/Medium/Large), each pairing a track thickness with a label
+ * text style (`LabelSmall`/`LabelMedium`/`LabelLarge`).
+ */
+@Immutable
+@Stable
+data class LinearProgressConfig(
+    val trackThickness: Dp,
+    val labelStyle: @Composable () -> TextStyle
 )
 
 /**
@@ -177,7 +213,21 @@ private fun getProgressColors(
 }
 
 /**
- * Get progress configuration based on size
+ * Get progress configuration based on size. Uber Base's Progress Circle spec
+ * names 4 sizes (Small/Medium/Large/X Large) — the branches below already
+ * bucket the 8-tier [SizeVariant] down to that same 4-tier ladder
+ * (Nano/Compact/Small→Small, Medium→Medium, Large/Huge→Large, Massive→X Large),
+ * so no separate spec-specific enum is needed here (unlike, say,
+ * [com.pixamob.pixacompose.components.display.ListItemDensity], which needed
+ * one because its own generic-vs-spec tiers didn't already line up this
+ * cleanly). [ProgressConfig.strokeWidth] is [HierarchicalSize.Border.Compact]
+ * (1dp) in every branch, an exact match to the spec's literal "Border Style
+ * (all sizes): Weight 1px" — replacing the previous [HierarchicalSize.Border.Nano]
+ * (0.5dp) default. The spec's own pixel-dimension table (e.g. "286×118") reads
+ * as full Figma-frame sizes including the below-circle label region, not the
+ * ring's own diameter, so it isn't a usable literal source for [ProgressConfig.size]
+ * — this keeps the existing icon-scale diameters (14/18/24/28dp) rather than
+ * inventing an unjustified circle-diameter figure from an ambiguous table.
  */
 @Composable
 private fun getProgressConfig(size: SizeVariant): ProgressConfig {
@@ -185,28 +235,65 @@ private fun getProgressConfig(size: SizeVariant): ProgressConfig {
     return when (size) {
         SizeVariant.Small, SizeVariant.Compact, SizeVariant.Nano -> ProgressConfig(
             size = HierarchicalSize.Icon.Compact,
-            strokeWidth = HierarchicalSize.Border.Nano,
+            strokeWidth = HierarchicalSize.Border.Compact,
             labelStyle = { typography.footnoteBold }
         )
         SizeVariant.Medium -> ProgressConfig(
             size = HierarchicalSize.Icon.Small,
-            strokeWidth = HierarchicalSize.Border.Nano,
+            strokeWidth = HierarchicalSize.Border.Compact,
             labelStyle = { typography.captionBold }
         )
         SizeVariant.Large, SizeVariant.Huge -> ProgressConfig(
             size = HierarchicalSize.Icon.Medium,
-            strokeWidth = HierarchicalSize.Border.Nano,
+            strokeWidth = HierarchicalSize.Border.Compact,
             labelStyle = { typography.bodyBold }
         )
         SizeVariant.Massive -> ProgressConfig(
             size = HierarchicalSize.Icon.Large,
-            strokeWidth = HierarchicalSize.Border.Nano,
+            strokeWidth = HierarchicalSize.Border.Compact,
             labelStyle = { typography.subtitleBold }
         )
         else -> ProgressConfig(
             size = HierarchicalSize.Icon.Small,
-            strokeWidth = HierarchicalSize.Border.Nano,
+            strokeWidth = HierarchicalSize.Border.Compact,
             labelStyle = { typography.captionBold }
+        )
+    }
+}
+
+/**
+ * Resolves [PixaProgressPill]'s track height + shape — Uber Base's
+ * Determinate Pill anatomy ("pill-shaped track... label placed inside").
+ * Height comes from [HierarchicalSize.Chip], the existing token category
+ * already built for "a rounded container sized to hold inline text," a much
+ * closer fit than the hairline-thin [HierarchicalSize.SliderTrack]/[HierarchicalSize.Border]
+ * categories other progress components use for tracks with no inside label.
+ */
+@Composable
+private fun getProgressPillHeight(size: SizeVariant): Dp = HierarchicalSize.Chip.forVariant(size)
+
+/**
+ * Resolves [LinearProgressConfig] for the bar's 3 spec sizes. Track thickness
+ * comes from [HierarchicalSize.SliderTrack] — the existing token category
+ * built for exactly this ("linear track thickness"), rather than the
+ * previous default's border-width token ([HierarchicalSize.Border.Nano],
+ * 0.5dp — an almost invisible hairline for a progress bar's own track).
+ */
+@Composable
+private fun getLinearProgressConfig(size: SizeVariant): LinearProgressConfig {
+    val typography = AppTheme.typography
+    return when (size) {
+        SizeVariant.None, SizeVariant.Nano, SizeVariant.Compact, SizeVariant.Small -> LinearProgressConfig(
+            trackThickness = HierarchicalSize.SliderTrack.Small,
+            labelStyle = { typography.labelSmall }
+        )
+        SizeVariant.Medium -> LinearProgressConfig(
+            trackThickness = HierarchicalSize.SliderTrack.Medium,
+            labelStyle = { typography.labelMedium }
+        )
+        SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> LinearProgressConfig(
+            trackThickness = HierarchicalSize.SliderTrack.Large,
+            labelStyle = { typography.labelLarge }
         )
     }
 }
@@ -216,15 +303,56 @@ private fun getProgressConfig(size: SizeVariant): ProgressConfig {
 // ============================================================================
 
 /**
- * Circular Progress Indicator - Shows progress in circular form
+ * PixaCircularIndicator — a circular loading/progress ring. Migrated from
+ * Uber Base's Progress Circle spec ("Circle Type").
+ *
+ * ### Purpose
+ * Indicates status or completion of a process — open-ended (indeterminate,
+ * short waits) or precise (determinate, long waits with a known duration).
+ *
+ * ### Anatomy
+ * A circular track + a rotating (indeterminate) or filling (determinate)
+ * ring, plus an optional label **below** the circle — Uber Base's literal
+ * Circle Type anatomy, not a label overlaid inside the ring (the previous
+ * implementation's placement, corrected here).
+ *
+ * ### Variants
+ * Indeterminate (continuous spin, [progress] = null) vs Determinate
+ * ([direction] = [ProgressDirection.CounterClockwise] for countdown timers).
+ *
+ * ### States
+ * Active (animating) and Complete — pass [completedContent] to crossfade
+ * into it once [completed] is true, using the spec's literal 500ms/0ms-delay/
+ * Linear transition ([MotionDuration.Slow] + [LinearEasing]).
+ *
+ * ### Sizing
+ * [sizePreset] buckets the 8-tier [SizeVariant] down to Uber Base's own
+ * Small/Medium/Large/X Large ladder — see [getProgressConfig]. Stroke width
+ * is a fixed 1dp ([HierarchicalSize.Border.Compact]) at every size, matching
+ * the spec's literal "Border Style (all sizes): 1px."
+ *
+ * ### Customization
+ * [variant] (color), [sizePreset], [direction], [showPercentage] (label
+ * below the circle — no longer restricted to non-Small sizes now that it
+ * lives below the ring instead of cramped inside it), [customColors],
+ * [completedContent].
+ *
+ * ### Usage notes
+ * - Switch from indeterminate to determinate once a wait-time estimate
+ *   becomes available (Uber Base's "progressive enhancement").
+ * - Placement communicates scope: centered on a screen = whole page loading;
+ *   inside a sheet/button = that surface's own content loading.
  *
  * @param progress Progress value from 0.0 to 1.0 (null for indeterminate)
- * @param modifier Modifier for the indicator
+ * @param modifier Modifier for the indicator (sizes/positions the ring + label stack)
  * @param variant Color variant (Primary, Success, Warning, Error, Info, Neutral)
- * @param sizePreset Size preset
- * @param showPercentage Show percentage text in center (only for determinate)
+ * @param sizePreset Size preset (Default: Medium)
+ * @param direction Fill direction for determinate progress (Default: Clockwise)
+ * @param showPercentage Show a percentage label below the circle (determinate only)
+ * @param completed Whether the Complete state is active — crossfades to [completedContent]
+ * @param completedContent Content shown once [completed] is true (success message, result, etc.)
  * @param customColors Optional custom colors
- * @param contentDescription Accessibility description
+ * @param contentDescription Accessibility description (defaults to Uber Base's literal VoiceOver wording, "Loading" / "Loading, N% complete")
  */
 @Composable
 fun PixaCircularIndicator(
@@ -232,7 +360,10 @@ fun PixaCircularIndicator(
     modifier: Modifier = Modifier,
     variant: ProgressVariant = ProgressVariant.Primary,
     sizePreset: SizeVariant = SizeVariant.Medium,
+    direction: ProgressDirection = ProgressDirection.Clockwise,
     showPercentage: Boolean = false,
+    completed: Boolean = false,
+    completedContent: (@Composable () -> Unit)? = null,
     customColors: ProgressColors? = null,
     contentDescription: String? = null
 ) {
@@ -241,6 +372,7 @@ fun PixaCircularIndicator(
 
     val isIndeterminate = progress == null
     val progressValue = progress?.coerceIn(0f, 1f) ?: 0f
+    val directionSign = if (direction == ProgressDirection.Clockwise) 1f else -1f
 
     // Animate sweep angle for determinate progress
     val animatedSweepAngle by animateFloatAsState(
@@ -252,112 +384,261 @@ fun PixaCircularIndicator(
     val description = contentDescription ?: if (isIndeterminate) {
         "Loading"
     } else {
-        "Progress ${(progressValue * 100).toInt()} percent"
+        "Loading, ${(progressValue * 100).toInt()}% complete"
     }
 
-    Box(
-        modifier = modifier
-            .size(config.size)
-            .then(
-                if (!isIndeterminate) {
-                    Modifier.progressSemantics(progressValue)
-                } else {
-                    Modifier
-                }
-            )
-            .semantics {
-                this.contentDescription = description
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        if (isIndeterminate) {
-            // Indeterminate circular animation
-            val infiniteTransition = rememberInfiniteTransition(label = "circular_progress")
-            val rotation by infiniteTransition.animateFloat(
-                initialValue = 0f,
-                targetValue = 360f,
-                animationSpec = AnimationUtils.infiniteRepeatable(
-                    animation = AnimationUtils.standardTween(1200, LinearEasing)
-                ),
-                label = "rotation"
-            )
-
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidthPx = config.strokeWidth.toPx()
-                val diameter = min(size.width, size.height)
-                val radius = (diameter - strokeWidthPx) / 2f
-                val centerX = size.width / 2f
-                val centerY = size.height / 2f
-                val topLeftX = (size.width - diameter) / 2f + strokeWidthPx / 2f
-                val topLeftY = (size.height - diameter) / 2f + strokeWidthPx / 2f
-                val arcSize = diameter - strokeWidthPx
-
-                // Track circle
-                drawCircle(
-                    color = colors.track,
-                    radius = radius,
-                    center = Offset(centerX, centerY),
-                    style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+    val indicator: @Composable () -> Unit = {
+        Column(
+            modifier = modifier
+                .then(
+                    if (!isIndeterminate) {
+                        Modifier.progressSemantics(progressValue)
+                    } else {
+                        Modifier
+                    }
                 )
-
-                // Progress arc (90 degrees)
-                drawArc(
-                    color = colors.progress,
-                    startAngle = rotation - 90f,
-                    sweepAngle = 90f,
-                    useCenter = false,
-                    topLeft = Offset(topLeftX, topLeftY),
-                    size = Size(arcSize, arcSize),
-                    style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
-                )
-            }
-        } else {
-            // Determinate circular progress
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                val strokeWidthPx = config.strokeWidth.toPx()
-                val diameter = min(size.width, size.height)
-                val radius = (diameter - strokeWidthPx) / 2f
-                val centerX = size.width / 2f
-                val centerY = size.height / 2f
-                val topLeftX = (size.width - diameter) / 2f + strokeWidthPx / 2f
-                val topLeftY = (size.height - diameter) / 2f + strokeWidthPx / 2f
-                val arcSize = diameter - strokeWidthPx
-
-                // Track circle
-                drawCircle(
-                    color = colors.track,
-                    radius = radius,
-                    center = Offset(centerX, centerY),
-                    style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
-                )
-
-                // Progress arc with animation
-                if (animatedSweepAngle > 0) {
-                    drawArc(
-                        color = colors.progress,
-                        startAngle = -90f,
-                        sweepAngle = animatedSweepAngle,
-                        useCenter = false,
-                        topLeft = Offset(topLeftX, topLeftY),
-                        size = Size(arcSize, arcSize),
-                        style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                .semantics {
+                    this.contentDescription = description
+                },
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
+        ) {
+            Box(
+                modifier = Modifier.size(config.size),
+                contentAlignment = Alignment.Center
+            ) {
+                if (isIndeterminate) {
+                    // Indeterminate circular animation
+                    val infiniteTransition = rememberInfiniteTransition(label = "circular_progress")
+                    val rotation by infiniteTransition.animateFloat(
+                        initialValue = 0f,
+                        targetValue = 360f * directionSign,
+                        animationSpec = AnimationUtils.infiniteRepeatable(
+                            animation = AnimationUtils.standardTween(1200, LinearEasing)
+                        ),
+                        label = "rotation"
                     )
+
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val strokeWidthPx = config.strokeWidth.toPx()
+                        val diameter = min(size.width, size.height)
+                        val radius = (diameter - strokeWidthPx) / 2f
+                        val centerX = size.width / 2f
+                        val centerY = size.height / 2f
+                        val topLeftX = (size.width - diameter) / 2f + strokeWidthPx / 2f
+                        val topLeftY = (size.height - diameter) / 2f + strokeWidthPx / 2f
+                        val arcSize = diameter - strokeWidthPx
+
+                        // Track circle
+                        drawCircle(
+                            color = colors.track,
+                            radius = radius,
+                            center = Offset(centerX, centerY),
+                            style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                        )
+
+                        // Progress arc (90 degrees)
+                        drawArc(
+                            color = colors.progress,
+                            startAngle = rotation - 90f,
+                            sweepAngle = 90f * directionSign,
+                            useCenter = false,
+                            topLeft = Offset(topLeftX, topLeftY),
+                            size = Size(arcSize, arcSize),
+                            style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                        )
+                    }
+                } else {
+                    // Determinate circular progress
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val strokeWidthPx = config.strokeWidth.toPx()
+                        val diameter = min(size.width, size.height)
+                        val radius = (diameter - strokeWidthPx) / 2f
+                        val centerX = size.width / 2f
+                        val centerY = size.height / 2f
+                        val topLeftX = (size.width - diameter) / 2f + strokeWidthPx / 2f
+                        val topLeftY = (size.height - diameter) / 2f + strokeWidthPx / 2f
+                        val arcSize = diameter - strokeWidthPx
+
+                        // Track circle
+                        drawCircle(
+                            color = colors.track,
+                            radius = radius,
+                            center = Offset(centerX, centerY),
+                            style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                        )
+
+                        // Progress arc with animation
+                        if (animatedSweepAngle > 0) {
+                            drawArc(
+                                color = colors.progress,
+                                startAngle = -90f,
+                                sweepAngle = animatedSweepAngle * directionSign,
+                                useCenter = false,
+                                topLeft = Offset(topLeftX, topLeftY),
+                                size = Size(arcSize, arcSize),
+                                style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
+                            )
+                        }
+                    }
                 }
             }
 
-            // Percentage label
-            if (showPercentage && sizePreset != SizeVariant.Small) {
+            // Optional label below the circle — Uber Base's literal Circle Type anatomy
+            if (showPercentage && !isIndeterminate) {
                 val percentage = (progressValue * 100).toInt()
                 val percentageText = config.percentageFormat.replace("%d", percentage.toString())
-                Text(
+                BasicText(
                     text = percentageText,
-                    style = config.labelStyle(),
-                    color = colors.label,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.SemiBold
+                    style = config.labelStyle().copy(
+                        color = colors.label,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.SemiBold
+                    )
                 )
             }
         }
+    }
+
+    if (completedContent != null) {
+        Crossfade(
+            targetState = completed,
+            animationSpec = AnimationUtils.standardTween(MotionDuration.Slow, LinearEasing),
+            label = "circular_progress_completion"
+        ) { isCompleted ->
+            if (isCompleted) completedContent() else indicator()
+        }
+    } else {
+        indicator()
+    }
+}
+
+// ============================================================================
+// PROGRESS PILL
+// ============================================================================
+
+/**
+ * PixaProgressPill — a pill-shaped determinate progress indicator with its
+ * label inside the pill. Migrated from Uber Base's Progress Circle spec
+ * ("Pill Type" / "Determinate Pill" variant) — a known-duration alternative
+ * to [PixaCircularIndicator] for the same "long wait, measurable progress"
+ * use case.
+ *
+ * ### Anatomy
+ * A pill-shaped track ([AppTheme.shapes.pill]) + a fill that grows from the
+ * start edge, with an optional label **centered inside the pill** — distinct
+ * from [PixaCircularIndicator]'s label-below-the-circle anatomy, per Uber
+ * Base's own "Circle Type" vs "Pill Type" anatomy split.
+ *
+ * ### States
+ * Active (filling) and Complete — pass [completedContent] to crossfade into
+ * it once [completed] is true, using the same literal 500ms/Linear timing as
+ * [PixaCircularIndicator].
+ *
+ * ### Sizing
+ * [sizePreset] resolves the pill's height via [HierarchicalSize.Chip] (a
+ * rounded-container-sized-for-text token, not the hairline track thickness
+ * [PixaLinearIndicator] uses — see [getProgressPillHeight]). Width fills the
+ * available space by default; override via [modifier].
+ *
+ * ### Customization
+ * [variant] (color), [sizePreset], [direction] (fill grows from the start
+ * edge for [ProgressDirection.Clockwise], depletes from the end edge for
+ * [ProgressDirection.CounterClockwise] — the standard countdown-bar
+ * convention, since a pill has no literal rotation to reverse), [label]
+ * override, [customColors], [completedContent].
+ *
+ * This is a determinate-only component — Uber Base defines no "Indeterminate
+ * Pill" variant (only Indeterminate Circle, Determinate Circle, Determinate
+ * Pill), so [progress] is non-nullable here, unlike [PixaCircularIndicator].
+ *
+ * @param progress Progress value from 0.0 to 1.0
+ * @param modifier Modifier for the pill (defaults to filling available width)
+ * @param variant Color variant (Primary, Success, Warning, Error, Info, Neutral)
+ * @param sizePreset Size preset (Default: Medium)
+ * @param direction Fill direction (Default: Clockwise — grows from the start edge)
+ * @param label Custom label shown inside the pill (defaults to a percentage, e.g. "70%")
+ * @param showLabel Whether to render a label inside the pill (Default: true)
+ * @param completed Whether the Complete state is active — crossfades to [completedContent]
+ * @param completedContent Content shown once [completed] is true
+ * @param customColors Optional custom colors
+ * @param contentDescription Accessibility description (defaults to Uber Base's literal VoiceOver wording, "Loading, N% complete")
+ */
+@Composable
+fun PixaProgressPill(
+    progress: Float,
+    modifier: Modifier = Modifier,
+    variant: ProgressVariant = ProgressVariant.Primary,
+    sizePreset: SizeVariant = SizeVariant.Medium,
+    direction: ProgressDirection = ProgressDirection.Clockwise,
+    label: String? = null,
+    showLabel: Boolean = true,
+    completed: Boolean = false,
+    completedContent: (@Composable () -> Unit)? = null,
+    customColors: ProgressColors? = null,
+    contentDescription: String? = null
+) {
+    val colors = customColors ?: getProgressColors(variant, AppTheme.colors)
+    val config = getProgressConfig(sizePreset)
+    val height = getProgressPillHeight(sizePreset)
+    val shape = AppTheme.shapes.pill
+
+    val progressValue = progress.coerceIn(0f, 1f)
+    val animatedProgress by animateFloatAsState(
+        targetValue = progressValue,
+        animationSpec = AnimationUtils.standardSpring(),
+        label = "pill_progress"
+    )
+
+    val percentage = (progressValue * 100).toInt()
+    val displayLabel = label ?: "$percentage%"
+    val description = contentDescription ?: "Loading, $percentage% complete"
+
+    val indicator: @Composable () -> Unit = {
+        Box(
+            modifier = modifier
+                .fillMaxWidth()
+                .height(height)
+                .clip(shape)
+                .background(colors.track)
+                .border(HierarchicalSize.Border.Compact, AppTheme.colors.baseBorderSubtle, shape)
+                .progressSemantics(progressValue)
+                .semantics {
+                    this.contentDescription = description
+                },
+            contentAlignment = Alignment.Center
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(animatedProgress)
+                    .fillMaxHeight()
+                    .align(if (direction == ProgressDirection.Clockwise) Alignment.CenterStart else Alignment.CenterEnd)
+                    .background(colors.progress, shape)
+            )
+
+            if (showLabel) {
+                BasicText(
+                    text = displayLabel,
+                    style = config.labelStyle().copy(
+                        color = colors.label,
+                        textAlign = TextAlign.Center,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                )
+            }
+        }
+    }
+
+    if (completedContent != null) {
+        Crossfade(
+            targetState = completed,
+            animationSpec = AnimationUtils.standardTween(MotionDuration.Slow, LinearEasing),
+            label = "progress_pill_completion"
+        ) { isCompleted ->
+            if (isCompleted) completedContent() else indicator()
+        }
+    } else {
+        indicator()
     }
 }
 
@@ -366,13 +647,33 @@ fun PixaCircularIndicator(
 // ============================================================================
 
 /**
- * Linear Progress Indicator - Shows progress as a horizontal or vertical bar
+ * Linear Progress Indicator — migrated from Uber Base's Progress Bar spec.
+ *
+ * ### Anatomy
+ * A linear background track + a progress indicator fill, with an optional
+ * label below (or beside, for [ProgressOrientation.Vertical]).
+ *
+ * ### Sizing
+ * [size] resolves track thickness + label style via [getLinearProgressConfig]
+ * (Small/Medium/Large, per spec). [height] remains available as an explicit
+ * override for a one-off exact thickness; when null (default) it derives
+ * from [size]. Previously this defaulted to [HierarchicalSize.Border.Nano]
+ * (0.5dp) — a border-width token misapplied as a bar thickness, rendering an
+ * almost invisible hairline; that default is fixed here.
+ *
+ * ### Behavior
+ * Determinate: fills from the leading edge proportionally to [progress].
+ * Indeterminate: per spec, "pulses back and forth... quintic ease-in-and-out,
+ * with opaque color moving center to sides on enter" — implemented as a
+ * center-anchored fill that grows outward and back, not a one-directional
+ * sweep.
  *
  * @param progress Progress value from 0.0 to 1.0 (null for indeterminate)
  * @param modifier Modifier for the indicator
  * @param variant Color variant
  * @param orientation Horizontal or Vertical
- * @param height Height of the progress bar (width for vertical)
+ * @param size Size tier (Default: Medium) — resolves track thickness + label style
+ * @param height Optional exact track thickness override (width for vertical); null derives from [size]
  * @param showLabel Show text label
  * @param label Custom label text (shows percentage if not provided for determinate)
  * @param customColors Optional custom colors
@@ -384,14 +685,16 @@ fun PixaLinearIndicator(
     modifier: Modifier = Modifier,
     variant: ProgressVariant = ProgressVariant.Primary,
     orientation: ProgressOrientation = ProgressOrientation.Horizontal,
-    height: Dp = HierarchicalSize.Border.Nano,
+    size: SizeVariant = SizeVariant.Medium,
+    height: Dp? = null,
     showLabel: Boolean = false,
     label: String? = null,
     customColors: ProgressColors? = null,
     contentDescription: String? = null
 ) {
     val colors = customColors ?: getProgressColors(variant, AppTheme.colors)
-    val typography = AppTheme.typography
+    val config = getLinearProgressConfig(size)
+    val trackThickness = height ?: config.trackThickness
 
     val isIndeterminate = progress == null
     val progressValue = progress?.coerceIn(0f, 1f) ?: 0f
@@ -401,6 +704,23 @@ fun PixaLinearIndicator(
         targetValue = if (!isIndeterminate) progressValue else 0f,
         animationSpec = AnimationUtils.standardSpring(),
         label = "linear_progress"
+    )
+
+    // Indeterminate: center-anchored pulse, growing outward and back —
+    // spec's "opaque color moving center to sides," quintic ease-in-and-out,
+    // back-and-forth (RepeatMode.Reverse, not Restart).
+    val infiniteTransition = rememberInfiniteTransition(label = "indeterminate_linear_progress")
+    val pulseFraction by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = AnimationUtils.infiniteRepeatable(
+            animation = AnimationUtils.standardTween(
+                durationMillis = MotionDuration.Slow,
+                easing = QuinticEaseInOutEasing
+            ),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulse"
     )
 
     val description = contentDescription ?: if (isIndeterminate) {
@@ -433,10 +753,9 @@ fun PixaLinearIndicator(
                         "Loading..."
                     }
 
-                    Text(
+                    BasicText(
                         text = displayLabel,
-                        style = typography.bodyLight,
-                        color = colors.label,
+                        style = config.labelStyle().copy(color = colors.label),
                         modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
                     )
                 }
@@ -445,36 +764,26 @@ fun PixaLinearIndicator(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(height)
-                        .clip(RoundedCornerShape(height / 2))
-                        .background(colors.track)
+                        .height(trackThickness)
+                        .clip(RoundedCornerShape(trackThickness / 2))
+                        .background(colors.track),
+                    contentAlignment = Alignment.Center
                 ) {
                     if (isIndeterminate) {
-                        // Indeterminate linear animation
-                        val infiniteTransition = rememberInfiniteTransition(label = "linear_progress")
-                        val animatedProgress by infiniteTransition.animateFloat(
-                            initialValue = 0f,
-                            targetValue = 1f,
-                            animationSpec = AnimationUtils.infiniteRepeatable(
-                                animation = AnimationUtils.standardTween(1500)
-                            ),
-                            label = "progress"
-                        )
-
-                        // Draw animated progress bar
                         Box(
                             modifier = Modifier
-                                .fillMaxWidth(animatedProgress)
+                                .fillMaxWidth(pulseFraction)
                                 .fillMaxHeight()
-                                .background(colors.progress, RoundedCornerShape(height / 2))
+                                .background(colors.progress, RoundedCornerShape(trackThickness / 2))
                         )
                     } else {
                         // Determinate linear progress with animation
                         Box(
                             modifier = Modifier
+                                .align(Alignment.CenterStart)
                                 .fillMaxWidth(animatedProgress)
                                 .fillMaxHeight()
-                                .background(colors.progress, RoundedCornerShape(height / 2))
+                                .background(colors.progress, RoundedCornerShape(trackThickness / 2))
                         )
                     }
                 }
@@ -500,43 +809,28 @@ fun PixaLinearIndicator(
                 // Progress bar (vertical)
                 Box(
                     modifier = Modifier
-                        .width(height)
+                        .width(trackThickness)
                         .fillMaxHeight()
-                        .clip(RoundedCornerShape(height / 2))
-                        .background(colors.track)
+                        .clip(RoundedCornerShape(trackThickness / 2))
+                        .background(colors.track),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .align(Alignment.BottomStart)
-                    ) {
-                        if (isIndeterminate) {
-                            // Indeterminate vertical animation
-                            val infiniteTransition = rememberInfiniteTransition(label = "vertical_progress")
-                            val animatedProgress by infiniteTransition.animateFloat(
-                                initialValue = 0f,
-                                targetValue = 1f,
-                                animationSpec = AnimationUtils.infiniteRepeatable(
-                                    animation = AnimationUtils.standardTween(1500)
-                                ),
-                                label = "progress"
-                            )
-
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(animatedProgress)
-                                    .background(colors.progress, RoundedCornerShape(height / 2))
-                            )
-                        } else {
-                            // Determinate vertical progress with animation
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .fillMaxHeight(animatedProgress)
-                                    .background(colors.progress, RoundedCornerShape(height / 2))
-                            )
-                        }
+                    if (isIndeterminate) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .fillMaxHeight(pulseFraction)
+                                .background(colors.progress, RoundedCornerShape(trackThickness / 2))
+                        )
+                    } else {
+                        // Determinate vertical progress with animation
+                        Box(
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .fillMaxWidth()
+                                .fillMaxHeight(animatedProgress)
+                                .background(colors.progress, RoundedCornerShape(trackThickness / 2))
+                        )
                     }
                 }
 
@@ -548,10 +842,9 @@ fun PixaLinearIndicator(
                         "..."
                     }
 
-                    Text(
+                    BasicText(
                         text = displayLabel,
-                        style = typography.bodyRegular,
-                        color = colors.label
+                        style = config.labelStyle().copy(color = colors.label)
                     )
                 }
             }
@@ -581,26 +874,60 @@ fun LoadingIndicator(
 }
 
 /**
- * Progress Bar - Linear determinate progress with label
+ * Progress Bar - Linear determinate progress with label.
+ *
+ * Per the spec's 3rd named state — "progress bar disappears when complete,
+ * replaced by content... 500ms, linear" — pass [content] to crossfade into
+ * it automatically once [progress] reaches 1f; omit it to keep the bar
+ * visible indefinitely (previous behavior, unchanged).
+ *
+ * @param content Shown in place of the bar once [progress] reaches 1f, via a 500ms linear crossfade (spec-exact)
  */
 @Composable
 fun ProgressBar(
     progress: Float,
     modifier: Modifier = Modifier,
     variant: ProgressVariant = ProgressVariant.Primary,
-    label: String? = null
+    label: String? = null,
+    content: (@Composable () -> Unit)? = null
 ) {
-    PixaLinearIndicator(
-        progress = progress,
+    if (content == null) {
+        PixaLinearIndicator(
+            progress = progress,
+            modifier = modifier,
+            variant = variant,
+            showLabel = true,
+            label = label
+        )
+        return
+    }
+
+    Crossfade(
+        targetState = progress >= 1f,
         modifier = modifier,
-        variant = variant,
-        showLabel = true,
-        label = label
-    )
+        animationSpec = AnimationUtils.standardTween(durationMillis = 500, easing = LinearEasing)
+    ) { isComplete ->
+        if (isComplete) {
+            content()
+        } else {
+            PixaLinearIndicator(
+                progress = progress,
+                variant = variant,
+                showLabel = true,
+                label = label
+            )
+        }
+    }
 }
 
 /**
- * Segmented Progress Indicator - Multi-part progress bar with different colors per segment
+ * Segmented Progress Indicator - Multi-part progress bar with different colors per segment.
+ * Migrated from Uber Base's Progress Bar "Stepped/Segmented" variant.
+ *
+ * The segment with [ProgressSegment.isActive] set loops a left-to-right fill
+ * that fades back (spec: "quintic ease-out, 500ms"); other segments render
+ * as a static fill, matching "each progress step is filled when the task is
+ * complete."
  *
  * @param segments List of progress segments with their own progress and color
  * @param modifier Modifier for the indicator
@@ -612,7 +939,7 @@ fun ProgressBar(
 fun SegmentedProgressIndicator(
     segments: List<ProgressSegment>,
     modifier: Modifier = Modifier,
-    height: Dp = HierarchicalSize.Border.Nano,
+    height: Dp = HierarchicalSize.SliderTrack.Medium,
     showLabel: Boolean = false,
     contentDescription: String? = null
 ) {
@@ -631,10 +958,9 @@ fun SegmentedProgressIndicator(
     ) {
         // Label
         if (showLabel) {
-            Text(
+            BasicText(
                 text = "${(totalProgress * 100).toInt()}%",
-                style = typography.bodyRegular,
-                color = colors.baseContentBody,
+                style = typography.bodyRegular.copy(color = colors.baseContentBody),
                 modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
             )
         }
@@ -654,19 +980,67 @@ fun SegmentedProgressIndicator(
                     val segmentProgress = segment.progress.coerceIn(0f, 1f)
                     if (segmentProgress > 0f) {
                         val segmentColors = getProgressColors(segment.variant, colors)
-                        Box(
-                            modifier = Modifier
-                                .weight(segmentProgress)
-                                .fillMaxHeight()
-                                .background(
-                                    segment.color ?: segmentColors.progress,
-                                    RoundedCornerShape(height / 2)
-                                )
-                        )
+                        val segmentColor = segment.color ?: segmentColors.progress
+
+                        if (segment.isActive) {
+                            ActiveSegmentFill(
+                                modifier = Modifier
+                                    .weight(segmentProgress)
+                                    .fillMaxHeight(),
+                                color = segmentColor,
+                                shape = RoundedCornerShape(height / 2)
+                            )
+                        } else {
+                            Box(
+                                modifier = Modifier
+                                    .weight(segmentProgress)
+                                    .fillMaxHeight()
+                                    .background(segmentColor, RoundedCornerShape(height / 2))
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+/**
+ * The active/in-progress segment's loop animation: a fill sweeps left to
+ * right and fades back, repeating — spec: "loops a fill from left to right
+ * and fades back... quintic ease-out, 500ms."
+ */
+@Composable
+private fun ActiveSegmentFill(
+    modifier: Modifier,
+    color: Color,
+    shape: RoundedCornerShape
+) {
+    val infiniteTransition = rememberInfiniteTransition(label = "active_segment")
+    val sweep by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = AnimationUtils.infiniteRepeatable(
+            animation = AnimationUtils.standardTween(
+                durationMillis = MotionDuration.Slow,
+                easing = QuinticEaseOutEasing
+            ),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "sweep"
+    )
+    // Fades in at the start of the sweep, peaks mid-way, fades out at the
+    // end — "fades back" without a separate reverse-phase animation.
+    val fadeAlpha = sin(kotlin.math.PI * sweep).toFloat().coerceIn(0f, 1f)
+
+    Box(modifier = modifier.background(color.copy(alpha = 0.3f), shape)) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .fillMaxWidth(sweep)
+                .fillMaxHeight()
+                .background(color.copy(alpha = fadeAlpha), shape)
+        )
     }
 }
 

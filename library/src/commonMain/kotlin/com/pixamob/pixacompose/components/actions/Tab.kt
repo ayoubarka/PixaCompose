@@ -55,8 +55,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.feedback.PixaBadge
-import com.pixamob.pixacompose.components.feedback.BadgeStyle
+import com.pixamob.pixacompose.components.feedback.PixaNotificationBadge
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
@@ -1045,8 +1044,8 @@ private fun RowScope.RenderTabContentRow(
 
     // Badge using Badge component
     badge?.let {
-        PixaBadge(
-            content = it,
+        PixaNotificationBadge(
+            text = it,
             variant = badgeVariant,
             size = badgeSize,
             modifier = Modifier.offset(x = (-4).dp, y = (-4).dp)
@@ -1097,11 +1096,10 @@ private fun ColumnScope.RenderTabContentColumn(
                 )
                 // Badge positioned at top-right
                 badge?.let {
-                    PixaBadge(
-                        content = it,
+                    PixaNotificationBadge(
+                        text = it,
                         variant = badgeVariant,
                         size = badgeSize,
-                        style = BadgeStyle.Filled,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = 4.dp, y = (-4).dp)
@@ -1119,11 +1117,10 @@ private fun ColumnScope.RenderTabContentColumn(
                 )
                 // Badge positioned at top-right
                 badge?.let {
-                    PixaBadge(
-                        content = it,
+                    PixaNotificationBadge(
+                        text = it,
                         variant = badgeVariant,
                         size = badgeSize,
-                        style = BadgeStyle.Filled,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = 4.dp, y = (-4).dp)
@@ -1141,11 +1138,10 @@ private fun ColumnScope.RenderTabContentColumn(
                 )
                 // Badge positioned at top-right
                 badge?.let {
-                    PixaBadge(
-                        content = it,
+                    PixaNotificationBadge(
+                        text = it,
                         variant = badgeVariant,
                         size = badgeSize,
-                        style = BadgeStyle.Filled,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = 4.dp, y = (-4).dp)
@@ -1172,11 +1168,10 @@ private fun ColumnScope.RenderTabContentColumn(
                 )
                 // Badge positioned at top-right
                 badge?.let {
-                    PixaBadge(
-                        content = it,
+                    PixaNotificationBadge(
+                        text = it,
                         variant = badgeVariant,
                         size = badgeSize,
-                        style = BadgeStyle.Filled,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
                             .offset(x = 4.dp, y = (-4).dp)

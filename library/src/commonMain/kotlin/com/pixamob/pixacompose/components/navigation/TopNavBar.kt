@@ -40,7 +40,7 @@ import com.pixamob.pixacompose.components.actions.ButtonShape
 import com.pixamob.pixacompose.components.actions.ButtonColors
 import com.pixamob.pixacompose.components.actions.ButtonStateColors
 import com.pixamob.pixacompose.components.display.PixaAvatar
-import com.pixamob.pixacompose.components.feedback.PixaBadge
+import com.pixamob.pixacompose.components.feedback.PixaNotificationBadge
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.theme.*
 
@@ -179,8 +179,8 @@ private fun ActionButton(
 
         // Badge overlay
         if (action.badge != null && action.badge > 0) {
-            PixaBadge(
-                content = action.badge.toString(),
+            PixaNotificationBadge(
+                count = action.badge,
                 variant = BadgeVariant.Error,
                 size = SizeVariant.Small,
                 modifier = Modifier.align(Alignment.TopEnd)

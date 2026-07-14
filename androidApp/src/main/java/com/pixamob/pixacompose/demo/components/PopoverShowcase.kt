@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -19,7 +18,6 @@ import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.overlay.PixaPopover
 import com.pixamob.pixacompose.components.overlay.PopoverPosition
 import com.pixamob.pixacompose.demo.ShowcaseSection
-import com.pixamob.pixacompose.theme.AppTheme
 
 @Composable
 fun PopoverShowcase() {
@@ -35,13 +33,10 @@ fun PopoverShowcase() {
                 PixaPopover(
                     visible = showPopover,
                     onDismiss = { showPopover = false },
+                    heading = "Popover Content",
+                    body = "This is a contextual popup",
                     position = PopoverPosition.BottomCenter
-                ) {
-                    Column {
-                        Text("Popover Content", style = AppTheme.typography.bodyBold, color = AppTheme.colors.baseContentTitle)
-                        Text("This is a contextual popup", style = AppTheme.typography.captionRegular, color = AppTheme.colors.baseContentBody)
-                    }
-                }
+                )
             }
         }
     }

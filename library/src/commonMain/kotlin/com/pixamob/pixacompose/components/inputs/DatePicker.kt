@@ -128,7 +128,7 @@ data class DatePickerSizeConfig(
     val titleTextStyle: TextStyle,
     val itemTextStyle: TextStyle,
     val dayTextStyle: TextStyle,
-    val selectorShape: Shape = RoundedCornerShape(16.dp),
+    val selectorShape: Shape = RoundedCornerShape(HierarchicalSize.Radius.Huge),
     val selectorBorder: BorderStroke? = null
 )
 
@@ -198,8 +198,8 @@ data class ScheduleConfig(
     val weekdayChipStyle: WeekdayChipStyle = WeekdayChipStyle.Horizontal,
     val weekdayItemShape: Shape = CircleShape,
     val monthDayItemShape: Shape = CircleShape,
-    val tabShape: Shape = RoundedCornerShape(8.dp),
-    val tabContainerShape: Shape = RoundedCornerShape(12.dp)
+    val tabShape: Shape = RoundedCornerShape(HierarchicalSize.Radius.Medium),
+    val tabContainerShape: Shape = RoundedCornerShape(HierarchicalSize.Radius.Large)
 )
 
 enum class WeekdayChipStyle {
@@ -260,7 +260,7 @@ private fun getDatePickerSizeConfig(size: SizeVariant): DatePickerSizeConfig {
             titleTextStyle = typography.bodyLight,
             itemTextStyle = typography.bodyLight,
             dayTextStyle = typography.labelSmall,
-            selectorShape = RoundedCornerShape(12.dp),
+            selectorShape = RoundedCornerShape(HierarchicalSize.Radius.Large),
             selectorBorder = BorderStroke(1.5.dp, colors.baseBorderDefault)
         )
         SizeVariant.Medium -> DatePickerSizeConfig(
@@ -270,7 +270,7 @@ private fun getDatePickerSizeConfig(size: SizeVariant): DatePickerSizeConfig {
             titleTextStyle = typography.bodyBold,
             itemTextStyle = typography.bodyBold,
             dayTextStyle = typography.labelMedium,
-            selectorShape = RoundedCornerShape(16.dp),
+            selectorShape = RoundedCornerShape(HierarchicalSize.Radius.Huge),
             selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
         SizeVariant.Large -> DatePickerSizeConfig(
@@ -280,7 +280,7 @@ private fun getDatePickerSizeConfig(size: SizeVariant): DatePickerSizeConfig {
             titleTextStyle = typography.titleBold,
             itemTextStyle = typography.titleRegular,
             dayTextStyle = typography.labelLarge,
-            selectorShape = RoundedCornerShape(20.dp),
+            selectorShape = RoundedCornerShape(20.dp),  // intentional one-off between Huge(16)/Massive(24), no exact token match
             selectorBorder = BorderStroke(2.5.dp, colors.baseBorderDefault)
         )
         else -> DatePickerSizeConfig(
@@ -290,7 +290,7 @@ private fun getDatePickerSizeConfig(size: SizeVariant): DatePickerSizeConfig {
             titleTextStyle = typography.bodyBold,
             itemTextStyle = typography.bodyBold,
             dayTextStyle = typography.labelMedium,
-            selectorShape = RoundedCornerShape(16.dp),
+            selectorShape = RoundedCornerShape(HierarchicalSize.Radius.Huge),
             selectorBorder = BorderStroke(2.dp, colors.baseBorderDefault)
         )
     }

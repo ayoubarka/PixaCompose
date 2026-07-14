@@ -24,7 +24,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.semantics.Role
@@ -36,6 +35,7 @@ import androidx.compose.ui.window.PopupProperties
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.utils.elevationShadow
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -231,7 +231,7 @@ fun PixaMenuContent(
                 modifier = modifier
                     .widthIn(min = sizeConfig.minWidth, max = sizeConfig.maxWidth)
                     .heightIn(max = sizeConfig.maxHeight)
-                    .shadow(sizeConfig.elevation, RoundedCornerShape(sizeConfig.cornerRadius))
+                    .elevationShadow(sizeConfig.elevation, RoundedCornerShape(sizeConfig.cornerRadius))
                     .clip(RoundedCornerShape(sizeConfig.cornerRadius))
                     .background(themeColors.background)
                     .padding(vertical = sizeConfig.spacing)

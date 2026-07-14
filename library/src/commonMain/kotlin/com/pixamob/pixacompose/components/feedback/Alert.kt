@@ -23,7 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaCard
-import com.pixamob.pixacompose.components.display.BaseCardElevation
+import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.components.display.BaseCardVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
@@ -317,7 +317,7 @@ fun PixaAlert(
                     AlertStyle.Outlined -> BaseCardVariant.Outlined
                     else -> BaseCardVariant.Filled
                 },
-                elevation = BaseCardElevation.None,
+                elevation = ComponentElevation.None,
                 padding = SizeVariant.None,
                 backgroundColor = colors.background
             ) {

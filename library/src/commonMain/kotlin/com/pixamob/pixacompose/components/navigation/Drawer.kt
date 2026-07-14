@@ -341,7 +341,7 @@ private fun DrawerItemRow(
                 style = AppTheme.typography.captionBold,
                 color = colors.selectedItemText,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(HierarchicalSize.Radius.Full))
+                    .clip(AppTheme.shapes.pill)
                     .background(colors.selectedItemBackground)
                     .padding(horizontal = HierarchicalSize.Spacing.Small, vertical = 2.dp)
             )

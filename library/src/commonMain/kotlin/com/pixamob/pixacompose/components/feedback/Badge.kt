@@ -1,26 +1,27 @@
 package com.pixamob.pixacompose.components.feedback
 
-import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
@@ -29,25 +30,30 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
-import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Badge color, matching Uber Base's 5 approved badge colors exactly.
+ *
+ * This intentionally does *not* reuse the generic feedback semantic axis
+ * (`Info`/`Neutral`, seen on [AlertVariant]/[ToastVariant]) — the Uber Base
+ * badge spec only approves these 5, and adding the other feedback colors
+ * here would offer combinations the spec doesn't sanction.
+ */
 enum class BadgeVariant {
-    Primary,
+    /** Default for most contexts: unread/new content, general emphasis. */
+    Accent,
+    /** Positive or completed states. */
     Success,
+    /** Caution / attention needed. */
     Warning,
+    /** Failed states, alerts requiring resolution. */
     Error,
-    Neutral,
-    Info
-}
-
-enum class BadgeStyle {
-    Filled,
-    Outlined,
-    Subtle
+    /** For badges placed on brand-colored surfaces, where a colored badge would lose contrast. */
+    OnBrand
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -58,340 +64,270 @@ enum class BadgeStyle {
 @Stable
 data class BadgeColors(
     val background: Color,
-    val content: Color,
-    val border: Color = Color.Transparent
+    val content: Color
 )
 
 @Immutable
 @Stable
-data class BadgeConfig(
-    val size: Dp,
-    val padding: Dp,
-    val textStyle: TextStyle,
-    val cornerRadius: Dp,
-    val iconSize: Dp
+private data class NotificationBadgeConfig(
+    val containerSize: Dp,
+    val iconSize: Dp,
+    val textStyle: TextStyle
 )
 
 // ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Resolves container/icon/text sizing for [PixaNotificationBadge].
+ *
+ * Uber Base only defines two notification badge sizes (small 16dp / medium
+ * 20dp), which map exactly onto [HierarchicalSize.Badge.Small]/`.Medium` — so
+ * any [SizeVariant] other than [SizeVariant.Small] resolves to the medium
+ * tier rather than inventing extra badge sizes the spec doesn't define.
+ *
+ * Icon size has no exact match in [HierarchicalSize.Icon] (spec wants 10dp/12dp,
+ * the ladder jumps 10dp→14dp) — it's derived as a fixed proportion of the
+ * container (0.6×) instead of a hardcoded per-tier literal, which reproduces
+ * both spec ratios (10/16 = 0.625, 12/20 = 0.6) closely enough that the icon
+ * still visually fills the container as the spec requires.
+ */
 @Composable
-private fun getBadgeConfig(size: SizeVariant): BadgeConfig {
-    val typography = AppTheme.typography
-    return when (size) {
-        SizeVariant.Small -> BadgeConfig(
-            size = 16.dp,
-            padding = 3.dp,
-            textStyle = typography.labelSmall,
-            cornerRadius = HierarchicalSize.Radius.Small,
-            iconSize = 10.dp
-        )
-        SizeVariant.Medium -> BadgeConfig(
-            size = 20.dp,
-            padding = 4.dp,
-            textStyle = typography.labelSmall,
-            cornerRadius = HierarchicalSize.Radius.Medium,
-            iconSize = 12.dp
-        )
-        SizeVariant.Large -> BadgeConfig(
-            size = 24.dp,
-            padding = 5.dp,
-            textStyle = typography.labelMedium,
-            cornerRadius = HierarchicalSize.Radius.Medium,
-            iconSize = 14.dp
-        )
-        else -> BadgeConfig(
-            size = 20.dp,
-            padding = 4.dp,
-            textStyle = typography.labelSmall,
-            cornerRadius = HierarchicalSize.Radius.Medium,
-            iconSize = 12.dp
-        )
+private fun getNotificationBadgeConfig(size: SizeVariant): NotificationBadgeConfig {
+    val containerSize = if (size == SizeVariant.Small) {
+        HierarchicalSize.Badge.Small
+    } else {
+        HierarchicalSize.Badge.Medium
     }
-}
-
-@Composable
-private fun getDotBadgeConfig(): BadgeConfig {
-    val typography = AppTheme.typography
-    return BadgeConfig(
-        size = 8.dp,
-        padding = 0.dp,
-        textStyle = typography.captionBold,
-        cornerRadius = HierarchicalSize.Radius.Full,
-        iconSize = 6.dp
+    return NotificationBadgeConfig(
+        containerSize = containerSize,
+        iconSize = containerSize * 0.6f,
+        // Uber's labelXSmall type ramp has no direct Pixa equivalent;
+        // labelSmall is the smallest existing label tier.
+        textStyle = AppTheme.typography.labelSmall
     )
 }
 
-/**
- * Get badge colors based on variant and style
- */
 @Composable
-private fun getBadgeColors(
-    variant: BadgeVariant,
-    style: BadgeStyle,
-    colors: ColorPalette
-): BadgeColors {
-    return when (style) {
-        BadgeStyle.Filled -> when (variant) {
-            BadgeVariant.Primary -> BadgeColors(
-                background = colors.brandContentDefault,
-                content = colors.baseContentNegative
-            )
-            BadgeVariant.Success -> BadgeColors(
-                background = colors.successContentDefault,
-                content = colors.baseContentNegative
-            )
-            BadgeVariant.Warning -> BadgeColors(
-                background = colors.warningContentDefault,
-                content = colors.baseContentNegative
-            )
-            BadgeVariant.Error -> BadgeColors(
-                background = colors.errorContentDefault,
-                content = colors.baseContentNegative
-            )
-            BadgeVariant.Neutral -> BadgeColors(
-                background = colors.baseSurfaceDefault,
-                content = colors.baseContentBody
-            )
-            BadgeVariant.Info -> BadgeColors(
-                background = colors.infoContentDefault,
-                content = colors.baseContentNegative
-            )
-        }
-        BadgeStyle.Outlined -> when (variant) {
-            BadgeVariant.Primary -> BadgeColors(
-                background = Color.Transparent,
-                content = colors.brandContentDefault,
-                border = colors.brandBorderDefault
-            )
-            BadgeVariant.Success -> BadgeColors(
-                background = Color.Transparent,
-                content = colors.successContentDefault,
-                border = colors.successBorderDefault
-            )
-            BadgeVariant.Warning -> BadgeColors(
-                background = Color.Transparent,
-                content = colors.warningContentDefault,
-                border = colors.warningBorderDefault
-            )
-            BadgeVariant.Error -> BadgeColors(
-                background = Color.Transparent,
-                content = colors.errorContentDefault,
-                border = colors.errorBorderDefault
-            )
-            BadgeVariant.Neutral -> BadgeColors(
-                background = Color.Transparent,
-                content = colors.baseContentBody,
-                border = colors.baseBorderDefault
-            )
-            BadgeVariant.Info -> BadgeColors(
-                background = Color.Transparent,
-                content = colors.infoContentDefault,
-                border = colors.infoBorderDefault
-            )
-        }
-        BadgeStyle.Subtle -> when (variant) {
-            BadgeVariant.Primary -> BadgeColors(
-                background = colors.brandSurfaceSubtle,
-                content = colors.brandContentDefault
-            )
-            BadgeVariant.Success -> BadgeColors(
-                background = colors.successSurfaceSubtle,
-                content = colors.successContentDefault
-            )
-            BadgeVariant.Warning -> BadgeColors(
-                background = colors.warningSurfaceSubtle,
-                content = colors.warningContentDefault
-            )
-            BadgeVariant.Error -> BadgeColors(
-                background = colors.errorSurfaceSubtle,
-                content = colors.errorContentDefault
-            )
-            BadgeVariant.Neutral -> BadgeColors(
-                background = colors.baseSurfaceSubtle,
-                content = colors.baseContentBody
-            )
-            BadgeVariant.Info -> BadgeColors(
-                background = colors.infoSurfaceSubtle,
-                content = colors.infoContentDefault
-            )
-        }
-    }
+private fun getBadgeColors(variant: BadgeVariant, colors: ColorPalette): BadgeColors = when (variant) {
+    BadgeVariant.Accent -> BadgeColors(
+        background = colors.accentContentDefault,
+        content = colors.baseContentNegative
+    )
+    BadgeVariant.Success -> BadgeColors(
+        background = colors.successContentDefault,
+        content = colors.baseContentNegative
+    )
+    BadgeVariant.Warning -> BadgeColors(
+        background = colors.warningContentDefault,
+        content = colors.baseContentNegative
+    )
+    BadgeVariant.Error -> BadgeColors(
+        background = colors.errorContentDefault,
+        content = colors.baseContentNegative
+    )
+    // Neutral base surface + brand content reads clearly against a brand-colored
+    // parent, which is the one thing OnBrand exists to solve.
+    BadgeVariant.OnBrand -> BadgeColors(
+        background = colors.baseSurfaceDefault,
+        content = colors.brandContentDefault
+    )
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// PUBLIC API
+// ════════════════════════════════════════════════════════════════════════════
+
 /**
- * Badge - Small status indicator
+ * Notification Badge — Uber Base's action-oriented indicator for counts,
+ * capped strings, or a single filled icon on items that require attention
+ * (unread messages, cart items, pending approvals).
  *
- * A versatile component for displaying notification counts, status indicators, or labels.
+ * ### Anatomy
+ * Circular container (pill once content reaches 2+ characters) that hugs its
+ * content — it never has fixed width. Holds either a numeric count / capped
+ * string (`labelSmall` type), or a single filled icon; never both content
+ * kinds combined with more than a decorative gap.
  *
- * @param content Optional text content for the badge (e.g., "5", "NEW"). If null, shows dot only
- * @param variant Badge color variant (Primary, Success, Warning, Error, Neutral, Info)
- * @param size Badge size (Dot, Small, Medium, Large)
- * @param style Badge style (Solid, Outlined, Subtle)
- * @param modifier Optional modifier for the badge
- * @param onClick Optional click handler for interactive badges
- * @param icon Optional icon painter to display instead of or with text
- * @param maxCount Maximum count to display before showing "99+" (default: 99)
- * @param pulse Enable pulse animation for dot badges (useful for live notifications)
- * @param contentDescription Accessibility description (auto-generated if null)
+ * ### Behavior
+ * - `count` above [maxCount] renders as `"$maxCount+"`.
+ * - `count == 0`, `count == null` with no [text]/[icon] renders nothing —
+ *   per spec, hide the badge at zero rather than showing an empty circle.
+ * - Has no tap behavior of its own — attach `onClick`/interaction to the
+ *   *parent* element, never to the badge itself.
  *
- * @sample
- * ```
- * // Dot indicator
- * Badge(dot = true, variant = BadgeVariant.Error)
+ * ### Usage
+ * Always anchor this to a parent element with a tap target of at least 44dp
+ * (a tab, avatar, icon button) — never use standalone; the badge has
+ * neither sufficient touch target nor accessible context by itself. Use
+ * [BadgedBox] to position it over that parent.
  *
- * // Notification count
- * Badge(content = "5", variant = BadgeVariant.Primary)
+ * ### Accessibility
+ * The badge is not independently focusable — its meaning must be conveyed
+ * by the parent's content description (e.g. "Messages. 2 new
+ * notifications. Button."), so [contentDescription] is left `null` by
+ * default and the badge is excluded from the accessibility tree. Only pass
+ * [contentDescription] for the rare case of a genuinely standalone badge.
  *
- * // Count with max (shows "99+" if over 99)
- * Badge(content = notificationCount.toString(), maxCount = 99)
- *
- * // Clickable badge
- * Badge(
- *     content = "5",
- *     onClick = { /* clear notifications */ }
- * )
- *
- * // Outlined badge
- * Badge(
- *     content = "NEW",
- *     style = BadgeStyle.Outlined,
- *     variant = BadgeVariant.Success
- * )
- * ```
+ * @param count Numeric count to display; takes precedence over [text] when both are supplied.
+ * @param text Capped string content (e.g. "NEW") when a plain count doesn't apply.
+ * @param icon Filled icon painter, shown instead of [count]/[text] content.
+ * @param variant Badge color, one of Uber Base's 5 approved colors.
+ * @param size [SizeVariant.Small] (16dp) for dense UI like nav tabs, anything else resolves to medium (20dp).
+ * @param maxCount Count ceiling before display switches to `"$maxCount+"` (default 99).
+ * @param modifier Modifier applied to the badge container.
+ * @param contentDescription Accessibility label; leave `null` unless the badge is genuinely standalone.
  */
 @Composable
-fun PixaBadge(
-    content: String? = null,
+fun PixaNotificationBadge(
+    count: Int? = null,
+    text: String? = null,
+    icon: Painter? = null,
     variant: BadgeVariant = BadgeVariant.Error,
     size: SizeVariant = SizeVariant.Medium,
-    style: BadgeStyle = BadgeStyle.Filled,
-    dot: Boolean = false,
-    modifier: Modifier = Modifier,
-    onClick: (() -> Unit)? = null,
-    icon: Painter? = null,
     maxCount: Int = 99,
-    pulse: Boolean = false,
+    modifier: Modifier = Modifier,
     contentDescription: String? = null
 ) {
     val colors = AppTheme.colors
-    val config = if (dot) getDotBadgeConfig() else getBadgeConfig(size)
-    val badgeColors = getBadgeColors(variant, style, colors)
+    val config = getNotificationBadgeConfig(size)
+    val badgeColors = getBadgeColors(variant, colors)
 
-    // Process content with maxCount logic
-    val displayContent = content?.let { text ->
-        text.toIntOrNull()?.let { count ->
-            if (count > maxCount) "${maxCount}+" else text
-        } ?: text
+    val displayText = when {
+        count != null && count <= 0 -> null
+        count != null && count > maxCount -> "$maxCount+"
+        count != null -> count.toString()
+        else -> text
     }
 
-    val isDot = dot || (displayContent == null && icon == null)
+    // Nothing to show and no icon: hide entirely rather than render an empty container.
+    if (displayText == null && icon == null) return
 
-    // Pulse animation for dot badges
-    val infiniteTransition = rememberInfiniteTransition(label = "badge_pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (pulse && isDot) 1.3f else 1f,
-        animationSpec = infiniteRepeatable(
-            animation = AnimationUtils.standardTween(1000),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse_scale"
-    )
-
-    // Generate content description
-    val accessibilityDescription = contentDescription ?: when {
-        displayContent != null -> "$displayContent notifications"
-        isDot -> "Status indicator"
-        else -> "Badge"
+    // Container hugs content; only pill-shapes once content grows past a single character.
+    val shape: Shape = if (icon != null || (displayText?.length ?: 0) <= 1) {
+        CircleShape
+    } else {
+        AppTheme.shapes.pill
     }
 
     Box(
         modifier = modifier
-            .semantics {
-                this.contentDescription = accessibilityDescription
-            }
             .then(
-                if (isDot) {
-                    Modifier
-                        .size(config.size)
-                        .scale(if (pulse) pulseScale else 1f)
+                if (contentDescription != null) {
+                    Modifier.semantics { this.contentDescription = contentDescription }
                 } else {
-                    Modifier.sizeIn(minWidth = config.size, minHeight = config.size)
+                    Modifier.clearAndSetSemantics { }
                 }
             )
-            .clip(if (isDot) CircleShape else RoundedCornerShape(config.cornerRadius))
+            .sizeIn(minWidth = config.containerSize, minHeight = config.containerSize)
+            .clip(shape)
             .background(badgeColors.background)
-            .then(
-                if (badgeColors.border != Color.Transparent) {
-                    Modifier.border(
-                        width = HierarchicalSize.Border.Medium,
-                        color = badgeColors.border,
-                        shape = if (isDot) CircleShape else RoundedCornerShape(config.cornerRadius)
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .then(
-                if (onClick != null) {
-                    Modifier.clickable(
-                        onClick = onClick,
-                        indication = ripple(bounded = true, color = badgeColors.content.copy(alpha = 0.2f)),
-                        interactionSource = remember { MutableInteractionSource() }
-                    )
-                } else {
-                    Modifier
-                }
-            )
-            .then(
-                if (!isDot) {
-                    Modifier.padding(horizontal = config.padding, vertical = config.padding / 2)
-                } else {
-                    Modifier
-                }
-            ),
+            .padding(horizontal = config.containerSize * 0.15f),
         contentAlignment = Alignment.Center
     ) {
-        if (!isDot) {
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                icon?.let {
-                    PixaIcon(
-                        painter = it,
-                        contentDescription = null,
-                        modifier = Modifier.size(config.iconSize),
-                        tint = badgeColors.content
-                    )
-                }
-                displayContent?.let {
-                    Text(
-                        text = it,
-                        style = config.textStyle,
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Nano),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            icon?.let {
+                PixaIcon(
+                    painter = it,
+                    contentDescription = null,
+                    modifier = Modifier.size(config.iconSize),
+                    tint = badgeColors.content
+                )
+            }
+            displayText?.takeIf { icon == null }?.let {
+                BasicText(
+                    text = it,
+                    style = config.textStyle.copy(
                         color = badgeColors.content,
-                        textAlign = TextAlign.Center,
-                        maxLines = 1
-                    )
-                }
+                        textAlign = TextAlign.Center
+                    ),
+                    maxLines = 1
+                )
             }
         }
     }
 }
 
 /**
- * BadgedBox - Convenience composable to position a badge over content
+ * Hint Badge — Uber Base's subtle status signal without quantification, for
+ * when presence matters more than an exact count (online status, new
+ * feature availability).
  *
- * @param badge The badge composable to display
- * @param modifier Modifier for the container
- * @param content The content to badge
+ * ### Anatomy
+ * Fixed-size circular dot ([HierarchicalSize.Badge.Nano], 8dp). No
+ * configurable content — do not attempt to add a label, number, or icon to
+ * it; the dot itself is the entire signal. Never stretch or resize it.
+ *
+ * ### Behavior
+ * Has no tap behavior of its own — same as [PixaNotificationBadge], attach
+ * interaction to the parent, not the dot. Appears when its condition is
+ * true and must have a defined dismissal path — a hint badge left
+ * indefinitely visible with no way to clear it is a spec anti-pattern.
+ *
+ * ### Usage
+ * Always anchor this to a parent with a tap target of at least 44dp via
+ * [BadgedBox]; never standalone.
+ *
+ * @param variant Badge color, one of Uber Base's 5 approved colors.
+ * @param outlineColor When set, draws a thin outline in this color so the dot
+ *   reads clearly against whatever it overlaps (mirrors Uber iOS's default
+ *   "mask attachment" outline-matches-background behavior). Left
+ *   [Color.Unspecified] (no outline) by default since Pixa has no notion of
+ *   "the color directly behind this composable" to default it to automatically.
+ * @param modifier Modifier applied to the dot.
+ * @param contentDescription Accessibility label; leave `null` unless the dot is genuinely standalone.
+ */
+@Composable
+fun PixaHintBadge(
+    variant: BadgeVariant = BadgeVariant.Accent,
+    outlineColor: Color = Color.Unspecified,
+    modifier: Modifier = Modifier,
+    contentDescription: String? = null
+) {
+    val colors = AppTheme.colors
+    val badgeColors = getBadgeColors(variant, colors)
+
+    Box(
+        modifier = modifier
+            .then(
+                if (contentDescription != null) {
+                    Modifier.semantics { this.contentDescription = contentDescription }
+                } else {
+                    Modifier.clearAndSetSemantics { }
+                }
+            )
+            .size(HierarchicalSize.Badge.Nano)
+            .clip(CircleShape)
+            .background(badgeColors.background)
+            .then(
+                if (outlineColor != Color.Unspecified) {
+                    Modifier.border(width = HierarchicalSize.Border.Compact, color = outlineColor, shape = CircleShape)
+                } else {
+                    Modifier
+                }
+            )
+    )
+}
+
+/**
+ * BadgedBox — positions a [PixaNotificationBadge] or [PixaHintBadge] over a
+ * parent element, satisfying the spec's "always attach the badge to a
+ * parent element with a tap target of at least 44dp" requirement. Neither
+ * badge reflows or resizes across viewports, so this offset is fixed rather
+ * than breakpoint-driven.
+ *
+ * @param badge The badge composable ([PixaNotificationBadge] or [PixaHintBadge]) to overlay.
+ * @param modifier Modifier for the container.
+ * @param content The parent content the badge is attached to.
  *
  * @sample
  * ```
  * BadgedBox(
- *     badge = { Badge(content = "5", variant = BadgeVariant.Error) }
+ *     badge = { PixaNotificationBadge(count = 5, variant = BadgeVariant.Error) }
  * ) {
  *     PixaIcon(Icons.Default.Notifications, contentDescription = "Notifications")
  * }
@@ -408,7 +344,7 @@ fun BadgedBox(
         Box(
             modifier = Modifier
                 .align(Alignment.TopEnd)
-                .offset(x = 4.dp, y = (-4).dp)
+                .offset(x = HierarchicalSize.Spacing.Nano, y = -HierarchicalSize.Spacing.Nano)
         ) {
             badge()
         }

@@ -47,7 +47,7 @@ import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.display.PixaCard
 import com.pixamob.pixacompose.components.display.BaseCardVariant
-import com.pixamob.pixacompose.components.display.BaseCardElevation
+import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
@@ -545,8 +545,8 @@ fun PixaBottomNavBar(
                 .height(sizeConfig.height),
             variant = cardVariant,
             elevation = when (cardVariant) {
-                BaseCardVariant.Elevated -> BaseCardElevation.Medium
-                else -> BaseCardElevation.None
+                BaseCardVariant.Elevated -> ComponentElevation.Medium
+                else -> ComponentElevation.None
             },
             padding = SizeVariant.None
         ) {
