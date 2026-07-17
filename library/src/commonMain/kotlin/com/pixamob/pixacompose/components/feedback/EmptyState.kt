@@ -27,7 +27,7 @@ import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 
 /**
- * EmptyState Component — migrated from Uber Base's Empty State spec.
+ * EmptyState Component — an empty state display for when there is no content to show.
  *
  * ### Purpose
  * Shown when there's no data or content to display — first-time use,

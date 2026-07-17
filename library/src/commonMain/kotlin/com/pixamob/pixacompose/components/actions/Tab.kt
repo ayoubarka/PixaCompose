@@ -28,7 +28,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -61,6 +60,7 @@ import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.pixaRipple
 
 // ============================================================================
 // CONFIGURATION & MODELS
@@ -660,7 +660,7 @@ fun PixaTab(
                                 } else {
                                     contentColor.copy(alpha = 0.06f)
                                 }
-                                ripple(bounded = true, color = ripple)
+                                pixaRipple(bounded = true, color = ripple)
                             } else null,
                             interactionSource = tabInteractionSource
                         )
@@ -768,7 +768,7 @@ fun PixaTab(
                             } else {
                                 contentColor.copy(alpha = 0.06f)
                             }
-                                ripple(bounded = true, color = ripple)
+                                pixaRipple(bounded = true, color = ripple)
                             } else null,
                             interactionSource = tabInteractionSource
                         )
@@ -864,7 +864,7 @@ fun PixaTab(
                                 } else {
                                     contentColor.copy(alpha = 0.06f)
                                 }
-                                ripple(bounded = true, color = ripple)
+                                pixaRipple(bounded = true, color = ripple)
                             } else null,
                             interactionSource = tabInteractionSource
                         )

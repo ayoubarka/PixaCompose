@@ -242,7 +242,7 @@ private fun TileTrailingContent(
 
 /**
  * PixaTile — a button-like, bordered container for grid-style selection or
- * action patterns. Migrated from Uber Base's Tile spec.
+ * action patterns.
  *
  * ### Anatomy
  * Top row: leading [artwork]/[leadingContent] slot, trailing [trailing]

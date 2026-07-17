@@ -1,15 +1,14 @@
 package com.pixamob.pixacompose.components.display
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -39,9 +38,50 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import coil3.compose.AsyncImagePainter
 import com.pixamob.library.generated.resources.Res
+import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.valentinilk.shimmer.shimmer
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS & TYPES
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * The aspect ratios standardised by eBay Playbook's Image ratio foundation, which exists so that
+ * ratios stay consistent "across all surfaces" rather than being improvised per screen.
+ *
+ * Framed ratios constrain the image's container; [Original] deliberately does not, which is the
+ * distinction between a framed surface (a search-result tile) and a hero/gallery surface.
+ *
+ * @property value Width-to-height ratio passed to `Modifier.aspectRatio`, or `null` for [Original].
+ */
+enum class PixaImageRatio(val value: Float?) {
+    /** 1:1 — the foundation's "dominant and recommended format", for mixed-category surfaces. */
+    Square(1f),
+
+    /** 3:4 — a camera-phone default; retained for categories like fashion and graded cards. */
+    Portrait3x4(3f / 4f),
+
+    /** 4:3 — a camera-phone default; the foundation names automotive as a fit. */
+    Landscape4x3(4f / 3f),
+
+    /** 16:9 — offered for video contexts. */
+    Wide16x9(16f / 9f),
+
+    /** 9:16 — offered for masonry contexts. */
+    Tall9x16(9f / 16f),
+
+    /**
+     * No imposed frame — the image keeps its natural proportions.
+     *
+     * The foundation's default stance: "We maintain the original aspect ratio of all uploaded
+     * content, avoiding automatic cropping." Use for hero/view-item, gallery, and masonry surfaces,
+     * where letterboxing "is not a concern".
+     */
+    Original(null)
+}
 
 // ════════════════════════════════════════════════════════════════════════════
 // DATA CLASSES
@@ -54,10 +94,11 @@ sealed class PixaImageSource {
     data class Vector(val imageVector: ImageVector) : PixaImageSource()
     data class SvgPath(
         val pathData: String,
+        // viewport* are SVG coordinate space, not design tokens — they stay raw floats.
         val viewportWidth: Float = 24f,
         val viewportHeight: Float = 24f,
-        val defaultWidth: Dp = 24.dp,
-        val defaultHeight: Dp = 24.dp
+        val defaultWidth: Dp = HierarchicalSize.Icon.Medium,
+        val defaultHeight: Dp = HierarchicalSize.Icon.Medium
     ) : PixaImageSource()
     data class SvgFile(val filePath: String) : PixaImageSource()
     data class DrawableResource(val drawableResource: org.jetbrains.compose.resources.DrawableResource) : PixaImageSource()
@@ -68,12 +109,46 @@ sealed class PixaImageSource {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
+ * PixaImage — the library's single core image primitive. Aspect-ratio behavior follows eBay
+ * Playbook's Image ratio foundation.
+ *
+ * ### Purpose
+ * Renders any [PixaImageSource] into an optionally ratio-framed container, with loading and error
+ * states handled for remote sources.
+ *
+ * ### Sizing and ratio
+ * [ratio] frames the container to one of the foundation's standardised ratios; the default
+ * [PixaImageRatio.Original] imposes no frame, matching the foundation's integrity-first stance of
+ * maintaining "the original aspect ratio of all uploaded content, avoiding automatic cropping".
+ * Choose a framed ratio for uniform surfaces (the foundation names 1:1 for search results and mixed
+ * carousels) and keep [PixaImageRatio.Original] for hero/view-item, gallery, and masonry surfaces.
+ * A non-original [ratio] frames whichever dimension the caller leaves free, so it composes with a
+ * width-only modifier; passing [size] fixes both dimensions and therefore supersedes [ratio].
+ *
+ * ### Image integrity
+ * [contentScale] decides how the image maps into that frame. [ContentScale.Crop] and
+ * [ContentScale.Fit] both preserve the image's proportions — Crop fills and clips the overflow, Fit
+ * letterboxes, which the foundation says "is not a concern" for standalone hero images.
+ * [ContentScale.FillBounds] is the one mode that stretches, and the foundation forbids distorting
+ * images "by stretching or smooshing"; it is warned about at runtime rather than silently honoured.
+ *
+ * ### Focal point
+ * [alignment] is the foundation's focal point: when a framed [ratio] crops, it decides which part of
+ * the image survives (e.g. [Alignment.TopCenter] keeps the top). No separate focal-point API is
+ * introduced, since [alignment] already expresses exactly this.
+ *
+ * ### Adaptive behavior
+ * The foundation states ratios are "preserved" across devices and that only the surrounding grid
+ * shifts. That holds here without extra plumbing: [ratio] is device-independent, so a caller that
+ * reflows its grid per `AppTheme.windowSizeClass` keeps each image's proportions unchanged.
+ *
  * @param source The image source (Url, Resource, Vector, SvgPath, SvgFile, or DrawableResource)
  * @param contentDescription Accessibility description
  * @param modifier Modifier (controls size, shape, padding, etc.)
- * @param contentScale How to scale the content
+ * @param contentScale How the image maps into its frame — never [ContentScale.FillBounds], which distorts
+ * @param ratio Container aspect ratio (Default: [PixaImageRatio.Original] — no imposed frame)
  * @param shape Shape to clip the image
- * @param size Fixed size (convenience parameter)
+ * @param size Fixed size (convenience parameter; supersedes [ratio])
  * @param tint Tint color
  * @param loadingPlaceholder Custom loading placeholder
  * @param errorFallback Custom error fallback
@@ -81,6 +156,7 @@ sealed class PixaImageSource {
  * @param onClick Click handler
  * @param crossfade Enable crossfade animation
  * @param backgroundColor Background color
+ * @param alignment Content alignment, and the focal point when a framed [ratio] crops
  * */
 @Composable
 fun PixaImage(
@@ -88,6 +164,7 @@ fun PixaImage(
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
+    ratio: PixaImageRatio = PixaImageRatio.Original,
     shape: Shape = RectangleShape,
     size: Dp? = null,
     tint: Color? = null,
@@ -106,6 +183,19 @@ fun PixaImage(
         }
     }
 
+    // Image-integrity warning. The ratio foundation forbids distorting images by "stretching or
+    // smooshing"; FillBounds is the only ContentScale that does so. Warned rather than blocked —
+    // ContentScale is an open type, so this stays advisory, matching the accessibility warning above.
+    LaunchedEffect(contentScale) {
+        if (contentScale == ContentScale.FillBounds) {
+            println(
+                "⚠️ PixaImage: ContentScale.FillBounds distorts the image and violates the image " +
+                    "ratio foundation. Use ContentScale.Crop to fill a frame, or ContentScale.Fit " +
+                    "to preserve the whole image. Source: $source"
+            )
+        }
+    }
+
     // Semantic annotations for accessibility
     val semanticsModifier = Modifier.semantics {
         contentDescription?.let { this.contentDescription = it }
@@ -115,11 +205,15 @@ fun PixaImage(
     // Size handling
     val sizeModifier = size?.let { Modifier.size(it) } ?: Modifier
 
-    // Click handling with ripple effect (mobile-friendly)
+    // Ratio framing — applied before clip/background so the frame defines the painted bounds.
+    val ratioModifier = ratio.value?.let { Modifier.aspectRatio(it) } ?: Modifier
+
+    // Click handling. LocalIndication is the platform's default indication, replacing Material 3's
+    // ripple() without changing the felt behavior.
     val clickModifier = if (onClick != null) {
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
-            indication = ripple(),
+            indication = LocalIndication.current,
             onClick = onClick
         )
     } else {
@@ -129,6 +223,7 @@ fun PixaImage(
     Box(
         modifier = modifier
             .then(sizeModifier)
+            .then(ratioModifier)
             .clip(shape)
             .background(backgroundColor)
             .then(clickModifier)
@@ -373,8 +468,8 @@ private fun SvgPathRenderer(
  *   PixaImage(
  *       source = PixaImageSource.SvgFile("icons/faces/ic_face_happy.svg"),
  *       contentDescription = "Happy face",
- *       modifier = Modifier.size(48.dp),
- *       tint = Color.Blue
+ *       modifier = Modifier.size(HierarchicalSize.Icon.Massive),
+ *       tint = AppTheme.colors.brandContentDefault
  *   )
  *
  * Note: Size is controlled purely by the modifier, not by the SVG's internal dimensions.
@@ -448,14 +543,19 @@ private fun createImageVectorFromPath(
 // LOADING & ERROR INDICATORS
 // ============================================================================
 
+/**
+ * Shimmer placeholder for in-flight remote images.
+ *
+ * Kept as a local box rather than reusing `Skeleton`: `Skeleton` is built around an explicit
+ * `height`, whereas this must fill whatever frame the caller framed, and `CLAUDE.md`'s dependency
+ * table already lists `Image.kt` as a first-class consumer of `cmp-shimmer` in its own right.
+ */
 @Composable
 private fun ShimmerLoadingBox(modifier: Modifier = Modifier) {
     Box(
         modifier = modifier
             .shimmer()
-            .background(
-                color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-            )
+            .background(color = AppTheme.colors.baseSurfaceSubtle)
     )
 }
 
@@ -465,15 +565,17 @@ private fun DefaultErrorIndicator(
     brokenImageIcon: ImageVector? = null
 ) {
     Box(
-        modifier = modifier
-            .background(MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)),
+        modifier = modifier.background(AppTheme.colors.errorSurfaceSubtle),
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = brokenImageIcon ?: rememberBrokenImageVector(),
+        // Rendered with the same foundation Image + tint pattern the vector renderer above uses,
+        // rather than importing PixaIcon — this is the lower-level primitive of the two, and
+        // PixaIcon would bring async loading and placeholder handling for a single static vector.
+        Image(
+            painter = rememberVectorPainter(brokenImageIcon ?: rememberBrokenImageVector()),
             contentDescription = "Failed to load image",
-            modifier = Modifier.size(48.dp),
-            tint = MaterialTheme.colorScheme.error.copy(alpha = 0.6f)
+            modifier = Modifier.size(HierarchicalSize.Icon.Massive),
+            colorFilter = ColorFilter.tint(AppTheme.colors.errorContentDefault)
         )
     }
 }
@@ -483,8 +585,9 @@ private fun rememberBrokenImageVector(): ImageVector {
     return remember {
         ImageVector.Builder(
             name = "BrokenImage",
-            defaultWidth = 24.dp,
-            defaultHeight = 24.dp,
+            defaultWidth = HierarchicalSize.Icon.Medium,
+            defaultHeight = HierarchicalSize.Icon.Medium,
+            // viewport* are the vector's own coordinate space, not design tokens.
             viewportWidth = 24f,
             viewportHeight = 24f
         ).apply {
@@ -509,12 +612,14 @@ private fun rememberBrokenImageVector(): ImageVector {
 // CONVENIENCE FUNCTIONS
 // ============================================================================
 
+/** Remote image by URL. Carries [ratio] since URLs are the foundation's uploaded-content case. */
 @Composable
 fun PixaImage(
     url: String,
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
+    ratio: PixaImageRatio = PixaImageRatio.Original,
     shape: Shape = RectangleShape,
     size: Dp? = null,
     loadingPlaceholder: Painter? = null,
@@ -528,6 +633,7 @@ fun PixaImage(
         contentDescription = contentDescription,
         modifier = modifier,
         contentScale = contentScale,
+        ratio = ratio,
         shape = shape,
         size = size,
         loadingPlaceholder = loadingPlaceholder,
@@ -538,12 +644,14 @@ fun PixaImage(
     )
 }
 
+/** Local raster image by painter. */
 @Composable
 fun PixaImage(
     painter: Painter,
     contentDescription: String?,
     modifier: Modifier = Modifier,
     contentScale: ContentScale = ContentScale.Crop,
+    ratio: PixaImageRatio = PixaImageRatio.Original,
     shape: Shape = RectangleShape,
     size: Dp? = null,
     tint: Color? = null,
@@ -555,6 +663,7 @@ fun PixaImage(
         contentDescription = contentDescription,
         modifier = modifier,
         contentScale = contentScale,
+        ratio = ratio,
         shape = shape,
         size = size,
         tint = tint,
@@ -563,12 +672,17 @@ fun PixaImage(
     )
 }
 
+/**
+ * Vector image. No [PixaImageRatio] parameter: a vector is authored artwork with its own viewport,
+ * not the uploaded photographic content the ratio foundation governs — framing it would letterbox or
+ * crop a glyph. Pass a ratio-framed [modifier] if a vector genuinely needs one.
+ */
 @Composable
 fun PixaImage(
     imageVector: ImageVector,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    size: Dp = 24.dp,
+    size: Dp = HierarchicalSize.Icon.Medium,
     tint: Color? = null,
     onClick: (() -> Unit)? = null,
     backgroundColor: Color = Color.Transparent,
@@ -586,12 +700,13 @@ fun PixaImage(
     )
 }
 
+/** SVG path data. Like the vector overload, this is authored artwork rather than framed content. */
 @Composable
 fun PixaImage(
     svgPath: String,
     contentDescription: String?,
     modifier: Modifier = Modifier,
-    size: Dp = 24.dp,
+    size: Dp = HierarchicalSize.Icon.Medium,
     tint: Color? = null,
     onClick: (() -> Unit)? = null,
     backgroundColor: Color = Color.Transparent,
@@ -630,8 +745,8 @@ fun PixaImage(
  *   PixaImage(
  *       svgFilePath = "icons/logo.svg",
  *       contentDescription = "App logo",
- *       modifier = Modifier.size(64.dp),
- *       tint = MaterialTheme.colorScheme.primary
+ *       modifier = Modifier.size(HierarchicalSize.Icon.Large),
+ *       tint = AppTheme.colors.brandContentDefault
  *   )
  */
 @Composable
@@ -655,6 +770,7 @@ fun PixaImage(
     )
 }
 
+/** Bundled drawable resource. */
 @Composable
 fun PixaImage(
     drawableResource: DrawableResource,
@@ -663,13 +779,15 @@ fun PixaImage(
     tint: Color? = null,
     onClick: (() -> Unit)? = null,
     backgroundColor: Color = Color.Transparent,
-    contentScale: ContentScale = ContentScale.Fit
+    contentScale: ContentScale = ContentScale.Fit,
+    ratio: PixaImageRatio = PixaImageRatio.Original
 ) {
     PixaImage(
         source = PixaImageSource.DrawableResource(drawableResource = drawableResource),
         contentDescription = contentDescription,
         modifier = modifier,
         contentScale = contentScale,
+        ratio = ratio,
         tint = tint,
         onClick = onClick,
         backgroundColor = backgroundColor

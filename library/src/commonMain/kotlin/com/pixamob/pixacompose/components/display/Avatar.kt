@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -48,6 +47,7 @@ import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
+import com.pixamob.pixacompose.utils.pixaRipple
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -258,7 +258,6 @@ private fun BoxScope.AvatarOverlayScrim(alpha: Float, shape: Shape) {
 
 /**
  * PixaAvatar — a circular visual representation of a person or business.
- * Migrated from Uber Base's Avatar spec.
  *
  * ### Anatomy
  * A required circular container plus required content: a user photo, or a
@@ -395,7 +394,7 @@ fun PixaAvatar(
                     if (interactive) {
                         Modifier.clickable(
                             onClick = onClick,
-                            indication = ripple(bounded = true, color = effectiveContent.copy(alpha = 0.2f)),
+                            indication = pixaRipple(bounded = true, color = effectiveContent.copy(alpha = 0.2f)),
                             interactionSource = interactionSource
                         )
                     } else {

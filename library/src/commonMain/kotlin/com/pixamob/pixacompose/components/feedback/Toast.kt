@@ -16,15 +16,17 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
@@ -58,6 +60,7 @@ import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
+import com.pixamob.pixacompose.utils.pixaRipple
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -180,10 +183,13 @@ data class ToastColors(
 data class ToastConfig(
     val iconSize: Dp = HierarchicalSize.Icon.Small, // 20.dp
     val minTouchTarget: Dp = HierarchicalSize.Container.Medium, // 44.dp touch target for mobile
+    val titleStyle: @Composable () -> TextStyle,
     val messageStyle: @Composable () -> TextStyle,
     val actionStyle: @Composable () -> TextStyle,
     val spacing: Dp = HierarchicalSize.Spacing.Small,
+    val titleSpacing: Dp = HierarchicalSize.Spacing.Nano,
     val padding: Dp = HierarchicalSize.Spacing.Medium,
+    val maxTitleLines: Int = 1,
     val maxMessageLines: Int = 2,
     val minWidth: Dp = 200.dp, // Minimum for readability on mobile
     val maxWidth: Dp = HierarchicalSize.Container.DialogMaxWidth.minus(32.dp), // 528.dp (560-32 for margins)
@@ -192,12 +198,18 @@ data class ToastConfig(
 )
 
 /**
- * Data class representing a toast item
+ * Data class representing a toast item.
+ *
+ * Uber Base's content model: "Messages should employ either header text alone, body text alone, or
+ * both combined" — [title] and [message] are therefore both nullable; at least one should be set
+ * (enforced with a dev-time console warning, not a crash, matching [PixaIcon]'s existing pattern for
+ * `contentDescription`).
  */
 @Stable
 data class ToastData(
     val id: Long = Random.nextLong(),
-    val message: String,
+    val title: String? = null,
+    val message: String? = null,
     val variant: ToastVariant = ToastVariant.Info,
     val duration: ToastDuration = ToastDuration.Short,
     val style: ToastStyle = ToastStyle.Filled,
@@ -230,10 +242,12 @@ class PixaToastHostState(
     val currentToasts: List<ToastData> = _currentToasts
 
     /**
-     * Show a toast message
+     * Show a toast message. Per Uber Base's content model, [title] and [message] are both optional —
+     * pass a header alone, body alone, or both — but at least one should be set.
      */
     suspend fun showToast(
-        message: String,
+        message: String? = null,
+        title: String? = null,
         variant: ToastVariant = ToastVariant.Info,
         duration: ToastDuration = ToastDuration.Short,
         style: ToastStyle = ToastStyle.Filled,
@@ -247,6 +261,7 @@ class PixaToastHostState(
     ) {
         mutex.withLock {
             val toast = ToastData(
+                title = title,
                 message = message,
                 variant = variant,
                 duration = duration,
@@ -302,12 +317,14 @@ class PixaToastHostState(
      */
     suspend fun showSuccessToast(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Short,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         showToast(
             message = message,
+            title = title,
             variant = ToastVariant.Success,
             duration = duration,
             actionText = actionText,
@@ -320,12 +337,14 @@ class PixaToastHostState(
      */
     suspend fun showErrorToast(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Long,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         showToast(
             message = message,
+            title = title,
             variant = ToastVariant.Error,
             duration = duration,
             actionText = actionText,
@@ -338,12 +357,14 @@ class PixaToastHostState(
      */
     suspend fun showWarningToast(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Long,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         showToast(
             message = message,
+            title = title,
             variant = ToastVariant.Warning,
             duration = duration,
             actionText = actionText,
@@ -356,12 +377,14 @@ class PixaToastHostState(
      */
     suspend fun showInfoToast(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Short,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         showToast(
             message = message,
+            title = title,
             variant = ToastVariant.Info,
             duration = duration,
             actionText = actionText,
@@ -517,6 +540,7 @@ private fun getToastColors(
 private fun getToastConfig(): ToastConfig {
     val typography = AppTheme.typography
     return ToastConfig(
+        titleStyle = { typography.bodyBold },
         messageStyle = { typography.bodyRegular },
         actionStyle = { typography.bodyBold }
     )
@@ -617,8 +641,20 @@ internal fun Toast(
     val colors = data.customColors ?: getToastColors(data.variant, data.style, AppTheme.colors)
     val config = getToastConfig()
 
-    val description = "${data.variant.name.lowercase()} toast: ${data.message}"
-    val shape = androidx.compose.foundation.shape.RoundedCornerShape(config.cornerRadius)
+    // Uber Base's content model: "either header text alone, body text alone, or both combined" —
+    // warn (don't crash) if a caller supplies neither, matching PixaIcon's dev-time console warning
+    // for a missing contentDescription rather than throwing in production.
+    if (data.title.isNullOrBlank() && data.message.isNullOrBlank()) {
+        println("⚠️ PixaToast: both title and message are empty. A toast needs at least one.")
+    }
+    // Uber Base writing guideline: "Keep toasts to less than 140 characters in English."
+    val contentLength = (data.title?.length ?: 0) + (data.message?.length ?: 0)
+    if (contentLength > 140) {
+        println("⚠️ PixaToast: content is $contentLength characters, over Uber Base's 140-character guideline.")
+    }
+
+    val description = "${data.variant.name.lowercase()} toast: ${listOfNotNull(data.title, data.message).joinToString(". ")}"
+    val shape = RoundedCornerShape(config.cornerRadius)
 
     Box(
         modifier = modifier
@@ -675,22 +711,35 @@ internal fun Toast(
                     }
                 }
 
-                // Message
-                Text(
-                    text = data.message,
-                    style = config.messageStyle(),
-                    color = colors.message,
-                    maxLines = config.maxMessageLines,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
+                // Header (optional) + body (optional) — Uber Base: "prioritize the most important
+                // information in headers with supporting detail in body text."
+                Column(modifier = Modifier.weight(1f)) {
+                    data.title?.takeIf { it.isNotBlank() }?.let { title ->
+                        BasicText(
+                            text = title,
+                            style = config.titleStyle().copy(color = colors.message),
+                            maxLines = config.maxTitleLines,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        if (!data.message.isNullOrBlank()) {
+                            Spacer(modifier = Modifier.height(config.titleSpacing))
+                        }
+                    }
+                    data.message?.takeIf { it.isNotBlank() }?.let { message ->
+                        BasicText(
+                            text = message,
+                            style = config.messageStyle().copy(color = colors.message),
+                            maxLines = config.maxMessageLines,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
 
                 // Action button
                 data.actionText?.let { actionText ->
-                    Text(
+                    BasicText(
                         text = actionText,
-                        style = config.actionStyle(),
-                        color = colors.action,
+                        style = config.actionStyle().copy(color = colors.action),
                         modifier = Modifier
                             .heightIn(min = config.minTouchTarget) // Touch target for mobile
                             .clickable(
@@ -698,7 +747,7 @@ internal fun Toast(
                                     data.onAction?.invoke()
                                     onDismiss()
                                 },
-                                indication = ripple(bounded = false),
+                                indication = pixaRipple(bounded = false),
                                 interactionSource = remember { MutableInteractionSource() }
                             )
                             .padding(horizontal = HierarchicalSize.Spacing.Small)
@@ -716,7 +765,7 @@ internal fun Toast(
                             .clip(CircleShape)
                             .clickable(
                                 onClick = onDismiss,
-                                indication = ripple(bounded = true),
+                                indication = pixaRipple(bounded = true),
                                 interactionSource = remember { MutableInteractionSource() }
                             )
                             .semantics {
@@ -725,10 +774,9 @@ internal fun Toast(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
+                        BasicText(
                             text = "×",
-                            style = config.actionStyle(),
-                            color = colors.close
+                            style = config.actionStyle().copy(color = colors.close)
                         )
                     }
                 }
@@ -908,7 +956,8 @@ object PixaToastManager {
      * Show a toast message
      */
     suspend fun showToast(
-        message: String,
+        message: String? = null,
+        title: String? = null,
         variant: ToastVariant = ToastVariant.Info,
         duration: ToastDuration = ToastDuration.Short,
         style: ToastStyle = ToastStyle.Filled,
@@ -922,6 +971,7 @@ object PixaToastManager {
     ) {
         requireState().showToast(
             message = message,
+            title = title,
             variant = variant,
             duration = duration,
             style = style,
@@ -940,12 +990,14 @@ object PixaToastManager {
      */
     suspend fun showSuccess(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Short,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         requireState().showSuccessToast(
             message = message,
+            title = title,
             duration = duration,
             actionText = actionText,
             onAction = onAction
@@ -957,12 +1009,14 @@ object PixaToastManager {
      */
     suspend fun showError(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Long,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         requireState().showErrorToast(
             message = message,
+            title = title,
             duration = duration,
             actionText = actionText,
             onAction = onAction
@@ -974,12 +1028,14 @@ object PixaToastManager {
      */
     suspend fun showWarning(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Long,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         requireState().showWarningToast(
             message = message,
+            title = title,
             duration = duration,
             actionText = actionText,
             onAction = onAction
@@ -991,12 +1047,14 @@ object PixaToastManager {
      */
     suspend fun showInfo(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Short,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         requireState().showInfoToast(
             message = message,
+            title = title,
             duration = duration,
             actionText = actionText,
             onAction = onAction
@@ -1133,7 +1191,8 @@ class ToastScope(
     private val manager: PixaToastHostState
 ) {
     fun showToast(
-        message: String,
+        message: String? = null,
+        title: String? = null,
         variant: ToastVariant = ToastVariant.Info,
         duration: ToastDuration = ToastDuration.Short,
         style: ToastStyle = ToastStyle.Filled,
@@ -1148,6 +1207,7 @@ class ToastScope(
         scope.launch {
             manager.showToast(
                 message = message,
+                title = title,
                 variant = variant,
                 duration = duration,
                 style = style,
@@ -1164,45 +1224,49 @@ class ToastScope(
 
     fun showSuccess(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Short,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         scope.launch {
-            manager.showSuccessToast(message, duration, actionText, onAction)
+            manager.showSuccessToast(message = message, title = title, duration = duration, actionText = actionText, onAction = onAction)
         }
     }
 
     fun showError(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Long,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         scope.launch {
-            manager.showErrorToast(message, duration, actionText, onAction)
+            manager.showErrorToast(message = message, title = title, duration = duration, actionText = actionText, onAction = onAction)
         }
     }
 
     fun showWarning(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Long,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         scope.launch {
-            manager.showWarningToast(message, duration, actionText, onAction)
+            manager.showWarningToast(message = message, title = title, duration = duration, actionText = actionText, onAction = onAction)
         }
     }
 
     fun showInfo(
         message: String,
+        title: String? = null,
         duration: ToastDuration = ToastDuration.Short,
         actionText: String? = null,
         onAction: (() -> Unit)? = null
     ) {
         scope.launch {
-            manager.showInfoToast(message, duration, actionText, onAction)
+            manager.showInfoToast(message = message, title = title, duration = duration, actionText = actionText, onAction = onAction)
         }
     }
 
@@ -1214,7 +1278,7 @@ class ToastScope(
     ) {
         scope.launch {
             val errorMessage = message ?: exception.message ?: "An error occurred"
-            manager.showErrorToast(errorMessage, ToastDuration.Long, actionText, onAction)
+            manager.showErrorToast(message = errorMessage, duration = ToastDuration.Long, actionText = actionText, onAction = onAction)
         }
     }
 

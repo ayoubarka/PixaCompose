@@ -453,8 +453,7 @@ private fun PopoverCardContent(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaPopover - contextual overlay anchored to a triggering element, migrated from Uber Base's
- * Popover spec.
+ * PixaPopover - contextual overlay anchored to a triggering element.
  *
  * Purpose: instructional (teaching feature usage) or informational (explaining what a feature
  * does) contextual content, opened on interaction and left open until explicitly dismissed.

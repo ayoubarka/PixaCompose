@@ -1,5 +1,17 @@
 package com.pixamob.pixacompose.components.display
 
+/*
+ * LEGACY CARD SYSTEM — kept for backward compatibility only.
+ *
+ * `PixaCard`/`BaseCardVariant`/`CardBorderConfig`/`CardShadowConfig` in this file predate the
+ * Uber Base Card migration and are NOT the foundation new card-like components should build on.
+ * `PixaMessageCard` (this package) still depends on `PixaCard` and is intentionally left as-is.
+ *
+ * For new card-like components, build on `com.pixamob.pixacompose.components.surfaces.PixaSurfaceCard`
+ * instead — it's the Uber Base-aligned primitive (context/state model, spec-accurate border/radius/
+ * elevation tokens). Do not add new call sites of this legacy `PixaCard` going forward.
+ */
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border

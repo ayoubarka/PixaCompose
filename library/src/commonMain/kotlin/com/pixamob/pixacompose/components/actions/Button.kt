@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -51,6 +50,7 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.WindowSizeClass
 import com.pixamob.pixacompose.utils.elevationShadow
+import com.pixamob.pixacompose.utils.pixaRipple
 import com.pixamob.pixacompose.utils.toDp
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -451,7 +451,7 @@ private fun InternalButton(
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(bounded = true, color = currentColors.ripple),
+                indication = pixaRipple(bounded = true, color = currentColors.ripple),
                 enabled = enabled && !loading,
                 role = Role.Button,
                 onClick = onClick,
@@ -500,7 +500,7 @@ private fun InternalButton(
 
 /**
  * PixaButton — interactive control for triggering actions, confirming choices,
- * and navigating flows. Migrated from Uber Base's Button spec.
+ * and navigating flows.
  *
  * ### Anatomy
  * WithLabel (text + optional leading/trailing icon) or IconOnly (a single icon,

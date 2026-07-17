@@ -111,7 +111,6 @@ fun TextAreaShowcase() {
                 onValueChange = { text = it },
                 label = "Description",
                 placeholder = "Enter your description...",
-                showCharacterCount = true,
                 maxLength = 200
             )
         }

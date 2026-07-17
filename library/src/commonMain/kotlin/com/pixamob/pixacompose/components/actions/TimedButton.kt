@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -59,6 +58,7 @@ import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.elevationShadow
+import com.pixamob.pixacompose.utils.pixaRipple
 import com.pixamob.pixacompose.utils.toDp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -248,7 +248,7 @@ private fun InternalTimedButton(
             )
             .clickable(
                 interactionSource = interactionSource,
-                indication = ripple(bounded = true, color = currentColors.ripple),
+                indication = pixaRipple(bounded = true, color = currentColors.ripple),
                 enabled = enabled,
                 role = Role.Button,
                 onClick = onClick,
@@ -357,7 +357,7 @@ private fun RowScope.TimedButtonContent(
 
 /**
  * PixaTimedButton — a rectangle button that auto-advances the user after a
- * finite countdown. Migrated from Uber Base's Timed Button spec.
+ * finite countdown.
  *
  * ### Purpose
  * Notifies the user that the current screen requires timely attention, and

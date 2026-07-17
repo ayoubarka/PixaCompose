@@ -407,8 +407,6 @@ private fun RowScope.ListItemTextColumn(
 
 /**
  * PixaListItem — a horizontal row for scanning stacked, related content.
- * Migrated from Uber Base's List Item spec, one of Uber's most-used
- * components ("over 80% of their UI").
  *
  * ### Purpose
  * Vertically stacked rows of text/images arranged horizontally, for

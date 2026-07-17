@@ -1,11 +1,79 @@
 package com.pixamob.pixacompose.components.feedback
 
+/**
+ * PixaSnackbar — PixaCompose's equivalent of Uber Base's "Snackbar" component.
+ *
+ * Source: https://base.uber.com/6d2425e9f/p/72a605-snackbar.md
+ *
+ * Purpose:
+ *   An ephemeral, passive acknowledgment shown after a user-initiated action
+ *   (e.g. "Item deleted", "Downloading your file") — lightweight feedback
+ *   that never blocks the workflow. Not for global system messaging,
+ *   engagement/promotional content, or critical/emergency messages (timing
+ *   may be insufficient for users with disabilities per WCAG 2.2 — use a
+ *   persistent surface instead).
+ *
+ * Anatomy:
+ *   Container (required) + message (required) + optional leading content
+ *   (icon 24dp, loading spinner 24dp, or photo 48dp — mutually exclusive,
+ *   never combined) + optional single trailing action (tertiary text button
+ *   OR icon dismiss button — never both at once, per spec's "single button
+ *   maximum").
+ *
+ * Variants:
+ *   [SnackbarVariant] is a **semantic/accessibility axis only** — per the
+ *   spec's customization boundaries ("Snackbars use gray colors exclusively
+ *   ... Custom color use not supported; use Banner component for additional
+ *   colors"), background/message color is fixed and identical across every
+ *   variant. Selecting `Loading`/`Success`/`Warning`/`Error` only changes the
+ *   accessibility label and (for `Loading`) auto-renders the spinner; it does
+ *   **not** tint the container. For a colored feedback surface, use
+ *   [com.pixamob.pixacompose.components.feedback.PixaAlert] instead (Pixa's
+ *   analog of Uber's separate Banner component).
+ *
+ * States: shown → (optionally auto-dismisses) → dismissed, driven by
+ *   [PixaSnackbarHostState]'s single-item queue — see Behavior below.
+ *
+ * Sizing: width follows the spec's breakpoint table exactly via
+ *   [WindowSizeClass] (Compact break matches the spec's 600px cutoff):
+ *   narrow screens fill the width minus an 8dp gutter each side; wide
+ *   screens clamp to 320-540dp. [SizeVariant] scales padding/radius/type
+ *   tier only — leading-content size (24/48dp), border (1dp), and the width
+ *   breakpoints themselves are spec-fixed and don't scale with it.
+ *
+ * Adaptive behavior: width breakpoint via [ScreenUtil]/[WindowSizeClass],
+ *   matching the Popover/Tooltip precedent rather than inventing a second
+ *   responsive system.
+ *
+ * Customization: variant (semantic/a11y only, see above), duration, leading
+ *   content, single trailing action, position. Not exposed: arbitrary
+ *   background/message color override — removed in this migration; see the
+ *   fidelity notes in the PR/commit description for why.
+ *
+ * Behavior (spec-preserved):
+ *   - **Single visible snackbar** — [PixaSnackbarHostState] queues
+ *     subsequent calls and shows them one after another.
+ *   - Dismissed by: swipe (mobile), trailing action tap, or timeout.
+ *   - Follows navigation stack changes — the root-level
+ *     [GlobalSnackbarHost]/[PixaSnackbarManager] singleton is
+ *     screen-independent already.
+ *   - **Progress pattern**: show a `Loading` snackbar, then immediately show
+ *     a `Success`/`Error` snackbar once the action completes — the spec
+ *     models this as two sequential snackbars, not one mutating instance;
+ *     TalkBack's "Loading complete" announcement falls out of that second
+ *     snackbar's own appearance announcement.
+ *   - **Follow-up pattern**: after an "Undo"/"Retry" action fires, show a
+ *     confirmation snackbar once it completes (content-flow guidance, not
+ *     enforced by this component).
+ */
+
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -19,12 +87,12 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -44,16 +112,22 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.pixamob.pixacompose.components.display.PixaAvatar
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.utils.ComponentElevation
-import com.pixamob.pixacompose.utils.elevationShadow
+import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.ComponentElevation
+import com.pixamob.pixacompose.utils.QuinticEaseOutEasing
+import com.pixamob.pixacompose.utils.ScreenUtil
+import com.pixamob.pixacompose.utils.WindowSizeClass
+import com.pixamob.pixacompose.utils.elevationShadow
+import com.pixamob.pixacompose.utils.pixaRipple
+import com.pixamob.pixacompose.utils.windowSizeClassOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.Dispatchers
@@ -64,64 +138,54 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlin.math.abs
 
-/**
- * Snackbar Component
- *
- * Temporary notification at screen bottom with optional action button.
- * Unlike Toast, Snackbar shows one message at a time with more prominent actions.
- * Supports swipe-to-dismiss and automatic queuing.
- *
- * Features:
- * - Four semantic variants: Info, Success, Warning, Error, Default
- * - Three duration presets: Short (4s), Long (10s), Indefinite (until dismissed/action)
- * - Prominent action button with custom styling
- * - Swipe-to-dismiss gesture support
- * - Single message display (queues subsequent messages)
- * - Bottom positioning with proper safe area padding
- * - Full accessibility support
- * - Smooth animations
- *
- * @sample
- * ```
- * // Basic usage
- * val snackbarState = rememberSnackbarHostState()
- *
- * SnackbarHost(hostState = snackbarState)
- *
- * // Show snackbar
- * scope.launch {
- *     snackbarState.showSnackbar(
- *         message = "Item deleted",
- *         actionLabel = "Undo"
- *     ) { /* undo action */ }
- * }
- *
- * // Show error snackbar
- * scope.launch {
- *     snackbarState.showErrorSnackbar(
- *         message = "Network error occurred",
- *         actionLabel = "Retry"
- *     ) { retryConnection() }
- * }
- * ```
- */
-
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Semantic/accessibility axis only — see file-level KDoc. Does **not** change
+ * container color; only the accessibility label and (for [Loading]) the
+ * auto-rendered leading spinner.
+ */
 enum class SnackbarVariant {
     Default,
     Info,
     Success,
     Warning,
-    Error
+    Error,
+
+    /** Spec's "Loading" common state — auto-renders a 24dp indeterminate spinner. */
+    Loading
 }
 
 enum class SnackbarDuration(val milliseconds: Long) {
+    /**
+     * Spec default: duration derived from the rendered message's line count
+     * (1 line → 3000ms, 2 lines → 5000ms, 3+ lines → 7000ms), measured live
+     * via text layout. The `-2L` sentinel is resolved dynamically in
+     * [Snackbar]/[PixaSnackbarHostState] — never used as a literal delay.
+     */
+    Auto(-2L),
     Short(4000L),
     Long(10000L),
     Indefinite(-1L)
+}
+
+/**
+ * Where the snackbar appears. Spec default is [Top] (mobile: flush to the
+ * status bar; wide/desktop: 16dp below the top nav). The remaining five are
+ * the spec's desktop-web-only positioning overrides (all 16dp from their
+ * edge) — the spec recommends staying consistent within one app rather than
+ * mixing positions, but doesn't gate them by platform at the type level, so
+ * they're available everywhere; use them sparingly on mobile.
+ */
+enum class SnackbarPosition {
+    Top,
+    Bottom,
+    TopStart,
+    TopEnd,
+    BottomStart,
+    BottomEnd
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -145,20 +209,27 @@ data class SnackbarColors(
 data class SnackbarConfig(
     val messageStyle: @Composable () -> TextStyle,
     val actionStyle: @Composable () -> TextStyle,
-    val padding: Dp = HierarchicalSize.Spacing.Medium,
-    val actionSpacing: Dp = HierarchicalSize.Spacing.Small,
-    val maxMessageLines: Int = 2,
-    val minWidth: Dp = 280.dp, // 280.dp
-    val maxWidth: Dp = HierarchicalSize.Container.DialogMaxWidth, // 560.dp
-    val minHeight: Dp = 48.dp, // 48.dp
-    val elevation: ComponentElevation = ComponentElevation.Highest, // 8dp for prominence
-    val cornerRadius: Dp = HierarchicalSize.Radius.Small,
+    val padding: Dp,
+    val actionSpacing: Dp,
+    val minHeight: Dp = HierarchicalSize.Container.Medium,
+    val elevation: ComponentElevation = ComponentElevation.Medium,
+    val cornerRadius: Dp,
     val swipeToDismissThreshold: Float = 0.3f,
-    val iconSize: Dp = HierarchicalSize.Icon.Small // 20.dp
+    /** Spec: leading icon/spinner is fixed at 24dp regardless of [SizeVariant]. */
+    val leadingIconSize: Dp = HierarchicalSize.Icon.Medium,
+    /** Spec: leading photo is fixed at 48dp regardless of [SizeVariant]. */
+    val leadingPhotoSize: SizeVariant = SizeVariant.Medium,
+    /** Spec: border is fixed 1dp regardless of [SizeVariant]. */
+    val borderWidth: Dp = HierarchicalSize.Border.Compact
 )
 
 /**
- * Data class representing a snackbar item
+ * Data class representing a snackbar item.
+ *
+ * Leading content is mutually exclusive and resolved in this priority order:
+ * [SnackbarVariant.Loading] spinner → [photoUrl]/[photoModel] → [icon]
+ * (when [showIcon] is true) — matching the spec's "icon, spinner, or photo"
+ * anatomy (never combined).
  */
 @Stable
 data class SnackbarData(
@@ -166,13 +237,14 @@ data class SnackbarData(
     val message: String,
     val actionLabel: String? = null,
     val variant: SnackbarVariant = SnackbarVariant.Default,
-    val duration: SnackbarDuration = SnackbarDuration.Short,
+    val duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Auto else SnackbarDuration.Indefinite,
     val withDismissAction: Boolean = false,
     val icon: Painter? = null,
     val showIcon: Boolean = false,
+    val photoUrl: String? = null,
+    val photoModel: Any? = null,
     val onAction: (() -> Unit)? = null,
-    val onDismiss: (() -> Unit)? = null,
-    val customColors: SnackbarColors? = null
+    val onDismiss: (() -> Unit)? = null
 )
 
 /**
@@ -190,7 +262,10 @@ enum class SnackbarResult {
 // ============================================================================
 
 /**
- * State holder for managing snackbar queue and display
+ * State holder for managing snackbar queue and display.
+ *
+ * Spec: "Only one snackbar displays at a time" — subsequent calls while one
+ * is visible are queued and shown in order once the current one dismisses.
  */
 @Stable
 class PixaSnackbarHostState {
@@ -212,13 +287,14 @@ class PixaSnackbarHostState {
         message: String,
         actionLabel: String? = null,
         variant: SnackbarVariant = SnackbarVariant.Default,
-        duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Indefinite,
+        duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Auto else SnackbarDuration.Indefinite,
         withDismissAction: Boolean = false,
         icon: Painter? = null,
         showIcon: Boolean = false,
+        photoUrl: String? = null,
+        photoModel: Any? = null,
         onAction: (() -> Unit)? = null,
-        onDismiss: (() -> Unit)? = null,
-        customColors: SnackbarColors? = null
+        onDismiss: (() -> Unit)? = null
     ): SnackbarResult = mutex.withLock {
         val snackbar = SnackbarData(
             message = message,
@@ -228,9 +304,10 @@ class PixaSnackbarHostState {
             withDismissAction = withDismissAction,
             icon = icon,
             showIcon = showIcon,
+            photoUrl = photoUrl,
+            photoModel = photoModel,
             onAction = onAction,
-            onDismiss = onDismiss,
-            customColors = customColors
+            onDismiss = onDismiss
         )
 
         // If there's a current snackbar, queue this one
@@ -242,8 +319,9 @@ class PixaSnackbarHostState {
         // Show the snackbar
         _currentSnackbar.value = snackbar
 
-        // Auto-dismiss if duration is not indefinite
-        if (duration != SnackbarDuration.Indefinite) {
+        // Auto-dismiss if duration is not indefinite/auto (Auto is resolved by
+        // the rendered Snackbar composable itself, which measures line count).
+        if (duration != SnackbarDuration.Indefinite && duration != SnackbarDuration.Auto) {
             delay(duration.milliseconds)
             dismissCurrentSnackbar()
         }
@@ -264,7 +342,7 @@ class PixaSnackbarHostState {
                 val next = _snackbarQueue.removeAt(0)
                 _currentSnackbar.value = next
 
-                if (next.duration != SnackbarDuration.Indefinite) {
+                if (next.duration != SnackbarDuration.Indefinite && next.duration != SnackbarDuration.Auto) {
                     delay(next.duration.milliseconds)
                     dismissCurrentSnackbar()
                 }
@@ -288,7 +366,7 @@ class PixaSnackbarHostState {
     suspend fun showSuccessSnackbar(
         message: String,
         actionLabel: String? = null,
-        duration: SnackbarDuration = SnackbarDuration.Short,
+        duration: SnackbarDuration = SnackbarDuration.Auto,
         onAction: (() -> Unit)? = null
     ): SnackbarResult {
         return showSnackbar(
@@ -342,7 +420,7 @@ class PixaSnackbarHostState {
     suspend fun showInfoSnackbar(
         message: String,
         actionLabel: String? = null,
-        duration: SnackbarDuration = SnackbarDuration.Short,
+        duration: SnackbarDuration = SnackbarDuration.Auto,
         onAction: (() -> Unit)? = null
     ): SnackbarResult {
         return showSnackbar(
@@ -351,6 +429,24 @@ class PixaSnackbarHostState {
             variant = SnackbarVariant.Info,
             duration = duration,
             onAction = onAction
+        )
+    }
+
+    /**
+     * Show a loading snackbar (spec: "Progress Snackbars remain on-screen
+     * until action completes"). Always indefinite — dismiss it explicitly
+     * (or just show the follow-up snackbar, which replaces it) once the
+     * action finishes.
+     */
+    suspend fun showLoadingSnackbar(
+        message: String,
+        onDismiss: (() -> Unit)? = null
+    ): SnackbarResult {
+        return showSnackbar(
+            message = message,
+            variant = SnackbarVariant.Loading,
+            duration = SnackbarDuration.Indefinite,
+            onDismiss = onDismiss
         )
     }
 }
@@ -449,13 +545,14 @@ object PixaSnackbarManager {
         message: String,
         actionLabel: String? = null,
         variant: SnackbarVariant = SnackbarVariant.Default,
-        duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Indefinite,
+        duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Auto else SnackbarDuration.Indefinite,
         withDismissAction: Boolean = false,
         icon: Painter? = null,
         showIcon: Boolean = false,
+        photoUrl: String? = null,
+        photoModel: Any? = null,
         onAction: (() -> Unit)? = null,
-        onDismiss: (() -> Unit)? = null,
-        customColors: SnackbarColors? = null
+        onDismiss: (() -> Unit)? = null
     ): SnackbarResult {
         return requireState().showSnackbar(
             message = message,
@@ -465,9 +562,10 @@ object PixaSnackbarManager {
             withDismissAction = withDismissAction,
             icon = icon,
             showIcon = showIcon,
+            photoUrl = photoUrl,
+            photoModel = photoModel,
             onAction = onAction,
-            onDismiss = onDismiss,
-            customColors = customColors
+            onDismiss = onDismiss
         )
     }
 
@@ -477,7 +575,7 @@ object PixaSnackbarManager {
     suspend fun showSuccess(
         message: String,
         actionLabel: String? = null,
-        duration: SnackbarDuration = SnackbarDuration.Short,
+        duration: SnackbarDuration = SnackbarDuration.Auto,
         onAction: (() -> Unit)? = null
     ): SnackbarResult {
         return requireState().showSuccessSnackbar(
@@ -528,7 +626,7 @@ object PixaSnackbarManager {
     suspend fun showInfo(
         message: String,
         actionLabel: String? = null,
-        duration: SnackbarDuration = SnackbarDuration.Short,
+        duration: SnackbarDuration = SnackbarDuration.Auto,
         onAction: (() -> Unit)? = null
     ): SnackbarResult {
         return requireState().showInfoSnackbar(
@@ -537,6 +635,16 @@ object PixaSnackbarManager {
             duration = duration,
             onAction = onAction
         )
+    }
+
+    /**
+     * Show a loading snackbar (see [PixaSnackbarHostState.showLoadingSnackbar]).
+     */
+    suspend fun showLoading(
+        message: String,
+        onDismiss: (() -> Unit)? = null
+    ): SnackbarResult {
+        return requireState().showLoadingSnackbar(message, onDismiss)
     }
 
     /**
@@ -591,6 +699,8 @@ fun currentSnackbarManager(): PixaSnackbarHostState {
  * It initializes the PixaSnackbarManager singleton and displays snackbars.
  *
  * @param modifier Modifier for the host container
+ * @param position Where the snackbar appears (spec default: [SnackbarPosition.Top])
+ * @param size [SizeVariant] driving padding/radius/typography
  *
  * @sample
  * ```
@@ -610,7 +720,9 @@ fun currentSnackbarManager(): PixaSnackbarHostState {
  */
 @Composable
 fun GlobalSnackbarHost(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    position: SnackbarPosition = SnackbarPosition.Top,
+    size: SizeVariant = SizeVariant.Medium
 ) {
     val hostState = remember { PixaSnackbarHostState() }
 
@@ -626,7 +738,9 @@ fun GlobalSnackbarHost(
     CompositionLocalProvider(LocalSnackbarManager provides hostState) {
         SnackbarHost(
             hostState = hostState,
-            modifier = modifier
+            modifier = modifier,
+            position = position,
+            size = size
         )
     }
 }
@@ -634,10 +748,6 @@ fun GlobalSnackbarHost(
 // ============================================================================
 // EXTENSION FUNCTIONS
 // ============================================================================
-
-/**
- * Extension functions for easier snackbar access in composables
- */
 
 /**
  * Remember a coroutine scope and show a snackbar
@@ -662,13 +772,14 @@ class SnackbarScope(
         message: String,
         actionLabel: String? = null,
         variant: SnackbarVariant = SnackbarVariant.Default,
-        duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Short else SnackbarDuration.Indefinite,
+        duration: SnackbarDuration = if (actionLabel == null) SnackbarDuration.Auto else SnackbarDuration.Indefinite,
         withDismissAction: Boolean = false,
         icon: Painter? = null,
         showIcon: Boolean = false,
+        photoUrl: String? = null,
+        photoModel: Any? = null,
         onAction: (() -> Unit)? = null,
-        onDismiss: (() -> Unit)? = null,
-        customColors: SnackbarColors? = null
+        onDismiss: (() -> Unit)? = null
     ) {
         scope.launch {
             manager.showSnackbar(
@@ -679,9 +790,10 @@ class SnackbarScope(
                 withDismissAction = withDismissAction,
                 icon = icon,
                 showIcon = showIcon,
+                photoUrl = photoUrl,
+                photoModel = photoModel,
                 onAction = onAction,
-                onDismiss = onDismiss,
-                customColors = customColors
+                onDismiss = onDismiss
             )
         }
     }
@@ -689,7 +801,7 @@ class SnackbarScope(
     fun showSuccess(
         message: String,
         actionLabel: String? = null,
-        duration: SnackbarDuration = SnackbarDuration.Short,
+        duration: SnackbarDuration = SnackbarDuration.Auto,
         onAction: (() -> Unit)? = null
     ) {
         scope.launch {
@@ -722,11 +834,20 @@ class SnackbarScope(
     fun showInfo(
         message: String,
         actionLabel: String? = null,
-        duration: SnackbarDuration = SnackbarDuration.Short,
+        duration: SnackbarDuration = SnackbarDuration.Auto,
         onAction: (() -> Unit)? = null
     ) {
         scope.launch {
             manager.showInfoSnackbar(message, actionLabel, duration, onAction)
+        }
+    }
+
+    fun showLoading(
+        message: String,
+        onDismiss: (() -> Unit)? = null
+    ) {
+        scope.launch {
+            manager.showLoadingSnackbar(message, onDismiss)
         }
     }
 
@@ -762,57 +883,80 @@ fun launchSnackbar(block: suspend PixaSnackbarHostState.() -> Unit) {
 // ============================================================================
 
 /**
- * Get snackbar colors based on variant
+ * Snackbar colors — spec: "gray colors exclusively," identical across every
+ * [SnackbarVariant]. Uses the same inverse-surface pairing as
+ * [com.pixamob.pixacompose.components.overlay.PixaTooltip] (dark
+ * container/light text in light theme, and vice versa), since both
+ * components are the spec's "passive gray acknowledgment" family.
  */
 @Composable
-private fun getSnackbarColors(
-    variant: SnackbarVariant,
-    colors: ColorPalette
-): SnackbarColors {
-    return when (variant) {
-        SnackbarVariant.Default -> SnackbarColors(
-            background = colors.baseSurfaceFocus, // Dark surface for prominence
-            message = colors.baseContentNegative, // Light text on dark background
-            actionLabel = colors.brandContentDefault, // Use brand color for action
-            actionBackground = Color.Transparent
-        )
-        SnackbarVariant.Info -> SnackbarColors(
-            background = colors.infoSurfaceDefault,
-            message = colors.baseContentBody,
-            actionLabel = colors.infoContentDefault,
-            actionBackground = Color.Transparent
-        )
-        SnackbarVariant.Success -> SnackbarColors(
-            background = colors.successSurfaceDefault,
-            message = colors.baseContentBody,
-            actionLabel = colors.successContentDefault,
-            actionBackground = Color.Transparent
-        )
-        SnackbarVariant.Warning -> SnackbarColors(
-            background = colors.warningSurfaceDefault,
-            message = colors.baseContentBody,
-            actionLabel = colors.warningContentDefault,
-            actionBackground = Color.Transparent
-        )
-        SnackbarVariant.Error -> SnackbarColors(
-            background = colors.errorSurfaceDefault,
-            message = colors.baseContentBody,
-            actionLabel = colors.errorContentDefault,
-            actionBackground = Color.Transparent
-        )
-    }
+private fun getSnackbarColors(colors: ColorPalette): SnackbarColors {
+    // Tertiary action color computed from the inverse content color rather
+    // than a fixed "actionLabel" token — same pattern PixaTooltip's border
+    // uses, standing in for the spec's `InverseBackgroundTertiary` token
+    // (black + 20% white) that Pixa's palette has no literal equivalent for.
+    val message = colors.baseSurfaceDefault
+    return SnackbarColors(
+        background = colors.baseContentTitle,
+        message = message,
+        actionLabel = message,
+        actionBackground = Color.Transparent
+    )
 }
 
 /**
  * Get snackbar configuration
  */
 @Composable
-private fun getSnackbarConfig(): SnackbarConfig {
+private fun getSnackbarConfig(size: SizeVariant): SnackbarConfig {
     val typography = AppTheme.typography
+    val messageStyle = when (size) {
+        SizeVariant.None, SizeVariant.Nano, SizeVariant.Compact -> typography.captionRegular
+        SizeVariant.Small, SizeVariant.Medium -> typography.bodyRegular
+        SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> typography.bodyBold
+    }
     return SnackbarConfig(
-        messageStyle = { typography.bodyRegular },
-        actionStyle = { typography.bodyBold }
+        messageStyle = { messageStyle },
+        actionStyle = { typography.bodyBold },
+        padding = HierarchicalSize.Padding.forVariant(size),
+        actionSpacing = HierarchicalSize.Spacing.forVariant(size),
+        cornerRadius = HierarchicalSize.Radius.forVariant(size)
     )
+}
+
+/**
+ * Resolves the spec's width breakpoint table via the library's existing
+ * [WindowSizeClass] model — its Compact cutoff (<600dp) matches the spec's
+ * "Narrow (≤600px)" tier exactly, so no new breakpoint is introduced.
+ */
+@Composable
+private fun getSnackbarWidthModifier(): Modifier {
+    val screenWidth = ScreenUtil.getScreenWidth()
+    val windowSizeClass = windowSizeClassOf(screenWidth)
+    return if (windowSizeClass == WindowSizeClass.Compact) {
+        // Narrow: 100% width minus an 8dp gutter each side (spec: "Gutters: Size 8").
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = HierarchicalSize.Spacing.Small)
+    } else {
+        // Wide: spec-exact 320-540dp clamp — doesn't map onto an existing
+        // HierarchicalSize tier (Container.DialogMaxWidth is 560dp, a
+        // different component's figure), so these are named local constants.
+        Modifier.widthIn(min = SnackbarWideMinWidth, max = SnackbarWideMaxWidth)
+    }
+}
+
+/** Spec-exact wide/desktop minimum width (distinct from any existing container token). */
+private val SnackbarWideMinWidth = 320.dp
+
+/** Spec-exact wide/desktop maximum width. */
+private val SnackbarWideMaxWidth = 540.dp
+
+/** Spec: message-length-driven auto duration table (line count → display time). */
+private fun autoDismissMsFor(lineCount: Int): Long = when {
+    lineCount <= 1 -> 3000L
+    lineCount == 2 -> 5000L
+    else -> 7000L
 }
 
 // ============================================================================
@@ -826,26 +970,37 @@ private fun getSnackbarConfig(): SnackbarConfig {
  * @param onDismiss Callback when snackbar is dismissed
  * @param onActionPerformed Callback when action is performed
  * @param modifier Modifier for the snackbar
+ * @param size [SizeVariant] driving padding/radius/typography
  */
 @Composable
 internal fun Snackbar(
     data: SnackbarData,
     onDismiss: () -> Unit,
     onActionPerformed: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    size: SizeVariant = SizeVariant.Medium
 ) {
-    val colors = data.customColors ?: getSnackbarColors(data.variant, AppTheme.colors)
-    val config = getSnackbarConfig()
+    val colors = getSnackbarColors(AppTheme.colors)
+    val config = getSnackbarConfig(size)
 
     var offsetX by remember { mutableStateOf(0f) }
     val dismissThreshold = config.swipeToDismissThreshold
 
-    val description = "${data.variant.name.lowercase()} snackbar: ${data.message}"
     val shape = RoundedCornerShape(config.cornerRadius)
+
+    // Spec: Auto duration is derived from the *rendered* line count, so it's
+    // resolved here (post text-layout) rather than up front in the host state.
+    var measuredLineCount by remember(data.id) { mutableStateOf(1) }
+    LaunchedEffect(data.id, data.duration, measuredLineCount) {
+        if (data.duration == SnackbarDuration.Auto) {
+            delay(autoDismissMsFor(measuredLineCount))
+            onDismiss()
+        }
+    }
 
     Box(
         modifier = modifier
-            .widthIn(min = config.minWidth, max = config.maxWidth)
+            .then(getSnackbarWidthModifier())
             .heightIn(min = config.minHeight)
             .padding(horizontal = HierarchicalSize.Spacing.Medium, vertical = HierarchicalSize.Spacing.Small)
             .graphicsLayer {
@@ -853,9 +1008,12 @@ internal fun Snackbar(
                 alpha = 1f - (abs(offsetX) / 1000f).coerceIn(0f, 0.5f)
             }
             .pointerInput(Unit) {
+                // Explicitly qualified: this composable also has a `size:
+                // SizeVariant` parameter, which would otherwise shadow
+                // PointerInputScope's own `size: IntSize`.
                 detectHorizontalDragGestures(
                     onDragEnd = {
-                        if (abs(offsetX) > size.width * dismissThreshold) {
+                        if (abs(offsetX) > this@pointerInput.size.width * dismissThreshold) {
                             onDismiss()
                         } else {
                             offsetX = 0f
@@ -869,18 +1027,17 @@ internal fun Snackbar(
                 }
             }
             .semantics {
-                this.contentDescription = description
+                // Spec: "Label: Message text" — no variant-name prefix.
+                this.contentDescription = data.message
             }
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .elevationShadow(
-                    elevation = config.elevation,
-                    shape = shape
-                )
+                .elevationShadow(elevation = config.elevation, shape = shape)
                 .clip(shape)
                 .background(colors.background)
+                .border(config.borderWidth, colors.message.copy(alpha = 0.16f), shape)
                 .padding(config.padding)
         ) {
             Row(
@@ -888,76 +1045,102 @@ internal fun Snackbar(
                 horizontalArrangement = Arrangement.spacedBy(config.actionSpacing),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Icon (optional)
-                if (data.showIcon && data.icon != null) {
-                    PixaIcon(
-                        painter = data.icon,
-                        contentDescription = null,
-                        tint = colors.message,
-                        modifier = Modifier.size(config.iconSize)
-                    )
-                }
+                // Leading content: spinner (Loading) > photo > icon — mutually exclusive.
+                when {
+                    data.variant == SnackbarVariant.Loading -> {
+                        PixaCircularIndicator(
+                            sizePreset = SizeVariant.Large, // -> Icon.Medium = 24dp, spec-exact
+                            variant = ProgressVariant.Neutral,
+                            customColors = ProgressColors(
+                                progress = colors.message,
+                                track = colors.message.copy(alpha = 0.24f),
+                                label = colors.message
+                            ),
+                            contentDescription = "Loading"
+                        )
+                    }
 
-                // Message
-                Text(
-                    text = data.message,
-                    style = config.messageStyle(),
-                    color = colors.message,
-                    maxLines = config.maxMessageLines,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
+                    data.photoUrl != null || data.photoModel != null -> {
+                        PixaAvatar(
+                            size = config.leadingPhotoSize, // Medium = 48dp, spec-exact
+                            imageUrl = data.photoUrl,
+                            imageModel = data.photoModel
+                        )
+                    }
 
-                // Action button
-                data.actionLabel?.let { actionLabel ->
-                    Box(
-                        modifier = Modifier
-                            .heightIn(min = HierarchicalSize.Container.Medium) // 44dp touch target
-                            .clip(RoundedCornerShape(HierarchicalSize.Radius.Small))
-                            .clickable(
-                                onClick = onActionPerformed,
-                                indication = ripple(bounded = true),
-                                interactionSource = remember { MutableInteractionSource() }
-                            )
-                            .padding(
-                                horizontal = HierarchicalSize.Spacing.Small,
-                                vertical = HierarchicalSize.Spacing.Compact
-                            )
-                            .semantics {
-                                this.role = Role.Button
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = actionLabel.uppercase(),
-                            style = config.actionStyle(),
-                            color = colors.actionLabel
+                    data.showIcon && data.icon != null -> {
+                        PixaIcon(
+                            painter = data.icon,
+                            contentDescription = null,
+                            tint = colors.message,
+                            modifier = Modifier.size(config.leadingIconSize)
                         )
                     }
                 }
 
-                // Dismiss button (if enabled)
-                if (data.withDismissAction) {
-                    Box(
-                        modifier = Modifier
-                            .size(HierarchicalSize.Container.Medium) // 44dp touch target
-                            .clip(RoundedCornerShape(HierarchicalSize.Radius.Small))
-                            .clickable(
-                                onClick = onDismiss,
-                                indication = ripple(bounded = true),
-                                interactionSource = remember { MutableInteractionSource() }
+                // Message — spec: truncation not recommended (accessibility
+                // concern for enlarged text), so no maxLines/overflow cap;
+                // onTextLayout still measures the rendered line count to
+                // drive SnackbarDuration.Auto's spec timing table.
+                BasicText(
+                    text = data.message,
+                    style = config.messageStyle().copy(color = colors.message),
+                    onTextLayout = { layoutResult -> measuredLineCount = layoutResult.lineCount },
+                    modifier = Modifier.weight(1f)
+                )
+
+                // Trailing action — spec: single button maximum (text action OR
+                // icon dismiss, never both). actionLabel takes priority.
+                when {
+                    data.actionLabel != null -> {
+                        Box(
+                            modifier = Modifier
+                                .heightIn(min = HierarchicalSize.TouchTarget.Small)
+                                .clip(RoundedCornerShape(HierarchicalSize.Radius.Small))
+                                .clickable(
+                                    onClick = onActionPerformed,
+                                    indication = pixaRipple(bounded = true, color = colors.actionLabel.copy(alpha = 0.12f)),
+                                    interactionSource = remember { MutableInteractionSource() }
+                                )
+                                .padding(
+                                    horizontal = HierarchicalSize.Spacing.Small,
+                                    vertical = HierarchicalSize.Spacing.Compact
+                                )
+                                .semantics { this.role = Role.Button },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            BasicText(
+                                text = data.actionLabel,
+                                style = config.actionStyle().copy(color = colors.actionLabel)
                             )
-                            .semantics {
-                                this.contentDescription = "Dismiss"
-                                this.role = Role.Button
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "×",
-                            style = config.actionStyle(),
-                            color = colors.message
-                        )
+                        }
+                    }
+
+                    data.withDismissAction -> {
+                        // No bundled icon set exists in this library (Painters
+                        // are always caller-supplied), so the default dismiss
+                        // affordance is a lightweight glyph rather than routing
+                        // through PixaIconButton, which requires a Painter.
+                        Box(
+                            modifier = Modifier
+                                .size(HierarchicalSize.TouchTarget.Small)
+                                .clip(RoundedCornerShape(HierarchicalSize.Radius.Small))
+                                .clickable(
+                                    onClick = onDismiss,
+                                    indication = pixaRipple(bounded = true, color = colors.message.copy(alpha = 0.12f)),
+                                    interactionSource = remember { MutableInteractionSource() }
+                                )
+                                .semantics {
+                                    this.contentDescription = "Dismiss"
+                                    this.role = Role.Button
+                                },
+                            contentAlignment = Alignment.Center
+                        ) {
+                            BasicText(
+                                text = "×",
+                                style = config.actionStyle().copy(color = colors.message)
+                            )
+                        }
                     }
                 }
             }
@@ -970,31 +1153,52 @@ internal fun Snackbar(
  *
  * @param hostState State holder managing snackbar queue
  * @param modifier Modifier for the host container
+ * @param position Where the snackbar appears (spec default: [SnackbarPosition.Top])
+ * @param size [SizeVariant] driving padding/radius/typography
  */
 @Composable
 fun SnackbarHost(
     hostState: PixaSnackbarHostState,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    position: SnackbarPosition = SnackbarPosition.Top,
+    size: SizeVariant = SizeVariant.Medium
 ) {
     val coroutineScope = rememberCoroutineScope()
     val currentSnackbar = hostState.currentSnackbar
 
+    val alignment = when (position) {
+        SnackbarPosition.Top -> Alignment.TopCenter
+        SnackbarPosition.Bottom -> Alignment.BottomCenter
+        SnackbarPosition.TopStart -> Alignment.TopStart
+        SnackbarPosition.TopEnd -> Alignment.TopEnd
+        SnackbarPosition.BottomStart -> Alignment.BottomStart
+        SnackbarPosition.BottomEnd -> Alignment.BottomEnd
+    }
+    val isTopEdge = position == SnackbarPosition.Top || position == SnackbarPosition.TopStart || position == SnackbarPosition.TopEnd
+    // Slide direction follows the edge the snackbar is anchored to — top
+    // positions slide down from above, bottom positions slide up from below.
+    val slideSign = if (isTopEdge) -1 else 1
+
     Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(bottom = HierarchicalSize.Spacing.Medium), // Safe area padding for mobile
-        contentAlignment = Alignment.BottomCenter
+            // Approximates the spec's "flush to status bar" (top) / safe-area
+            // (bottom) margin; real inset-awareness is a host-app concern —
+            // this library has no platform WindowInsets plumbing (same
+            // approach Toast.kt already takes for its own positioning).
+            .padding(HierarchicalSize.Spacing.Medium),
+        contentAlignment = alignment
     ) {
         AnimatedVisibility(
             visible = currentSnackbar != null,
             enter = slideInVertically(
-                initialOffsetY = { it },
-                animationSpec = AnimationUtils.standardSpring()
-            ) + fadeIn(animationSpec = AnimationUtils.standardTween()),
+                initialOffsetY = { it * slideSign },
+                animationSpec = AnimationUtils.standardTween(durationMillis = SnackbarMotionDurationMs, easing = QuinticEaseOutEasing)
+            ) + fadeIn(animationSpec = AnimationUtils.standardTween(durationMillis = SnackbarMotionDurationMs, easing = QuinticEaseOutEasing)),
             exit = slideOutVertically(
-                targetOffsetY = { it },
-                animationSpec = AnimationUtils.fastSpringSpec()
-            ) + fadeOut(animationSpec = AnimationUtils.fastTween())
+                targetOffsetY = { it * slideSign },
+                animationSpec = AnimationUtils.standardTween(durationMillis = SnackbarMotionDurationMs, easing = QuinticEaseOutEasing)
+            ) + fadeOut(animationSpec = AnimationUtils.standardTween(durationMillis = SnackbarMotionDurationMs, easing = QuinticEaseOutEasing))
         ) {
             currentSnackbar?.let { snackbar ->
                 Snackbar(
@@ -1008,12 +1212,16 @@ fun SnackbarHost(
                         coroutineScope.launch {
                             hostState.performAction()
                         }
-                    }
+                    },
+                    size = size
                 )
             }
         }
     }
 }
+
+/** Spec: 1000ms enter/exit transition duration, shared by fade + slide. */
+private const val SnackbarMotionDurationMs = 1000
 
 // ============================================================================
 // USAGE EXAMPLES
@@ -1032,7 +1240,7 @@ fun SnackbarHost(
  * fun App() {
  *     AppTheme {
  *         Box(modifier = Modifier.fillMaxSize()) {
- *             GlobalSnackbarHost()  // Initialize once here
+ *             GlobalSnackbarHost()  // Initialize once here — top by default
  *
  *             Scaffold {
  *                 // Your navigation and content
@@ -1062,20 +1270,15 @@ fun SnackbarHost(
  * }
  * ```
  *
- * 3. Show snackbar from UseCase or Repository:
+ * 3. Progress pattern — loading snackbar followed by a confirmation snackbar:
  * ```
- * class SyncDataUseCase {
- *     suspend operator fun invoke() {
- *         try {
- *             syncData()
- *             PixaSnackbarManager.showSuccess("Data synced successfully")
- *         } catch (e: NetworkException) {
- *             PixaSnackbarManager.showError(
- *                 message = "Network error: ${e.message}",
- *                 actionLabel = "Retry",
- *                 onAction = { /* retry logic */ }
- *             )
- *         }
+ * viewModelScope.launch {
+ *     PixaSnackbarManager.showLoading("Uploading photo")
+ *     try {
+ *         upload()
+ *         PixaSnackbarManager.showSuccess("Photo uploaded")
+ *     } catch (e: Exception) {
+ *         PixaSnackbarManager.showError("Upload failed", actionLabel = "Retry")
  *     }
  * }
  * ```
@@ -1086,264 +1289,37 @@ fun SnackbarHost(
  * fun MyScreen() {
  *     val snackbarScope = rememberSnackbarScope()
  *
- *     Button(onClick = {
- *         snackbarScope.showSuccess(
- *             message = "Settings saved",
- *             actionLabel = "View",
- *             onAction = { navigateToSettings() }
- *         )
- *     }) {
- *         Text("Save Settings")
- *     }
+ *     PixaButton(text = "Save Settings", onClick = {
+ *         snackbarScope.showSuccess(message = "Settings saved")
+ *     })
  * }
  * ```
  *
- * 5. Quick snackbar from anywhere (using launchSnackbar):
- * ```
- * fun onDataUpdated() {
- *     launchSnackbar {
- *         showInfo("Data updated successfully")
- *     }
- * }
- * ```
- *
- * 6. Error handling with exceptions:
- * ```
- * viewModelScope.launch {
- *     try {
- *         performAction()
- *     } catch (e: Exception) {
- *         PixaSnackbarManager.showErrorFromException(
- *             exception = e,
- *             message = "Operation failed",
- *             actionLabel = "Retry",
- *             onAction = { retryAction() }
- *         )
- *     }
- * }
- * ```
- *
- * 7. Snackbar with action from ViewModel:
- * ```
- * PixaSnackbarManager.launch {
- *     showWarning(
- *         message = "Low storage space",
- *         actionLabel = "Manage",
- *         onAction = { navigateToStorage() }
- *     )
- * }
- * ```
- *
- * 8. Indefinite snackbar (until action/dismiss):
+ * 5. Indefinite snackbar with a single trailing action (until action/dismiss):
  * ```
  * viewModelScope.launch {
  *     PixaSnackbarManager.showSnackbar(
  *         message = "No internet connection",
  *         actionLabel = "Retry",
  *         duration = SnackbarDuration.Indefinite,
- *         withDismissAction = true,
  *         onAction = { checkConnection() }
  *     )
  * }
  * ```
  *
- * 9. Dismiss current snackbar programmatically:
- * ```
- * viewModelScope.launch {
- *     PixaSnackbarManager.dismissCurrent()
- * }
- * ```
- *
- * 10. Using CompositionLocal for testing:
- * ```
- * @Composable
- * fun TestableScreen() {
- *     val localSnackbar = rememberSnackbarHostState()
- *
- *     CompositionLocalProvider(LocalSnackbarManager provides localSnackbar) {
- *         // Your screen content
- *         // This screen will use localSnackbar instead of global
- *     }
- * }
- * ```
- *
- * ============================================================================
- * LOCAL SNACKBAR SYSTEM (Legacy - Still Supported)
- * ============================================================================
- *
- * 1. Basic snackbar host setup:
- * ```
- * @Composable
- * fun MyScreen() {
- *     val snackbarState = rememberSnackbarHostState()
- *
- *     Scaffold(
- *         snackbarHost = { SnackbarHost(hostState = snackbarState) }
- *     ) { padding ->
- *         // Your content here
- *     }
- * }
- * ```
- *
- * 2. Show simple snackbar:
- * ```
- * val scope = rememberCoroutineScope()
- * Button(onClick = {
- *     scope.launch {
- *         snackbarState.showSnackbar("Settings saved")
- *     }
- * })
- * ```
- *
- * 3. Show snackbar with action:
+ * 6. Snackbar with a 48dp photo leading slot:
  * ```
  * scope.launch {
  *     snackbarState.showSnackbar(
- *         message = "Email deleted",
- *         actionLabel = "Undo",
- *         onAction = { undoDelete() }
+ *         message = "Message sent to Alex",
+ *         photoUrl = "https://example.com/avatar.jpg"
  *     )
  * }
  * ```
  *
- * 4. Show error snackbar:
+ * 7. Desktop-web positioning override:
  * ```
- * scope.launch {
- *     snackbarState.showErrorSnackbar(
- *         message = "Failed to save changes",
- *         actionLabel = "Retry",
- *         onAction = { retrySave() }
- *     )
- * }
- * ```
- *
- * 5. Show success snackbar:
- * ```
- * scope.launch {
- *     snackbarState.showSuccessSnackbar(
- *         message = "File uploaded successfully"
- *     )
- * }
- * ```
- *
- * 6. Indefinite snackbar (until action/dismiss):
- * ```
- * scope.launch {
- *     snackbarState.showSnackbar(
- *         message = "No internet connection",
- *         actionLabel = "Retry",
- *         duration = SnackbarDuration.Indefinite,
- *         withDismissAction = true,
- *         onAction = { checkConnection() }
- *     )
- * }
- * ```
- *
- * 7. Warning snackbar:
- * ```
- * scope.launch {
- *     snackbarState.showWarningSnackbar(
- *         message = "Battery low",
- *         actionLabel = "Settings",
- *         onAction = { openBatterySettings() }
- *     )
- * }
- * ```
- *
- * 8. Info snackbar:
- * ```
- * scope.launch {
- *     snackbarState.showInfoSnackbar(
- *         message = "Update available",
- *         actionLabel = "Download",
- *         onAction = { startDownload() }
- *     )
- * }
- * ```
- *
- * 9. Snackbar with icon:
- * ```
- * scope.launch {
- *     snackbarState.showSnackbar(
- *         message = "Message sent",
- *         icon = painterResource(R.drawable.ic_send),
- *         showIcon = true
- *     )
- * }
- * ```
- *
- * 10. Custom colors snackbar:
- * ```
- * scope.launch {
- *     snackbarState.showSnackbar(
- *         message = "Premium feature activated",
- *         variant = SnackbarVariant.Default,
- *         customColors = SnackbarColors(
- *             background = Color(0xFFFFD700),
- *             message = Color.Black,
- *             actionLabel = Color(0xFF1976D2)
- *         )
- *     )
- * }
- * ```
- *
- * 11. Long duration snackbar:
- * ```
- * scope.launch {
- *     snackbarState.showSnackbar(
- *         message = "Downloading 5 files...",
- *         duration = SnackbarDuration.Long
- *     )
- * }
- * ```
- *
- * 12. Multiple snackbars (queued):
- * ```
- * // Subsequent snackbars are queued automatically
- * scope.launch {
- *     snackbarState.showSnackbar("First message")
- *     snackbarState.showSnackbar("Second message")
- *     snackbarState.showSnackbar("Third message")
- *     // They will show one after another
- * }
- * ```
- *
- * 13. Snackbar with dismiss callback:
- * ```
- * scope.launch {
- *     snackbarState.showSnackbar(
- *         message = "Operation in progress",
- *         onDismiss = {
- *             logEvent("Snackbar dismissed")
- *         }
- *     )
- * }
- * ```
- *
- * 14. Programmatic dismiss:
- * ```
- * scope.launch {
- *     snackbarState.showSnackbar(
- *         message = "Loading...",
- *         duration = SnackbarDuration.Indefinite
- *     )
- *
- *     // Later when done
- *     snackbarState.dismissCurrentSnackbar()
- * }
- * ```
- *
- * 15. Snackbar in bottom sheet:
- * ```
- * Box(modifier = Modifier.fillMaxSize()) {
- *     // Your content
- *
- *     SnackbarHost(
- *         hostState = snackbarState,
- *         modifier = Modifier.padding(bottom = 80.dp) // Above bottom nav
- *     )
- * }
+ * GlobalSnackbarHost(position = SnackbarPosition.BottomEnd)
  * ```
  */
-
 

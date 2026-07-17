@@ -25,7 +25,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -54,6 +53,7 @@ import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AccelerateDecelerateEasing
 import com.pixamob.pixacompose.utils.AnimationUtils
 import com.pixamob.pixacompose.utils.MotionDuration
+import com.pixamob.pixacompose.utils.pixaRipple
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -251,8 +251,7 @@ private fun accordionShapeFor(layout: AccordionLayout, sizeConfig: AccordionSize
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaAccordion — a single collapsible panel. Migrated from Uber Base's
- * Accordion spec.
+ * PixaAccordion — a single collapsible panel.
  *
  * ### Purpose
  * "A vertical stack of collapsible panels that allows users to expand or
@@ -403,7 +402,7 @@ fun PixaAccordion(
                 .clickable(
                     enabled = enabled,
                     interactionSource = interactionSource,
-                    indication = ripple(bounded = true),
+                    indication = pixaRipple(bounded = true),
                     role = Role.Button,
                     onClick = { onExpandedChange(!expanded) }
                 )

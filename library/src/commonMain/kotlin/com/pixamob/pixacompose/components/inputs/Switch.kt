@@ -5,13 +5,14 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -29,8 +30,56 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.pixamob.pixacompose.components.feedback.Skeleton
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.pixaRipple
+
+/**
+ * PixaSwitch — PixaCompose's equivalent of Uber Base's "Switch" component.
+ *
+ * Source: https://base.uber.com/6d2425e9f/p/005456-switch.md
+ *
+ * Purpose: a binary on/off control with immediate effect — modeled after a
+ *   physical light switch, not a two-step "select then confirm" control like
+ *   a checkbox (see spec's "Switch vs. Checkbox": a switch is immediate, a
+ *   check takes effect after a button tap).
+ *
+ * Anatomy: track (the sliding channel) + knob (the interactive thumb) — both
+ *   required, neither omittable. An optional label (+ secondary description)
+ *   can sit on either side of the control.
+ *
+ * Variants: [SwitchVariant] (Filled/Outlined/Ghost) is a PixaCompose visual
+ *   axis, not a spec concept — the spec only distinguishes on/off track and
+ *   knob coloring, which each variant maps onto its own token set.
+ *
+ * States: enabled-on, enabled-off, disabled (no shadow on either part, per
+ *   spec), hover (knob shadow steps up one [HierarchicalSize.Shadow] tier
+ *   over 200ms, matching spec's "0px 2px 8px, 200ms transition"), focus (a
+ *   3dp `accentBorderFocus` ring around the whole control, matching spec's
+ *   "3px borderAccent outline"), and preloading (a [Skeleton] placeholder
+ *   shaped like the track, via [loading]).
+ *
+ * Sizing: [SizeVariant]-driven via [HierarchicalSize] (track width/height,
+ *   knob size, elevation, border, label typography).
+ *
+ * Behavior: tapping the switch OR its label toggles the value immediately,
+ *   no confirmation step — implemented via [Modifier.toggleable] (not a
+ *   plain `clickable(role = Role.Switch)`) so the accessibility tree gets a
+ *   proper `ToggleableState`, which VoiceOver/TalkBack need to announce
+ *   "On"/"Off" per spec. Each switch is independent; this component has no
+ *   notion of a linked group.
+ *
+ * Adaptive behavior: none specified by the spec beyond per-size metrics
+ *   already covered by [SizeVariant] — this is a single fixed-proportion
+ *   control, not a layout that reflows across breakpoints.
+ *
+ * Customization: variant, size, custom [SwitchColors], label + position +
+ *   description, error-state override, loading placeholder. Not exposed:
+ *   a "confirm before applying" mode — per spec that's explicitly what a
+ *   checkbox is for instead ("Don't use switches for ... delayed state
+ *   changes (use checkboxes with confirmation buttons)").
+ */
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -59,6 +108,7 @@ data class SwitchSizeConfig(
     val thumbSize: Dp,
     val thumbPadding: Dp,
     val thumbElevation: Dp,
+    val thumbHoverElevation: Dp,
     val borderWidth: Dp,
     val labelStyle: TextStyle,
     val labelSpacing: Dp
@@ -74,6 +124,7 @@ data class SwitchColors(
     val borderOn: Color,
     val borderOff: Color,
     val label: Color,
+    val focusRing: Color,
     val disabledTrackOn: Color,
     val disabledTrackOff: Color,
     val disabledThumb: Color,
@@ -94,6 +145,7 @@ private fun getSwitchSizeConfig(size: SizeVariant): SwitchSizeConfig {
             thumbSize = HierarchicalSize.Icon.Nano,
             thumbPadding = HierarchicalSize.Spacing.Nano,
             thumbElevation = HierarchicalSize.Shadow.Medium,
+            thumbHoverElevation = HierarchicalSize.Shadow.Large,
             borderWidth = HierarchicalSize.Border.Compact,
             labelStyle = typography.bodyLight,
             labelSpacing = HierarchicalSize.Spacing.Small
@@ -104,6 +156,7 @@ private fun getSwitchSizeConfig(size: SizeVariant): SwitchSizeConfig {
             thumbSize = HierarchicalSize.Icon.Small,
             thumbPadding = HierarchicalSize.Spacing.Nano,
             thumbElevation = HierarchicalSize.Shadow.Large,
+            thumbHoverElevation = HierarchicalSize.Shadow.Huge,
             borderWidth = 2.5.dp,
             labelStyle = typography.bodyRegular,
             labelSpacing = HierarchicalSize.Spacing.Medium
@@ -114,6 +167,7 @@ private fun getSwitchSizeConfig(size: SizeVariant): SwitchSizeConfig {
             thumbSize = HierarchicalSize.Icon.Large,
             thumbPadding = HierarchicalSize.Spacing.Nano,
             thumbElevation = HierarchicalSize.Shadow.Huge,
+            thumbHoverElevation = HierarchicalSize.Shadow.Massive,
             borderWidth = HierarchicalSize.Border.Medium,
             labelStyle = typography.bodyBold,
             labelSpacing = HierarchicalSize.Spacing.Large
@@ -124,6 +178,7 @@ private fun getSwitchSizeConfig(size: SizeVariant): SwitchSizeConfig {
             thumbSize = HierarchicalSize.Icon.Small,
             thumbPadding = HierarchicalSize.Spacing.Nano,
             thumbElevation = HierarchicalSize.Shadow.Large,
+            thumbHoverElevation = HierarchicalSize.Shadow.Huge,
             borderWidth = 2.5.dp,
             labelStyle = typography.bodyRegular,
             labelSpacing = HierarchicalSize.Spacing.Medium
@@ -134,6 +189,11 @@ private fun getSwitchSizeConfig(size: SizeVariant): SwitchSizeConfig {
 @Composable
 private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
     val colors = AppTheme.colors
+    // Spec's focus ring ("3px borderAccent outline") is a single state-driven
+    // treatment, not a per-variant style choice, so every variant shares the
+    // same `accentBorderFocus` token — PixaCompose's closest match to Uber's
+    // "borderAccent" concept.
+    val focusRing = colors.accentBorderFocus
     return when (variant) {
         SwitchVariant.Filled -> SwitchColors(
             trackOn = colors.brandSurfaceDefault,
@@ -143,6 +203,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
             borderOn = Color.Transparent,
             borderOff = Color.Transparent,
             label = colors.baseContentTitle,
+            focusRing = focusRing,
             disabledTrackOn = colors.baseSurfaceDisabled,
             disabledTrackOff = colors.baseSurfaceDisabled,
             disabledThumb = colors.baseContentDisabled,
@@ -156,6 +217,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
             borderOn = colors.brandBorderDefault,
             borderOff = colors.baseBorderDefault,
             label = colors.baseContentTitle,
+            focusRing = focusRing,
             disabledTrackOn = Color.Transparent,
             disabledTrackOff = Color.Transparent,
             disabledThumb = colors.baseContentDisabled,
@@ -169,6 +231,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
             borderOn = colors.baseBorderSubtle,
             borderOff = colors.baseBorderSubtle,
             label = colors.baseContentTitle,
+            focusRing = focusRing,
             disabledTrackOn = colors.baseSurfaceDisabled,
             disabledTrackOff = colors.baseSurfaceDisabled,
             disabledThumb = colors.baseContentDisabled,
@@ -178,7 +241,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
+// PUBLIC API
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -212,6 +275,13 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
  *     size = SizeVariant.Large
  * )
  *
+ * // Loading placeholder (spec's "Preloading" state)
+ * PixaSwitch(
+ *     checked = false,
+ *     onCheckedChange = {},
+ *     loading = true
+ * )
+ *
  * // Custom colors
  * PixaSwitch(
  *     checked = enabled,
@@ -231,6 +301,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
  * @param size Size preset (Small, Medium, Large)
  * @param enabled Whether the switch is enabled
  * @param isError Whether the switch is in error state (overrides variant colors, not disabled colors)
+ * @param loading Whether to render the spec's "Preloading" placeholder (a [Skeleton] shaped like the track) instead of the interactive switch
  * @param colors Custom colors (null = use theme)
  * @param label Optional label text
  * @param labelPosition Position of label (Start or End)
@@ -247,6 +318,7 @@ fun PixaSwitch(
     size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     isError: Boolean = false,
+    loading: Boolean = false,
     colors: SwitchColors? = null,
     label: String? = null,
     labelPosition: LabelPosition = LabelPosition.End,
@@ -255,9 +327,24 @@ fun PixaSwitch(
     contentDescription: String? = null
 ) {
     val sizeConfig = getSwitchSizeConfig(size)
-    val themeColors = colors ?: getSwitchTheme(variant)
 
+    if (loading) {
+        Skeleton(
+            modifier = modifier,
+            width = sizeConfig.width,
+            height = sizeConfig.height,
+            shape = RoundedCornerShape(sizeConfig.height / 2),
+            showBorder = false,
+            contentDescription = contentDescription ?: label
+        )
+        return
+    }
+
+    val themeColors = colors ?: getSwitchTheme(variant)
     val errorColors = AppTheme.colors
+
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    val isHovered by interactionSource.collectIsHoveredAsState()
 
     val trackColor by animateColorAsState(
         targetValue = when {
@@ -309,37 +396,60 @@ fun PixaSwitch(
         label = "switch_scale"
     )
 
+    // Spec: "Knob shadow increases ... with 200ms transition" on hover.
+    val thumbElevation by animateDpAsState(
+        targetValue = when {
+            !enabled -> 0.dp
+            isHovered -> sizeConfig.thumbHoverElevation
+            else -> sizeConfig.thumbElevation
+        },
+        animationSpec = AnimationUtils.standardTween(durationMillis = 200)
+    )
+
+    val trackShape = RoundedCornerShape(sizeConfig.height / 2)
+
     Row(
         modifier = modifier
             .semantics(mergeDescendants = true) {
                 this.contentDescription = contentDescription ?: label ?: "Switch"
             }
-            .clickable(
+            .then(
+                if (isFocused && enabled) {
+                    Modifier
+                        .border(
+                            width = HierarchicalSize.Border.Large,
+                            color = themeColors.focusRing,
+                            shape = RoundedCornerShape(sizeConfig.height / 2 + HierarchicalSize.Spacing.Nano)
+                        )
+                        .padding(HierarchicalSize.Spacing.Nano)
+                } else Modifier
+            )
+            .toggleable(
+                value = checked,
                 enabled = enabled,
                 role = Role.Switch,
                 interactionSource = interactionSource,
-                indication = ripple(
+                indication = pixaRipple(
                     bounded = false,
                     radius = sizeConfig.width / 2
-                )
-            ) {
-                onCheckedChange(!checked)
-            },
+                ),
+                onValueChange = onCheckedChange
+            ),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(sizeConfig.labelSpacing)
     ) {
         if (label != null && labelPosition == LabelPosition.Start) {
             Column {
-                Text(
+                BasicText(
                     text = label,
-                    style = sizeConfig.labelStyle,
-                    color = if (enabled) themeColors.label else themeColors.disabledThumb
+                    style = sizeConfig.labelStyle.copy(
+                        color = if (enabled) themeColors.label else AppTheme.colors.baseContentDisabled
+                    )
                 )
                 if (description != null) {
-                    Text(
+                    BasicText(
                         text = description,
-                        style = AppTheme.typography.captionRegular,
-                        color = AppTheme.colors.baseContentCaption,
+                        style = AppTheme.typography.captionRegular.copy(color = AppTheme.colors.baseContentCaption),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
@@ -350,14 +460,14 @@ fun PixaSwitch(
         Box(
             modifier = Modifier
                 .size(width = sizeConfig.width, height = sizeConfig.height)
-                .clip(RoundedCornerShape(sizeConfig.height / 2))
+                .clip(trackShape)
                 .background(trackColor)
                 .then(
                     if (borderColor != Color.Transparent) {
                         Modifier.border(
                             width = sizeConfig.borderWidth,
                             color = borderColor,
-                            shape = RoundedCornerShape(sizeConfig.height / 2)
+                            shape = trackShape
                         )
                     } else Modifier
                 ),
@@ -366,9 +476,9 @@ fun PixaSwitch(
             Box(
                 modifier = Modifier
                     .offset(x = thumbOffset.dp)
-                    .size(sizeConfig.thumbSize)
+                    .size(sizeConfig.thumbSize * thumbScale)
                     .shadow(
-                        elevation = if (enabled) sizeConfig.thumbElevation else 0.dp,
+                        elevation = thumbElevation,
                         shape = CircleShape
                     )
                     .clip(CircleShape)
@@ -378,16 +488,16 @@ fun PixaSwitch(
 
         if (label != null && labelPosition == LabelPosition.End) {
             Column {
-                Text(
+                BasicText(
                     text = label,
-                    style = sizeConfig.labelStyle,
-                    color = if (enabled) themeColors.label else themeColors.disabledThumb
+                    style = sizeConfig.labelStyle.copy(
+                        color = if (enabled) themeColors.label else AppTheme.colors.baseContentDisabled
+                    )
                 )
                 if (description != null) {
-                    Text(
+                    BasicText(
                         text = description,
-                        style = AppTheme.typography.captionRegular,
-                        color = AppTheme.colors.baseContentCaption,
+                        style = AppTheme.typography.captionRegular.copy(color = AppTheme.colors.baseContentCaption),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )

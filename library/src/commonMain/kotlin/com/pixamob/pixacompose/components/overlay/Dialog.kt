@@ -1,52 +1,133 @@
 package com.pixamob.pixacompose.components.overlay
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.imePadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
-import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupProperties
 import com.pixamob.pixacompose.components.actions.ButtonVariant
+import com.pixamob.pixacompose.components.actions.IconButtonColors
+import com.pixamob.pixacompose.components.actions.IconButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
+import com.pixamob.pixacompose.components.actions.PixaIconButton
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.utils.elevationShadow
 import com.pixamob.pixacompose.theme.SizeVariant
+import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.MotionDuration
+import com.pixamob.pixacompose.utils.QuinticEaseOutEasing
+import com.pixamob.pixacompose.utils.ScreenUtil
+import com.pixamob.pixacompose.utils.WindowSizeClass
+import com.pixamob.pixacompose.utils.elevationShadow
+import kotlin.math.roundToInt
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
+/** Semantic tint axis (Pixa-native addition, not part of Uber Base's Dialog vocabulary — mirrors the
+ * semantic axis [CLAUDE.md] documents for other feedback surfaces like Alert/Toast). Purely visual;
+ * orthogonal to [DialogPresentation] and the four Uber Base *content* types (Action/Alert/Message/
+ * Configuration), which this component doesn't gate behind an enum — see the class doc for why. */
 enum class DialogVariant {
     Default,
     Info,
     Success,
     Warning,
     Error
+}
+
+/**
+ * Uber Base's two presentation modes. [Modal] blocks/dims the background (rendered via a full-screen
+ * scrim + a focusable, input-blocking [Popup]) — "use when background content does not need to be
+ * referenced." [NonModal] renders no scrim and uses a non-focusable [Popup] so background content stays
+ * genuinely interactive — "allows interaction with background."
+ */
+enum class DialogPresentation {
+    Modal,
+    NonModal
+}
+
+/**
+ * Uber Base's wide-viewport (≥600px) width ladder: xSmall (480px) / Small (640px) / Medium (800px) /
+ * Large (viewport − 40px). On narrow viewports (<600px) this is ignored — width is always
+ * "viewport width minus 16px gutters" per spec, regardless of tier.
+ */
+enum class DialogWidth {
+    XSmall,
+    Small,
+    Medium,
+    Large
+}
+
+/** Maps the library's 8-tier [SizeVariant] down to Uber Base's 4-tier [DialogWidth], the same
+ * bucket-down convention [com.pixamob.pixacompose.theme.forVariant] uses elsewhere in the theme layer. */
+fun SizeVariant.toDialogWidth(): DialogWidth = when (this) {
+    SizeVariant.None, SizeVariant.Nano, SizeVariant.Compact -> DialogWidth.XSmall
+    SizeVariant.Small -> DialogWidth.Small
+    SizeVariant.Medium -> DialogWidth.Medium
+    SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> DialogWidth.Large
+}
+
+/**
+ * Wide-viewport docking position — spec: "Default position: centered... Supports: top-left, top-right,
+ * bottom-left, bottom-right (40px from edge)." Ignored on narrow viewports, which are always bottom-docked.
+ */
+enum class DialogPosition {
+    Center,
+    TopLeft,
+    TopRight,
+    BottomLeft,
+    BottomRight
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -66,9 +147,7 @@ data class DialogColors(
 
 @Immutable
 @Stable
-data class DialogSizeConfig(
-    val minWidth: Dp,
-    val maxWidth: Dp,
+private data class DialogSizeConfig(
     val padding: Dp,
     val iconSize: Dp,
     val titleStyle: TextStyle,
@@ -82,48 +161,32 @@ data class DialogSizeConfig(
 // ════════════════════════════════════════════════════════════════════════════
 
 @Composable
-private fun getDialogSizeConfig(size: SizeVariant): DialogSizeConfig {
+private fun getDialogSizeConfig(width: DialogWidth): DialogSizeConfig {
     val typography = AppTheme.typography
-    return when (size) {
-        SizeVariant.Small -> DialogSizeConfig(
-            minWidth = 240.dp,
-            maxWidth = 300.dp,
-            padding = HierarchicalSize.Spacing.Medium,
-            iconSize = HierarchicalSize.Icon.Medium,
-            titleStyle = typography.bodyBold,
-            messageStyle = typography.captionBold,
+    return when (width) {
+        DialogWidth.XSmall -> DialogSizeConfig(
+            padding = HierarchicalSize.Spacing.Large,
+            iconSize = HierarchicalSize.Icon.Large,
+            titleStyle = typography.subtitleBold,
+            messageStyle = typography.bodyRegular,
             cornerRadius = HierarchicalSize.Radius.Medium,
             elevation = HierarchicalSize.Shadow.Large
         )
-        SizeVariant.Medium -> DialogSizeConfig(
-            minWidth = 280.dp,
-            maxWidth = 360.dp,
+        DialogWidth.Small -> DialogSizeConfig(
             padding = HierarchicalSize.Spacing.Large,
             iconSize = HierarchicalSize.Icon.Large,
-            titleStyle = typography.subtitleBold,
+            titleStyle = typography.titleBold,
             messageStyle = typography.bodyRegular,
             cornerRadius = HierarchicalSize.Radius.Large,
             elevation = HierarchicalSize.Shadow.Huge
         )
-        SizeVariant.Large -> DialogSizeConfig(
-            minWidth = 320.dp,
-            maxWidth = 420.dp,
+        DialogWidth.Medium, DialogWidth.Large -> DialogSizeConfig(
             padding = HierarchicalSize.Spacing.Huge,
             iconSize = HierarchicalSize.Icon.Huge,
-            titleStyle = typography.titleBold,
-            messageStyle = typography.bodyBold,
+            titleStyle = typography.headlineBold,
+            messageStyle = typography.bodyRegular,
             cornerRadius = HierarchicalSize.Radius.Huge,
             elevation = HierarchicalSize.Shadow.Massive
-        )
-        else -> DialogSizeConfig(
-            minWidth = 280.dp,
-            maxWidth = 360.dp,
-            padding = HierarchicalSize.Spacing.Large,
-            iconSize = HierarchicalSize.Icon.Large,
-            titleStyle = typography.subtitleBold,
-            messageStyle = typography.bodyRegular,
-            cornerRadius = HierarchicalSize.Radius.Large,
-            elevation = HierarchicalSize.Shadow.Huge
         )
     }
 }
@@ -175,65 +238,191 @@ private fun getDialogTheme(variant: DialogVariant): DialogColors {
     }
 }
 
+/** Wide-viewport panel width, in dp. Uber Base's fixed 480/640/800px tiers, with [DialogWidth.Large]
+ * (and any tier that would otherwise overflow a borderline-wide viewport) resolving to
+ * "viewport − 40px" — the same max-width Uber Base caps every wide tier at. */
+private fun resolveWideDialogWidth(width: DialogWidth, screenWidth: Dp): Dp {
+    val target = when (width) {
+        DialogWidth.XSmall -> 480.dp
+        DialogWidth.Small -> 640.dp
+        DialogWidth.Medium -> 800.dp
+        DialogWidth.Large -> screenWidth - WideEdgeMargin
+    }
+    return target.coerceAtMost(screenWidth - WideEdgeMargin).coerceAtLeast(0.dp)
+}
+
+/** Spec: wide viewports cap every panel (regardless of width tier) at "Viewport − 40px" height, and
+ * dock non-centered positions 40px from the screen edge. */
+private val WideEdgeMargin = 40.dp
+
+/** Spec: narrow viewports inset the panel by "16px gutters" — read here as 16dp on each edge (32dp total
+ * width reduction, 32dp total height reduction), since the spec gives one gutter value, not a per-side one. */
+private val NarrowEdgeMargin = 16.dp
+
+/** Narrow viewports are always bottom-docked; wide viewports honor [position], defaulting to centered. */
+private fun resolveDialogAlignment(windowSizeClass: WindowSizeClass, position: DialogPosition): Alignment =
+    if (windowSizeClass == WindowSizeClass.Compact) {
+        Alignment.BottomCenter
+    } else {
+        when (position) {
+            DialogPosition.Center -> Alignment.Center
+            DialogPosition.TopLeft -> Alignment.TopStart
+            DialogPosition.TopRight -> Alignment.TopEnd
+            DialogPosition.BottomLeft -> Alignment.BottomStart
+            DialogPosition.BottomRight -> Alignment.BottomEnd
+        }
+    }
+
 // ════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
+// INTERNAL DIALOG
+// ════════════════════════════════════════════════════════════════════════════
+
+/** Enter: "Shifts up 16px via decelerate easing (Quintic EaseOut) over 400ms; fade in first 100ms" —
+ * two independently-timed motions composed via Compose's [EnterTransition] `+` operator. */
+@Composable
+private fun dialogEnterTransition() = with(LocalDensity.current) {
+    slideInVertically(
+        initialOffsetY = { -16.dp.roundToPx() },
+        animationSpec = AnimationUtils.standardTween(durationMillis = 400, easing = QuinticEaseOutEasing)
+    ) + fadeIn(animationSpec = AnimationUtils.standardTween(durationMillis = MotionDuration.Instant, easing = LinearEasing))
+}
+
+/** Exit: "Fades out over 100ms linear" — no accompanying motion, unlike the enter shift. */
+private val DialogExitTransition = fadeOut(
+    animationSpec = AnimationUtils.standardTween(durationMillis = MotionDuration.Instant, easing = LinearEasing)
+)
+
+/**
+ * "Shake" validation feedback: "9px x-axis offset (50ms linear), followed by spring animation
+ * (stiffness: 475, damping: 6, mass: 0.4)." Compose's spring model takes `dampingRatio` (unitless) rather
+ * than a raw damping coefficient, so the ratio is pre-computed here: `damping / (2·√(mass·stiffness))`
+ * ≈ 6 / (2·√(0.4·475)) ≈ 0.22 (underdamped/bouncy) — kept local to Dialog since no other component's
+ * spec calls for this exact curve yet, so promoting it into [AnimationUtils] would add an unused preset.
+ */
+private val DialogShakeImpulse = AnimationUtils.standardTween<Float>(durationMillis = 50, easing = LinearEasing)
+private val DialogShakeSettle = AnimationUtils.standardSpring<Float>(dampingRatio = 0.22f, stiffness = 475f)
+
+@Composable
+private fun DialogCloseButton(
+    onClick: () -> Unit,
+    tint: Color,
+    icon: Painter?,
+    contentDescription: String
+) {
+    if (icon != null) {
+        PixaIconButton(
+            icon = icon,
+            onClick = onClick,
+            variant = IconButtonVariant.Ghost,
+            size = SizeVariant.Small,
+            colors = IconButtonColors(contentColor = tint),
+            contentDescription = contentDescription
+        )
+    } else {
+        Box(
+            modifier = Modifier
+                .size(HierarchicalSize.TouchTarget.Small)
+                .clip(AppTheme.shapes.pill)
+                .clickable(onClick = onClick)
+                .semantics { this.contentDescription = contentDescription },
+            contentAlignment = Alignment.Center
+        ) {
+            BasicText(
+                text = "×",
+                modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true),
+                style = AppTheme.typography.titleBold.copy(color = tint, textAlign = TextAlign.Center)
+            )
+        }
+    }
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PUBLIC API
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaDialog - Modal dialog for important interactions
+ * PixaDialog — a container that floats on top of another surface, focusing a user's attention on
+ * a single-step task, question, or message.
  *
- * ## Usage Examples
+ * ### Anatomy
+ * Fixed header ([title] + optional "X" via [showDismissIcon]/[dismissIcon]) → scrollable body
+ * ([artwork] → [message] → [content]) → fixed button dock ([dismissText]/[confirmText]). Header and
+ * button dock stay fixed while the body scrolls, per spec: "image scrolls away; heading/buttons remain
+ * fixed when content exceeds max height."
  *
- * ```kotlin
- * // Simple confirmation dialog
- * var showDialog by remember { mutableStateOf(false) }
- * if (showDialog) {
- *     PixaDialog(
- *         onDismissRequest = { showDialog = false },
- *         title = "Confirm Action",
- *         message = "Are you sure?",
- *         confirmText = "Yes",
- *         dismissText = "No",
- *         onConfirm = { performAction() }
- *     )
- * }
+ * ### Content model
+ * Uber Base names four dialog *types* (Action/Alert/Message/Configuration) that describe intended
+ * *usage*, not distinct anatomy or behavior — an Action dialog is still header+body+buttons, just with
+ * a choice list in [content]. This component doesn't gate that behind an enum; callers express it
+ * through what they pass into [content]/[confirmText]/[dismissText].
  *
- * // Error dialog with icon
- * PixaDialog(
- *     onDismissRequest = { showError = false },
- *     variant = DialogVariant.Error,
- *     icon = painterResource(Res.drawable.ic_error),
- *     title = "Error",
- *     message = "Something went wrong.",
- *     confirmText = "Retry"
- * )
- * ```
+ * ### Variants
+ * [presentation] (Modal/NonModal, per spec) is the real Uber Base variant axis. [variant] is a
+ * Pixa-native semantic tint (Default/Info/Success/Warning/Error) layered on top — see [DialogVariant].
  *
- * @param onDismissRequest Callback when dismissed
- * @param modifier Modifier
- * @param variant Visual style variant
- * @param size Size preset
- * @param colors Custom colors
- * @param icon Optional icon
- * @param title Title text
- * @param message Message text
+ * ### States & motion
+ * Enter (16px shift + fade, Quintic EaseOut, 400ms) and exit (100ms linear fade) run automatically.
+ * [shakeTrigger] plays the spec's validation-error shake on increment — see "Validate errors inside the
+ * dialog" under usage notes below.
+ *
+ * ### Sizing
+ * [size] resolves to Uber Base's exact width ladder via [SizeVariant.toDialogWidth] — see [DialogWidth].
+ * Narrow viewports (<600dp, [WindowSizeClass.Compact]) ignore the ladder entirely and use
+ * "viewport width minus 16px gutters," bottom-docked; wide viewports center by default or dock to
+ * [position], 40px from the edge.
+ *
+ * ### Adaptive behavior
+ * Fully wired to [WindowSizeClass] (via [ScreenUtil]) — the narrow/wide split below 600dp is Uber Base's
+ * own breakpoint, which happens to match this library's existing Compact/Medium boundary exactly.
+ *
+ * ### Customization
+ * [artwork] is a free-form slot rather than a fixed Badge/Spot/Hero/Custom catalog — Uber Base's own
+ * framework note says to "create a local component for the content you want to place inside," which
+ * sanctions this over hand-modeling every artwork size as an enum.
+ *
+ * ### Usage notes
+ * Uber Base: single-step tasks only ("avoid multi-step flows"); short content ("consider a sheet or
+ * full screen instead" for long/complex content); one at a time (avoid stacking); validate errors
+ * inside the dialog via [shakeTrigger] rather than layering a second dialog. An explicit text button
+ * and/or the "X" is required — don't rely on outside-click/ESC as the only dismissal for choice-based
+ * dialogs (both are supplementary, never primary, per spec).
+ *
+ * @param onDismissRequest Callback when the dialog should close (X, Cancel, ESC, or outside click)
+ * @param modifier Modifier for the dialog panel
+ * @param variant Semantic tint (Pixa-native; see [DialogVariant])
+ * @param presentation Modal (scrim, blocks background) or NonModal (no scrim, background interactive)
+ * @param size Width tier, bucketed to Uber Base's ladder via [SizeVariant.toDialogWidth]
+ * @param position Wide-viewport docking position (default: [DialogPosition.Center]); ignored on narrow viewports
+ * @param colors Custom colors overriding [variant]'s theme
+ * @param icon Optional icon shown above [title]
+ * @param artwork Optional artwork slot at the top of the scrollable body (image/illustration/custom content)
+ * @param title Heading — required by spec to "announce the context shift" for screen readers
+ * @param headingMaxLines Heading truncation limit (spec default: 2 lines)
+ * @param message Body text (optional for Action/Alert types, required for Message/Acknowledgment per spec)
  * @param confirmText Primary button text
- * @param dismissText Secondary button text
+ * @param dismissText Secondary/"Cancel"-style button text (rendered as a Ghost/tertiary button per spec)
  * @param onConfirm Primary action callback
- * @param onDismiss Secondary action callback
- * @param dismissOnOutsideClick Dismiss on outside click
- * @param dismissOnBackClick Dismiss on back press
- * @param content Custom content
+ * @param onDismiss Secondary action callback (defaults to [onDismissRequest] when unset)
+ * @param dismissOnOutsideClick Overlay-click dismissal (supplementary only, per spec) — no effect when [presentation] is [DialogPresentation.NonModal]
+ * @param dismissOnBackClick ESC/back dismissal (supplementary only, per spec)
+ * @param showDismissIcon Whether to show the "X" dismiss icon in the header (default: true)
+ * @param dismissIcon Optional custom painter for the "X" icon; falls back to a text glyph when unset
+ * @param shakeTrigger Increment to play the spec's validation-error shake animation
+ * @param content Custom content, appended after [message] in the scrollable body
  */
 @Composable
 fun PixaDialog(
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     variant: DialogVariant = DialogVariant.Default,
+    presentation: DialogPresentation = DialogPresentation.Modal,
     size: SizeVariant = SizeVariant.Medium,
+    position: DialogPosition = DialogPosition.Center,
     colors: DialogColors? = null,
     icon: Painter? = null,
+    artwork: (@Composable () -> Unit)? = null,
     title: String? = null,
+    headingMaxLines: Int = 2,
     message: String? = null,
     confirmText: String? = null,
     dismissText: String? = null,
@@ -241,52 +430,174 @@ fun PixaDialog(
     onDismiss: (() -> Unit)? = null,
     dismissOnOutsideClick: Boolean = true,
     dismissOnBackClick: Boolean = true,
+    showDismissIcon: Boolean = true,
+    dismissIcon: Painter? = null,
+    shakeTrigger: Int = 0,
     content: @Composable (() -> Unit)? = null
 ) {
-    val sizeConfig = getDialogSizeConfig(size)
+    val dialogWidth = size.toDialogWidth()
+    val sizeConfig = getDialogSizeConfig(dialogWidth)
     val themeColors = colors ?: getDialogTheme(variant)
+    val windowSizeClass = AppTheme.windowSizeClass
+    val screenWidth = ScreenUtil.getScreenWidth()
+    val screenHeight = ScreenUtil.getScreenHeight()
+    val isModal = presentation == DialogPresentation.Modal
+    val alignment = resolveDialogAlignment(windowSizeClass, position)
 
-    Dialog(
-        onDismissRequest = { if (dismissOnOutsideClick || dismissOnBackClick) onDismissRequest() },
-        properties = DialogProperties(
+    val panelWidthModifier = if (windowSizeClass == WindowSizeClass.Compact) {
+        Modifier.width(screenWidth - NarrowEdgeMargin * 2)
+    } else {
+        Modifier.widthIn(max = resolveWideDialogWidth(dialogWidth, screenWidth))
+    }
+    val panelMaxHeight = if (windowSizeClass == WindowSizeClass.Compact) {
+        screenHeight - NarrowEdgeMargin * 2
+    } else {
+        screenHeight - WideEdgeMargin
+    }
+    val edgeInset = if (windowSizeClass == WindowSizeClass.Compact || position == DialogPosition.Center) {
+        0.dp
+    } else {
+        WideEdgeMargin
+    }
+
+    // Enter/exit lifecycle: starts hidden, flips true on mount (enter), flips false on
+    // dismiss request (exit) — actual removal only happens once the exit animation finishes.
+    val animVisibleState = remember { MutableTransitionState(false) }
+    LaunchedEffect(Unit) { animVisibleState.targetState = true }
+    val requestDismiss: () -> Unit = remember(onDismissRequest) { { animVisibleState.targetState = false } }
+    LaunchedEffect(animVisibleState) {
+        snapshotFlow { animVisibleState.isIdle && !animVisibleState.currentState }
+            .collect { finished -> if (finished) onDismissRequest() }
+    }
+
+    // Shake: 9px impulse then a spring settle back to rest, replayed each time shakeTrigger changes.
+    val density = LocalDensity.current
+    val shakeOffsetPx = remember { Animatable(0f) }
+    LaunchedEffect(shakeTrigger) {
+        if (shakeTrigger > 0) {
+            val impulsePx = with(density) { 9.dp.toPx() }
+            shakeOffsetPx.animateTo(impulsePx, DialogShakeImpulse)
+            shakeOffsetPx.animateTo(0f, DialogShakeSettle)
+        }
+    }
+
+    Popup(
+        alignment = Alignment.Center,
+        onDismissRequest = { if (dismissOnBackClick) requestDismiss() },
+        properties = PopupProperties(
+            focusable = isModal,
             dismissOnBackPress = dismissOnBackClick,
-            dismissOnClickOutside = dismissOnOutsideClick
+            dismissOnClickOutside = false
         )
     ) {
-        Box(
-            modifier = modifier
-                .widthIn(min = sizeConfig.minWidth, max = sizeConfig.maxWidth)
-                .elevationShadow(sizeConfig.elevation, RoundedCornerShape(sizeConfig.cornerRadius))
-                .clip(RoundedCornerShape(sizeConfig.cornerRadius))
-                .background(themeColors.background)
-                .padding(sizeConfig.padding)
-                .semantics { contentDescription = title ?: "Dialog" }
-        ) {
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (isModal) {
+                AnimatedVisibility(
+                    visibleState = animVisibleState,
+                    enter = fadeIn(animationSpec = AnimationUtils.standardTween(MotionDuration.Instant, easing = LinearEasing)),
+                    exit = DialogExitTransition
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(themeColors.scrim)
+                            .then(
+                                if (dismissOnOutsideClick) {
+                                    Modifier.clickable(
+                                        indication = null,
+                                        interactionSource = remember { MutableInteractionSource() }
+                                    ) { requestDismiss() }
+                                } else {
+                                    Modifier
+                                }
+                            )
+                    )
+                }
+            }
+
+            AnimatedVisibility(
+                visibleState = animVisibleState,
+                enter = dialogEnterTransition(),
+                exit = DialogExitTransition,
+                modifier = Modifier.align(alignment).padding(edgeInset)
             ) {
-                if (icon != null) {
-                    PixaIcon(painter = icon, contentDescription = null, tint = themeColors.icon, modifier = Modifier.size(sizeConfig.iconSize))
-                    Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
-                }
-                if (title != null) {
-                    Text(text = title, style = sizeConfig.titleStyle, color = themeColors.title, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
-                }
-                if (message != null) {
-                    Text(text = message, style = sizeConfig.messageStyle, color = themeColors.message, textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth())
-                    Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
-                }
-                content?.invoke()
-                if (confirmText != null || dismissText != null) {
-                    Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
-                    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small, Alignment.End)) {
-                        if (dismissText != null) {
-                            PixaButton(text = dismissText, onClick = { onDismiss?.invoke() ?: onDismissRequest() }, variant = ButtonVariant.Ghost, size = SizeVariant.Medium)
+                Column(
+                    modifier = modifier
+                        .then(panelWidthModifier)
+                        .heightIn(max = panelMaxHeight)
+                        .offset { IntOffset(shakeOffsetPx.value.roundToInt(), 0) }
+                        .elevationShadow(sizeConfig.elevation, RoundedCornerShape(sizeConfig.cornerRadius))
+                        .clip(RoundedCornerShape(sizeConfig.cornerRadius))
+                        .background(themeColors.background)
+                        .imePadding()
+                        .semantics { contentDescription = title ?: "Dialog" }
+                        .padding(sizeConfig.padding)
+                ) {
+                    if (title != null || showDismissIcon) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            if (icon != null) {
+                                PixaIcon(painter = icon, contentDescription = null, tint = themeColors.icon, modifier = Modifier.size(sizeConfig.iconSize))
+                                Spacer(modifier = Modifier.width(HierarchicalSize.Spacing.Small))
+                            }
+                            if (title != null) {
+                                BasicText(
+                                    text = title,
+                                    style = sizeConfig.titleStyle.copy(color = themeColors.title),
+                                    overflow = TextOverflow.Ellipsis,
+                                    maxLines = headingMaxLines,
+                                    modifier = Modifier.weight(1f).semantics { heading() }
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                            if (showDismissIcon) {
+                                Spacer(modifier = Modifier.width(HierarchicalSize.Spacing.Small))
+                                DialogCloseButton(
+                                    onClick = requestDismiss,
+                                    tint = themeColors.title,
+                                    icon = dismissIcon,
+                                    contentDescription = "Close ${title ?: "dialog"}"
+                                )
+                            }
                         }
-                        if (confirmText != null) {
-                            PixaButton(text = confirmText, onClick = { onConfirm?.invoke(); onDismissRequest() }, variant = ButtonVariant.Filled, isDestructive = variant == DialogVariant.Error, size = SizeVariant.Medium)
+                        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(weight = 1f, fill = false)
+                            .verticalScroll(rememberScrollState())
+                    ) {
+                        artwork?.let {
+                            it()
+                            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
+                        }
+                        if (message != null) {
+                            BasicText(
+                                text = message,
+                                style = sizeConfig.messageStyle.copy(color = themeColors.message),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
+                        }
+                        content?.invoke()
+                    }
+
+                    if (confirmText != null || dismissText != null) {
+                        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Large))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small, Alignment.End)
+                        ) {
+                            if (dismissText != null) {
+                                PixaButton(text = dismissText, onClick = { onDismiss?.invoke() ?: requestDismiss() }, variant = ButtonVariant.Ghost, size = SizeVariant.Medium)
+                            }
+                            if (confirmText != null) {
+                                PixaButton(text = confirmText, onClick = { onConfirm?.invoke(); requestDismiss() }, variant = ButtonVariant.Filled, isDestructive = variant == DialogVariant.Error, size = SizeVariant.Medium)
+                            }
                         }
                     }
                 }

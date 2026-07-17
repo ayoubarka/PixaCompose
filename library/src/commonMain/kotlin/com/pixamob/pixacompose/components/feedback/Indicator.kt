@@ -11,6 +11,8 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.progressSemantics
 import androidx.compose.foundation.shape.CircleShape
@@ -20,6 +22,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -30,6 +33,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -41,6 +45,7 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 import com.pixamob.pixacompose.utils.MotionDuration
 import com.pixamob.pixacompose.utils.QuinticEaseInOutEasing
 import com.pixamob.pixacompose.utils.QuinticEaseOutEasing
+import com.pixamob.pixacompose.utils.elevationShadow
 import kotlin.math.min
 import kotlin.math.sin
 
@@ -101,6 +106,25 @@ enum class PagerIndicatorWidthMode {
 }
 
 /**
+ * Uber Base's Page Controls color-scheme variants. [Default]/[Inverse] map onto this library's
+ * theme-relative content/surface tokens directly. [AlwaysDark]/[AlwaysLight] are meant by spec to stay
+ * a fixed color *regardless of app theme* (e.g. a light dot readable over a photo even in dark mode) —
+ * Pixa's 79-token catalog has no theme-invariant "always light/dark" category (see [CLAUDE.md]'s
+ * documented groups), so these two intentionally approximate with the closest theme-relative base
+ * tokens instead of a hardcoded literal `Color(0x...)`, which the hard color rule forbids outright.
+ */
+enum class PageControlColorScheme {
+    /** Selected: theme's primary content tone. Unselected: theme's neutral border/surface tone. */
+    Default,
+    /** For dark/colored backdrops: selected/unselected swap toward the theme's lighter tones. */
+    Inverse,
+    /** Approximates Uber's theme-invariant "always dark backdrop" scheme with the theme's lightest surface tone. */
+    AlwaysDark,
+    /** Approximates Uber's theme-invariant "always light backdrop" scheme with the theme's strongest content tone. */
+    AlwaysLight
+}
+
+/**
  * Progress segment for multi-part progress bars
  */
 @Immutable
@@ -153,17 +177,32 @@ data class LinearProgressConfig(
 )
 
 /**
- * Pager indicator configuration
+ * Pager indicator configuration. Spec: "Spacing between indicators: 8px" — [spacing] now matches
+ * [HierarchicalSize.Spacing.Small] exactly (previously mismatched at [HierarchicalSize.Border.Nano],
+ * 0.5dp — a leftover from before this component was audited against Uber Base's Page Controls spec).
+ * The spec gives no exploitable literal dot diameter ("appear consistent... but scale with layout"),
+ * so [indicatorSize] now reads from [HierarchicalSize.Badge] — the closest existing ladder for small
+ * circular indicator dots — rather than [HierarchicalSize.Border], which is meant for stroke widths,
+ * not dot diameters, and rendered as a near-invisible 0.5dp dot before this audit.
  */
 @Immutable
 @Stable
 data class PagerIndicatorConfig(
-    val indicatorSize: Dp = HierarchicalSize.Border.Nano,
-    val selectedIndicatorSize: Dp = HierarchicalSize.Border.Nano,
-    val spacing: Dp = HierarchicalSize.Border.Nano,
+    val indicatorSize: Dp = HierarchicalSize.Badge.Nano,
+    val selectedIndicatorSize: Dp = HierarchicalSize.Badge.Nano,
+    val spacing: Dp = HierarchicalSize.Spacing.Small,
     val selectedColor: Color,
     val unselectedColor: Color,
     val cornerRadius: Dp = HierarchicalSize.Radius.Compact
+)
+
+/** Colors resolved for a [PageControlColorScheme], selected/unselected only — Page Controls have no
+ * track/label roles, unlike [ProgressColors]. */
+@Immutable
+@Stable
+data class PageControlColors(
+    val selected: Color,
+    val unselected: Color
 )
 
 // ============================================================================
@@ -298,13 +337,80 @@ private fun getLinearProgressConfig(size: SizeVariant): LinearProgressConfig {
     }
 }
 
+/**
+ * Resolves [PageControlColors] for a [PageControlColorScheme]. Spec: "Disabled: Grayed indicators —
+ * Active: `contentStateDisabled`; Other: `backgroundStateDisabled`" overrides every scheme, since a
+ * disabled control shouldn't carry scheme-specific brand/inverse color. See [PageControlColorScheme]'s
+ * own doc for why [AlwaysDark]/[AlwaysLight] approximate rather than literally match Uber's
+ * theme-invariant tokens.
+ */
+@Composable
+private fun getPageControlColors(scheme: PageControlColorScheme, enabled: Boolean): PageControlColors {
+    val colors = AppTheme.colors
+    if (!enabled) {
+        return PageControlColors(selected = colors.baseContentDisabled, unselected = colors.baseSurfaceDisabled)
+    }
+    return when (scheme) {
+        PageControlColorScheme.Default -> PageControlColors(
+            selected = colors.baseContentTitle,
+            unselected = colors.baseBorderDefault
+        )
+        PageControlColorScheme.Inverse -> PageControlColors(
+            selected = colors.baseSurfaceDefault,
+            unselected = colors.baseSurfaceDefault.copy(alpha = 0.4f)
+        )
+        PageControlColorScheme.AlwaysDark -> PageControlColors(
+            selected = colors.baseSurfaceDefault,
+            unselected = colors.baseSurfaceDefault.copy(alpha = 0.24f)
+        )
+        PageControlColorScheme.AlwaysLight -> PageControlColors(
+            selected = colors.baseContentTitle,
+            unselected = colors.baseContentTitle.copy(alpha = 0.12f)
+        )
+    }
+}
+
+/**
+ * Windows large page counts down to a visible dot list, per spec: "Clipping behavior when indicators
+ * exceed screen capacity... When 6+ pages exist, outer dots shrink to suggest additional pages are
+ * available... the middle indicator remains centered from page 3 through page n-2." Below the spec's
+ * 6-page threshold, every dot renders at full scale (`center` is unconstrained, so no clipping happens).
+ * At/above threshold, a [CoreWindowRadius]-dot full-scale core slides with [currentPage] but freezes at
+ * `pageCount`'s edges — exactly reproducing the spec's "centered from page 3 through page n-2" — with
+ * one [PeekScale]-scaled "peek" dot on each side of the core when a page exists beyond it.
+ *
+ * @return list of (page index, render scale) pairs, in left-to-right render order.
+ */
+private fun windowedPageControlDots(pageCount: Int, currentPage: Int): List<Pair<Int, Float>> {
+    if (pageCount <= AdaptiveSizingThreshold) {
+        return (0 until pageCount).map { it to 1f }
+    }
+    val center = currentPage.coerceIn(CoreWindowRadius, pageCount - 1 - CoreWindowRadius)
+    val coreStart = center - CoreWindowRadius
+    val coreEnd = center + CoreWindowRadius
+    val dots = mutableListOf<Pair<Int, Float>>()
+    if (coreStart - 1 >= 0) dots.add((coreStart - 1) to PeekScale)
+    for (index in coreStart..coreEnd) dots.add(index to 1f)
+    if (coreEnd + 1 <= pageCount - 1) dots.add((coreEnd + 1) to PeekScale)
+    return dots
+}
+
+/** Spec: "When 6+ pages exist" — the exact page count at which adaptive shrinking/clipping engages. */
+private const val AdaptiveSizingThreshold = 6
+
+/** Full-scale dots on each side of the current page — matches spec's own "5 or fewer... easy to count
+ * at a glance" recommendation as the always-fully-visible core width (2 either side + current = 5). */
+private const val CoreWindowRadius = 2
+
+/** Render scale for the shrunk "peek" dots just outside the full-scale core, suggesting more pages exist. */
+private const val PeekScale = 0.6f
+
 // ============================================================================
 // CIRCULAR PROGRESS INDICATOR
 // ============================================================================
 
 /**
- * PixaCircularIndicator — a circular loading/progress ring. Migrated from
- * Uber Base's Progress Circle spec ("Circle Type").
+ * PixaCircularIndicator — a circular loading/progress ring.
  *
  * ### Purpose
  * Indicates status or completion of a process — open-ended (indeterminate,
@@ -519,8 +625,7 @@ fun PixaCircularIndicator(
 
 /**
  * PixaProgressPill — a pill-shaped determinate progress indicator with its
- * label inside the pill. Migrated from Uber Base's Progress Circle spec
- * ("Pill Type" / "Determinate Pill" variant) — a known-duration alternative
+ * label inside the pill — a known-duration alternative
  * to [PixaCircularIndicator] for the same "long wait, measurable progress"
  * use case.
  *
@@ -647,7 +752,7 @@ fun PixaProgressPill(
 // ============================================================================
 
 /**
- * Linear Progress Indicator — migrated from Uber Base's Progress Bar spec.
+ * Linear Progress Indicator — a linear progress indicator for tracking completion.
  *
  * ### Anatomy
  * A linear background track + a progress indicator fill, with an optional
@@ -922,7 +1027,6 @@ fun ProgressBar(
 
 /**
  * Segmented Progress Indicator - Multi-part progress bar with different colors per segment.
- * Migrated from Uber Base's Progress Bar "Stepped/Segmented" variant.
  *
  * The segment with [ProgressSegment.isActive] set loops a left-to-right fill
  * that fades back (spec: "quintic ease-out, 500ms"); other segments render
@@ -1049,18 +1153,45 @@ private fun ActiveSegmentFill(
 // ============================================================================
 
 /**
- * Pager Indicator - Shows current page position in a pager/carousel
+ * PixaPagerIndicator — a row of indicators, each representing a card, banner, page, or screen
+ * in a list.
  *
- * Supports both circle and dash styles with customizable widths.
- * Selected indicator can be the same width as others or expanded.
+ * ### Anatomy
+ * A row of small dots (or, via the Pixa-native [PagerIndicatorStyle.Dash] extension, dashes), one per
+ * page, equidistantly spaced. Optionally wrapped in a pill container ([showContainer]) — spec: "Enabled:
+ * White fill, 1px border inside, 16px blur drop shadow" — for use floating over photos/carousels.
+ *
+ * ### Adaptive sizing / clipping
+ * Below [AdaptiveSizingThreshold] (6) pages, every dot renders full-scale. At/above it, [windowedPageControlDots]
+ * windows the row down to a [CoreWindowRadius]-dot full-scale core (matching spec's own "5 or fewer...
+ * easy to count at a glance" guidance) plus one shrunk peek dot per side, with the core frozen at the
+ * sequence's ends — spec: "the middle indicator remains centered from page 3 through page n-2."
+ *
+ * ### Variants
+ * [colorScheme] maps Uber Base's four color schemes (Default/Inverse/AlwaysDark/AlwaysLight) — see
+ * [PageControlColorScheme] for the AlwaysDark/AlwaysLight approximation note. [style]/[widthMode] are
+ * pre-existing Pixa extensions beyond the spec's dots-only anatomy, kept for backward compatibility.
+ *
+ * ### States
+ * [enabled] false renders the spec's "Disabled: Grayed indicators" state. When [onPageSelected] is set,
+ * each dot becomes tappable — spec: "Tapping indicators navigates to that page."
+ *
+ * ### Usage notes
+ * Spec recommends 5 or fewer pages "easy to count at a glance," discourages 10+ without an alternative
+ * navigation pattern, and requires bottom-only placement — none of these are enforced at runtime (a
+ * component library shouldn't throw on caller content choices), just documented here.
  *
  * @param pageCount Total number of pages
  * @param currentPage Current page index (0-based)
  * @param modifier Modifier for the indicator
- * @param style Visual style (Circle or Dash)
+ * @param style Visual style (Circle, spec-accurate, or the Pixa-native Dash extension)
  * @param widthMode Width mode (Uniform or ExpandSelected)
- * @param config Configuration for sizes and colors
- * @param contentDescription Accessibility description
+ * @param colorScheme Uber Base color-scheme variant (ignored if [config] is supplied)
+ * @param enabled Whether the control is interactive/full-color; false renders the spec's Disabled state
+ * @param showContainer Wraps the dots in a pill container (spec: white fill, 1px border, drop shadow)
+ * @param onPageSelected Callback when a dot is tapped with its real (unwindowed) page index; dots are non-interactive when null
+ * @param config Configuration for sizes and colors, overriding [colorScheme]/[enabled] entirely when supplied
+ * @param contentDescription Accessibility label (spec: "Page"); the per-dot state ("X of Y") is announced separately via `stateDescription`
  */
 @Composable
 fun PixaPagerIndicator(
@@ -1069,35 +1200,55 @@ fun PixaPagerIndicator(
     modifier: Modifier = Modifier,
     style: PagerIndicatorStyle = PagerIndicatorStyle.Circle,
     widthMode: PagerIndicatorWidthMode = PagerIndicatorWidthMode.Uniform,
+    colorScheme: PageControlColorScheme = PageControlColorScheme.Default,
+    enabled: Boolean = true,
+    showContainer: Boolean = false,
+    onPageSelected: ((Int) -> Unit)? = null,
     config: PagerIndicatorConfig? = null,
     contentDescription: String? = null
 ) {
-    val colors = AppTheme.colors
+    val schemeColors = getPageControlColors(colorScheme, enabled)
     val defaultConfig = PagerIndicatorConfig(
-        indicatorSize = if (style == PagerIndicatorStyle.Dash) HierarchicalSize.Radius.Compact else HierarchicalSize.Border.Nano,
+        indicatorSize = if (style == PagerIndicatorStyle.Dash) HierarchicalSize.Radius.Compact else HierarchicalSize.Badge.Nano,
         selectedIndicatorSize = when {
             style == PagerIndicatorStyle.Dash && widthMode == PagerIndicatorWidthMode.ExpandSelected -> HierarchicalSize.Icon.Compact
             style == PagerIndicatorStyle.Dash -> HierarchicalSize.Icon.Nano
-            else -> HierarchicalSize.Border.Nano
+            else -> HierarchicalSize.Badge.Nano
         },
-        spacing = HierarchicalSize.Border.Nano,
-        selectedColor = colors.brandContentDefault,
-        unselectedColor = colors.baseBorderDefault,
+        spacing = HierarchicalSize.Spacing.Small,
+        selectedColor = schemeColors.selected,
+        unselectedColor = schemeColors.unselected,
         cornerRadius = if (style == PagerIndicatorStyle.Dash) HierarchicalSize.Radius.Nano else HierarchicalSize.Radius.Compact
     )
 
     val indicatorConfig = config ?: defaultConfig
     val safeCurrentPage = currentPage.coerceIn(0, pageCount - 1)
+    val visibleDots = windowedPageControlDots(pageCount, safeCurrentPage)
+
+    val rowModifier = Modifier
+        .semantics {
+            this.contentDescription = contentDescription ?: "Page"
+            this.stateDescription = "${safeCurrentPage + 1} of $pageCount"
+        }
+        .then(
+            if (showContainer) {
+                Modifier
+                    .elevationShadow(HierarchicalSize.Shadow.Massive, AppTheme.shapes.pill)
+                    .clip(AppTheme.shapes.pill)
+                    .background(AppTheme.colors.baseSurfaceDefault)
+                    .border(HierarchicalSize.Border.Compact, AppTheme.colors.baseBorderSubtle, AppTheme.shapes.pill)
+                    .padding(horizontal = HierarchicalSize.Spacing.Small, vertical = HierarchicalSize.Spacing.Compact)
+            } else {
+                Modifier
+            }
+        )
 
     Row(
-        modifier = modifier
-            .semantics {
-                this.contentDescription = contentDescription ?: "Page ${safeCurrentPage + 1} of $pageCount"
-            },
+        modifier = modifier.then(rowModifier),
         horizontalArrangement = Arrangement.spacedBy(indicatorConfig.spacing),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        repeat(pageCount) { index ->
+        visibleDots.forEach { (index, peekScale) ->
             val isSelected = index == safeCurrentPage
 
             // Animate color transition
@@ -1108,18 +1259,23 @@ fun PixaPagerIndicator(
             )
 
             // Determine size based on style and mode
-            val indicatorWidth = when {
+            val baseWidth = when {
                 style == PagerIndicatorStyle.Circle -> indicatorConfig.indicatorSize
                 widthMode == PagerIndicatorWidthMode.ExpandSelected && isSelected -> indicatorConfig.selectedIndicatorSize
                 widthMode == PagerIndicatorWidthMode.ExpandSelected -> indicatorConfig.indicatorSize
                 else -> indicatorConfig.selectedIndicatorSize
             }
 
-            // Animate size transition
+            // Animate size transition (base size, then peek-scaled for edge "more pages" dots)
             val animatedWidth by animateDpAsState(
-                targetValue = indicatorWidth,
+                targetValue = baseWidth * peekScale,
                 animationSpec = AnimationUtils.standardSpring(),
                 label = "indicator_width_$index"
+            )
+            val animatedHeight by animateDpAsState(
+                targetValue = indicatorConfig.indicatorSize * peekScale,
+                animationSpec = AnimationUtils.standardSpring(),
+                label = "indicator_height_$index"
             )
 
             // Shape based on style
@@ -1128,15 +1284,34 @@ fun PixaPagerIndicator(
                 PagerIndicatorStyle.Dash -> RoundedCornerShape(indicatorConfig.cornerRadius)
             }
 
-            Box(
-                modifier = Modifier
-                    .width(animatedWidth)
-                    .height(indicatorConfig.indicatorSize)
-                    .background(
-                        color = indicatorColor,
-                        shape = shape
+            if (onPageSelected != null) {
+                // Tap-to-navigate hits a WCAG-minimum touch target, not the (much smaller) visual dot itself.
+                Box(
+                    modifier = Modifier
+                        .size(HierarchicalSize.TouchTarget.Small)
+                        .clickable(
+                            interactionSource = remember { MutableInteractionSource() },
+                            indication = null,
+                            enabled = enabled,
+                            onClick = { onPageSelected(index) }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .width(animatedWidth)
+                            .height(animatedHeight)
+                            .background(color = indicatorColor, shape = shape)
                     )
-            )
+                }
+            } else {
+                Box(
+                    modifier = Modifier
+                        .width(animatedWidth)
+                        .height(animatedHeight)
+                        .background(color = indicatorColor, shape = shape)
+                )
+            }
         }
     }
 }

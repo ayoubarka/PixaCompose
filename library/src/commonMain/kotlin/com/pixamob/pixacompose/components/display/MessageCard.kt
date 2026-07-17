@@ -1,52 +1,40 @@
 package com.pixamob.pixacompose.components.display
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.Dimension
 import com.pixamob.pixacompose.components.actions.ButtonColors
 import com.pixamob.pixacompose.components.actions.ButtonShape
 import com.pixamob.pixacompose.components.actions.ButtonStateColors
 import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
+import com.pixamob.pixacompose.components.surfaces.PixaSurfaceCard
+import com.pixamob.pixacompose.components.surfaces.SurfaceCardContext
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.HierarchicalSize
-import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.theme.baseColor
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.contrastColor
-import com.pixamob.pixacompose.utils.toDp
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -104,10 +92,7 @@ data class MessageCardArtwork(
 private data class MessageCardColors(
     val text: Color,
     val border: Color?,
-    val ctaColors: ButtonStateColors,
-    val dismissBackground: Color,
-    val dismissContent: Color,
-    val pressOverlay: Color
+    val ctaColors: ButtonStateColors
 )
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -128,12 +113,14 @@ private val MessageCardTrailingArtworkWidth = 112.dp
 private val MessageCardTopArtworkHeight = 132.dp
 
 /**
- * Resolves every color decision the spec ties to background luminance:
+ * Resolves the color decisions the spec ties to background luminance:
  * - text: white on background luminance >= ~600-shade darkness, black on <= ~400-shade (else white)
  * - border: 2dp opaque on light backgrounds, none on dark (spec leaves dark unspecified)
  * - CTA: white chip on colored/dark cards, Gray200 chip on near-white cards; content auto-contrasts
- * - dismiss chip: white-60%-opacity backing on light cards, black-40%-opacity on dark cards
- * - press overlay: 8% black on light cards, 20% white on dark cards
+ *
+ * State overlays (hover/pressed) and the dismiss chip's colors are no longer resolved here — both
+ * are delegated to [PixaSurfaceCard], which derives the same light/dark treatment straight from the
+ * [PixaMessageCard.backgroundColor] it's given.
  *
  * [Color.contrastColor] (a perceptual-luminance threshold, see utils/ColorUtils.kt) stands in for
  * the spec's raw primitive-shade thresholds since callers pass a resolved [Color], not a shade index.
@@ -166,54 +153,16 @@ private fun resolveMessageCardColors(backgroundColor: Color, ctaTonal: Boolean):
         )
     }
 
-    val dismissBackground = if (isLight) Color.White.copy(alpha = 0.6f) else Color.Black.copy(alpha = 0.4f)
-    val pressOverlay = if (isLight) Color.Black.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.20f)
-
     return MessageCardColors(
         text = textColor,
         border = border,
-        ctaColors = ctaColors,
-        dismissBackground = dismissBackground,
-        dismissContent = textColor,
-        pressOverlay = pressOverlay
+        ctaColors = ctaColors
     )
 }
 
 // ════════════════════════════════════════════════════════════════════════════
 // INTERNAL COMPONENT
 // ════════════════════════════════════════════════════════════════════════════
-
-@Composable
-private fun MessageCardDismissButton(
-    onDismiss: () -> Unit,
-    colors: MessageCardColors,
-    modifier: Modifier = Modifier
-) {
-    val interactionSource = remember { MutableInteractionSource() }
-    Box(
-        modifier = modifier
-            .size(HierarchicalSize.TouchTarget.Small)
-            .clip(CircleShape)
-            .background(colors.dismissBackground)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onDismiss
-            )
-            .semantics {
-                contentDescription = "Dismiss"
-                role = Role.Button
-            },
-        contentAlignment = Alignment.Center
-    ) {
-        // No dedicated close-icon asset exists in the library yet (Alert.kt's dismiss button
-        // has the same gap); a glyph avoids pulling in a new icon dependency for one character.
-        BasicText(
-            text = "×",
-            style = AppTheme.typography.titleBold.copy(color = colors.dismissContent, textAlign = TextAlign.Center)
-        )
-    }
-}
 
 @Composable
 private fun MessageCardArtworkContent(
@@ -236,7 +185,12 @@ private fun MessageCardArtworkContent(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaMessageCard - campaign/engagement preview card, migrated from Uber Base's Message Card spec.
+ * PixaMessageCard - campaign/engagement preview card.
+ * Built on [PixaSurfaceCard] (the general Uber Base Card primitive) as an [SurfaceCardContext.Isolated]
+ * card — this component owns only the message-specific anatomy (heading/paragraph/CTA/artwork) and
+ * the light/dark-conditional border color the primitive can't resolve on its own; container concerns
+ * (surface, shape, elevation, tap target, dismiss affordance, loading shimmer) all come from the
+ * primitive.
  *
  * Purpose: "a snapshot-like preview of a message intended to encourage users to click or tap to
  * view more details" — for engagement messaging, brand campaigns, safety initiatives, partnerships,
@@ -244,17 +198,21 @@ private fun MessageCardArtworkContent(
  * or ephemeral feedback like "Copied to clipboard" (use a Toast/Snackbar) — this component carries
  * a campaign/advertising aesthetic and risks "banner blindness" if used for those instead.
  *
- * Anatomy: heading, paragraph, CTA button, artwork (top or trailing), and dismiss button — every
- * part is independently optional ("all parts... can be configured on and off").
+ * Anatomy: heading, paragraph, CTA button, artwork (top or trailing) — every part is independently
+ * optional ("all parts... can be configured on and off"). The dismiss button is [PixaSurfaceCard]'s
+ * built-in affordance (same 60%/40%-opacity chip treatment this component used to implement itself).
  *
- * States: enabled/disabled/pressed. Pressed shows an 8%-black (light card) or 20%-white (dark card)
- * overlay across the whole tap target. No hover/focus-ring modeling (touch-first target platforms).
+ * States: enabled/disabled/pressed, plus hover on pointer-capable platforms — all inherited from
+ * [PixaSurfaceCard] rather than reimplemented here (previously this component modeled press only,
+ * documented as "touch-first"; the shared primitive now also models hover, which is a reasonable
+ * default beyond spec for this touch-first-oriented card, not a regression).
  *
  * Sizing: [artwork] defaults to 112dp trailing width / 132dp top height per spec, both overridable
- * via [MessageCardArtwork.size]. [cornerRadius]/[elevation] reuse existing `HierarchicalSize` tokens;
- * the spec's exact "16px blur" isn't expressible through Compose's built-in shadow (elevation-driven,
- * not blur-driven) — [elevation] defaults to [ComponentElevation.High] (4dp) as the closest stand-in
- * for the spec's 4px Y-offset, while the 12%-black shadow color is applied exactly.
+ * via [MessageCardArtwork.size]. [cornerRadius]/[elevation] pass straight through to
+ * [PixaSurfaceCard]; the spec's exact "16px blur" isn't expressible through Compose's built-in
+ * shadow (elevation-driven, not blur-driven) — [elevation] defaults to [ComponentElevation.High]
+ * (4dp) as the closest stand-in for the spec's 4px Y-offset, while the primitive pins the 12%-black
+ * shadow color exactly.
  *
  * Adaptive behavior: out of scope — the spec's breakpoint guidance is about grid column spans at the
  * screen/layout level (4-column small, gridded medium, 3-column large), not the card's own internal
@@ -287,11 +245,11 @@ private fun MessageCardArtworkContent(
  * @param onDismiss Optional dismiss handler; dismiss button is omitted entirely when null
  * @param onClick Optional tap handler for the whole card surface
  * @param enabled Disabled state (renders a scrim, disables tap targets)
- * @param isLoading Shows a skeleton placeholder via the underlying [PixaCard]
+ * @param isLoading Shows a skeleton placeholder via the underlying [PixaSurfaceCard]
  * @param backgroundColor Card background; see Customization above for the primitive-palette allowance
- * @param cornerRadius Corner radius; spec doesn't state a value, defaults to the shared card radius token
+ * @param cornerRadius Corner radius; spec doesn't state a value, defaults to [PixaSurfaceCard]'s isolated-context radius
  * @param elevation Shadow elevation; see Sizing above for the blur-vs-elevation caveat
- * @param contentPadding Padding around heading/paragraph/CTA; artwork and dismiss bleed to the edges
+ * @param contentPadding Padding around heading/paragraph/CTA; artwork bleeds to the edges
  */
 @Composable
 fun PixaMessageCard(
@@ -320,127 +278,96 @@ fun PixaMessageCard(
     val shape = RoundedCornerShape(cornerRadius)
     val accessibleLabel = listOfNotNull(heading, paragraph, ctaText).joinToString(". ").ifEmpty { null }
 
-    PixaCard(
-        modifier = modifier.fillMaxWidth(),
-        variant = BaseCardVariant.Elevated,
-        onClick = null,
+    PixaSurfaceCard(
+        modifier = modifier.fillMaxWidth().semantics {
+            accessibleLabel?.let { contentDescription = it }
+        },
+        context = SurfaceCardContext.Isolated,
+        onClick = onClick,
         enabled = enabled,
         isLoading = isLoading,
-        padding = SizeVariant.None,
-        cornerRadius = cornerRadius,
+        onDismiss = onDismiss,
         backgroundColor = backgroundColor,
-        borderConfig = CardBorderConfig(color = colors.border ?: Color.Transparent, width = HierarchicalSize.Border.Medium),
-        shadowConfig = CardShadowConfig(elevation = elevation.toDp(), color = Color.Black.copy(alpha = 0.12f))
+        cornerRadius = cornerRadius,
+        elevation = elevation,
+        borderColor = colors.border ?: Color.Transparent,
+        borderWidth = HierarchicalSize.Border.Medium,
+        contentPadding = 0.dp
     ) {
-        val (tapOverlay, artworkRef, textColumn, dismissRef) = createRefs()
+        ConstraintLayout(modifier = Modifier.fillMaxWidth()) {
+            val (artworkRef, textColumn) = createRefs()
 
-        if (onClick != null && enabled) {
-            val interactionSource = remember { MutableInteractionSource() }
-            val pressed by interactionSource.collectIsPressedAsState()
-            Box(
-                modifier = Modifier
-                    .constrainAs(tapOverlay) {
-                        width = Dimension.fillToConstraints
+            if (artwork != null) {
+                val artworkModifier = when (artwork.position) {
+                    MessageCardArtworkPosition.Trailing -> Modifier.constrainAs(artworkRef) {
+                        width = Dimension.value(artwork.size ?: MessageCardTrailingArtworkWidth)
                         height = Dimension.fillToConstraints
                         top.linkTo(parent.top)
                         bottom.linkTo(parent.bottom)
+                        end.linkTo(parent.end)
+                    }
+
+                    MessageCardArtworkPosition.Top -> Modifier.constrainAs(artworkRef) {
+                        width = Dimension.fillToConstraints
+                        height = Dimension.value(artwork.size ?: MessageCardTopArtworkHeight)
+                        top.linkTo(parent.top)
                         start.linkTo(parent.start)
                         end.linkTo(parent.end)
                     }
-                    .clickable(
-                        interactionSource = interactionSource,
-                        indication = null,
-                        onClick = onClick
-                    )
-                    .background(if (pressed) colors.pressOverlay else Color.Transparent)
-                    .semantics {
-                        role = Role.Button
-                        accessibleLabel?.let { contentDescription = it }
+                }
+                MessageCardArtworkContent(artwork = artwork, shape = shape, modifier = artworkModifier)
+            }
+
+            Column(
+                modifier = Modifier
+                    .constrainAs(textColumn) {
+                        width = Dimension.fillToConstraints
+                        top.linkTo(
+                            if (artwork?.position == MessageCardArtworkPosition.Top) artworkRef.bottom else parent.top,
+                            margin = contentPadding
+                        )
+                        bottom.linkTo(parent.bottom, margin = contentPadding)
+                        start.linkTo(parent.start, margin = contentPadding)
+                        end.linkTo(
+                            if (artwork?.position == MessageCardArtworkPosition.Trailing) artworkRef.start else parent.end,
+                            margin = contentPadding
+                        )
                     }
-            )
-        }
-
-        if (artwork != null) {
-            val artworkModifier = when (artwork.position) {
-                MessageCardArtworkPosition.Trailing -> Modifier.constrainAs(artworkRef) {
-                    width = Dimension.value(artwork.size ?: MessageCardTrailingArtworkWidth)
-                    height = Dimension.fillToConstraints
-                    top.linkTo(parent.top)
-                    bottom.linkTo(parent.bottom)
-                    end.linkTo(parent.end)
-                }
-
-                MessageCardArtworkPosition.Top -> Modifier.constrainAs(artworkRef) {
-                    width = Dimension.fillToConstraints
-                    height = Dimension.value(artwork.size ?: MessageCardTopArtworkHeight)
-                    top.linkTo(parent.top)
-                    start.linkTo(parent.start)
-                    end.linkTo(parent.end)
-                }
-            }
-            MessageCardArtworkContent(artwork = artwork, shape = shape, modifier = artworkModifier)
-        }
-
-        Column(
-            modifier = Modifier
-                .constrainAs(textColumn) {
-                    width = Dimension.fillToConstraints
-                    top.linkTo(
-                        if (artwork?.position == MessageCardArtworkPosition.Top) artworkRef.bottom else parent.top,
-                        margin = contentPadding
-                    )
-                    bottom.linkTo(parent.bottom, margin = contentPadding)
-                    start.linkTo(parent.start, margin = contentPadding)
-                    end.linkTo(
-                        if (artwork?.position == MessageCardArtworkPosition.Trailing) artworkRef.start else parent.end,
-                        margin = contentPadding
+            ) {
+                if (heading != null) {
+                    BasicText(
+                        text = heading,
+                        style = headingStyle.copy(color = colors.text),
+                        maxLines = headingMaxLines ?: Int.MAX_VALUE,
+                        overflow = if (headingMaxLines != null) TextOverflow.Ellipsis else TextOverflow.Clip
                     )
                 }
-        ) {
-            if (heading != null) {
-                BasicText(
-                    text = heading,
-                    style = headingStyle.copy(color = colors.text),
-                    maxLines = headingMaxLines ?: Int.MAX_VALUE,
-                    overflow = if (headingMaxLines != null) TextOverflow.Ellipsis else TextOverflow.Clip
-                )
-            }
 
-            if (paragraph != null) {
-                if (heading != null) Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
-                BasicText(
-                    text = paragraph,
-                    style = paragraphStyle.copy(color = colors.text),
-                    maxLines = paragraphMaxLines ?: Int.MAX_VALUE,
-                    overflow = if (paragraphMaxLines != null) TextOverflow.Ellipsis else TextOverflow.Clip
-                )
-            }
-
-            if (ctaText != null && onCtaClick != null) {
-                // Spec: 4dp top margin for tertiary (text-only) CTAs, 12dp for secondary/pill CTAs —
-                // both land exactly on existing Spacing.Compact/Medium tokens.
-                val ctaTopMargin = if (ctaTonal) HierarchicalSize.Spacing.Medium else HierarchicalSize.Spacing.Compact
-                if (heading != null || paragraph != null) Spacer(modifier = Modifier.height(ctaTopMargin))
-                PixaButton(
-                    text = ctaText,
-                    onClick = onCtaClick,
-                    variant = ButtonVariant.Filled,
-                    shape = ctaShape,
-                    enabled = enabled,
-                    customColors = colors.ctaColors
-                )
-            }
-        }
-
-        if (onDismiss != null) {
-            MessageCardDismissButton(
-                onDismiss = onDismiss,
-                colors = colors,
-                modifier = Modifier.constrainAs(dismissRef) {
-                    top.linkTo(parent.top, margin = HierarchicalSize.Spacing.Small)
-                    end.linkTo(parent.end, margin = HierarchicalSize.Spacing.Small)
+                if (paragraph != null) {
+                    if (heading != null) Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
+                    BasicText(
+                        text = paragraph,
+                        style = paragraphStyle.copy(color = colors.text),
+                        maxLines = paragraphMaxLines ?: Int.MAX_VALUE,
+                        overflow = if (paragraphMaxLines != null) TextOverflow.Ellipsis else TextOverflow.Clip
+                    )
                 }
-            )
+
+                if (ctaText != null && onCtaClick != null) {
+                    // Spec: 4dp top margin for tertiary (text-only) CTAs, 12dp for secondary/pill CTAs —
+                    // both land exactly on existing Spacing.Compact/Medium tokens.
+                    val ctaTopMargin = if (ctaTonal) HierarchicalSize.Spacing.Medium else HierarchicalSize.Spacing.Compact
+                    if (heading != null || paragraph != null) Spacer(modifier = Modifier.height(ctaTopMargin))
+                    PixaButton(
+                        text = ctaText,
+                        onClick = onCtaClick,
+                        variant = ButtonVariant.Filled,
+                        shape = ctaShape,
+                        enabled = enabled,
+                        customColors = colors.ctaColors
+                    )
+                }
+            }
         }
     }
 }

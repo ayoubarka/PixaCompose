@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -40,6 +39,7 @@ import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.pixaRipple
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -226,7 +226,7 @@ fun PixaFAB(
             .clickable(
                 enabled = enabled,
                 role = Role.Button,
-                indication = ripple(bounded = true, color = contentColor.copy(alpha = 0.12f)),
+                indication = pixaRipple(bounded = true, color = contentColor.copy(alpha = 0.12f)),
                 interactionSource = remember { MutableInteractionSource() },
                 onClick = onClick
             )

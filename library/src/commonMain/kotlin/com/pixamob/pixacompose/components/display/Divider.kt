@@ -102,7 +102,7 @@ private fun PixaDividerImpl(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaDivider - Visual separator between content, migrated from Uber Base's Divider spec.
+ * PixaDivider - Visual separator between content.
  *
  * Purpose: a non-interactive line that separates sections of content; it carries no
  * text/icon/accessory content of its own.

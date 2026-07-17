@@ -128,8 +128,7 @@ private fun getLinkTheme(colors: ColorPalette): LinkColors = LinkColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaLink — inline, text-based navigation control. Migrated from Uber
- * Base's Link spec.
+ * PixaLink — inline, text-based navigation control.
  *
  * ### Anatomy
  * A single text label with a mandatory underline drawn beneath it (1.5dp,

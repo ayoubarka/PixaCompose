@@ -185,7 +185,6 @@ private fun DockButtons(
 /**
  * PixaButtonDock — a container pinned to the bottom of the screen that keeps
  * up to 4 primary actions visible while the page content scrolls behind it.
- * Migrated from Uber Base's Button Dock spec.
  *
  * ### Anatomy
  * An optional top [accessory] slot (any composable — a summary price, a

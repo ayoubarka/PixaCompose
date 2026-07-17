@@ -6,8 +6,11 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -19,9 +22,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -36,14 +40,23 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.setProgress
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
@@ -52,6 +65,60 @@ import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlin.math.roundToInt
+
+/**
+ * PixaSlider — PixaCompose's equivalent of Uber Base's "Slider" component.
+ *
+ * Source: https://base.uber.com/6d2425e9f/p/30cac1-slider.md
+ *
+ * Purpose:
+ *   Lets a user select a single numeric value from a range, with immediate
+ *   visual feedback (a filled track) for informed, in-the-moment decisions.
+ *
+ * Anatomy:
+ *   Track (inactive + active fill) + one thumb, plus optional min/max icons,
+ *   min/max labels, a live value readout, and discrete step ticks.
+ *
+ * Variants:
+ *   - [SliderVariant]: Filled/Outlined/Ghost — visual treatment of track and
+ *     thumb, not a spec concept on its own; the spec's real variant axis is
+ *     continuous (`steps == 0`) vs discrete (`steps > 0`) selection, which
+ *     this component expresses via the [steps] parameter rather than a
+ *     separate enum, since it's a value not a style choice.
+ *
+ * States: enabled, disabled, dragging (thumb scales up), and
+ *   focused/dragging + value label — a floating bubble appears above the
+ *   thumb while it's being dragged or is keyboard-focused, per spec's
+ *   "Active + value label" state.
+ *
+ * Sizing: [SizeVariant]-driven via [HierarchicalSize] (track height, thumb
+ *   size, thumb elevation) plus a size-scaled typography tier for labels and
+ *   the value readout.
+ *
+ * Interaction: drag the thumb, tap anywhere on the track to jump to that
+ *   value, or use the keyboard once focused — Left/Right/Up/Down arrows step
+ *   by one increment (one step's worth if [steps] > 0, else 1% of the range),
+ *   Page Up/Page Down jump by 10% of the range, Home/End snap to the range's
+ *   min/max. Arrow-key direction follows the ambient
+ *   [androidx.compose.ui.platform.LocalLayoutDirection] so Left/Right always
+ *   read as "toward the start/end" rather than a fixed compass direction.
+ *
+ * Adaptive behavior: pointer-drag math is mirrored under
+ *   [LayoutDirection.Rtl] (pointer coordinates are always physical-left-relative
+ *   regardless of layout direction, unlike the thumb's `offset()`/`Alignment`
+ *   positioning, which Compose already mirrors automatically) — smallest
+ *   value renders on the right and largest on the left in RTL, per spec.
+ *   No separate breakpoint system is introduced; this is a single-track
+ *   control that doesn't have distinct mobile/desktop layouts to switch
+ *   between.
+ *
+ * Customization: variant, size, custom [SliderColors], a [gradientBrush] for
+ *   the track (e.g. color selection), min/max icons and labels, value
+ *   formatting, and discrete step count. Not exposed: the value-label bubble
+ *   can't be turned off independently of focus/drag state — per spec it's
+ *   how the control communicates "you're actively changing this," not a
+ *   decorative option.
+ */
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -76,6 +143,8 @@ data class SliderColors(
     val thumbBorder: Color,
     val label: Color,
     val valueText: Color,
+    val valueBubbleSurface: Color,
+    val valueBubbleContent: Color,
     val disabledActiveTrack: Color,
     val disabledInactiveTrack: Color,
     val disabledThumb: Color
@@ -104,14 +173,22 @@ data class SliderConfig(
 
 @Composable
 private fun getSliderTheme(variant: SliderVariant, colors: ColorPalette): SliderColors {
+    // Value bubble mirrors PixaTooltip's high-contrast surface (see
+    // overlay/Tooltip.kt) so every floating micro-label in the library reads
+    // the same regardless of the host component's own variant palette.
+    val valueBubbleSurface = colors.baseContentTitle
+    val valueBubbleContent = colors.baseSurfaceDefault
+
     return when (variant) {
         SliderVariant.Filled -> SliderColors(
             activeTrack = colors.brandContentDefault,
             inactiveTrack = colors.baseSurfaceElevated,
             thumb = colors.brandContentDefault,
-            thumbBorder = Color.White,
+            thumbBorder = colors.baseSurfaceDefault,
             label = colors.baseContentBody,
             valueText = colors.baseContentTitle,
+            valueBubbleSurface = valueBubbleSurface,
+            valueBubbleContent = valueBubbleContent,
             disabledActiveTrack = colors.baseContentDisabled,
             disabledInactiveTrack = colors.baseSurfaceDisabled,
             disabledThumb = colors.baseContentDisabled
@@ -119,10 +196,12 @@ private fun getSliderTheme(variant: SliderVariant, colors: ColorPalette): Slider
         SliderVariant.Outlined -> SliderColors(
             activeTrack = colors.brandBorderDefault,
             inactiveTrack = colors.baseBorderSubtle,
-            thumb = Color.White,
+            thumb = colors.baseSurfaceDefault,
             thumbBorder = colors.brandBorderDefault,
             label = colors.baseContentBody,
             valueText = colors.baseContentTitle,
+            valueBubbleSurface = valueBubbleSurface,
+            valueBubbleContent = valueBubbleContent,
             disabledActiveTrack = colors.baseBorderDisabled,
             disabledInactiveTrack = colors.baseBorderDisabled,
             disabledThumb = colors.baseSurfaceDisabled
@@ -134,6 +213,8 @@ private fun getSliderTheme(variant: SliderVariant, colors: ColorPalette): Slider
             thumbBorder = colors.baseBorderDefault,
             label = colors.baseContentBody,
             valueText = colors.baseContentTitle,
+            valueBubbleSurface = valueBubbleSurface,
+            valueBubbleContent = valueBubbleContent,
             disabledActiveTrack = colors.baseContentDisabled,
             disabledInactiveTrack = colors.baseSurfaceDisabled,
             disabledThumb = colors.baseContentDisabled
@@ -177,7 +258,7 @@ private fun getSliderSizeConfig(size: SizeVariant): SliderSizeConfig {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
+// PUBLIC API
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
@@ -240,7 +321,7 @@ private fun getSliderSizeConfig(size: SizeVariant): SliderSizeConfig {
  * @param value Current slider value
  * @param onValueChange Callback when value changes
  * @param modifier Modifier for the slider
- * @param variant Visual style variant (Filled, Outlined, Minimal)
+ * @param variant Visual style variant (Filled, Outlined, Ghost)
  * @param size Size preset (Small, Medium, Large)
  * @param enabled Whether the slider is enabled
  * @param valueRange Range of values (min to max)
@@ -282,6 +363,7 @@ fun PixaSlider(
     val themeColors = getSliderTheme(variant, AppTheme.colors)
     val finalColors = colors ?: themeColors
     val sizeConfig = getSliderSizeConfig(size)
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     val normalizedValue = remember(value, valueRange) {
         ((value - valueRange.start) / (valueRange.endInclusive - valueRange.start)).coerceIn(0f, 1f)
@@ -294,6 +376,9 @@ fun PixaSlider(
     )
 
     var isDragging by remember { mutableStateOf(false) }
+    val interactionSource = remember { MutableInteractionSource() }
+    val isFocused by interactionSource.collectIsFocusedAsState()
+    val isActive = isDragging || isFocused
 
     val thumbSize by animateDpAsState(
         targetValue = if (isDragging) sizeConfig.thumbSize * config.thumbScaleOnDrag else sizeConfig.thumbSize,
@@ -318,6 +403,7 @@ fun PixaSlider(
     Column(
         modifier = modifier.semantics {
             if (!enabled) disabled()
+            progressBarRangeInfo = ProgressBarRangeInfo(value, valueRange, steps)
             setProgress { targetValue ->
                 val newValue = valueRange.start + (targetValue * (valueRange.endInclusive - valueRange.start))
                 onValueChange(newValue)
@@ -331,10 +417,9 @@ fun PixaSlider(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                BasicText(
                     text = valueFormatter(value),
-                    style = sizeConfig.valueStyle,
-                    color = finalColors.valueText
+                    style = sizeConfig.valueStyle.copy(color = finalColors.valueText)
                 )
             }
             Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
@@ -354,11 +439,7 @@ fun PixaSlider(
                 )
             }
             if (minValueText != null) {
-                Text(
-                    text = minValueText,
-                    style = sizeConfig.labelStyle,
-                    color = finalColors.label
-                )
+                BasicText(text = minValueText, style = sizeConfig.labelStyle.copy(color = finalColors.label))
             }
 
             BoxWithConstraints(
@@ -369,16 +450,30 @@ fun PixaSlider(
                 Box(
                     modifier = Modifier
                         .fillMaxSize()
-                        .pointerInput(enabled) {
+                        .focusable(enabled = enabled, interactionSource = interactionSource)
+                        .onKeyEvent { event ->
+                            handleSliderKeyEvent(
+                                event = event,
+                                enabled = enabled,
+                                isRtl = isRtl,
+                                value = value,
+                                valueRange = valueRange,
+                                steps = steps,
+                                onValueChange = onValueChange,
+                                onValueChangeFinished = onValueChangeFinished
+                            )
+                        }
+                        .pointerInput(enabled, isRtl) {
                             if (!enabled) return@pointerInput
                             detectTapGestures { offset ->
-                                val newNormalizedValue = calculateNormalizedValue(offset.x, trackWidth, steps)
+                                val x = if (isRtl) trackWidth - offset.x else offset.x
+                                val newNormalizedValue = calculateNormalizedValue(x, trackWidth, steps)
                                 val newValue = valueRange.start + (newNormalizedValue * (valueRange.endInclusive - valueRange.start))
                                 onValueChange(newValue.coerceIn(valueRange))
                                 onValueChangeFinished?.invoke()
                             }
                         }
-                        .pointerInput(enabled) {
+                        .pointerInput(enabled, isRtl) {
                             if (!enabled) return@pointerInput
                             detectDragGestures(
                                 onDragStart = { isDragging = true },
@@ -386,7 +481,8 @@ fun PixaSlider(
                                 onDragCancel = { isDragging = false }
                             ) { change, _ ->
                                 change.consume()
-                                val newNormalizedValue = calculateNormalizedValue(change.position.x, trackWidth, steps)
+                                val x = if (isRtl) trackWidth - change.position.x else change.position.x
+                                val newNormalizedValue = calculateNormalizedValue(x, trackWidth, steps)
                                 val newValue = valueRange.start + (newNormalizedValue * (valueRange.endInclusive - valueRange.start))
                                 onValueChange(newValue.coerceIn(valueRange))
                             }
@@ -408,22 +504,29 @@ fun PixaSlider(
                     ThumbContent(
                         thumbSize = thumbSize,
                         thumbColor = thumbColorOverride ?: thumbColor,
+                        thumbBorderColor = finalColors.thumbBorder,
                         sizeConfig = sizeConfig,
                         enabled = enabled,
                         normalizedValue = animatedFraction,
-                        variant = variant,
                         config = config,
+                        maxWidth = this@BoxWithConstraints.maxWidth
+                    )
+
+                    ValueBubble(
+                        visible = isActive && enabled,
+                        text = valueFormatter(value),
+                        normalizedValue = animatedFraction,
+                        thumbSize = sizeConfig.thumbSize,
+                        valueStyle = sizeConfig.valueStyle,
+                        surfaceColor = finalColors.valueBubbleSurface,
+                        contentColor = finalColors.valueBubbleContent,
                         maxWidth = this@BoxWithConstraints.maxWidth
                     )
                 }
             }
 
             if (maxValueText != null) {
-                Text(
-                    text = maxValueText,
-                    style = sizeConfig.labelStyle,
-                    color = finalColors.label
-                )
+                BasicText(text = maxValueText, style = sizeConfig.labelStyle.copy(color = finalColors.label))
             }
             if (maxIcon != null) {
                 PixaIcon(
@@ -438,7 +541,7 @@ fun PixaSlider(
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// INTERNAL COMPONENTS
+// INTERNAL <SLIDER>
 // ════════════════════════════════════════════════════════════════════════════
 
 private fun calculateNormalizedValue(x: Float, trackWidth: Float, steps: Int): Float {
@@ -449,6 +552,54 @@ private fun calculateNormalizedValue(x: Float, trackWidth: Float, steps: Int): F
         newNormalizedValue = (newNormalizedValue / stepSize).roundToInt() * stepSize
     }
     return newNormalizedValue
+}
+
+/**
+ * Keyboard stepping per spec: arrows/Page Up/Page Down step the value, Home/End
+ * snap to the range bounds. Left/Right are mirrored under RTL so they always
+ * mean "toward the start/end" of the visual track rather than a fixed compass
+ * direction; Up/Down are direction-agnostic (increase/decrease) by convention.
+ */
+private fun handleSliderKeyEvent(
+    event: KeyEvent,
+    enabled: Boolean,
+    isRtl: Boolean,
+    value: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    onValueChange: (Float) -> Unit,
+    onValueChangeFinished: (() -> Unit)?
+): Boolean {
+    if (!enabled || event.type != KeyEventType.KeyDown) return false
+
+    val rangeWidth = valueRange.endInclusive - valueRange.start
+    val step = if (steps > 0) rangeWidth / (steps + 1) else rangeWidth / 100f
+    val pageStep = rangeWidth / 10f
+
+    if (event.key == Key.MoveHome) {
+        onValueChange(valueRange.start)
+        onValueChangeFinished?.invoke()
+        return true
+    }
+    if (event.key == Key.MoveEnd) {
+        onValueChange(valueRange.endInclusive)
+        onValueChangeFinished?.invoke()
+        return true
+    }
+
+    val delta = when (event.key) {
+        Key.DirectionRight -> if (isRtl) -step else step
+        Key.DirectionLeft -> if (isRtl) step else -step
+        Key.DirectionUp -> step
+        Key.DirectionDown -> -step
+        Key.PageUp -> pageStep
+        Key.PageDown -> -pageStep
+        else -> return false
+    }
+
+    onValueChange((value + delta).coerceIn(valueRange))
+    onValueChangeFinished?.invoke()
+    return true
 }
 
 @Composable
@@ -496,15 +647,13 @@ private fun TrackContent(
 private fun ThumbContent(
     thumbSize: Dp,
     thumbColor: Color,
+    thumbBorderColor: Color,
     sizeConfig: SliderSizeConfig,
     enabled: Boolean,
     normalizedValue: Float,
-    variant: SliderVariant,
     config: SliderConfig,
     maxWidth: Dp
 ) {
-    val borderColor = if (thumbColor.luminance() > 0.5f) Color.Black.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.9f)
-
     Box(
         modifier = Modifier
             .offset(x = (maxWidth - thumbSize) * normalizedValue)
@@ -512,11 +661,48 @@ private fun ThumbContent(
             .shadow(elevation = if (enabled) sizeConfig.thumbElevation else 0.dp, shape = CircleShape)
             .clip(CircleShape)
             .background(thumbColor)
-            .border(config.thumbBorderWidth, borderColor, CircleShape)
-            .then(
-                if (variant == SliderVariant.Outlined) {
-                    Modifier.border(1.dp, Color.White.copy(alpha = 0.6f), CircleShape)
-                } else Modifier
-            )
+            .border(config.thumbBorderWidth, thumbBorderColor, CircleShape)
     )
+}
+
+/**
+ * Floating value readout shown above the thumb while it's being dragged or is
+ * keyboard-focused — spec's "Active + value label" state. Positioned as a
+ * same-size box aligned to the thumb's x-offset so it stays centered over the
+ * thumb without needing to know the bubble's own (content-dependent) width.
+ */
+@Composable
+private fun ValueBubble(
+    visible: Boolean,
+    text: String,
+    normalizedValue: Float,
+    thumbSize: Dp,
+    valueStyle: TextStyle,
+    surfaceColor: Color,
+    contentColor: Color,
+    maxWidth: Dp
+) {
+    Box(
+        modifier = Modifier
+            .offset(
+                x = (maxWidth - thumbSize) * normalizedValue,
+                y = -(thumbSize + HierarchicalSize.Spacing.Small)
+            )
+            .size(thumbSize),
+        contentAlignment = Alignment.Center
+    ) {
+        AnimationUtils.AnimatedVisibilityStandard(
+            visible = visible,
+            enter = AnimationUtils.scaleInTransition,
+            exit = AnimationUtils.scaleOutTransition
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(surfaceColor, AppTheme.shapes.pill)
+                    .padding(horizontal = HierarchicalSize.Padding.Small, vertical = HierarchicalSize.Padding.Nano)
+            ) {
+                BasicText(text = text, style = valueStyle.copy(color = contentColor))
+            }
+        }
+    }
 }

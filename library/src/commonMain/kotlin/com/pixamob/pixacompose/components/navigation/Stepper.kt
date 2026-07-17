@@ -1,5 +1,27 @@
 package com.pixamob.pixacompose.components.navigation
 
+/**
+ * PixaStepper — Multi-step progress indicator for complex processes
+ * (itineraries, account creation, form wizards).
+ *
+ * Anatomy: Each step = indicator + path lines + label content + optional trailing content.
+ * Path visibility at first/last step is independently toggleable.
+ *
+ * Variants:
+ *   - Artwork size: [StepArtworkSize.XSmall] through [StepArtworkSize.Large]
+ *   - Artwork type: Dot, Number, Icon, CheckmarkNumber, IconNumber, Bar, or None
+ *   - Connector style: Line, Separator, Dashed (Pixa), Arrow (Pixa)
+ *   - Content style: Simple, Card, Compact
+ *
+ * States: Completed, Current (Active), Skipped, Error
+ *
+ * Sizing: Driven by [SizeVariant] via [StepArtworkSize.fromSizeVariant].
+ *
+ * Customization: artwork size/type, path visibility, path color, content style, trailing content.
+ *
+ * Requirement: **At least 3 steps required**.
+ */
+
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
@@ -9,8 +31,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -41,6 +62,7 @@ import com.pixamob.pixacompose.components.feedback.SkeletonCircle
 import com.pixamob.pixacompose.components.feedback.SkeletonText
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.pixaRipple
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -51,9 +73,7 @@ enum class StepperOrientation {
     Horizontal
 }
 
-/**
- * Step indicator type
- */
+/** Step indicator type. */
 enum class StepIndicatorType {
     /** Simple dot indicator */
     Dot,
@@ -71,14 +91,49 @@ enum class StepIndicatorType {
     Bar,
 
     /** Mixed: Icon + Number overlay */
-    IconNumber
+    IconNumber,
+
+    /** No visible artwork — path runs straight through the step. */
+    None
+}
+
+/** Artwork/indicator size tier. XSmall (16dp) is reserved for stops/bullets. */
+enum class StepArtworkSize {
+    XSmall,
+    Small,
+    Medium,
+    Large;
+
+    companion object {
+        /** Maps the library-wide [SizeVariant] onto the spec's 4-tier artwork scale. */
+        fun fromSizeVariant(variant: SizeVariant): StepArtworkSize = when (variant) {
+            SizeVariant.None, SizeVariant.Nano -> XSmall
+            SizeVariant.Compact, SizeVariant.Small -> Small
+            SizeVariant.Medium -> Medium
+            SizeVariant.Large, SizeVariant.Huge, SizeVariant.Massive -> Large
+        }
+    }
 }
 
 /**
- * Connector style between steps
+ * Artwork shape at XSmall. Uber spec: "customizing XSmall icons beyond
+ * circle/square shapes" causes line piercings — so XSmall is restricted to
+ * these two shapes only, never an icon/number.
+ */
+enum class StepArtworkShape {
+    Circle,
+    Square
+}
+
+/**
+ * Connector style between steps.
+ * [Line]/[Separator] correspond to the spec's "solid lines, enabled/disabled".
+ * The remaining styles are Pixa extensions for transit-style itineraries,
+ * which the spec explicitly allows ("path line colors can be customized for
+ * transit-specific applications").
  */
 enum class StepConnectorStyle {
-    /** Solid line connector */
+    /** Solid line connector (spec: enabled path) */
     Line,
 
     /** Dashed line connector */
@@ -93,7 +148,7 @@ enum class StepConnectorStyle {
     /** Arrow connector */
     Arrow,
 
-    /** No connector */
+    /** No connector (spec: disabled path) */
     None,
 
     /** Thin gray separator line */
@@ -129,9 +184,6 @@ enum class StepCardShape {
 }
 
 /**
- * Stepper size presets
- */
-/**
  * Step data
  */
 @Immutable
@@ -153,9 +205,9 @@ data class StepData(
 @Stable
 data class StepperStrings(
     val headerFormat: String = "Step %d of %d",
-    val completeLabel: String = "Completed",
-    val currentLabel: String = "Current step",
-    val pendingLabel: String = "Pending",
+    val completeLabel: String = "Complete",
+    val currentLabel: String = "Active",
+    val pendingLabel: String = "Incomplete",
     val errorLabel: String = "Error",
     val skippedLabel: String = "Skipped",
     val percentCompleteFormat: String = "%d%% complete"
@@ -175,8 +227,10 @@ data class StepperConfig(
     val subTitleStyle: @Composable () -> TextStyle,
     val numberStyle: @Composable () -> TextStyle,
     val spacing: Dp,
-    val minTouchTarget: Dp = 44.dp,
-    val animateConnector: Boolean = true
+    val minTouchTarget: Dp = HierarchicalSize.TouchTarget.Small,
+    val animateConnector: Boolean = true,
+    /** XSmall is spec-restricted to bullet/stop artwork only (circle/square, no icons/numbers). */
+    val isXSmall: Boolean = false
 )
 
 /**
@@ -189,10 +243,12 @@ data class StepColors(
     val current: Color,
     val pending: Color,
     val error: Color,
+    val skipped: Color,
     val completedContent: Color,
     val currentContent: Color,
     val pendingContent: Color,
     val errorContent: Color,
+    val skippedContent: Color,
     val connector: Color,
     val label: Color,
     val subLabel: Color
@@ -203,53 +259,55 @@ data class StepColors(
 // ============================================================================
 
 /**
- * Get stepper configuration based on size
+ * Get stepper configuration based on artwork size.
  */
 @Composable
-private fun getStepperConfig(size: SizeVariant): StepperConfig {
+private fun getStepperConfig(size: StepArtworkSize): StepperConfig {
     val typography = AppTheme.typography
     return when (size) {
-        SizeVariant.Small -> StepperConfig(
-            indicatorSize = 24.dp,
-            iconSize = 14.dp,
-            connectorWidth = 40.dp,
-            connectorThickness = 2.dp,
+        // Spec: XSmall artwork is frame-clipped to 16x16dp, reserved for stops/bullets.
+        StepArtworkSize.XSmall -> StepperConfig(
+            indicatorSize = HierarchicalSize.Badge.Small,
+            iconSize = HierarchicalSize.Icon.None,
+            connectorWidth = HierarchicalSize.Spacing.Massive,
+            connectorThickness = HierarchicalSize.Border.Medium,
+            titleStyle = { typography.captionRegular },
+            subTitleStyle = { typography.footnoteRegular },
+            numberStyle = { typography.captionRegular.copy(fontWeight = FontWeight.SemiBold) },
+            spacing = HierarchicalSize.Spacing.Small,
+            isXSmall = true
+        )
+
+        StepArtworkSize.Small -> StepperConfig(
+            indicatorSize = HierarchicalSize.Container.Compact,
+            iconSize = HierarchicalSize.Icon.Compact,
+            connectorWidth = HierarchicalSize.Spacing.Huge + HierarchicalSize.Spacing.Huge,
+            connectorThickness = HierarchicalSize.Border.Medium,
             titleStyle = { typography.bodyLight },
             subTitleStyle = { typography.captionRegular },
             numberStyle = { typography.bodyLight.copy(fontWeight = FontWeight.SemiBold) },
             spacing = HierarchicalSize.Spacing.Small
         )
 
-        SizeVariant.Medium -> StepperConfig(
-            indicatorSize = 32.dp,
-            iconSize = 18.dp,
-            connectorWidth = 48.dp,
-            connectorThickness = 2.dp,
+        StepArtworkSize.Medium -> StepperConfig(
+            indicatorSize = HierarchicalSize.Container.Small,
+            iconSize = HierarchicalSize.Icon.Small,
+            connectorWidth = HierarchicalSize.Container.Medium,
+            connectorThickness = HierarchicalSize.Border.Medium,
             titleStyle = { typography.bodyRegular },
             subTitleStyle = { typography.bodyLight },
             numberStyle = { typography.bodyRegular.copy(fontWeight = FontWeight.Bold) },
             spacing = HierarchicalSize.Spacing.Medium
         )
 
-        SizeVariant.Large -> StepperConfig(
-            indicatorSize = 40.dp,
-            iconSize = 22.dp,
-            connectorWidth = 56.dp,
-            connectorThickness = 3.dp,
+        StepArtworkSize.Large -> StepperConfig(
+            indicatorSize = HierarchicalSize.Container.Medium,
+            iconSize = HierarchicalSize.Icon.Medium,
+            connectorWidth = HierarchicalSize.Container.Large,
+            connectorThickness = HierarchicalSize.Border.Large,
             titleStyle = { typography.bodyBold },
             subTitleStyle = { typography.bodyRegular },
             numberStyle = { typography.bodyBold.copy(fontWeight = FontWeight.Bold) },
-            spacing = HierarchicalSize.Spacing.Medium
-        )
-
-        else -> StepperConfig(
-            indicatorSize = 32.dp,
-            iconSize = 18.dp,
-            connectorWidth = 48.dp,
-            connectorThickness = 2.dp,
-            titleStyle = { typography.bodyRegular },
-            subTitleStyle = { typography.bodyLight },
-            numberStyle = { typography.bodyRegular.copy(fontWeight = FontWeight.Bold) },
             spacing = HierarchicalSize.Spacing.Medium
         )
     }
@@ -265,10 +323,12 @@ private fun getStepColors(colors: ColorPalette): StepColors {
         current = colors.brandSurfaceDefault,
         pending = colors.baseSurfaceSubtle,
         error = colors.errorSurfaceDefault,
+        skipped = colors.baseSurfaceDisabled,
         completedContent = colors.successContentDefault,
         currentContent = colors.brandContentDefault,
         pendingContent = colors.baseContentHint,
         errorContent = colors.errorContentDefault,
+        skippedContent = colors.baseContentDisabled,
         connector = colors.baseBorderDefault,
         label = colors.baseContentBody,
         subLabel = colors.baseContentCaption
@@ -276,8 +336,49 @@ private fun getStepColors(colors: ColorPalette): StepColors {
 }
 
 // ============================================================================
-// BASE COMPONENTS
+// INTERNAL STEPPER
 // ============================================================================
+
+/**
+ * Step state enum
+ */
+private enum class StepState {
+    Completed,
+    Current,
+    Error,
+    Skipped,
+    Pending
+}
+
+private fun resolveStepState(stepData: StepData, isCurrentStep: Boolean): StepState = when {
+    stepData.isError -> StepState.Error
+    stepData.isCompleted -> StepState.Completed
+    stepData.isSkipped -> StepState.Skipped
+    isCurrentStep -> StepState.Current
+    else -> StepState.Pending
+}
+
+/**
+ * Get accessibility description for step.
+ * Matches the Uber spec's VoiceOver/TalkBack phrasing exactly:
+ * "Step [number] of [total], [label], [state]" e.g. "Step 1 of 3, Activate account, Complete".
+ */
+private fun getStepAccessibilityDescription(
+    stepNumber: Int,
+    totalSteps: Int,
+    stepData: StepData,
+    isCurrentStep: Boolean,
+    strings: StepperStrings
+): String {
+    val state = when (resolveStepState(stepData, isCurrentStep)) {
+        StepState.Error -> strings.errorLabel
+        StepState.Completed -> strings.completeLabel
+        StepState.Skipped -> strings.skippedLabel
+        StepState.Current -> strings.currentLabel
+        StepState.Pending -> strings.pendingLabel
+    }
+    return "Step $stepNumber of $totalSteps, ${stepData.title}, $state"
+}
 
 /**
  * Stepper Header - Shows "Step X of Y" and progress percentage
@@ -301,18 +402,37 @@ private fun StepperHeader(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
     ) {
-        Text(
+        BasicText(
             text = strings.headerFormat.replace("%d", (currentStep + 1).toString())
                 .replaceFirst("%d", totalSteps.toString()),
-            style = config.titleStyle(),
-            color = colors.label,
-            fontWeight = FontWeight.SemiBold
+            style = config.titleStyle().copy(color = colors.label, fontWeight = FontWeight.SemiBold)
         )
 
-        Text(
+        BasicText(
             text = strings.percentCompleteFormat.replace("%d", percentComplete.toString()),
-            style = config.subTitleStyle(),
-            color = colors.subLabel
+            style = config.subTitleStyle().copy(color = colors.subLabel)
+        )
+    }
+}
+
+/**
+ * Path spacer - invisible frame that preserves step alignment when a leading/trailing
+ * path is toggled off, per the spec: "auto-layout-compatible invisible frames
+ * maintaining positions when paths are disabled."
+ */
+@Composable
+private fun PathSpacer(config: StepperConfig, orientation: StepperOrientation, modifier: Modifier = Modifier) {
+    when (orientation) {
+        StepperOrientation.Vertical -> Spacer(
+            modifier = modifier
+                .width(config.connectorThickness)
+                .height(config.connectorWidth)
+        )
+
+        StepperOrientation.Horizontal -> Spacer(
+            modifier = modifier
+                .height(config.connectorThickness)
+                .width(config.connectorWidth)
         )
     }
 }
@@ -328,20 +448,33 @@ private fun StepIndicator(
     config: StepperConfig,
     colors: StepColors,
     indicatorType: StepIndicatorType,
+    artworkShape: StepArtworkShape,
+    totalSteps: Int,
+    strings: StepperStrings,
     onClick: (() -> Unit)?
 ) {
-    val stepState = when {
-        stepData.isError -> StepState.Error
-        stepData.isCompleted -> StepState.Completed
-        isCurrentStep -> StepState.Current
-        else -> StepState.Pending
+    // Uber spec: XSmall artwork is reserved for stops/bullets — never icons/numbers.
+    val effectiveType = if (config.isXSmall && indicatorType != StepIndicatorType.None) {
+        StepIndicatorType.Dot
+    } else {
+        indicatorType
     }
+
+    if (effectiveType == StepIndicatorType.None) {
+        // Spec: "Artwork none" keeps the path continuous with no visible indicator,
+        // but the frame still occupies space so alignment holds.
+        Spacer(modifier = Modifier.size(config.indicatorSize))
+        return
+    }
+
+    val stepState = resolveStepState(stepData, isCurrentStep)
 
     val backgroundColor by animateColorAsState(
         targetValue = when (stepState) {
             StepState.Completed -> colors.completed
             StepState.Current -> colors.current
             StepState.Error -> colors.error
+            StepState.Skipped -> colors.skipped
             StepState.Pending -> colors.pending
         },
         animationSpec = AnimationUtils.colorSpring,
@@ -353,6 +486,7 @@ private fun StepIndicator(
             StepState.Completed -> colors.completedContent
             StepState.Current -> colors.currentContent
             StepState.Error -> colors.errorContent
+            StepState.Skipped -> colors.skippedContent
             StepState.Pending -> colors.pendingContent
         },
         animationSpec = AnimationUtils.colorSpring,
@@ -372,6 +506,7 @@ private fun StepIndicator(
     }
 
     val interactionSource = remember { MutableInteractionSource() }
+    val shape = if (artworkShape == StepArtworkShape.Circle) CircleShape else AppTheme.shapes.rounded.forVariant(SizeVariant.Nano)
 
     Box(
         modifier = Modifier
@@ -380,8 +515,10 @@ private fun StepIndicator(
             .semantics {
                 this.contentDescription = getStepAccessibilityDescription(
                     stepNumber,
+                    totalSteps,
                     stepData,
-                    isCurrentStep
+                    isCurrentStep,
+                    strings
                 )
                 if (onClick != null) {
                     this.role = Role.Button
@@ -391,33 +528,31 @@ private fun StepIndicator(
                 if (onClick != null && stepData.isClickable) {
                     Modifier.clickable(
                         interactionSource = interactionSource,
-                        indication = ripple(bounded = false, radius = config.indicatorSize / 2),
+                        indication = pixaRipple(bounded = false, radius = config.indicatorSize / 2),
                         onClick = onClick
                     )
                 } else {
                     Modifier
                 }
             )
-            .clip(CircleShape)
-            .background(backgroundColor)
+            .clip(shape)
+            .background(backgroundColor, shape)
             .border(
-                width = if (stepState == StepState.Pending) 2.dp else 0.dp,
+                width = if (stepState == StepState.Pending) HierarchicalSize.Border.Medium else HierarchicalSize.Border.None,
                 color = borderColor,
-                shape = CircleShape
+                shape = shape
             ),
         contentAlignment = Alignment.Center
     ) {
-        when (indicatorType) {
+        when (effectiveType) {
             StepIndicatorType.Dot -> {
                 // Empty - background color shows
             }
 
             StepIndicatorType.Number -> {
-                Text(
+                BasicText(
                     text = stepNumber.toString(),
-                    style = config.numberStyle(),
-                    color = contentColor,
-                    textAlign = TextAlign.Center
+                    style = config.numberStyle().copy(color = contentColor, textAlign = TextAlign.Center)
                 )
             }
 
@@ -434,26 +569,20 @@ private fun StepIndicator(
 
             StepIndicatorType.CheckmarkNumber -> {
                 if (stepData.isCompleted) {
-                    // Animated checkmark
                     AnimatedCheckmark(
                         color = contentColor,
                         size = config.iconSize
                     )
                 } else {
-                    Text(
+                    BasicText(
                         text = stepNumber.toString(),
-                        style = config.numberStyle(),
-                        color = contentColor,
-                        textAlign = TextAlign.Center
+                        style = config.numberStyle().copy(color = contentColor, textAlign = TextAlign.Center)
                     )
                 }
             }
 
             StepIndicatorType.IconNumber -> {
-                // Mixed: Show icon with number overlay
-                Box(
-                    contentAlignment = Alignment.Center
-                ) {
+                Box(contentAlignment = Alignment.Center) {
                     stepData.icon?.let { icon: Painter ->
                         PixaIcon(
                             painter = icon,
@@ -462,13 +591,14 @@ private fun StepIndicator(
                             customSize = config.iconSize
                         )
                     }
-                    Text(
+                    BasicText(
                         text = stepNumber.toString(),
-                        style = config.numberStyle()
-                            .copy(fontSize = config.numberStyle().fontSize * 0.7f),
-                        color = contentColor,
-                        textAlign = TextAlign.Center,
-                        fontWeight = FontWeight.Bold
+                        style = config.numberStyle().copy(
+                            fontSize = config.numberStyle().fontSize * IconNumberOverlayScale,
+                            color = contentColor,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Bold
+                        )
                     )
                 }
             }
@@ -476,9 +606,14 @@ private fun StepIndicator(
             StepIndicatorType.Bar -> {
                 // Bar is handled differently in horizontal layout - show dot here
             }
+
+            StepIndicatorType.None -> {} // Already handled above
         }
     }
 }
+
+/** Overlay number is scaled down relative to the base numeral style; spec-derived, local to IconNumber only. */
+private const val IconNumberOverlayScale = 0.7f
 
 /**
  * Animated Checkmark
@@ -496,7 +631,7 @@ private fun AnimatedCheckmark(
 
     Canvas(modifier = Modifier.size(size)) {
         val canvasSize = this.size
-        val strokeWidth = 2.dp.toPx()
+        val strokeWidth = HierarchicalSize.Stroke.Small.toPx()
 
         val checkPath = Path().apply {
             val startX = canvasSize.width * 0.2f
@@ -545,7 +680,7 @@ private fun StepConnector(
     if (style == StepConnectorStyle.None) return
 
     val progress by animateFloatAsState(
-        targetValue = if (isCompleted && config.animateConnector) 1f else if (isCompleted) 1f else 0f,
+        targetValue = if (isCompleted) 1f else 0f,
         animationSpec = if (config.animateConnector) {
             AnimationUtils.slowSpring
         } else {
@@ -559,7 +694,7 @@ private fun StepConnector(
     // Separator style - thin gray line
     val isSeparator = style == StepConnectorStyle.Separator
     val separatorColor = colors.connector.copy(alpha = 0.3f)
-    val thickness = if (isSeparator) 1.dp else config.connectorThickness
+    val thickness = if (isSeparator) HierarchicalSize.Divider.Compact else config.connectorThickness
 
     when (orientation) {
         StepperOrientation.Vertical -> {
@@ -570,14 +705,12 @@ private fun StepConnector(
                             .width(thickness)
                             .height(config.connectorWidth)
                     ) {
-                        // Background connector
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(if (isSeparator) separatorColor else colors.connector)
                         )
 
-                        // Animated progress (not for separator)
                         if (!isSeparator) {
                             Box(
                                 modifier = Modifier
@@ -590,11 +723,7 @@ private fun StepConnector(
                 }
 
                 StepConnectorStyle.Dashed, StepConnectorStyle.DashedShort, StepConnectorStyle.DashedLong -> {
-                    val dashInterval = when (style) {
-                        StepConnectorStyle.DashedShort -> floatArrayOf(8f, 4f)
-                        StepConnectorStyle.DashedLong -> floatArrayOf(16f, 8f)
-                        else -> floatArrayOf(12f, 6f)
-                    }
+                    val dashInterval = dashIntervalFor(style)
 
                     Canvas(
                         modifier = modifier
@@ -621,7 +750,6 @@ private fun StepConnector(
                 }
 
                 StepConnectorStyle.Arrow -> {
-                    // Arrow connector for vertical
                     Canvas(
                         modifier = modifier
                             .width(config.indicatorSize / 2)
@@ -660,14 +788,12 @@ private fun StepConnector(
                             .height(thickness)
                             .width(config.connectorWidth)
                     ) {
-                        // Background connector
                         Box(
                             modifier = Modifier
                                 .fillMaxSize()
                                 .background(if (isSeparator) separatorColor else colors.connector)
                         )
 
-                        // Animated progress (not for separator)
                         if (!isSeparator) {
                             Box(
                                 modifier = Modifier
@@ -680,11 +806,7 @@ private fun StepConnector(
                 }
 
                 StepConnectorStyle.Dashed, StepConnectorStyle.DashedShort, StepConnectorStyle.DashedLong -> {
-                    val dashInterval = when (style) {
-                        StepConnectorStyle.DashedShort -> floatArrayOf(8f, 4f)
-                        StepConnectorStyle.DashedLong -> floatArrayOf(16f, 8f)
-                        else -> floatArrayOf(12f, 6f)
-                    }
+                    val dashInterval = dashIntervalFor(style)
 
                     Canvas(
                         modifier = modifier
@@ -711,7 +833,6 @@ private fun StepConnector(
                 }
 
                 StepConnectorStyle.Arrow -> {
-                    // Arrow connector for horizontal
                     Canvas(
                         modifier = modifier
                             .height(config.indicatorSize / 2)
@@ -744,6 +865,12 @@ private fun StepConnector(
     }
 }
 
+private fun dashIntervalFor(style: StepConnectorStyle): FloatArray = when (style) {
+    StepConnectorStyle.DashedShort -> floatArrayOf(8f, 4f)
+    StepConnectorStyle.DashedLong -> floatArrayOf(16f, 8f)
+    else -> floatArrayOf(12f, 6f)
+}
+
 /**
  * Step Content - Title and subtitle
  */
@@ -765,20 +892,20 @@ private fun StepContent(
             modifier = Modifier.padding(start = config.spacing),
             verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact)
         ) {
-            Text(
+            BasicText(
                 text = stepData.title,
-                style = config.titleStyle(),
-                color = if (isCurrentStep) colors.label else colors.subLabel,
-                fontWeight = if (isCurrentStep) FontWeight.SemiBold else FontWeight.Normal,
+                style = config.titleStyle().copy(
+                    color = if (isCurrentStep) colors.label else colors.subLabel,
+                    fontWeight = if (isCurrentStep) FontWeight.SemiBold else FontWeight.Normal
+                ),
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
 
             if (showSubLabels && stepData.subTitle != null) {
-                Text(
+                BasicText(
                     text = stepData.subTitle,
-                    style = config.subTitleStyle(),
-                    color = colors.subLabel,
+                    style = config.subTitleStyle().copy(color = colors.subLabel),
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -811,20 +938,27 @@ private fun StepContent(
 // ============================================================================
 
 /**
- * Stepper - Multi-step progress indicator
+ * PixaStepper — Multi-step progress indicator (Uber Base "Progress Steps" equivalent).
  *
- * @param steps List of step data
+ * @param steps List of step data. Per the Uber spec, progress steps require **at
+ *   least 3 steps** to function as an overview of a multi-step process; fewer
+ *   than 3 throws [IllegalArgumentException].
  * @param currentStep Current step index (0-based)
  * @param modifier Modifier for the stepper
  * @param orientation Vertical or Horizontal layout
- * @param indicatorType Type of step indicator
+ * @param indicatorType Type of step indicator. Use [StepIndicatorType.None] for
+ *   a continuous path with no visible artwork (spec: "Artwork none").
+ * @param artworkShape Shape used at [StepArtworkSize.XSmall] (circle or square only, per spec)
  * @param connectorStyle Style of connector between steps
  * @param contentStyle Style for step content
  * @param cardShape Shape for Card content style (Rounded/Arrow/Pointy)
- * @param size Size preset
+ * @param size Size preset — maps to [StepArtworkSize] via [StepArtworkSize.fromSizeVariant]
  * @param showLabels Whether to show step labels
  * @param showSubLabels Whether to show step subtitles
  * @param showHeader Whether to show integrated header ("Step X of Y")
+ * @param showLeadingPath Show a path above the first step / before the first item
+ *   (spec: "top and bottom paths can be toggled independently for first/last items")
+ * @param showTrailingPath Show a path below the last step / after the last item
  * @param onStepClick Optional click handler for interactive navigation
  * @param isStepClickable Optional callback to determine if step is clickable
  * @param strings Localization strings
@@ -837,6 +971,7 @@ fun PixaStepper(
     isLoading: Boolean = false,
     orientation: StepperOrientation = StepperOrientation.Vertical,
     indicatorType: StepIndicatorType = StepIndicatorType.CheckmarkNumber,
+    artworkShape: StepArtworkShape = StepArtworkShape.Circle,
     connectorStyle: StepConnectorStyle = StepConnectorStyle.Line,
     contentStyle: StepContentStyle = StepContentStyle.Simple,
     cardShape: StepCardShape = StepCardShape.Rounded,
@@ -844,14 +979,19 @@ fun PixaStepper(
     showLabels: Boolean = true,
     showSubLabels: Boolean = true,
     showHeader: Boolean = false,
+    showLeadingPath: Boolean = false,
+    showTrailingPath: Boolean = false,
     isStepClickable: ((Int) -> Boolean)? = null,
     strings: StepperStrings = StepperStrings(),
     onStepClick: ((Int) -> Unit)? = null,
 ) {
-    val config = getStepperConfig(size)
+    require(steps.size >= 3) {
+        "PixaStepper requires at least 3 steps; got ${steps.size}."
+    }
+
+    val config = getStepperConfig(StepArtworkSize.fromSizeVariant(size))
     val colors = getStepColors(AppTheme.colors)
 
-    // Show skeleton when isLoading = true
     if (isLoading) {
         Column(modifier = modifier) {
             repeat(steps.size.coerceAtLeast(3)) { index ->
@@ -859,24 +999,22 @@ fun PixaStepper(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Step indicator skeleton
                     SkeletonCircle(
                         size = config.indicatorSize,
                         shimmerEnabled = true
                     )
                     Spacer(modifier = Modifier.width(config.spacing))
-                    // Step label skeleton
                     Column(
                         modifier = Modifier.weight(1f)
                     ) {
                         SkeletonText(
-                            width = 120.dp,
+                            width = HierarchicalSize.Image.Compact,
                             size = SizeVariant.Medium
                         )
                         if (showSubLabels) {
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
                             SkeletonText(
-                                width = 80.dp,
+                                width = HierarchicalSize.Container.Massive,
                                 size = SizeVariant.Small
                             )
                         }
@@ -891,7 +1029,6 @@ fun PixaStepper(
     }
 
     Column(modifier = modifier) {
-        // Optional integrated header
         if (showHeader) {
             StepperHeader(
                 currentStep = currentStep,
@@ -911,11 +1048,14 @@ fun PixaStepper(
                     config = config,
                     colors = colors,
                     indicatorType = indicatorType,
+                    artworkShape = artworkShape,
                     connectorStyle = connectorStyle,
                     contentStyle = contentStyle,
                     cardShape = cardShape,
                     showLabels = showLabels,
                     showSubLabels = showSubLabels,
+                    showLeadingPath = showLeadingPath,
+                    showTrailingPath = showTrailingPath,
                     onStepClick = onStepClick,
                     isStepClickable = isStepClickable,
                     strings = strings
@@ -929,6 +1069,7 @@ fun PixaStepper(
                     config = config,
                     colors = colors,
                     indicatorType = indicatorType,
+                    artworkShape = artworkShape,
                     connectorStyle = connectorStyle,
                     contentStyle = contentStyle,
                     cardShape = cardShape,
@@ -953,11 +1094,14 @@ private fun VerticalStepper(
     config: StepperConfig,
     colors: StepColors,
     indicatorType: StepIndicatorType,
+    artworkShape: StepArtworkShape,
     connectorStyle: StepConnectorStyle,
     contentStyle: StepContentStyle,
     cardShape: StepCardShape,
     showLabels: Boolean,
     showSubLabels: Boolean,
+    showLeadingPath: Boolean,
+    showTrailingPath: Boolean,
     onStepClick: ((Int) -> Unit)?,
     isStepClickable: ((Int) -> Boolean)?,
     strings: StepperStrings,
@@ -971,10 +1115,27 @@ private fun VerticalStepper(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.Top
             ) {
-                // Indicator column
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Leading path above the first step, toggled per spec; invisible
+                    // frame keeps alignment identical whether shown or not.
+                    if (index == 0) {
+                        if (showLeadingPath && connectorStyle != StepConnectorStyle.None) {
+                            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
+                            StepConnector(
+                                isCompleted = false,
+                                config = config,
+                                colors = colors,
+                                style = connectorStyle,
+                                orientation = StepperOrientation.Vertical
+                            )
+                            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
+                        } else {
+                            PathSpacer(config, StepperOrientation.Vertical)
+                        }
+                    }
+
                     StepIndicator(
                         stepNumber = index + 1,
                         stepData = step,
@@ -982,12 +1143,14 @@ private fun VerticalStepper(
                         config = config,
                         colors = colors,
                         indicatorType = indicatorType,
+                        artworkShape = artworkShape,
+                        totalSteps = steps.size,
+                        strings = strings,
                         onClick = if (onStepClick != null && (isStepClickable?.invoke(index) != false) && step.isClickable) {
                             { onStepClick(index) }
                         } else null
                     )
 
-                    // Connector to next step
                     if (index < steps.size - 1 && connectorStyle != StepConnectorStyle.None) {
                         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
                         StepConnector(
@@ -998,10 +1161,23 @@ private fun VerticalStepper(
                             orientation = StepperOrientation.Vertical
                         )
                         Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
+                    } else if (index == steps.size - 1) {
+                        if (showTrailingPath && connectorStyle != StepConnectorStyle.None) {
+                            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
+                            StepConnector(
+                                isCompleted = step.isCompleted,
+                                config = config,
+                                colors = colors,
+                                style = connectorStyle,
+                                orientation = StepperOrientation.Vertical
+                            )
+                            Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
+                        } else {
+                            PathSpacer(config, StepperOrientation.Vertical)
+                        }
                     }
                 }
 
-                // Content
                 StepContent(
                     stepData = step,
                     isCurrentStep = index == currentStep,
@@ -1027,6 +1203,7 @@ private fun HorizontalStepper(
     config: StepperConfig,
     colors: StepColors,
     indicatorType: StepIndicatorType,
+    artworkShape: StepArtworkShape,
     connectorStyle: StepConnectorStyle,
     contentStyle: StepContentStyle,
     cardShape: StepCardShape,
@@ -1046,7 +1223,6 @@ private fun HorizontalStepper(
             verticalAlignment = Alignment.CenterVertically
         ) {
             steps.forEachIndexed { index, step ->
-                // Each step takes equal weight
                 Row(
                     modifier = Modifier.weight(1f),
                     verticalAlignment = Alignment.CenterVertically
@@ -1062,6 +1238,9 @@ private fun HorizontalStepper(
                             config = config,
                             colors = colors,
                             indicatorType = indicatorType,
+                            artworkShape = artworkShape,
+                            totalSteps = steps.size,
+                            strings = strings,
                             onClick = if (onStepClick != null && (isStepClickable?.invoke(index) != false) && step.isClickable) {
                                 { onStepClick(index) }
                             } else null
@@ -1069,19 +1248,19 @@ private fun HorizontalStepper(
 
                         if (showLabels) {
                             Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
-                            Text(
+                            BasicText(
                                 text = step.title,
-                                style = config.titleStyle(),
-                                color = if (index == currentStep) colors.label else colors.subLabel,
-                                fontWeight = if (index == currentStep) FontWeight.SemiBold else FontWeight.Normal,
+                                style = config.titleStyle().copy(
+                                    color = if (index == currentStep) colors.label else colors.subLabel,
+                                    fontWeight = if (index == currentStep) FontWeight.SemiBold else FontWeight.Normal,
+                                    textAlign = TextAlign.Center
+                                ),
                                 maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                textAlign = TextAlign.Center
+                                overflow = TextOverflow.Ellipsis
                             )
                         }
                     }
 
-                    // Connector
                     if (index < steps.size - 1 && connectorStyle != StepConnectorStyle.None) {
                         StepConnector(
                             isCompleted = step.isCompleted,
@@ -1096,37 +1275,6 @@ private fun HorizontalStepper(
             }
         }
     }
-}
-
-// ============================================================================
-// HELPER FUNCTIONS
-// ============================================================================
-
-/**
- * Step state enum
- */
-private enum class StepState {
-    Completed,
-    Current,
-    Error,
-    Pending
-}
-
-/**
- * Get accessibility description for step
- */
-private fun getStepAccessibilityDescription(
-    stepNumber: Int,
-    stepData: StepData,
-    isCurrentStep: Boolean
-): String {
-    val state = when {
-        stepData.isError -> "error"
-        stepData.isCompleted -> "completed"
-        isCurrentStep -> "current"
-        else -> "pending"
-    }
-    return "Step $stepNumber: ${stepData.title}, $state"
 }
 
 // ============================================================================
@@ -1184,10 +1332,9 @@ fun StepProgressHeader(
     totalSteps: Int,
     modifier: Modifier = Modifier
 ) {
-    Text(
+    BasicText(
         text = "Step ${currentStep + 1} of $totalSteps",
-        style = AppTheme.typography.subtitleRegular,
-        color = AppTheme.colors.baseContentBody,
+        style = AppTheme.typography.subtitleRegular.copy(color = AppTheme.colors.baseContentBody),
         modifier = modifier
     )
 }
@@ -1199,7 +1346,7 @@ fun StepProgressHeader(
 /**
  * USAGE EXAMPLES:
  *
- * 1. Basic vertical stepper:
+ * 1. Basic vertical stepper (minimum 3 steps required):
  * ```
  * val steps = listOf(
  *     StepData(title = "Account Information", isCompleted = true),
@@ -1228,11 +1375,10 @@ fun StepProgressHeader(
  *
  * 3. Interactive stepper with navigation:
  * ```
- * Stepper(
+ * PixaStepper(
  *     steps = steps,
  *     currentStep = currentStep,
  *     onStepClick = { step ->
- *         // Allow going back to completed steps
  *         if (step < currentStep) {
  *             currentStep = step
  *         }
@@ -1242,22 +1388,7 @@ fun StepProgressHeader(
  *
  * 4. With icons and subtitles:
  * ```
- * val steps = listOf(
- *     StepData(
- *         title = "Choose Plan",
- *         subTitle = "Select your subscription",
- *         icon = rememberVectorPainter(Icons.Default.ShoppingCart),
- *         isCompleted = true
- *     ),
- *     StepData(
- *         title = "Payment",
- *         subTitle = "Enter card details",
- *         icon = rememberVectorPainter(Icons.Default.Payment),
- *         isCompleted = false
- *     )
- * )
- *
- * Stepper(
+ * PixaStepper(
  *     steps = steps,
  *     currentStep = 1,
  *     indicatorType = StepIndicatorType.Icon,
@@ -1267,7 +1398,7 @@ fun StepProgressHeader(
  *
  * 5. Card-style stepper:
  * ```
- * Stepper(
+ * PixaStepper(
  *     steps = steps,
  *     currentStep = currentStep,
  *     contentStyle = StepContentStyle.Card,
@@ -1275,46 +1406,32 @@ fun StepProgressHeader(
  * )
  * ```
  *
- * 6. Dot indicators (minimal):
+ * 6. XSmall bullet/stop indicators (spec-restricted to Dot artwork):
  * ```
- * Stepper(
+ * PixaStepper(
  *     steps = steps,
  *     currentStep = currentStep,
- *     indicatorType = StepIndicatorType.Dot,
- *     showLabels = false,
- *     size = SizeVariant.Small
+ *     size = SizeVariant.Nano,
+ *     showLabels = false
  * )
  * ```
  *
- * 7. Form wizard with next button:
+ * 7. Continuous path with no artwork ("Artwork none" per spec):
  * ```
- * var currentStep by remember { mutableStateOf(0) }
- * val steps = remember { /* your steps */ }
+ * PixaStepper(
+ *     steps = steps,
+ *     currentStep = currentStep,
+ *     indicatorType = StepIndicatorType.None
+ * )
+ * ```
  *
- * Column(
- *     modifier = Modifier
- *         .fillMaxSize()
- *         .padding(16.dp),
- *     verticalArrangement = Arrangement.SpaceBetween
- * ) {
- *     Column {
- *         StepProgressHeader(currentStep, steps.size)
- *         Spacer(Modifier.height(16.dp))
- *         VerticalStepper(steps, currentStep)
- *         Spacer(Modifier.height(24.dp))
- *         // Your form content here
- *     }
- *
- *     Button(
- *         text = if (currentStep < steps.size - 1) "Next" else "Complete",
- *         onClick = {
- *             if (currentStep < steps.size - 1) {
- *                 steps[currentStep].isCompleted = true
- *                 currentStep++
- *             }
- *         }
- *     )
- * }
+ * 8. Itinerary-style stepper with leading/trailing path shown:
+ * ```
+ * PixaStepper(
+ *     steps = steps,
+ *     currentStep = currentStep,
+ *     showLeadingPath = true,
+ *     showTrailingPath = true
+ * )
  * ```
  */
-

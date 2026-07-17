@@ -5,21 +5,24 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.selection.triStateToggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -36,12 +39,14 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.state.ToggleableState
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.pixaRipple
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -113,6 +118,16 @@ data class CheckboxStateColors(
 // THEME PROVIDER
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * Uber Base's Customization Boundaries pin the checkbox border to a fixed
+ * "always 1px inside alignment" regardless of size — unlike most Pixa
+ * controls, border width is not part of the size ladder here, so every tier
+ * below resolves to the same [HierarchicalSize.Border.Compact] rather than
+ * scaling with [size]. [SizeVariant] itself is a Pixa extension beyond the
+ * spec (which names only a single 48px "standard" checkbox) kept for
+ * consistency with the rest of the library and because [CheckboxGroup]/
+ * [PixaCheckboxTree]/existing call sites already depend on it.
+ */
 @Composable
 private fun getCheckboxSizeConfig(size: SizeVariant): CheckboxSizeConfig {
     val typography = AppTheme.typography
@@ -128,7 +143,7 @@ private fun getCheckboxSizeConfig(size: SizeVariant): CheckboxSizeConfig {
         SizeVariant.Medium -> CheckboxSizeConfig(
             boxSize = HierarchicalSize.Icon.Small,
             cornerRadius = HierarchicalSize.Radius.Small,
-            borderWidth = HierarchicalSize.Border.Medium,
+            borderWidth = HierarchicalSize.Border.Compact,
             checkmarkStroke = HierarchicalSize.Border.Medium,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyRegular }
@@ -136,7 +151,7 @@ private fun getCheckboxSizeConfig(size: SizeVariant): CheckboxSizeConfig {
         SizeVariant.Large -> CheckboxSizeConfig(
             boxSize = HierarchicalSize.Icon.Medium,
             cornerRadius = HierarchicalSize.Radius.Small,
-            borderWidth = HierarchicalSize.Border.Large,
+            borderWidth = HierarchicalSize.Border.Compact,
             checkmarkStroke = HierarchicalSize.Border.Medium,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyLight }
@@ -144,7 +159,7 @@ private fun getCheckboxSizeConfig(size: SizeVariant): CheckboxSizeConfig {
         else -> CheckboxSizeConfig(
             boxSize = HierarchicalSize.Icon.Small,
             cornerRadius = HierarchicalSize.Radius.Small,
-            borderWidth = HierarchicalSize.Border.Medium,
+            borderWidth = HierarchicalSize.Border.Compact,
             checkmarkStroke = HierarchicalSize.Border.Medium,
             labelSpacing = HierarchicalSize.Spacing.Small,
             labelStyle = { typography.bodyRegular }
@@ -157,7 +172,16 @@ private fun getCheckboxSizeConfig(size: SizeVariant): CheckboxSizeConfig {
 // ============================================================================
 
 /**
- * Get checkbox colors based on variant
+ * Get checkbox colors based on variant.
+ *
+ * Uber Base's Customization Boundaries name only content-role tokens
+ * (`contentPrimary`/`contentTertiary`/`contentStateDisabled`/`contentNegative`)
+ * for this component — no filled-surface/background token at all, meaning
+ * the spec's canonical checkbox is an outline-plus-checkmark control with no
+ * solid fill. [CheckboxVariant.Outlined] is the closest existing Pixa match
+ * to that and is now the default (see [PixaCheckbox]); [Filled]/[Ghost]
+ * remain as pre-existing Pixa-native style extensions the spec doesn't
+ * define but doesn't forbid either.
  */
 @Composable
 private fun getCheckboxTheme(
@@ -251,7 +275,17 @@ private fun getCheckboxTheme(
 // ============================================================================
 
 /**
- * Base Checkbox Box implementation
+ * Base Checkbox Box implementation.
+ *
+ * Hover/pressed use fixed black/white alpha scrims per Uber Base's states
+ * table (4%/8% black while unselected, 10%/20% white while selected/
+ * indeterminate — literal spec percentages, not theme tokens, same treatment
+ * [com.pixamob.pixacompose.components.display.PixaTile]'s `TileOverlayScrim`
+ * already uses for its own hover/pressed states). Focus renders a fixed 3px
+ * ([HierarchicalSize.Border.Large]) outline in `brandBorderFocus` (closest
+ * existing token to the spec's "borderSelected") in place of the normal
+ * state border, rather than as a separate offset ring, to avoid growing the
+ * checkbox's fixed footprint.
  */
 @Composable
 private fun PixaCheckboxBox(
@@ -259,6 +293,9 @@ private fun PixaCheckboxBox(
     state: CheckboxState,
     enabled: Boolean,
     isError: Boolean,
+    isHovered: Boolean,
+    isPressed: Boolean,
+    isFocused: Boolean,
     sizeConfig: CheckboxSizeConfig,
     colors: CheckboxStateColors
 ) {
@@ -313,15 +350,27 @@ private fun PixaCheckboxBox(
         label = "checkbox_progress"
     )
 
+    val isSelected = state != CheckboxState.Unchecked
+    val overlayColor = when {
+        !enabled -> Color.Transparent
+        isPressed -> if (isSelected) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.08f)
+        isHovered -> if (isSelected) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.04f)
+        else -> Color.Transparent
+    }
+    val shape = RoundedCornerShape(sizeConfig.cornerRadius)
+    val effectiveBorderWidth = if (isFocused && enabled) HierarchicalSize.Border.Large else sizeConfig.borderWidth
+    val effectiveBorderColor = if (isFocused && enabled) errorColors.brandBorderFocus else animatedBorderColor
+
     Box(
         modifier = modifier
             .size(sizeConfig.boxSize)
-            .clip(RoundedCornerShape(sizeConfig.cornerRadius))
+            .clip(shape)
             .background(animatedBoxColor)
+            .background(overlayColor)
             .border(
-                width = sizeConfig.borderWidth,
-                color = animatedBorderColor,
-                shape = RoundedCornerShape(sizeConfig.cornerRadius)
+                width = effectiveBorderWidth,
+                color = effectiveBorderColor,
+                shape = shape
             ),
         contentAlignment = Alignment.Center
     ) {
@@ -379,7 +428,17 @@ private fun PixaCheckboxBox(
 }
 
 /**
- * Base Checkbox implementation
+ * Base Checkbox implementation.
+ *
+ * Uses [Modifier.triStateToggleable] (not a plain `clickable(role = Role.Checkbox)`)
+ * so the checked/unchecked/indeterminate value is announced programmatically
+ * per spec's "states are announced programmatically" accessibility
+ * requirement — a plain `clickable` conveys a role but never a checked
+ * value. The whole row (box + label) is the click target and carries a
+ * [HierarchicalSize.TouchTarget.Small] (48px, WCAG 2.5.5) minimum height,
+ * per spec's "entire cell is the touch target" mobile rule and "minimum tap
+ * target: 48px" requirement — this holds even when [CheckboxSizeConfig.boxSize]
+ * is visually smaller.
  */
 @Composable
 private fun PixaCheckbox(
@@ -395,11 +454,21 @@ private fun PixaCheckbox(
     colors: CheckboxStateColors
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
+
+    val toggleableState = when (state) {
+        CheckboxState.Checked -> ToggleableState.On
+        CheckboxState.Unchecked -> ToggleableState.Off
+        CheckboxState.Indeterminate -> ToggleableState.Indeterminate
+    }
 
     val clickModifier = if (enabled && onCheckedChange != null) {
-        Modifier.clickable(
+        Modifier.triStateToggleable(
+            state = toggleableState,
             interactionSource = interactionSource,
-            indication = ripple(
+            indication = pixaRipple(
                 bounded = false,
                 radius = sizeConfig.boxSize
             ),
@@ -422,24 +491,21 @@ private fun PixaCheckbox(
 
         if (description != null) {
             Column {
-                Text(
+                BasicText(
                     text = lbl,
-                    style = sizeConfig.labelStyle(),
-                    color = animatedLabelColor
+                    style = sizeConfig.labelStyle().copy(color = animatedLabelColor)
                 )
-                Text(
+                BasicText(
                     text = description,
-                    style = AppTheme.typography.captionRegular,
-                    color = AppTheme.colors.baseContentCaption,
+                    style = AppTheme.typography.captionRegular.copy(color = AppTheme.colors.baseContentCaption),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
         } else {
-            Text(
+            BasicText(
                 text = lbl,
-                style = sizeConfig.labelStyle(),
-                color = animatedLabelColor
+                style = sizeConfig.labelStyle().copy(color = animatedLabelColor)
             )
         }
     } }
@@ -449,6 +515,9 @@ private fun PixaCheckbox(
             state = state,
             enabled = enabled,
             isError = isError,
+            isHovered = isHovered,
+            isPressed = isPressed,
+            isFocused = isFocused,
             sizeConfig = sizeConfig,
             colors = colors
         )
@@ -457,35 +526,40 @@ private fun PixaCheckbox(
     }
 
     Row(
-        modifier = modifier.then(clickModifier),
+        modifier = modifier
+            .sizeIn(minHeight = HierarchicalSize.TouchTarget.Small)
+            .then(clickModifier)
+            .focusable(enabled = enabled, interactionSource = interactionSource),
+        // Uber Base: "checkbox and first-line text top-aligned" for wrapping labels.
         horizontalArrangement = if (labelPosition == CheckboxLabelPosition.End) {
             Arrangement.Start
         } else {
             Arrangement.End
         },
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Top
     ) {
         if (labelPosition == CheckboxLabelPosition.Start && label != null) {
             if (description != null) {
                 Column {
-                    Text(
+                    BasicText(
                         text = label,
-                        style = sizeConfig.labelStyle(),
-                        color = if (enabled) colors.checked.label else colors.disabled.label
+                        style = sizeConfig.labelStyle().copy(
+                            color = if (enabled) colors.checked.label else colors.disabled.label
+                        )
                     )
-                    Text(
+                    BasicText(
                         text = description,
-                        style = AppTheme.typography.captionRegular,
-                        color = AppTheme.colors.baseContentCaption,
+                        style = AppTheme.typography.captionRegular.copy(color = AppTheme.colors.baseContentCaption),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
                 }
             } else {
-                Text(
+                BasicText(
                     text = label,
-                    style = sizeConfig.labelStyle(),
-                    color = if (enabled) colors.checked.label else colors.disabled.label
+                    style = sizeConfig.labelStyle().copy(
+                        color = if (enabled) colors.checked.label else colors.disabled.label
+                    )
                 )
             }
             Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
@@ -510,10 +584,13 @@ enum class CheckboxLabelPosition {
 }
 
 /**
- * Checkbox - Multi-selection input control
+ * Checkbox - Multi-selection input control.
+ * components, per the spec's own disambiguation note).
  *
  * A checkbox component for binary selection (checked/unchecked) or tri-state selection
  * (checked/unchecked/indeterminate). Commonly used in forms, settings, and multi-select lists.
+ * Use a checkbox when selections are saved after a final button interaction;
+ * use [PixaSwitch] instead when the toggle should take effect immediately.
  *
  * @param checked Whether the checkbox is checked
  * @param onCheckedChange Callback when checkbox state changes (null for read-only)
@@ -521,8 +598,8 @@ enum class CheckboxLabelPosition {
  * @param enabled Whether the checkbox is enabled
  * @param label Optional text label
  * @param labelPosition Position of the label (Start or End)
- * @param variant Visual style (Filled or Outlined)
- * @param size Size variant (Small, Medium, Large)
+ * @param variant Visual style (Default: [CheckboxVariant.Outlined] — the closest match to Uber Base's spec, which names only content-role tokens, no filled-surface token; [CheckboxVariant.Filled]/`.Ghost` are pre-existing Pixa extensions beyond the spec)
+ * @param size Size variant (Small, Medium, Large) — a Pixa extension; the spec itself defines a single fixed 48px checkbox, see [getCheckboxSizeConfig]
  * @param state Explicit tri-state value (overrides checked parameter)
  *
  * @sample
@@ -566,7 +643,7 @@ fun PixaCheckbox(
     label: String? = null,
     description: String? = null,
     labelPosition: CheckboxLabelPosition = CheckboxLabelPosition.End,
-    variant: CheckboxVariant = CheckboxVariant.Filled,
+    variant: CheckboxVariant = CheckboxVariant.Outlined,
     size: SizeVariant = SizeVariant.Medium,
     state: CheckboxState? = null
 ) {
@@ -608,7 +685,7 @@ fun TriStateCheckbox(
     label: String? = null,
     description: String? = null,
     labelPosition: CheckboxLabelPosition = CheckboxLabelPosition.End,
-    variant: CheckboxVariant = CheckboxVariant.Filled,
+    variant: CheckboxVariant = CheckboxVariant.Outlined,
     size: SizeVariant = SizeVariant.Medium
 ) {
     val themeColors = getCheckboxTheme(variant, AppTheme.colors)
@@ -666,7 +743,7 @@ fun LabeledCheckbox(
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
     labelPosition: CheckboxLabelPosition = CheckboxLabelPosition.End,
-    variant: CheckboxVariant = CheckboxVariant.Filled,
+    variant: CheckboxVariant = CheckboxVariant.Outlined,
     size: SizeVariant = SizeVariant.Medium
 ) {
     PixaCheckbox(
@@ -853,7 +930,7 @@ fun <T> CheckboxGroup(
     showSelectAll: Boolean = false,
     selectAllLabel: String = "Select All",
     optionLabel: (T) -> String = { it.toString() },
-    variant: CheckboxVariant = CheckboxVariant.Filled,
+    variant: CheckboxVariant = CheckboxVariant.Outlined,
     size: SizeVariant = SizeVariant.Medium,
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
 ) {
@@ -934,7 +1011,7 @@ fun PixaCheckboxTree(
     onSelectionChange: (Set<String>) -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    variant: CheckboxVariant = CheckboxVariant.Filled,
+    variant: CheckboxVariant = CheckboxVariant.Outlined,
     size: SizeVariant = SizeVariant.Medium,
     indent: Dp = HierarchicalSize.Spacing.Medium
 ) {

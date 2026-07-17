@@ -3,25 +3,26 @@ package com.pixamob.pixacompose.components.inputs
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -33,21 +34,67 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.semantics.ProgressBarRangeInfo
 import androidx.compose.ui.semantics.disabled
+import androidx.compose.ui.semantics.progressBarRangeInfo
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
 import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils
+import kotlin.math.abs
 import kotlin.math.roundToInt
+
+/**
+ * PixaRangeSlider — the dual-knob variant of Uber Base's "Slider" component.
+ *
+ * Source: https://base.uber.com/6d2425e9f/p/30cac1-slider.md
+ *
+ * Purpose: lets a user select a range between a lower and upper bound with
+ *   immediate visual feedback (the track fills between the two thumbs).
+ *
+ * Anatomy: track (inactive + active-between-thumbs fill) + two thumbs, plus
+ *   an optional lower/upper value readout.
+ *
+ * States: enabled, disabled, and per-thumb dragging/keyboard-focused — each
+ *   thumb independently shows its own floating value bubble while active,
+ *   per spec's "Active + value label" state.
+ *
+ * Sizing: [SizeVariant]-driven via [HierarchicalSize], matching [PixaSlider].
+ *
+ * Interaction: drag either thumb, tap the track to move whichever thumb is
+ *   closer to the tap point, or use the keyboard — per spec, Tab/Shift+Tab
+ *   moves focus between the lower and upper thumb (they're two independent
+ *   focus targets), then Left/Right/Up/Down/Page Up/Page Down/Home/End step
+ *   the focused thumb exactly as in [PixaSlider], clamped against the other
+ *   thumb's current value.
+ *
+ * Adaptive behavior: pointer math is mirrored under RTL the same way as
+ *   [PixaSlider] — see that component's doc for why only the pointer
+ *   coordinate conversion (not the thumb's `offset()`/`Alignment` placement)
+ *   needs manual mirroring.
+ *
+ * Customization: size, custom [RangeSliderColors], discrete step count,
+ *   value formatting. Not exposed: independent variants (Outlined/Ghost)
+ *   the way [PixaSlider] has — the spec doesn't call out a distinct visual
+ *   treatment for the range configuration beyond the second thumb, so this
+ *   stays a single (brand-filled) look rather than triplicating the palette
+ *   surface for a distinction the spec doesn't ask for.
+ */
 
 @Immutable
 @Stable
@@ -57,6 +104,8 @@ data class RangeSliderColors(
     val thumb: Color,
     val thumbBorder: Color,
     val valueText: Color,
+    val valueBubbleSurface: Color,
+    val valueBubbleContent: Color,
     val disabledActiveTrack: Color,
     val disabledInactiveTrack: Color,
     val disabledThumb: Color
@@ -84,8 +133,12 @@ private fun getRangeSliderTheme(colors: ColorPalette): RangeSliderColors {
         activeTrack = colors.brandContentDefault,
         inactiveTrack = colors.baseSurfaceElevated,
         thumb = colors.brandContentDefault,
-        thumbBorder = Color.White,
+        thumbBorder = colors.baseSurfaceDefault,
         valueText = colors.baseContentTitle,
+        // Mirrors PixaTooltip's high-contrast surface (overlay/Tooltip.kt) so
+        // this floating micro-label reads the same as the rest of the library.
+        valueBubbleSurface = colors.baseContentTitle,
+        valueBubbleContent = colors.baseSurfaceDefault,
         disabledActiveTrack = colors.baseContentDisabled,
         disabledInactiveTrack = colors.baseSurfaceDisabled,
         disabledThumb = colors.baseContentDisabled
@@ -166,6 +219,7 @@ fun PixaRangeSlider(
     val themeColors = getRangeSliderTheme(AppTheme.colors)
     val finalColors = colors ?: themeColors
     val sizeConfig = getRangeSliderSizeConfig(size)
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
 
     val rangeStart = valueRange.start
     val rangeEnd = valueRange.endInclusive
@@ -192,10 +246,20 @@ fun PixaRangeSlider(
 
     var isDraggingLower by remember { mutableStateOf(false) }
     var isDraggingUpper by remember { mutableStateOf(false) }
-    val isDragging = isDraggingLower || isDraggingUpper
+
+    val lowerInteractionSource = remember { MutableInteractionSource() }
+    val upperInteractionSource = remember { MutableInteractionSource() }
+    val isLowerFocused by lowerInteractionSource.collectIsFocusedAsState()
+    val isUpperFocused by upperInteractionSource.collectIsFocusedAsState()
+    val isLowerActive = isDraggingLower || isLowerFocused
+    val isUpperActive = isDraggingUpper || isUpperFocused
 
     val thumbSize by animateDpAsState(
-        targetValue = if (isDragging) sizeConfig.thumbSize * config.thumbScaleOnDrag else sizeConfig.thumbSize,
+        targetValue = if (isDraggingLower || isDraggingUpper) {
+            sizeConfig.thumbSize * config.thumbScaleOnDrag
+        } else {
+            sizeConfig.thumbSize
+        },
         animationSpec = AnimationUtils.fastSpringSpec()
     )
 
@@ -225,16 +289,8 @@ fun PixaRangeSlider(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = valueFormatter(lowerValue),
-                    style = sizeConfig.valueStyle,
-                    color = finalColors.valueText
-                )
-                Text(
-                    text = valueFormatter(upperValue),
-                    style = sizeConfig.valueStyle,
-                    color = finalColors.valueText
-                )
+                BasicText(text = valueFormatter(lowerValue), style = sizeConfig.valueStyle.copy(color = finalColors.valueText))
+                BasicText(text = valueFormatter(upperValue), style = sizeConfig.valueStyle.copy(color = finalColors.valueText))
             }
             Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Small))
         }
@@ -247,12 +303,13 @@ fun PixaRangeSlider(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(sizeConfig.thumbSize)
-                    .pointerInput(enabled, lowerValue, upperValue) {
+                    .pointerInput(enabled, lowerValue, upperValue, isRtl) {
                         if (!enabled) return@pointerInput
                         detectTapGestures { offset ->
-                            val xRatio = (offset.x / trackWidth).coerceIn(0f, 1f)
-                            val lowerDist = kotlin.math.abs(xRatio - animatedLowerFraction)
-                            val upperDist = kotlin.math.abs(xRatio - animatedUpperFraction)
+                            val physicalX = if (isRtl) trackWidth - offset.x else offset.x
+                            val xRatio = (physicalX / trackWidth).coerceIn(0f, 1f)
+                            val lowerDist = abs(xRatio - animatedLowerFraction)
+                            val upperDist = abs(xRatio - animatedUpperFraction)
                             val newValue = rangeStart + (xRatio * rangeWidth)
 
                             if (lowerDist <= upperDist) {
@@ -265,14 +322,15 @@ fun PixaRangeSlider(
                             onValueChangeFinished?.invoke()
                         }
                     }
-                    .pointerInput(enabled, lowerValue, upperValue) {
+                    .pointerInput(enabled, lowerValue, upperValue, isRtl) {
                         if (!enabled) return@pointerInput
                         var draggingLower = false
                         detectDragGestures(
                             onDragStart = { offset ->
-                                val xRatio = (offset.x / trackWidth).coerceIn(0f, 1f)
-                                val lowerDist = kotlin.math.abs(xRatio - animatedLowerFraction)
-                                val upperDist = kotlin.math.abs(xRatio - animatedUpperFraction)
+                                val physicalX = if (isRtl) trackWidth - offset.x else offset.x
+                                val xRatio = (physicalX / trackWidth).coerceIn(0f, 1f)
+                                val lowerDist = abs(xRatio - animatedLowerFraction)
+                                val upperDist = abs(xRatio - animatedUpperFraction)
                                 draggingLower = lowerDist <= upperDist
                                 if (draggingLower) isDraggingLower = true else isDraggingUpper = true
                             },
@@ -287,7 +345,8 @@ fun PixaRangeSlider(
                             }
                         ) { change, _ ->
                             change.consume()
-                            val xRatio = (change.position.x / trackWidth).coerceIn(0f, 1f)
+                            val physicalX = if (isRtl) trackWidth - change.position.x else change.position.x
+                            val xRatio = (physicalX / trackWidth).coerceIn(0f, 1f)
                             var newValue = rangeStart + (xRatio * rangeWidth)
                             if (steps > 0) {
                                 val stepSize = rangeWidth / (steps + 1)
@@ -329,22 +388,37 @@ fun PixaRangeSlider(
                         .background(activeTrackColor)
                 )
 
-                // Lower thumb
+                // Lower thumb — independent focus target so Tab/Shift+Tab can
+                // select it distinctly from the upper thumb, per spec.
                 Box(
                     modifier = Modifier
                         .offset(x = (maxWidthDp - thumbSize) * animatedLowerFraction)
                         .size(thumbSize)
+                        .focusable(enabled = enabled, interactionSource = lowerInteractionSource)
+                        .onKeyEvent { event ->
+                            handleRangeSliderKeyEvent(
+                                event = event,
+                                enabled = enabled,
+                                isRtl = isRtl,
+                                isLower = true,
+                                lowerValue = lowerValue,
+                                upperValue = upperValue,
+                                valueRange = valueRange,
+                                steps = steps,
+                                onValueChange = onValueChange,
+                                onValueChangeFinished = onValueChangeFinished
+                            )
+                        }
+                        .semantics {
+                            progressBarRangeInfo = ProgressBarRangeInfo(lowerValue, valueRange.start..upperValue, steps)
+                        }
                         .shadow(
                             elevation = if (enabled) sizeConfig.thumbElevation else 0.dp,
                             shape = CircleShape
                         )
                         .clip(CircleShape)
                         .background(thumbColor)
-                        .border(
-                            width = config.thumbBorderWidth,
-                            color = if (thumbColor.luminance() > 0.5f) Color.Black.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.9f),
-                            shape = CircleShape
-                        )
+                        .border(config.thumbBorderWidth, finalColors.thumbBorder, CircleShape)
                 )
 
                 // Upper thumb
@@ -352,18 +426,146 @@ fun PixaRangeSlider(
                     modifier = Modifier
                         .offset(x = (maxWidthDp - thumbSize) * animatedUpperFraction)
                         .size(thumbSize)
+                        .focusable(enabled = enabled, interactionSource = upperInteractionSource)
+                        .onKeyEvent { event ->
+                            handleRangeSliderKeyEvent(
+                                event = event,
+                                enabled = enabled,
+                                isRtl = isRtl,
+                                isLower = false,
+                                lowerValue = lowerValue,
+                                upperValue = upperValue,
+                                valueRange = valueRange,
+                                steps = steps,
+                                onValueChange = onValueChange,
+                                onValueChangeFinished = onValueChangeFinished
+                            )
+                        }
+                        .semantics {
+                            progressBarRangeInfo = ProgressBarRangeInfo(upperValue, lowerValue..valueRange.endInclusive, steps)
+                        }
                         .shadow(
                             elevation = if (enabled) sizeConfig.thumbElevation else 0.dp,
                             shape = CircleShape
                         )
                         .clip(CircleShape)
                         .background(thumbColor)
-                        .border(
-                            width = config.thumbBorderWidth,
-                            color = if (thumbColor.luminance() > 0.5f) Color.Black.copy(alpha = 0.8f) else Color.White.copy(alpha = 0.9f),
-                            shape = CircleShape
-                        )
+                        .border(config.thumbBorderWidth, finalColors.thumbBorder, CircleShape)
                 )
+
+                ValueBubble(
+                    visible = isLowerActive && enabled,
+                    text = valueFormatter(lowerValue),
+                    normalizedValue = animatedLowerFraction,
+                    thumbSize = sizeConfig.thumbSize,
+                    valueStyle = sizeConfig.valueStyle,
+                    surfaceColor = finalColors.valueBubbleSurface,
+                    contentColor = finalColors.valueBubbleContent,
+                    maxWidth = maxWidthDp
+                )
+
+                ValueBubble(
+                    visible = isUpperActive && enabled,
+                    text = valueFormatter(upperValue),
+                    normalizedValue = animatedUpperFraction,
+                    thumbSize = sizeConfig.thumbSize,
+                    valueStyle = sizeConfig.valueStyle,
+                    surfaceColor = finalColors.valueBubbleSurface,
+                    contentColor = finalColors.valueBubbleContent,
+                    maxWidth = maxWidthDp
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Keyboard stepping for the focused thumb, clamped against the other thumb's
+ * current value so the two knobs can never cross. Mirrors [PixaSlider]'s key
+ * mapping — see that component's `handleSliderKeyEvent` for the rationale.
+ */
+private fun handleRangeSliderKeyEvent(
+    event: KeyEvent,
+    enabled: Boolean,
+    isRtl: Boolean,
+    isLower: Boolean,
+    lowerValue: Float,
+    upperValue: Float,
+    valueRange: ClosedFloatingPointRange<Float>,
+    steps: Int,
+    onValueChange: (Float, Float) -> Unit,
+    onValueChangeFinished: (() -> Unit)?
+): Boolean {
+    if (!enabled || event.type != KeyEventType.KeyDown) return false
+
+    val rangeWidth = valueRange.endInclusive - valueRange.start
+    val step = if (steps > 0) rangeWidth / (steps + 1) else rangeWidth / 100f
+    val pageStep = rangeWidth / 10f
+    val current = if (isLower) lowerValue else upperValue
+    val minBound = if (isLower) valueRange.start else lowerValue
+    val maxBound = if (isLower) upperValue else valueRange.endInclusive
+
+    fun apply(newValue: Float): Boolean {
+        val clamped = newValue.coerceIn(minBound, maxBound)
+        if (isLower) onValueChange(clamped, upperValue) else onValueChange(lowerValue, clamped)
+        onValueChangeFinished?.invoke()
+        return true
+    }
+
+    if (event.key == Key.MoveHome) return apply(minBound)
+    if (event.key == Key.MoveEnd) return apply(maxBound)
+
+    val delta = when (event.key) {
+        Key.DirectionRight -> if (isRtl) -step else step
+        Key.DirectionLeft -> if (isRtl) step else -step
+        Key.DirectionUp -> step
+        Key.DirectionDown -> -step
+        Key.PageUp -> pageStep
+        Key.PageDown -> -pageStep
+        else -> return false
+    }
+
+    return apply(current + delta)
+}
+
+/**
+ * Same floating value readout as [PixaSlider]'s internal `ValueBubble` — kept
+ * as a private per-file copy rather than a shared cross-family export, since
+ * it's a tiny (~15 line) layout and sharing it would mean either promoting it
+ * to a public API surface or reaching into `Slider.kt`'s private internals,
+ * both worse than the duplication.
+ */
+@Composable
+private fun ValueBubble(
+    visible: Boolean,
+    text: String,
+    normalizedValue: Float,
+    thumbSize: Dp,
+    valueStyle: TextStyle,
+    surfaceColor: Color,
+    contentColor: Color,
+    maxWidth: Dp
+) {
+    Box(
+        modifier = Modifier
+            .offset(
+                x = (maxWidth - thumbSize) * normalizedValue,
+                y = -(thumbSize + HierarchicalSize.Spacing.Small)
+            )
+            .size(thumbSize),
+        contentAlignment = Alignment.Center
+    ) {
+        AnimationUtils.AnimatedVisibilityStandard(
+            visible = visible,
+            enter = AnimationUtils.scaleInTransition,
+            exit = AnimationUtils.scaleOutTransition
+        ) {
+            Box(
+                modifier = Modifier
+                    .background(surfaceColor, AppTheme.shapes.pill)
+                    .padding(horizontal = HierarchicalSize.Padding.Small, vertical = HierarchicalSize.Padding.Nano)
+            ) {
+                BasicText(text = text, style = valueStyle.copy(color = contentColor))
             }
         }
     }

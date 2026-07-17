@@ -5,14 +5,17 @@ import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -26,7 +29,11 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.Dp
+import com.pixamob.pixacompose.components.actions.ChipType
+import com.pixamob.pixacompose.components.actions.PixaChip
 import com.pixamob.pixacompose.components.display.PixaIcon
+import com.pixamob.pixacompose.components.feedback.PixaCircularIndicator
+import com.pixamob.pixacompose.components.feedback.Skeleton
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlin.math.roundToInt
@@ -45,7 +52,38 @@ enum class TextFieldVariant {
 }
 
 /**
- * Configuration for TextField appearance
+ * Trailing status indicator — Uber Base's "Complete"/"Incomplete" (fill-status, independent of
+ * [PixaTextField]'s isError/isSuccess validation axis) and "Loading" states. Occupies the trailing
+ * slot with priority over [PixaTextField]'s `trailingIcon`/`onClear` when not [None].
+ */
+enum class TextFieldStatus {
+    None,
+    /** Green circle_check, per spec — "contentPositive" trailing icon. */
+    Complete,
+    /** Red circle_x, per spec — "contentNegative" trailing icon. */
+    Incomplete,
+    /** Progress spinner at trailing position — reuses [PixaCircularIndicator]. */
+    Loading
+}
+
+/**
+ * Uber Base's two primary content types (Secure/Masked is already covered by [PixaTextField]'s
+ * existing `visualTransformation` param, e.g. [PasswordTextField]). [Tags] renders committed values
+ * as removable [PixaChip]s ahead of the text input — see [PixaTextField]'s `tags`/`onTagsChange`.
+ */
+enum class TextFieldContentType {
+    Plaintext,
+    Tags
+}
+
+/**
+ * Configuration for TextField appearance.
+ *
+ * Uber Base locks several of these ratios at the container level (not per-size): corner radius
+ * (minimum 8px — [cornerRadius] is therefore constant, not scaled), horizontal padding (16px,
+ * constant), and border width (1px default / 3px active-error-success-readonly — see
+ * [DefaultBorderWidth]/[ActiveBorderWidth], no longer part of this per-size config). Only vertical
+ * padding and the height/type-scale genuinely vary per size, per spec's own table.
  */
 @Stable
 private data class TextFieldConfig(
@@ -56,12 +94,21 @@ private data class TextFieldConfig(
     val labelTextStyle: TextStyle,
     val helperTextStyle: TextStyle,
     val iconSize: Dp,
-    val borderWidth: Dp,
     val cornerRadius: Dp
 )
 
+/** Uber Base: "Border styling... 1px weight, inside alignment for standard." Constant across size/variant. */
+private val DefaultBorderWidth = HierarchicalSize.Border.Compact
+
+/** Uber Base: "3px for active/error/success/read-only." Constant across size/variant. */
+private val ActiveBorderWidth = HierarchicalSize.Border.Large
+
 /**
- * Get configuration for given size
+ * Get configuration for given size. Heights/vertical padding follow Uber Base's exact table
+ * (Small 36/8px, Medium 48/12px, Large 56/16px) via [HierarchicalSize.Input]/[HierarchicalSize.Spacing]
+ * — [HierarchicalSize.Input.Small] (40dp) is 4dp off the spec's literal 36px since the shared token
+ * ladder is reused rather than introducing a stray one-off literal; Medium (48dp) and Large (56dp)
+ * match the spec exactly.
  */
 @Composable
 private fun SizeVariant.config(): TextFieldConfig {
@@ -69,49 +116,45 @@ private fun SizeVariant.config(): TextFieldConfig {
     return when (this) {
         SizeVariant.Small -> TextFieldConfig(
             height = HierarchicalSize.Input.Small,
-            horizontalPadding = HierarchicalSize.Spacing.Medium,
-            verticalPadding = HierarchicalSize.Spacing.Compact,
+            horizontalPadding = HierarchicalSize.Spacing.Large,
+            verticalPadding = HierarchicalSize.Spacing.Small,
             textStyle = typography.bodyLight,
             labelTextStyle = typography.labelSmall,
             helperTextStyle = typography.captionLight,
             iconSize = HierarchicalSize.Icon.Small,
-            borderWidth = HierarchicalSize.Border.Compact,
-            cornerRadius = HierarchicalSize.Radius.Small
+            cornerRadius = HierarchicalSize.Radius.Medium
         )
 
         SizeVariant.Medium -> TextFieldConfig(
             height = HierarchicalSize.Input.Medium,
             horizontalPadding = HierarchicalSize.Spacing.Large,
-            verticalPadding = HierarchicalSize.Spacing.Small,
+            verticalPadding = HierarchicalSize.Spacing.Medium,
             textStyle = typography.bodyRegular,
             labelTextStyle = typography.labelMedium,
             helperTextStyle = typography.captionRegular,
             iconSize = HierarchicalSize.Icon.Medium,
-            borderWidth = HierarchicalSize.Border.Medium,
             cornerRadius = HierarchicalSize.Radius.Medium
         )
 
         SizeVariant.Large -> TextFieldConfig(
             height = HierarchicalSize.Input.Large,
-            horizontalPadding = HierarchicalSize.Spacing.Huge,
-            verticalPadding = HierarchicalSize.Spacing.Medium,
+            horizontalPadding = HierarchicalSize.Spacing.Large,
+            verticalPadding = HierarchicalSize.Spacing.Large,
             textStyle = typography.bodyBold,
             labelTextStyle = typography.labelLarge,
             helperTextStyle = typography.captionBold,
             iconSize = HierarchicalSize.Icon.Large,
-            borderWidth = HierarchicalSize.Border.Large,
-            cornerRadius = HierarchicalSize.Radius.Large
+            cornerRadius = HierarchicalSize.Radius.Medium
         )
 
         else -> TextFieldConfig(
             height = HierarchicalSize.Input.Medium,
             horizontalPadding = HierarchicalSize.Spacing.Large,
-            verticalPadding = HierarchicalSize.Spacing.Small,
+            verticalPadding = HierarchicalSize.Spacing.Medium,
             textStyle = typography.bodyRegular,
             labelTextStyle = typography.labelMedium,
             helperTextStyle = typography.captionRegular,
             iconSize = HierarchicalSize.Icon.Medium,
-            borderWidth = HierarchicalSize.Border.Medium,
             cornerRadius = HierarchicalSize.Radius.Medium
         )
     }
@@ -122,22 +165,38 @@ private fun SizeVariant.config(): TextFieldConfig {
 // ============================================================================
 
 /**
- * Colors for TextField states
+ * Colors for TextField states.
+ *
+ * Uber Base's Error and Success are a real/independent axis, not two ends of one flag — a field can
+ * validate positively (borderPositive/contentPositive) as distinctly as it can fail (borderNegative/
+ * contentNegative). [successBorder]/[successText] round that out. [focusedBackground] backs the
+ * spec's "Enabled: tertiary background; Active: primary background" — the Filled variant is the only
+ * one with a background to shift (Outlined/Ghost stay transparent per their own container model).
+ * [readOnlyBorder] approximates Uber's "3px borderOpaque" — this token system has no literal
+ * "opaque" border role, so it maps to the neutral `baseBorderDefault` (closest available role).
+ * [hoverOverlay]/[pressedOverlay] are the spec's literal "4% / 8% black overlay," matching the same
+ * convention already established on this library's other Uber Base migrations (Avatar/Tile/Tag).
  */
 @Stable
 private data class TextFieldColors(
     val background: Color,
+    val focusedBackground: Color,
     val border: Color,
     val focusedBorder: Color,
     val errorBorder: Color,
+    val successBorder: Color,
+    val readOnlyBorder: Color,
     val text: Color,
     val placeholder: Color,
     val label: Color,
     val helperText: Color,
     val errorText: Color,
+    val successText: Color,
     val disabledBackground: Color,
     val disabledBorder: Color,
-    val disabledText: Color
+    val disabledText: Color,
+    val hoverOverlay: Color,
+    val pressedOverlay: Color
 )
 
 /**
@@ -153,13 +212,18 @@ private fun TextFieldVariant.colors(
     enabled: Boolean
 ): TextFieldColors {
     val colors = AppTheme.colors
+    val hoverOverlay = Color.Black.copy(alpha = 0.04f)
+    val pressedOverlay = Color.Black.copy(alpha = 0.08f)
 
     return when (this) {
         TextFieldVariant.Filled -> TextFieldColors(
             background = if (enabled) colors.baseSurfaceSubtle else colors.baseSurfaceDisabled,
+            focusedBackground = colors.baseSurfaceFocus,
             border = Color.Transparent,
-            focusedBorder = colors.brandBorderDefault.copy(alpha = 0.2f),
+            focusedBorder = colors.brandBorderDefault,
             errorBorder = colors.errorBorderDefault,
+            successBorder = colors.successBorderDefault,
+            readOnlyBorder = colors.baseBorderDefault,
             text = when {
                 !enabled -> colors.baseContentDisabled
                 isError -> colors.errorContentDefault
@@ -169,16 +233,22 @@ private fun TextFieldVariant.colors(
             label = if (isFocused) colors.brandContentDefault else colors.baseContentBody,
             helperText = colors.baseContentBody,
             errorText = colors.errorContentDefault,
+            successText = colors.successContentDefault,
             disabledBackground = colors.baseSurfaceDisabled,
             disabledBorder = Color.Transparent,
-            disabledText = colors.baseContentDisabled
+            disabledText = colors.baseContentDisabled,
+            hoverOverlay = hoverOverlay,
+            pressedOverlay = pressedOverlay
         )
 
         TextFieldVariant.Outlined -> TextFieldColors(
             background = Color.Transparent,
+            focusedBackground = Color.Transparent,
             border = colors.baseBorderDefault,
             focusedBorder = colors.brandBorderDefault,
             errorBorder = colors.errorBorderDefault,
+            successBorder = colors.successBorderDefault,
+            readOnlyBorder = colors.baseBorderDefault,
             text = when {
                 !enabled -> colors.baseContentDisabled
                 isError -> colors.errorContentDefault
@@ -188,16 +258,22 @@ private fun TextFieldVariant.colors(
             label = if (isFocused) colors.brandContentDefault else colors.baseContentBody,
             helperText = colors.baseContentBody,
             errorText = colors.errorContentDefault,
+            successText = colors.successContentDefault,
             disabledBackground = Color.Transparent,
             disabledBorder = colors.baseBorderDisabled,
-            disabledText = colors.baseContentDisabled
+            disabledText = colors.baseContentDisabled,
+            hoverOverlay = hoverOverlay,
+            pressedOverlay = pressedOverlay
         )
 
         TextFieldVariant.Ghost -> TextFieldColors(
             background = Color.Transparent,
+            focusedBackground = Color.Transparent,
             border = Color.Transparent,
             focusedBorder = colors.baseBorderDefault.copy(alpha = 0.3f),
             errorBorder = colors.errorBorderDefault.copy(alpha = 0.3f),
+            successBorder = colors.successBorderDefault.copy(alpha = 0.3f),
+            readOnlyBorder = colors.baseBorderDefault.copy(alpha = 0.3f),
             text = when {
                 !enabled -> colors.baseContentDisabled
                 isError -> colors.errorContentDefault
@@ -207,9 +283,12 @@ private fun TextFieldVariant.colors(
             label = if (isFocused) colors.brandContentDefault else colors.baseContentBody,
             helperText = colors.baseContentBody,
             errorText = colors.errorContentDefault,
+            successText = colors.successContentDefault,
             disabledBackground = Color.Transparent,
             disabledBorder = Color.Transparent,
-            disabledText = colors.baseContentDisabled
+            disabledText = colors.baseContentDisabled,
+            hoverOverlay = hoverOverlay,
+            pressedOverlay = pressedOverlay
         )
     }
 }
@@ -219,73 +298,63 @@ private fun TextFieldVariant.colors(
 // ============================================================================
 
 /**
- * PixaTextField - Single-line text input component
+ * PixaTextField — a foundational input component that gathers text-based keyboard input and allows
+ * users to enter and edit text.
  *
- * A flexible text field with variants, sizes, and full customization.
+ * ### Anatomy
+ * Form [label] (optional) → input control (leading enhancer → text/[placeholder] → trailing
+ * enhancer/[TextFieldStatus]) → form [helperText]/[errorText]. Enhancers accept either artwork
+ * ([leadingIcon]/[trailingIcon]) or a text label ([leadingLabel]/[trailingLabel], e.g. a currency
+ * symbol) per slot — spec: "either artwork or labels."
  *
- * ## Usage Examples
+ * ### Content model
+ * [contentType] selects [TextFieldContentType.Plaintext] (default) or [TextFieldContentType.Tags]
+ * (committed [tags] render as removable [PixaChip]s ahead of the input). Secure/Masked input is
+ * already covered by [visualTransformation] (see [PasswordTextField]) rather than a third content type.
  *
- * ```kotlin
- * // Basic text field
- * var text by remember { mutableStateOf("") }
- * PixaTextField(
- *     value = text,
- *     onValueChange = { text = it },
- *     placeholder = "Enter text"
- * )
+ * ### States
+ * Enabled/disabled, focused ("Active" — 3px `brandBorderDefault` outline + background shifts from
+ * `baseSurfaceSubtle` to `baseSurfaceFocus` on [TextFieldVariant.Filled]), [isError]/[isSuccess]
+ * (independent validation axes, each with their own 3px outline + hint color — never combined),
+ * [readOnly] (3px outline, focusable/tab-navigable/value-submitted, distinct from disabled per spec's
+ * "use read-only instead" guidance), hover/pressed (4%/8% black overlay), and trailing [status]
+ * (Complete/Incomplete/Loading — independent of isError/isSuccess; see [TextFieldStatus]).
+ * [isPreloading] swaps the whole field for a [Skeleton] placeholder.
  *
- * // Outlined variant with label
- * PixaTextField(
- *     value = email,
- *     onValueChange = { email = it },
- *     variant = TextFieldVariant.Outlined,
- *     label = "Email",
- *     placeholder = "Enter your email"
- * )
+ * ### Sizing
+ * [size] resolves height/vertical padding to Uber Base's exact table (Small 36/8px, Medium 48/12px,
+ * Large 56/16px — see [SizeVariant.config]). Corner radius (8px min) and horizontal padding (16px)
+ * are spec-locked constants, not scaled per size.
  *
- * // With error state
- * PixaTextField(
- *     value = password,
- *     onValueChange = { password = it },
- *     isError = password.length < 8,
- *     errorText = "Password must be at least 8 characters",
- *     visualTransformation = PasswordVisualTransformation()
- * )
- *
- * // With icons
- * PixaTextField(
- *     value = search,
- *     onValueChange = { search = it },
- *     leadingIcon = painterResource(Res.drawable.ic_search),
- *     trailingIcon = painterResource(Res.drawable.ic_clear),
- *     placeholder = "Search..."
- * )
- *
- * // Large size with character limit
- * PixaTextField(
- *     value = bio,
- *     onValueChange = { bio = it },
- *     size = SizeVariant.Large,
- *     maxLength = 150,
- *     helperText = "${bio.length}/150"
- * )
- * ```
+ * ### Customization
+ * [maxLength] restricts character count — spec: don't apply this to address/name fields, reserve for
+ * item names/descriptions. Required/optional marking is a content decision, not a boolean flag here —
+ * spec: "spell out '(required)' in label" (or a legendized asterisk), not a hint-text indicator; bake
+ * that into [label] directly rather than a dedicated param, per spec's "do not mix both styles."
  *
  * @param value Current text value
  * @param onValueChange Callback when text changes
  * @param modifier Modifier for the text field
  * @param variant Visual style variant (Filled, Outlined, Ghost)
  * @param size Size preset (Small, Medium, Large)
- * @param enabled Whether the field is enabled
- * @param readOnly Whether the field is read-only
- * @param isError Whether to show error state
+ * @param enabled Whether the field is enabled (not focusable/tab-navigable — use [readOnly] instead if the value must still submit)
+ * @param readOnly Whether the field is read-only (focusable, tab-navigable, value submitted — 3px outline)
+ * @param isError Whether to show the error validation state (3px `errorBorderDefault`, independent of [isSuccess])
+ * @param isSuccess Whether to show the success validation state (3px `successBorderDefault`, independent of [isError])
+ * @param status Trailing fill-status indicator (Complete/Incomplete/Loading) — see [TextFieldStatus]
+ * @param isPreloading Whether to render a [Skeleton] placeholder instead of the live field
  * @param label Optional label text
- * @param placeholder Optional placeholder text
+ * @param placeholder Optional placeholder text (never critical info — it disappears on typing, per spec)
  * @param helperText Optional helper text below field
  * @param errorText Optional error text (shown when isError=true)
- * @param leadingIcon Optional leading icon
- * @param trailingIcon Optional trailing icon
+ * @param leadingIcon Optional leading artwork enhancer
+ * @param trailingIcon Optional trailing artwork enhancer (superseded by [status] when not [TextFieldStatus.None])
+ * @param leadingLabel Optional leading text enhancer (e.g. a currency symbol) — mutually exclusive with [leadingIcon]
+ * @param trailingLabel Optional trailing text enhancer — mutually exclusive with [trailingIcon]/[status]
  * @param onClear Optional clear callback — when set, shows a clear icon when text is non-empty
+ * @param contentType [TextFieldContentType.Plaintext] (default) or [TextFieldContentType.Tags]
+ * @param tags Committed tag values, rendered as removable chips — only used when [contentType] is [TextFieldContentType.Tags]
+ * @param onTagsChange Callback when a tag is removed or a new one is committed (Enter/comma) — required for [TextFieldContentType.Tags]
  * @param visualTransformation Visual transformation (e.g., password)
  * @param keyboardOptions Keyboard configuration
  * @param keyboardActions Keyboard actions
@@ -306,13 +375,21 @@ fun PixaTextField(
     enabled: Boolean = true,
     readOnly: Boolean = false,
     isError: Boolean = false,
+    isSuccess: Boolean = false,
+    status: TextFieldStatus = TextFieldStatus.None,
+    isPreloading: Boolean = false,
     label: String? = null,
     placeholder: String? = null,
     helperText: String? = null,
     errorText: String? = null,
     leadingIcon: Painter? = null,
     trailingIcon: Painter? = null,
+    leadingLabel: String? = null,
+    trailingLabel: String? = null,
     onClear: (() -> Unit)? = null,
+    contentType: TextFieldContentType = TextFieldContentType.Plaintext,
+    tags: List<String> = emptyList(),
+    onTagsChange: ((List<String>) -> Unit)? = null,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
@@ -324,7 +401,23 @@ fun PixaTextField(
     customFocusedTextColor: Color? = null
 ) {
     val config = size.config()
+
+    if (isPreloading) {
+        Column(modifier = modifier) {
+            if (label != null) {
+                // Label placeholder hugs ~30% of the row width rather than a fixed dp literal —
+                // Skeleton widths are inherently approximate stand-ins, not pixel-meaningful.
+                Skeleton(modifier = Modifier.fillMaxWidth(0.3f), height = HierarchicalSize.Spacing.Large, showBorder = false)
+                Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
+            }
+            Skeleton(height = config.height, shape = RoundedCornerShape(config.cornerRadius))
+        }
+        return
+    }
+
     val isFocused by interactionSource.collectIsFocusedAsState()
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val isPressed by interactionSource.collectIsPressedAsState()
     val colors = variant.colors(isError, isFocused, enabled)
 
     // Determine text color: custom colors override variant colors
@@ -335,11 +428,14 @@ fun PixaTextField(
         else -> colors.text  // Use variant color which already considers all states
     }
 
-    // Animated colors
+    // Animated colors. Border: 1px default, 3px active/error/success/read-only — Uber Base's locked
+    // ratio, not a per-size or *1.2f fudge.
     val animatedBorderColor by animateColorAsState(
         targetValue = when {
             !enabled -> colors.disabledBorder
             isError -> colors.errorBorder
+            isSuccess -> colors.successBorder
+            readOnly -> colors.readOnlyBorder
             isFocused -> colors.focusedBorder
             else -> colors.border
         },
@@ -347,12 +443,16 @@ fun PixaTextField(
     )
 
     val animatedBackgroundColor by animateColorAsState(
-        targetValue = if (!enabled) colors.disabledBackground else colors.background,
+        targetValue = when {
+            !enabled -> colors.disabledBackground
+            isFocused -> colors.focusedBackground
+            else -> colors.background
+        },
         animationSpec = AnimationUtils.smoothSpring()
     )
 
     val animatedBorderWidth by animateDpAsState(
-        targetValue = if (isFocused && variant == TextFieldVariant.Outlined) config.borderWidth * 1.2f else config.borderWidth,
+        targetValue = if (isFocused || isError || isSuccess || readOnly) ActiveBorderWidth else DefaultBorderWidth,
         animationSpec = AnimationUtils.standardTween(200)
     )
 
@@ -363,18 +463,42 @@ fun PixaTextField(
     ) {
         // Label
         if (label != null) {
-            Text(
+            BasicText(
                 text = label,
-                style = config.labelTextStyle,
-                color = if (isError) colors.errorText else colors.label,
+                style = config.labelTextStyle.copy(color = if (isError) colors.errorText else colors.label),
                 modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
             )
+        }
+
+        // Tags (TextFieldContentType.Tags) — committed values render as removable chips ahead of the input.
+        if (contentType == TextFieldContentType.Tags && tags.isNotEmpty()) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Nano),
+                modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
+            ) {
+                tags.forEach { tag ->
+                    PixaChip(
+                        text = tag,
+                        size = SizeVariant.Small,
+                        type = ChipType.Dismissible,
+                        onDismiss = { onTagsChange?.invoke(tags - tag) }
+                    )
+                }
+            }
         }
 
         // Text field container
         BasicTextField(
             value = value,
             onValueChange = { newValue ->
+                if (contentType == TextFieldContentType.Tags && onTagsChange != null &&
+                    (newValue.endsWith(",") || newValue.endsWith("\n"))
+                ) {
+                    val newTag = newValue.trimEnd(',', '\n').trim()
+                    if (newTag.isNotEmpty()) onTagsChange(tags + newTag)
+                    onValueChange("")
+                    return@BasicTextField
+                }
                 val finalValue = if (maxLength != null) {
                     newValue.take(maxLength)
                 } else {
@@ -384,7 +508,8 @@ fun PixaTextField(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = config.height),
+                .heightIn(min = config.height)
+                .hoverable(interactionSource = interactionSource, enabled = enabled),
             enabled = enabled,
             readOnly = readOnly,
             textStyle = config.textStyle.copy(color = effectiveTextColor),
@@ -410,6 +535,13 @@ fun PixaTextField(
                                 )
                             } else Modifier
                         )
+                        .then(
+                            when {
+                                isPressed && enabled -> Modifier.background(colors.pressedOverlay, RoundedCornerShape(config.cornerRadius))
+                                isHovered && enabled -> Modifier.background(colors.hoverOverlay, RoundedCornerShape(config.cornerRadius))
+                                else -> Modifier
+                            }
+                        )
                         .padding(
                             horizontal = config.horizontalPadding,
                             vertical = config.verticalPadding
@@ -421,7 +553,7 @@ fun PixaTextField(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
                     ) {
-                        // Leading icon
+                        // Leading enhancer — artwork or label, not both
                         if (leadingIcon != null) {
                             PixaIcon(
                                 painter = leadingIcon,
@@ -429,6 +561,8 @@ fun PixaTextField(
                                 tint = colors.label,
                                 modifier = Modifier.size(config.iconSize)
                             )
+                        } else if (leadingLabel != null) {
+                            BasicText(text = leadingLabel, style = config.textStyle.copy(color = colors.label))
                         }
 
                         // Text input area
@@ -438,45 +572,66 @@ fun PixaTextField(
                         ) {
                             // Placeholder
                             if (value.isEmpty() && placeholder != null) {
-                                Text(
+                                BasicText(
                                     text = placeholder,
-                                    style = config.textStyle,
-                                    color = colors.placeholder
+                                    style = config.textStyle.copy(color = colors.placeholder)
                                 )
                             }
                             innerTextField()
                         }
 
-                        // Trailing icon / Clear icon
-                        if (trailingIcon != null) {
-                            PixaIcon(
-                                painter = trailingIcon,
-                                contentDescription = null,
-                                tint = colors.label,
-                                modifier = Modifier.size(config.iconSize)
+                        // Trailing slot: status indicator takes priority over artwork/label/clear
+                        when (status) {
+                            TextFieldStatus.Loading -> PixaCircularIndicator(
+                                modifier = Modifier.size(config.iconSize),
+                                sizePreset = SizeVariant.Small,
+                                contentDescription = "Loading"
                             )
-                        }
-                        if (onClear != null && value.isNotEmpty() && enabled && !readOnly) {
-                            Box(
-                                modifier = Modifier
-                                    .size(config.iconSize)
-                                    .clickable(
-                                        interactionSource = remember { MutableInteractionSource() },
-                                        indication = null
-                                    ) {
-                                        onValueChange("")
-                                        onClear()
-                                    }
-                                    .semantics {
-                                        contentDescription ?: "Clear text"
-                                    },
+                            TextFieldStatus.Complete -> Box(
+                                modifier = Modifier.size(config.iconSize).clip(AppTheme.shapes.pill).background(AppTheme.colors.successSurfaceDefault),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(
-                                    text = "✕",
-                                    style = AppTheme.typography.bodyRegular,
-                                    color = colors.label
-                                )
+                                BasicText(text = "✓", style = AppTheme.typography.captionBold.copy(color = AppTheme.colors.successContentDefault))
+                            }
+                            TextFieldStatus.Incomplete -> Box(
+                                modifier = Modifier.size(config.iconSize).clip(AppTheme.shapes.pill).background(AppTheme.colors.errorSurfaceDefault),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                BasicText(text = "✕", style = AppTheme.typography.captionBold.copy(color = AppTheme.colors.errorContentDefault))
+                            }
+                            TextFieldStatus.None -> {
+                                if (trailingIcon != null) {
+                                    PixaIcon(
+                                        painter = trailingIcon,
+                                        contentDescription = null,
+                                        tint = colors.label,
+                                        modifier = Modifier.size(config.iconSize)
+                                    )
+                                } else if (trailingLabel != null) {
+                                    BasicText(text = trailingLabel, style = config.textStyle.copy(color = colors.label))
+                                }
+                                if (onClear != null && value.isNotEmpty() && enabled && !readOnly) {
+                                    Box(
+                                        modifier = Modifier
+                                            .size(config.iconSize)
+                                            .clickable(
+                                                interactionSource = remember { MutableInteractionSource() },
+                                                indication = null
+                                            ) {
+                                                onValueChange("")
+                                                onClear()
+                                            }
+                                            .semantics {
+                                                contentDescription ?: "Clear text"
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        BasicText(
+                                            text = "✕",
+                                            style = AppTheme.typography.bodyRegular.copy(color = colors.label)
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -484,13 +639,22 @@ fun PixaTextField(
             }
         )
 
-        // Helper/Error text
-        val bottomText = if (isError && errorText != null) errorText else helperText
+        // Helper/Error/Success text
+        val bottomText = when {
+            isError && errorText != null -> errorText
+            else -> helperText
+        }
         if (bottomText != null) {
-            Text(
+            BasicText(
                 text = bottomText,
-                style = config.helperTextStyle,
-                color = if (isError) colors.errorText else colors.helperText,
+                style = config.helperTextStyle.copy(
+                    color = when {
+                        isError -> colors.errorText
+                        isSuccess -> colors.successText
+                        else -> colors.helperText
+                    }
+                ),
+                maxLines = 3,
                 modifier = Modifier.padding(
                     start = config.horizontalPadding,
                     top = HierarchicalSize.Spacing.Compact
@@ -500,10 +664,9 @@ fun PixaTextField(
 
         // Character counter
         if (maxLength != null && value.length > maxLength * 0.8) {
-            Text(
+            BasicText(
                 text = "${value.length}/$maxLength",
-                style = config.helperTextStyle,
-                color = if (value.length >= maxLength) colors.errorText else colors.helperText,
+                style = config.helperTextStyle.copy(color = if (value.length >= maxLength) colors.errorText else colors.helperText),
                 modifier = Modifier
                     .align(Alignment.End)
                     .padding(

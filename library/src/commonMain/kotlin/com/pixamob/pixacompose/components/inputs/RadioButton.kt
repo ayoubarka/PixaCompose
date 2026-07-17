@@ -5,20 +5,24 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -32,9 +36,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.pixaRipple
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -44,6 +48,16 @@ enum class RadioButtonVariant {
     Filled,
     Outlined,
     Ghost
+}
+
+/**
+ * RadioButton Label Position
+ */
+enum class RadioButtonLabelPosition {
+    /** Label appears before the radio button */
+    Start,
+    /** Label appears after the radio button */
+    End
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -69,9 +83,6 @@ data class RadioButtonColors(
     val label: Color
 )
 
-/**
- * RadioButton State Colors
- */
 @Immutable
 @Stable
 data class RadioButtonStateColors(
@@ -80,54 +91,58 @@ data class RadioButtonStateColors(
     val disabled: RadioButtonColors
 )
 
-// ============================================================================
-// SIZE CONFIGURATIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// THEME PROVIDER
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Get size configuration for radio button
+ * Uber Base's Sizing section pins the radio border to a fixed "1 px weight,
+ * inside alignment" regardless of size — mirroring [Checkbox.kt]'s identical
+ * spec constraint — so every tier below resolves to the same
+ * [HierarchicalSize.Border.Compact] rather than scaling with [size].
+ * [innerCircleSize] is not spec-dictated (the spec only shows a filled
+ * circle, no ratio) so it is derived as half the outer diameter, the
+ * conventional radio-fill proportion, rather than hand-picked per tier.
+ * [SizeVariant] itself is a Pixa extension beyond the spec (which shows a
+ * single fixed-size control) kept for consistency with the rest of the
+ * library and existing [RadioGroup]/[HorizontalRadioGroup] call sites.
  */
 @Composable
 private fun getRadioButtonSizeConfig(size: SizeVariant): RadioButtonSizeConfig {
     val typography = AppTheme.typography
-    return when (size) {
-        SizeVariant.Small -> RadioButtonSizeConfig(
-            outerCircleSize = HierarchicalSize.Icon.Compact,
-            innerCircleSize = HierarchicalSize.Spacing.Compact,
-            borderWidth = HierarchicalSize.Border.Compact,
-            labelSpacing = HierarchicalSize.Spacing.Nano,
-            labelStyle = { typography.bodyBold }
-        )
-        SizeVariant.Medium -> RadioButtonSizeConfig(
-            outerCircleSize = HierarchicalSize.Icon.Small,
-            innerCircleSize = HierarchicalSize.Icon.Nano / 1.2f,
-            borderWidth = HierarchicalSize.Border.Medium,
-            labelSpacing = HierarchicalSize.Spacing.Small,
-            labelStyle = { typography.bodyRegular }
-        )
-        SizeVariant.Large -> RadioButtonSizeConfig(
-            outerCircleSize = HierarchicalSize.Icon.Medium,
-            innerCircleSize = HierarchicalSize.Spacing.Small,
-            borderWidth = HierarchicalSize.Border.Large,
-            labelSpacing = HierarchicalSize.Spacing.Small,
-            labelStyle = { typography.bodyLight }
-        )
-        else -> RadioButtonSizeConfig(
-            outerCircleSize = HierarchicalSize.Icon.Small,
-            innerCircleSize = HierarchicalSize.Icon.Nano / 1.2f,
-            borderWidth = HierarchicalSize.Border.Medium,
-            labelSpacing = HierarchicalSize.Spacing.Small,
-            labelStyle = { typography.bodyRegular }
-        )
+    val outerCircleSize = when (size) {
+        SizeVariant.Small -> HierarchicalSize.Icon.Compact
+        SizeVariant.Large -> HierarchicalSize.Icon.Medium
+        else -> HierarchicalSize.Icon.Small
     }
+    val labelStyle: @Composable () -> TextStyle = when (size) {
+        SizeVariant.Small -> ({ typography.bodyBold })
+        SizeVariant.Large -> ({ typography.bodyLight })
+        else -> ({ typography.bodyRegular })
+    }
+    val labelSpacing = when (size) {
+        SizeVariant.Small -> HierarchicalSize.Spacing.Nano
+        else -> HierarchicalSize.Spacing.Small
+    }
+    return RadioButtonSizeConfig(
+        outerCircleSize = outerCircleSize,
+        innerCircleSize = outerCircleSize / 2f,
+        borderWidth = HierarchicalSize.Border.Compact,
+        labelSpacing = labelSpacing,
+        labelStyle = labelStyle
+    )
 }
 
-// ============================================================================
-// THEME PROVIDER
-// ============================================================================
-
 /**
- * Get radio button colors based on variant
+ * Get radio button colors based on variant.
+ *
+ * Uber Base's states table names only content-role tokens
+ * (`contentPrimary`/`contentTertiary`/`contentStateDisabled`/`contentNegative`)
+ * plus a `borderSelected` focus outline — no filled-surface token for the
+ * selected container beyond the indicator fill itself. [RadioButtonVariant.Outlined]
+ * (transparent container, focus-colored border on selection) is the closest
+ * match to that; [Filled]/[Ghost] remain pre-existing Pixa-native extensions
+ * the spec doesn't define but doesn't forbid either.
  */
 @Composable
 private fun getRadioButtonTheme(
@@ -198,12 +213,22 @@ private fun getRadioButtonTheme(
     }
 }
 
-// ============================================================================
-// BASE COMPONENT (Internal)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
+// INTERNAL RADIOBUTTON
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Base RadioButton Circle implementation
+ * Base RadioButton circle implementation.
+ *
+ * Hover/pressed use fixed black/white alpha scrims per Uber Base's states
+ * table (4%/8% black while unselected, 10%/20% white while selected — the
+ * same literal-percentage treatment [Checkbox.kt]'s `PixaCheckboxBox` and
+ * [com.pixamob.pixacompose.components.display.PixaTile]'s `TileOverlayScrim`
+ * already use for their own hover/pressed states). Focus renders a fixed 3px
+ * ([HierarchicalSize.Border.Large]) outline in `brandBorderFocus` (closest
+ * existing token to the spec's "borderSelected") in place of the normal
+ * state border, rather than as a separate offset ring, to avoid growing the
+ * radio's fixed footprint.
  */
 @Composable
 private fun PixaRadioButtonCircle(
@@ -211,6 +236,9 @@ private fun PixaRadioButtonCircle(
     selected: Boolean,
     enabled: Boolean,
     isError: Boolean,
+    isHovered: Boolean,
+    isPressed: Boolean,
+    isFocused: Boolean,
     sizeConfig: RadioButtonSizeConfig,
     colors: RadioButtonStateColors
 ) {
@@ -247,14 +275,24 @@ private fun PixaRadioButtonCircle(
         animationSpec = AnimationUtils.selectionSpring
     )
 
+    val overlayColor = when {
+        !enabled -> Color.Transparent
+        isPressed -> if (selected) Color.White.copy(alpha = 0.20f) else Color.Black.copy(alpha = 0.08f)
+        isHovered -> if (selected) Color.White.copy(alpha = 0.10f) else Color.Black.copy(alpha = 0.04f)
+        else -> Color.Transparent
+    }
+    val effectiveBorderWidth = if (isFocused && enabled) HierarchicalSize.Border.Large else sizeConfig.borderWidth
+    val effectiveBorderColor = if (isFocused && enabled) errorColors.brandBorderFocus else animatedBorderColor
+
     Box(
         modifier = modifier
             .size(sizeConfig.outerCircleSize)
             .clip(CircleShape)
             .background(animatedOuterColor)
+            .background(overlayColor)
             .border(
-                width = sizeConfig.borderWidth,
-                color = animatedBorderColor,
+                width = effectiveBorderWidth,
+                color = effectiveBorderColor,
                 shape = CircleShape
             ),
         contentAlignment = Alignment.Center
@@ -276,7 +314,17 @@ private fun PixaRadioButtonCircle(
 }
 
 /**
- * Base RadioButton implementation
+ * Base RadioButton implementation.
+ *
+ * Uses [Modifier.selectable] (role = [androidx.compose.ui.semantics.Role.RadioButton])
+ * so the selected value is announced programmatically per spec's VoiceOver
+ * ("Selected, [Label]" / "[Label], Button") and TalkBack ("Checked"/"Not
+ * checked" + RadioButton role) accessibility requirements. The whole row
+ * (circle + label) is the click target and carries a
+ * [HierarchicalSize.TouchTarget.Small] (48px, WCAG 2.5.5) minimum height, per
+ * spec's "increase interactive target area to include the label text" rule —
+ * "small touch targets cause errors and frustration" — this holds even when
+ * [RadioButtonSizeConfig.outerCircleSize] is visually smaller.
  */
 @Composable
 private fun PixaRadioButton(
@@ -292,11 +340,15 @@ private fun PixaRadioButton(
     colors: RadioButtonStateColors
 ) {
     val interactionSource = remember { MutableInteractionSource() }
+    val isHovered by interactionSource.collectIsHoveredAsState()
+    val isPressed by interactionSource.collectIsPressedAsState()
+    val isFocused by interactionSource.collectIsFocusedAsState()
 
     val clickModifier = if (enabled && onClick != null) {
-        Modifier.clickable(
+        Modifier.selectable(
+            selected = selected,
             interactionSource = interactionSource,
-            indication = ripple(
+            indication = pixaRipple(
                 bounded = false,
                 radius = sizeConfig.outerCircleSize
             ),
@@ -305,80 +357,64 @@ private fun PixaRadioButton(
         )
     } else Modifier
 
-    val labelContent = @Composable { label?.let { lbl ->
-        val labelColor = if (enabled) colors.selected.label else colors.disabled.label
+    val labelColor = if (enabled) colors.selected.label else colors.disabled.label
+
+    val labelText = @Composable { text: String ->
         val animatedLabelColor by animateColorAsState(labelColor, AnimationUtils.colorSpring, label = "radio_label")
-
-        Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
-
         if (description != null) {
             Column {
-                Text(
-                    text = lbl,
-                    style = sizeConfig.labelStyle(),
-                    color = animatedLabelColor
+                BasicText(
+                    text = text,
+                    style = sizeConfig.labelStyle().copy(color = animatedLabelColor)
                 )
-                Text(
+                BasicText(
                     text = description,
-                    style = AppTheme.typography.captionRegular,
-                    color = AppTheme.colors.baseContentCaption,
+                    style = AppTheme.typography.captionRegular.copy(color = AppTheme.colors.baseContentCaption),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
             }
         } else {
-            Text(
-                text = lbl,
-                style = sizeConfig.labelStyle(),
-                color = animatedLabelColor
+            BasicText(
+                text = text,
+                style = sizeConfig.labelStyle().copy(color = animatedLabelColor)
             )
         }
-    } }
+    }
 
     val content = @Composable {
         PixaRadioButtonCircle(
             selected = selected,
             enabled = enabled,
             isError = isError,
+            isHovered = isHovered,
+            isPressed = isPressed,
+            isFocused = isFocused,
             sizeConfig = sizeConfig,
             colors = colors
         )
 
-        labelContent()
+        label?.let {
+            Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
+            labelText(it)
+        }
     }
 
     Row(
-        modifier = modifier.then(clickModifier),
+        modifier = modifier
+            .sizeIn(minHeight = HierarchicalSize.TouchTarget.Small)
+            .then(clickModifier)
+            .focusable(enabled = enabled, interactionSource = interactionSource),
+        // Uber Base: "text wraps beneath the radio with control and first line top-aligned"
         horizontalArrangement = if (labelPosition == RadioButtonLabelPosition.End) {
             Arrangement.Start
         } else {
             Arrangement.End
         },
-        verticalAlignment = Alignment.CenterVertically
+        verticalAlignment = Alignment.Top
     ) {
         if (labelPosition == RadioButtonLabelPosition.Start && label != null) {
-            if (description != null) {
-                Column {
-                    Text(
-                        text = label,
-                        style = sizeConfig.labelStyle(),
-                        color = if (enabled) colors.selected.label else colors.disabled.label
-                    )
-                    Text(
-                        text = description,
-                        style = AppTheme.typography.captionRegular,
-                        color = AppTheme.colors.baseContentCaption,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                }
-            } else {
-                Text(
-                    text = label,
-                    style = sizeConfig.labelStyle(),
-                    color = if (enabled) colors.selected.label else colors.disabled.label
-                )
-            }
+            labelText(label)
             Spacer(modifier = Modifier.width(sizeConfig.labelSpacing))
         }
 
@@ -386,25 +422,57 @@ private fun PixaRadioButton(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * RadioButton Label Position
- */
-enum class RadioButtonLabelPosition {
-    /** Label appears before the radio button */
-    Start,
-    /** Label appears after the radio button */
-    End
-}
-
-/**
- * RadioButton - Single selection input control
+ * RadioButton — Single-selection input control that allows users to choose one option from a
+ * set, enforcing mutually-exclusive selection from 2+ options.
  *
- * A radio button component for selecting one option from a group. Should be used within
- * a RadioGroup for managing the selection state across multiple options.
+ * ### Purpose
+ * Lets a user pick exactly one option from a predefined list. Never use it
+ * to trigger navigation — per spec, "selecting a radio should never navigate
+ * users somewhere new."
+ *
+ * ### Anatomy
+ * Circular container (1px inside-aligned border) + filled inner circle shown
+ * on selection — see [PixaRadioButtonCircle]. The optional label/description
+ * sits beside the circle and is itself part of the click target.
+ *
+ * ### Variants
+ * [RadioButtonVariant.Outlined] (default) is the closest match to the spec's
+ * content-role-only token set; `.Filled`/`.Ghost` are pre-existing Pixa
+ * extensions.
+ *
+ * ### States
+ * default/disabled at minimum, plus hover/pressed alpha scrims, a 3px focus
+ * outline, and an `isError` state — all per the spec's states table.
+ *
+ * ### Sizing
+ * [SizeVariant] (Small/Medium/Large) — a Pixa extension; the spec itself
+ * shows a single fixed-size control (see [getRadioButtonSizeConfig]). Border
+ * width stays fixed at 1px ([HierarchicalSize.Border.Compact]) across all
+ * tiers per spec.
+ *
+ * ### Adaptive behavior
+ * Out of scope: the spec defines no responsive breakpoint behavior for the
+ * control itself beyond "wrap long labels to a second line," which
+ * [PixaRadioButton] already does via normal text layout.
+ *
+ * ### Customization
+ * [variant], [size], [label]/[description], [labelPosition], [isError].
+ * Selection state must be driven externally via [selected]/[onClick] — use
+ * [RadioGroup] to manage a group's single-selection state.
+ *
+ * ### Usage notes
+ * - Always pre-select exactly one option in a group (spec requirement).
+ * - Prefer vertical stacking — see [RadioGroup] — over [HorizontalRadioGroup];
+ *   the spec calls horizontal layout out as something to avoid because users
+ *   struggle to tell which label belongs to which control.
+ * - Keep groups to 5 or fewer options; beyond that, the spec recommends a
+ *   dropdown/select control instead (no such control substitution is made
+ *   automatically here — it's a caller-level content decision).
  *
  * @param selected Whether this radio button is selected
  * @param onClick Callback when radio button is clicked (null for read-only)
@@ -414,31 +482,17 @@ enum class RadioButtonLabelPosition {
  * @param label Optional text label
  * @param description Optional descriptive text below the label
  * @param labelPosition Position of the label (Start or End)
- * @param variant Visual style (Filled or Outlined)
+ * @param variant Visual style (Outlined, Filled, or Ghost)
  * @param size Size variant (Small, Medium, Large)
  *
  * @sample
  * ```
- * // Basic radio button
  * var selectedOption by remember { mutableStateOf("option1") }
  * RadioButton(
  *     selected = selectedOption == "option1",
- *     onClick = { selectedOption = "option1" }
+ *     onClick = { selectedOption = "option1" },
+ *     label = "Option 1"
  * )
- *
- * // Radio button with label
- * RadioButton(
- *     selected = selectedOption == "option2",
- *     onClick = { selectedOption = "option2" },
- *     label = "Option 2"
- * )
- *
- * // Radio group
- * Column {
- *     RadioButton(selected = selected == 0, onClick = { selected = 0 }, label = "Small")
- *     RadioButton(selected = selected == 1, onClick = { selected = 1 }, label = "Medium")
- *     RadioButton(selected = selected == 2, onClick = { selected = 2 }, label = "Large")
- * }
  * ```
  */
 @Composable
@@ -451,7 +505,7 @@ fun RadioButton(
     label: String? = null,
     description: String? = null,
     labelPosition: RadioButtonLabelPosition = RadioButtonLabelPosition.End,
-    variant: RadioButtonVariant = RadioButtonVariant.Filled,
+    variant: RadioButtonVariant = RadioButtonVariant.Outlined,
     size: SizeVariant = SizeVariant.Medium
 ) {
     val themeColors = getRadioButtonTheme(variant, AppTheme.colors)
@@ -472,9 +526,13 @@ fun RadioButton(
 }
 
 /**
- * RadioGroup - Container for managing radio button selections
+ * RadioGroup — Container for managing radio button selections.
  *
- * Manages a group of radio buttons with a single selected value.
+ * Manages a group of radio buttons with a single selected value, stacked
+ * vertically. Uber Base's spec recommends vertical stacking over horizontal
+ * layout ("very easy for the user to see which label corresponds" to each
+ * option) and caps the recommended option count at 5 — beyond that, prefer a
+ * dropdown/select control instead.
  *
  * @param options List of option values
  * @param selectedOption Currently selected option
@@ -495,7 +553,7 @@ fun <T> RadioGroup(
     enabled: Boolean = true,
     isError: Boolean = false,
     optionLabel: (T) -> String = { it.toString() },
-    variant: RadioButtonVariant = RadioButtonVariant.Filled,
+    variant: RadioButtonVariant = RadioButtonVariant.Outlined,
     size: SizeVariant = SizeVariant.Medium,
     verticalArrangement: Arrangement.Vertical = Arrangement.spacedBy(HierarchicalSize.Spacing.Small)
 ) {
@@ -518,7 +576,13 @@ fun <T> RadioGroup(
 }
 
 /**
- * Horizontal RadioGroup - Row layout for radio buttons
+ * Horizontal RadioGroup — Row layout for radio buttons.
+ *
+ * Uber Base's spec explicitly recommends against horizontal radio layout
+ * ("users struggle determining if the label corresponds to the radio button
+ * before or after"). This composable is kept as a pre-existing Pixa
+ * extension for cases that intentionally accept that tradeoff (e.g. compact
+ * rating scales) — prefer [RadioGroup] by default.
  */
 @Composable
 fun <T> HorizontalRadioGroup(
@@ -529,7 +593,7 @@ fun <T> HorizontalRadioGroup(
     enabled: Boolean = true,
     isError: Boolean = false,
     optionLabel: (T) -> String = { it.toString() },
-    variant: RadioButtonVariant = RadioButtonVariant.Filled,
+    variant: RadioButtonVariant = RadioButtonVariant.Outlined,
     size: SizeVariant = SizeVariant.Medium,
     horizontalArrangement: Arrangement.Horizontal = Arrangement.spacedBy(HierarchicalSize.Spacing.Medium)
 ) {
@@ -552,15 +616,16 @@ fun <T> HorizontalRadioGroup(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // CONVENIENCE VARIANTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Outlined RadioButton - Subtle radio button style
+ * Filled RadioButton — solid-container radio style (Pixa extension beyond
+ * the spec's content-role-only token set).
  */
 @Composable
-fun OutlinedRadioButton(
+fun FilledRadioButton(
     selected: Boolean,
     onClick: (() -> Unit)?,
     modifier: Modifier = Modifier,
@@ -578,13 +643,13 @@ fun OutlinedRadioButton(
         isError = isError,
         label = label,
         description = description,
-        variant = RadioButtonVariant.Outlined,
+        variant = RadioButtonVariant.Filled,
         size = size
     )
 }
 
 /**
- * Labeled RadioButton - Radio button with required label
+ * Labeled RadioButton — Radio button with required label
  */
 @Composable
 fun LabeledRadioButton(
@@ -596,7 +661,7 @@ fun LabeledRadioButton(
     isError: Boolean = false,
     description: String? = null,
     labelPosition: RadioButtonLabelPosition = RadioButtonLabelPosition.End,
-    variant: RadioButtonVariant = RadioButtonVariant.Filled,
+    variant: RadioButtonVariant = RadioButtonVariant.Outlined,
     size: SizeVariant = SizeVariant.Medium
 ) {
     RadioButton(
@@ -613,9 +678,9 @@ fun LabeledRadioButton(
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // USAGE EXAMPLES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * USAGE EXAMPLES:
@@ -624,21 +689,9 @@ fun LabeledRadioButton(
  * ```
  * var selectedSize by remember { mutableStateOf("Medium") }
  * Column {
- *     RadioButton(
- *         selected = selectedSize == "Small",
- *         onClick = { selectedSize = "Small" },
- *         label = "Small"
- *     )
- *     RadioButton(
- *         selected = selectedSize == "Medium",
- *         onClick = { selectedSize = "Medium" },
- *         label = "Medium"
- *     )
- *     RadioButton(
- *         selected = selectedSize == "Large",
- *         onClick = { selectedSize = "Large" },
- *         label = "Large"
- *     )
+ *     RadioButton(selected = selectedSize == "Small", onClick = { selectedSize = "Small" }, label = "Small")
+ *     RadioButton(selected = selectedSize == "Medium", onClick = { selectedSize = "Medium" }, label = "Medium")
+ *     RadioButton(selected = selectedSize == "Large", onClick = { selectedSize = "Large" }, label = "Large")
  * }
  * ```
  *
@@ -653,22 +706,9 @@ fun LabeledRadioButton(
  * )
  * ```
  *
- * 3. Horizontal radio group:
- * ```
- * var rating by remember { mutableStateOf(3) }
- * HorizontalRadioGroup(
- *     options = listOf(1, 2, 3, 4, 5),
- *     selectedOption = rating,
- *     onOptionSelected = { rating = it },
- *     optionLabel = { "$it Star${if (it > 1) "s" else ""}" }
- * )
- * ```
- *
- * 4. Form with radio buttons:
+ * 3. Form with radio buttons:
  * ```
  * Column {
- *     Text("Select payment method:", style = MaterialTheme.typography.titleMedium)
- *     Spacer(modifier = Modifier.height(8.dp))
  *     RadioGroup(
  *         options = listOf("Credit Card", "PayPal", "Bank Transfer"),
  *         selectedOption = paymentMethod,
@@ -677,7 +717,7 @@ fun LabeledRadioButton(
  * }
  * ```
  *
- * 5. Disabled radio button:
+ * 4. Disabled radio button:
  * ```
  * RadioButton(
  *     selected = true,
@@ -687,17 +727,17 @@ fun LabeledRadioButton(
  * )
  * ```
  *
- * 6. Outlined variant:
+ * 5. Filled variant:
  * ```
- * OutlinedRadioButton(
+ * FilledRadioButton(
  *     selected = selected,
  *     onClick = { /* handle */ },
- *     label = "Subtle option",
+ *     label = "Emphasized option",
  *     size = SizeVariant.Small
  * )
  * ```
  *
- * 7. Custom enum radio group:
+ * 6. Custom enum radio group:
  * ```
  * enum class Theme { Light, Dark, Auto }
  * var theme by remember { mutableStateOf(Theme.Auto) }

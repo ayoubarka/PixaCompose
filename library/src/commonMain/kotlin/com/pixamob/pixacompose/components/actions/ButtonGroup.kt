@@ -114,7 +114,6 @@ private fun ScrollingButtonGroup(
 /**
  * PixaButtonGroup — a collection of 2+ [PixaButton]s combined to let users filter
  * content, make selections, or trigger related actions in a compact space.
- * Migrated from Uber Base's Button Group spec.
  *
  * ### Anatomy
  * A container of individual [PixaButton]s ([items]). Each button keeps its own

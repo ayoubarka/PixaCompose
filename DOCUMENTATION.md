@@ -27,6 +27,7 @@
   - [Feedback](#feedback)
   - [Navigation](#navigation)
   - [Overlay](#overlay)
+  - [Surfaces](#surfaces)
 - [Global Feedback System](#global-feedback-system)
   - [Toast](#toast)
   - [Snackbar](#snackbar)
@@ -146,26 +147,33 @@ fun MyApp() {
 library/src/commonMain/kotlin/com/pixamob/pixacompose/
 ├── theme/           # Centralized styling
 │   ├── Color.kt           # Color palettes (71 semantic colors)
-│   ├── Typography.kt      # 27 text styles
+│   ├── Typography.kt      # 32 text styles
 │   ├── PixaTheme.kt       # Theme provider + AppTheme accessor
 │   ├── Dimen.kt           # Hierarchical sizing system
 │   ├── CustomShapes.kt    # Decorative shapes (Concave, Wave, Bubble, etc.)
 │   └── ShapeStyle.kt      # Shape style configuration
-├── components/      # 46+ components by category
-│   ├── actions/     # Button, Chip, Accordion, Tab, PixaIconButton, PixaFAB
-│   ├── inputs/      # TextField, TextArea, SearchBar, Slider, Switch, Checkbox, RadioButton, Dropdown, DatePicker, TimePicker, ColorPicker
-│   ├── display/     # Card, Avatar, Icon, Image, Chart, Divider
-│   ├── feedback/    # Alert, Toast, Snackbar, Badge, Skeleton, Indicator, EmptyState
+├── components/      # 59 component files by category
+│   ├── actions/     # Button, Chip, Accordion, Tab, IconButton, FAB, ButtonGroup,
+│   │                #   SegmentedButton, ButtonDock, Link, SlidingButton, TimedButton
+│   ├── inputs/      # TextField, TextArea, SearchBar, Slider, RangeSlider, Switch, Checkbox,
+│   │                #   RadioButton, Dropdown, DatePicker, TimePicker, ColorPicker,
+│   │                #   ToggleButtonGroup, PinCode, QuantityStepper, StarRating
+│   ├── display/     # Card, Avatar, Icon, Image, Chart, Divider, ListItem, Tile,
+│   │                #   MessageCard, SectionHeading, Tag, Accordion
+│   ├── feedback/    # Alert, Toast, Snackbar, Badge, Skeleton, Indicator, EmptyState, SystemBanner
 │   ├── navigation/  # TopNavBar, BottomNavBar, TabBar, Drawer, Stepper
-│   └── overlay/     # Dialog, BottomSheet, Menu, Popover, Tooltip
+│   ├── overlay/     # Dialog, Menu, Popover, Tooltip
+│   └── surfaces/    # Sheet, FullScreenModal, Card
 └── utils/           # Helper utilities
-    ├── AnimationSpecs.kt     # Spring physics specs (PixaAnimationSpecs)
     ├── AnimationUtils.kt     # Canonical semantic motion system (single source for all animation specs)
     ├── ColorUtils.kt
     ├── DateTimeUtils.kt
     ├── ElevationUtils.kt
     └── ScreenUtil.kt
 ```
+
+> Each component file carries its own source-level documentation next to its public API. This page is
+> the consolidated overview; the file is the detailed reference and the source of truth.
 
 ### Component File Pattern
 
@@ -559,6 +567,12 @@ PixaTheme(
 
 ## Component Reference
 
+> **This page is the high-level consolidated reference.** Every component file also carries its own
+> source-level documentation next to the public API — purpose, anatomy, variants, states, sizing,
+> adaptive behavior, and usage notes, including the design-spec rationale behind each decision. When
+> you need the full detail for one component, open its file (listed as **File** in each entry below);
+> when you need the overview across the library, stay here. The source is always the final authority.
+
 ### Actions
 
 #### PixaButton
@@ -624,7 +638,7 @@ PixaButton(
     onClick = { openMenu() },
     variant = ButtonVariant.Ghost,
     shape = ButtonShape.Circle,
-    icon = painterResource(Res.drawable.ic_menu)
+    leadingIcon = painterResource(Res.drawable.ic_menu)
 )
 
 // Destructive outlined
@@ -650,11 +664,11 @@ PixaButton(
 **Key Parameters**:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `label` | `String` | required | Chip text |
-| `selected` | `Boolean` | required | Selected state |
-| `onClick` | `() -> Unit` | required | Click handler |
-| `type` | `ChipType` | required | Behavior type |
-| `variant` | `ChipVariant` | `Filled` | Visual style |
+| `text` | `String?` | `null` | Chip text |
+| `selected` | `Boolean` | `false` | Selected state |
+| `onClick` | `(() -> Unit)?` | `null` | Click handler |
+| `type` | `ChipType` | `Static` | Behavior type |
+| `variant` | `ChipVariant` | `Tonal` | Visual style |
 | `size` | `SizeVariant` | `Medium` | Size preset |
 | `leadingIcon` | `Painter?` | `null` | Icon before text |
 | `trailingIcon` | `Painter?` | `null` | Decorative icon after text (not shown with Dismissible) |
@@ -668,7 +682,7 @@ val tags = listOf("Kotlin", "Compose", "Android")
 FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
     tags.forEach { tag ->
         PixaChip(
-            label = tag,
+            text = tag,
             selected = tag in selectedTags,
             onClick = {
                 selectedTags = if (tag in selectedTags) selectedTags - tag
@@ -779,7 +793,7 @@ Collapsible content sections with group support.
 PixaAccordion(
     title = "Advanced Settings",
     expanded = isExpanded,
-    onToggle = { isExpanded = !isExpanded }
+    onExpandedChange = { isExpanded = it }
 ) {
     // Expanded content
     AdvancedSettingsContent()
@@ -805,26 +819,142 @@ Multiple tab variants including segmented tabs, scrollable tabs, and vertical ta
 // Default tabs
 Tabs(
     tabs = listOf("Overview", "Details", "Reviews"),
-    selectedIndex = selectedTab,
+    selectedTabIndex = selectedTab,
     onTabSelected = { selectedTab = it }
 )
 
 // Segmented tabs
 SegmentedTabs(
     tabs = listOf("Day", "Week", "Month"),
-    selectedIndex = selectedSegment,
+    selectedTabIndex = selectedSegment,
     onTabSelected = { selectedSegment = it }
 )
 
 // Vertical tabs
 VerticalTabs(
     tabs = listOf("Profile", "Settings", "Help"),
-    selectedIndex = selectedVerticalTab,
+    selectedTabIndex = selectedVerticalTab,
     onTabSelected = { selectedVerticalTab = it }
 )
 ```
 
 **Animations**: Background, content, and border color transitions use `colorSpring`; indicator color transitions use `colorSpring` for a smooth fade between transparent and the selected indicator color.
+
+#### PixaButtonGroup
+
+**Import**: `com.pixamob.pixacompose.components.actions.PixaButtonGroup`
+**File**: `components/actions/ButtonGroup.kt`
+
+Groups related **actions** or simple selections as a row of buttons. For richer option tiles with a
+title, subtitle, and image, use [PixaToggleButtonGroup](#pixatogglebuttongroup) instead.
+
+```kotlin
+PixaButtonGroup(
+    items = listOf(
+        ButtonGroupItem(id = "all", text = "All"),
+        ButtonGroupItem(id = "active", text = "Active"),
+        ButtonGroupItem(id = "done", text = "Done")
+    ),
+    selectedIds = setOf(selected),
+    onSelectionChange = { selected = it.first() },
+    selectionMode = ButtonGroupSelectionMode.Single,  // Single / Multi / None
+    layout = ButtonGroupLayout.Clustered              // Clustered (wraps) / HorizontalScroll
+)
+```
+
+#### PixaSegmentedButton
+
+**Import**: `com.pixamob.pixacompose.components.actions.PixaSegmentedButton`
+**File**: `components/actions/SegmentedButton.kt`
+
+Single-select segmented control. Exactly one segment is always selected.
+
+```kotlin
+PixaSegmentedButton(
+    items = listOf(
+        SegmentedButtonItem(id = "day", label = "Day"),
+        SegmentedButtonItem(id = "week", label = "Week"),
+        SegmentedButtonItem(id = "month", label = "Month")
+    ),
+    selectedId = selectedRange,
+    onSelectionChange = { selectedRange = it },
+    width = SegmentedButtonWidth.Fixed,   // or Fill
+    shape = SegmentedButtonShape.Default
+)
+```
+
+#### PixaButtonDock
+
+**Import**: `com.pixamob.pixacompose.components.actions.PixaButtonDock`
+**File**: `components/actions/ButtonDock.kt`
+
+A pinned dock of primary actions at the bottom of a screen. `hasOverflowContent` signals that content
+scrolls beneath the dock.
+
+```kotlin
+PixaButtonDock(
+    items = listOf(
+        ButtonDockItem(id = "cancel", text = "Cancel", onClick = { cancel() }, variant = ButtonVariant.Ghost),
+        ButtonDockItem(id = "save", text = "Save", onClick = { save() }, variant = ButtonVariant.Filled)
+    ),
+    layout = DockLayout.Auto,
+    hasOverflowContent = true
+)
+```
+
+#### PixaLink
+
+**Import**: `com.pixamob.pixacompose.components.actions.PixaLink`
+**File**: `components/actions/Link.kt`
+
+Inline navigational text action. `LinkSize` is its own scale (not `SizeVariant`) so links can match
+surrounding body text.
+
+```kotlin
+PixaLink(
+    text = "Terms and conditions",
+    onClick = { openTerms() },
+    size = LinkSize.Medium,
+    visited = hasVisited
+)
+```
+
+#### PixaSlidingButton
+
+**Import**: `com.pixamob.pixacompose.components.actions.PixaSlidingButton`
+**File**: `components/actions/SlidingButton.kt`
+
+Slide-to-confirm control for consequential actions.
+
+```kotlin
+PixaSlidingButton(
+    label = "Slide to confirm",
+    arrowIcon = painterResource(Res.drawable.ic_arrow_right),
+    onSlideComplete = { confirm() },
+    variant = SlidingButtonVariant.Brand,
+    threshold = SlidingButtonThreshold.Low,
+    loading = isSubmitting,
+    completed = isDone
+)
+```
+
+#### PixaTimedButton
+
+**Import**: `com.pixamob.pixacompose.components.actions.PixaTimedButton`
+**File**: `components/actions/TimedButton.kt`
+
+A button that fires `onTimeout` when its countdown elapses, with a visible progress treatment. Change
+`resetKey` to restart the countdown.
+
+```kotlin
+PixaTimedButton(
+    text = "Undo",
+    onTimeout = { commitDelete() },
+    onClick = { undoDelete() },
+    durationSeconds = TimedButtonDuration.Short,
+    resetKey = pendingItemId
+)
+```
 
 ---
 
@@ -897,10 +1027,12 @@ Same parameters as TextField plus:
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `minLines` | `Int` | `3` | Minimum visible lines |
-| `maxLines` | `Int` | `Int.MAX_VALUE` | Max lines before scroll |
+| `minLines` | `Int` | `4` | Field height in rows |
+| `maxLines` | `Int` | `minLines` | Max lines before the content scrolls |
 
-**Auto-height**: Height grows from `minLines` up to `maxLines`, then scrolls. Default minLines=3, maxLines unconstrained.
+**Height is expressed in rows, not dp.** `minLines` drives the container height via the type scale.
+`maxLines` defaults to `minLines`, so the field is a fixed N rows tall and scrolls beyond that. Raise
+`maxLines` above `minLines` to opt into auto-grow.
 
 ```kotlin
 var notes by remember { mutableStateOf("") }
@@ -911,10 +1043,13 @@ PixaTextArea(
     label = "Notes",
     placeholder = "Enter your notes...",
     minLines = 4,
-    maxLines = 10,
-    maxLength = 500
+    maxLines = 10,   // auto-grows from 4 rows up to 10, then scrolls
+    maxLength = 500  // setting maxLength shows the "xx / n" counter
 )
 ```
+
+> The character counter appears whenever `maxLength` is set — there is no `showCharacterCount` flag.
+> There is no `leadingIcon`: the external spec defines no accessory for a text area.
 
 **Convenience Variants**: `CommentTextArea`, `BioTextArea`, `NoteTextArea`
 
@@ -963,11 +1098,12 @@ PixaSearchBar(
 ```kotlin
 var volume by remember { mutableStateOf(50f) }
 
+// There is no `label` param — pair the slider with your own label, or use
+// `minValueText`/`maxValueText` for end captions.
 PixaSlider(
     value = volume,
     onValueChange = { volume = it },
     valueRange = 0f..100f,
-    label = "Volume",
     showValue = true,
     valueFormatter = { "${it.toInt()}%" }
 )
@@ -1070,30 +1206,44 @@ PixaSwitch(
 **Key Parameters**:
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `state` | `CheckboxState` | required | Current state |
-| `onStateChange` | `(CheckboxState) -> Unit` | required | State change callback |
+| `checked` | `Boolean` | required | Checked state |
+| `onCheckedChange` | `((Boolean) -> Unit)?` | required | Change callback |
 | `label` | `String?` | `null` | Label text |
 | `description` | `String?` | `null` | Secondary text beneath label |
+| `labelPosition` | `CheckboxLabelPosition` | `End` | Label side |
 | `isError` | `Boolean` | `false` | Error state styling |
 | `enabled` | `Boolean` | `true` | Enabled state |
+| `state` | `CheckboxState?` | `null` | Optional override; wins over `checked` (use for `Indeterminate`) |
 
 ```kotlin
-var agreed by remember { mutableStateOf(CheckboxState.Unchecked) }
+var agreed by remember { mutableStateOf(false) }
 
 PixaCheckbox(
-    state = agreed,
-    onStateChange = { agreed = it },
+    checked = agreed,
+    onCheckedChange = { agreed = it },
     label = "I agree to terms and conditions",
     variant = CheckboxVariant.Filled
 )
 
 // With error and description
 PixaCheckbox(
-    state = agreed,
-    onStateChange = { agreed = it },
+    checked = agreed,
+    onCheckedChange = { agreed = it },
     label = "Accept terms",
     description = "You must accept to continue",
     isError = true
+)
+```
+
+**Tri-state** — use `TriStateCheckbox` for `Indeterminate`; it takes `state`/`onStateChange`:
+
+```kotlin
+var state by remember { mutableStateOf(CheckboxState.Indeterminate) }
+
+TriStateCheckbox(
+    state = state,
+    onStateChange = { state = it },
+    label = "Select all"
 )
 ```
 
@@ -1104,7 +1254,7 @@ var selected by remember { mutableStateOf(setOf<String>()) }
 
 CheckboxGroup(
     options = options,
-    selectedValues = selected,
+    selected = selected,
     onSelectionChange = { selected = it },
     showSelectAll = true
 )
@@ -1159,8 +1309,8 @@ var selected by remember { mutableStateOf("option1") }
 // Using RadioGroup (generic typed, supports isError)
 RadioGroup(
     options = listOf("Option 1", "Option 2", "Option 3"),
-    selectedValue = selected,
-    onValueSelected = { selected = it },
+    selectedOption = selected,
+    onOptionSelected = { selected = it },
     isError = true
 )
 
@@ -1182,8 +1332,8 @@ Column {
 // Horizontal layout
 HorizontalRadioGroup(
     options = listOf("Small", "Medium", "Large"),
-    selectedValue = size,
-    onValueSelected = { size = it }
+    selectedOption = size,
+    onOptionSelected = { size = it }
 )
 ```
 
@@ -1192,31 +1342,45 @@ HorizontalRadioGroup(
 **Import**: `com.pixamob.pixacompose.components.inputs.PixaDropdown`
 **File**: `components/inputs/Dropdown.kt`
 
-Generic typed dropdown with search/filter support.
+Generic typed single-select dropdown. The **field** owns the label, value, placeholder, helper/error
+text and required state; the **option list** is presented as a separate surface, adaptively.
+
+**Adaptive presentation**: `DropdownPresentation.Adaptive` (the default) reads
+`AppTheme.windowSizeClass` — compact screens present options in a [PixaSheet](#pixasheet), larger
+screens in an anchored popover menu (the same menu surface as [PixaMenu](#pixamenu)). Pass
+`DropdownPresentation.Sheet` or `.Popover` to pin one explicitly.
 
 **Key Parameters** (additional):
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
+| `presentation` | `DropdownPresentation` | `Adaptive` | `Adaptive` / `Sheet` / `Popover` |
 | `isError` | `Boolean` | `false` | Error state styling |
-| `errorText` | `String?` | `null` | Error message (shown when isError) |
-| `helperText` | `String?` | `null` | Helper message below dropdown |
+| `errorText` | `String?` | `null` | Error message; replaces `helperText` when `isError` |
+| `helperText` | `String?` | `null` | Helper message below the field |
 | `required` | `Boolean` | `false` | Shows required asterisk on label |
+| `sheetTitle` | `String?` | `null` | Title for the compact-screen sheet; falls back to `label` |
 
 ```kotlin
-var selectedCountry by remember { mutableStateOf("") }
-val countries = listOf("USA", "Canada", "UK", "Australia")
+var selectedCountry by remember { mutableStateOf<String?>(null) }
 
 PixaDropdown(
-    selectedValue = selectedCountry,
-    onValueSelected = { selectedCountry = it },
-    options = countries,
+    items = listOf(
+        DropdownItem(value = "us", label = "USA"),
+        DropdownItem(value = "ca", label = "Canada"),
+        DropdownItem(value = "uk", label = "UK")
+    ),
+    selectedItem = selectedCountry,
+    onItemSelected = { selectedCountry = it },
     label = "Country",
     placeholder = "Select country",
-    isError = selectedCountry.isEmpty(),
-    errorText = "Please select a country",
-    required = true
+    required = true,
+    isError = selectedCountry == null,
+    errorText = "Select a country"
 )
 ```
+
+> `DropdownColors` describes the field only. The option surface is themed by the menu layer
+> (`MenuColors`), so it no longer carries `menuBackground`/`menuItemHover`/`selectedBackground`.
 
 #### PixaDatePicker
 
@@ -1262,9 +1426,11 @@ PixaDatePicker(
 var appointmentTime by remember { mutableStateOf<LocalTime?>(null) }
 
 PixaTimePicker(
-    selectedTime = appointmentTime,
-    onTimeSelected = { appointmentTime = it },
-    label = "Appointment Time"
+    variant = TimePickerVariant.Wheel,   // required
+    mode = TimeSelectionMode.Single,
+    format = TimeFormat.Hour12,
+    initialTime = appointmentTime,
+    onTimeSelected = { appointmentTime = it }
 )
 ```
 
@@ -1280,7 +1446,107 @@ val colorState = rememberColorPickerState(initialColor = Color.Red)
 
 PixaColorPicker(
     state = colorState,
-    label = "Choose Color"
+    mode = ColorPickerMode.Grid,
+    showAlpha = true
+)
+```
+
+#### PixaToggleButtonGroup
+
+**Import**: `com.pixamob.pixacompose.components.inputs.PixaToggleButtonGroup`
+**File**: `components/inputs/ToggleButtonGroup.kt`
+
+Single- or multi-select **option tiles** — each option is a bordered container with a title, optional
+subtitle, and optional lead icon/image. Selection is shown by the tile's own border and background
+(never a checkbox, radio, or checkmark). Distinct from [PixaButtonGroup](#pixabuttongroup), which
+groups plain actions.
+
+**Note**: both modes toggle *off* — re-tapping a selected option in `Single` mode clears the
+selection, so `selectedIds` may legitimately be empty.
+
+```kotlin
+PixaToggleButtonGroup(
+    options = listOf(
+        ToggleOption(id = "std", title = "Standard", subtitle = "3–5 business days"),
+        ToggleOption(id = "exp", title = "Express", subtitle = "Next business day")
+    ),
+    selectedIds = selected,
+    onSelectionChange = { selected = it },
+    selectionMode = ToggleGroupSelectionMode.Single,  // or Multi
+    layout = ToggleGroupLayout.ListView              // Minimal / ListView / Gallery
+)
+
+// Convenience wrappers
+SingleToggleButtonGroup(options = options, selectedId = id, onSelectionChange = { id = it })
+MultiToggleButtonGroup(options = options, selectedIds = ids, onSelectionChange = { ids = it })
+```
+
+#### PixaPinCode
+
+**Import**: `com.pixamob.pixacompose.components.inputs.PixaPinCode`
+**File**: `components/inputs/PinCode.kt`
+
+Fixed-length code entry rendered as one box per digit.
+
+```kotlin
+PixaPinCode(
+    value = code,
+    onValueChange = { code = it },
+    length = 6,
+    variant = PinCodeVariant.Masked,  // or Unmasked
+    isError = isInvalid,
+    isLoading = isVerifying
+)
+
+// Convenience wrappers
+MaskedPinCode(value = code, onValueChange = { code = it })
+UnmaskedPinCode(value = code, onValueChange = { code = it })
+```
+
+#### QuantityStepper
+
+**Import**: `com.pixamob.pixacompose.components.inputs.QuantityStepper`
+**File**: `components/inputs/QuantityStepper.kt`
+
+Increment/decrement control bounded by `min`/`max`.
+
+```kotlin
+QuantityStepper(
+    value = quantity,
+    onValueChange = { quantity = it },
+    min = 1,
+    max = 10,
+    variant = QuantityStepperVariant.Narrow,
+    valueLabel = { "$it items" }
+)
+
+// Convenience wrappers
+WideQuantityStepper(value = qty, onValueChange = { qty = it }, min = 0, max = 99)
+TimeQuantityStepper(minutes = mins, onMinutesChange = { mins = it }, minMinutes = 0, maxMinutes = 60)
+```
+
+#### PixaStarRating
+
+**Import**: `com.pixamob.pixacompose.components.inputs.PixaStarRating`
+**File**: `components/inputs/StarRating.kt`
+
+Star rating display and input. Pass `onValueChange` to make it interactive; omit it for a read-only
+rating. `StarRatingSize` is its own scale, not `SizeVariant`.
+
+```kotlin
+PixaStarRating(
+    variant = StarRatingVariant.Default,
+    size = StarRatingSize.Medium,
+    value = 4.5f,
+    trailingText = "(128)"
+)
+
+// Interactive
+PixaStarRating(
+    variant = StarRatingVariant.Default,
+    size = StarRatingSize.Large,
+    value = rating.toFloat(),
+    onValueChange = { rating = it }
 )
 ```
 
@@ -1326,10 +1592,11 @@ ListItemCard(title = "Notifications", leadingIcon = Icons.Default.Notifications)
 FeatureCard(title = "Fast Setup", description = "Get started in minutes", icon = Icons.Default.Speed)
 CompactInfoCard(title = "Health", icon = Icons.Default.FavoriteBorder)
 SummaryCard(title = "Summary", items = listOf("Total" to "12", "Done" to "10"))
-PricingCard(price = "$9.99", period = "/month", features = listOf("Feature 1", "Feature 2"))
-ProfileCard(name = "John Doe", title = "Developer", avatarUrl = url)
+PricingCard(planName = "Pro", price = "$9.99/month", features = listOf("Feature 1", "Feature 2"),
+    ctaText = "Choose plan", onCtaClick = { subscribe() })
+ProfileCard(avatarUrl = url, name = "John Doe", role = "Developer")
 NotificationCard(title = "New message", message = "You have a new message", time = "2m ago")
-TestimonialCard(quote = "Great product!", author = "Jane", role = "CEO")
+TestimonialCard(avatarUrl = url, quote = "Great product!", authorName = "Jane", authorRole = "CEO")
 ```
 
 #### PixaAvatar
@@ -1344,7 +1611,7 @@ TestimonialCard(quote = "Great product!", author = "Jane", role = "CEO")
 ```kotlin
 PixaAvatar(
     imageUrl = user.photoUrl,
-    name = user.name, // Shows initials if no image
+    text = user.initials, // Shown when no image is available
     size = SizeVariant.Large,
     shape = AvatarShape.Circle,
     onClick = { navigateToProfile() }
@@ -1352,7 +1619,7 @@ PixaAvatar(
 
 // Avatar group (stacked avatars)
 PixaAvatarGroup(
-    users = listOf(user1, user2, user3),
+    avatars = listOf(avatar1, avatar2, avatar3),
     maxVisible = 3
 )
 ```
@@ -1383,16 +1650,36 @@ PixaIcon(
 **Import**: `com.pixamob.pixacompose.components.display.PixaImage`
 **File**: `components/display/Image.kt`
 
-Multiple source types using Coil 3:
+Multiple source types using Coil 3.
+
+**Aspect ratio**: `PixaImageRatio` frames the container — `Square` (1:1), `Portrait3x4`,
+`Landscape4x3`, `Wide16x9`, `Tall9x16`, or `Original`. The default `Original` imposes **no** frame, so
+the image keeps its natural proportions — use it for hero, gallery, and masonry surfaces, and pick a
+framed ratio for uniform surfaces such as result tiles and mixed carousels.
+
+**Image integrity**: `ContentScale.Crop` (fill and clip) and `ContentScale.Fit` (letterbox) both
+preserve proportions. `ContentScale.FillBounds` stretches the image and logs a runtime warning.
+`alignment` doubles as the focal point, deciding which part survives when a framed ratio crops.
 
 ```kotlin
-// URL image
+// URL image, framed to 1:1
 PixaImage(
     source = PixaImageSource.Url(product.imageUrl),
     contentDescription = product.name,
-    modifier = Modifier.size(200.dp),
+    modifier = Modifier.fillMaxWidth(),
+    ratio = PixaImageRatio.Square,
     contentScale = ContentScale.Crop,
-    enableCrossfade = true
+    alignment = Alignment.TopCenter,  // focal point for the crop
+    crossfade = true
+)
+
+// Hero image — keeps the original ratio
+PixaImage(
+    source = PixaImageSource.Url(hero.imageUrl),
+    contentDescription = hero.title,
+    modifier = Modifier.fillMaxWidth(),
+    ratio = PixaImageRatio.Original,
+    contentScale = ContentScale.Fit
 )
 
 // SVG file from composeResources/files/
@@ -1451,9 +1738,14 @@ PixaColumnChart(
 )
 
 // Specialized chart composables
+PixaCandlestickChart(          // OHLC / financial series
+    data = ohlcData,           // List<OhlcData>
+    chartHeight = ChartHeight.Medium
+)
+
 TrendChart(data = trendData, modifier = Modifier.height(200.dp))
-ComparisonChart(data1 = series1, data2 = series2)
-MultiLineChart(series = listOf(series1, series2))
+ComparisonChart(dataSets = listOf("A" to seriesA, "B" to seriesB))
+MultiLineChart(dataSets = listOf("Revenue" to revenue, "Cost" to cost))
 ```
 
 #### PixaDivider
@@ -1465,6 +1757,101 @@ MultiLineChart(series = listOf(series1, series2))
 PixaDivider()                                // Horizontal, 1dp
 HorizontalDivider(thickness = 2.dp)          // Thicker
 VerticalDivider(modifier = Modifier.height(24.dp))  // Vertical
+```
+
+#### PixaListItem
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaListItem`
+**File**: `components/display/ListItem.kt`
+
+Standard list row. `leading`/`trailing` are sealed slots (`ListItemLeading` / `ListItemTrailing`)
+rather than loose painters, so each accessory kind renders with its own correct anatomy.
+
+```kotlin
+PixaListItem(
+    title = "Notifications",
+    subtitle = "Push, email and SMS",
+    onClick = { open() },
+    variant = ListItemVariant.FullWidth,
+    density = ListItemDensity.Standard,
+    leading = ListItemLeading.Icon(painterResource(Res.drawable.ic_bell)),
+    trailing = ListItemTrailing.Off
+)
+
+// Selection row
+SelectionListItem(title = "Dark theme", selected = isDark, onClick = { toggle() })
+```
+
+#### PixaTile
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaTile`
+**File**: `components/display/Tile.kt`
+
+Compact tappable tile with optional artwork and trailing control.
+
+```kotlin
+PixaTile(
+    label = "Payments",
+    onClick = { open() },
+    behavior = TileBehavior.Action,
+    artwork = TileArtwork.Off,
+    paragraphs = listOf("Manage cards and billing"),
+    contentAlignment = TileContentAlignment.Start
+)
+```
+
+#### PixaMessageCard
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaMessageCard`
+**File**: `components/display/MessageCard.kt`
+
+Promotional/informational card with a heading, paragraph, optional artwork, and a CTA.
+
+```kotlin
+PixaMessageCard(
+    heading = "Free delivery",
+    paragraph = "On orders over $30.",
+    ctaText = "Learn more",
+    onCtaClick = { open() },
+    artwork = MessageCardArtwork(
+        source = PixaImageSource.Url(bannerUrl),
+        position = MessageCardArtworkPosition.Top,
+        fit = MessageCardArtworkFit.Fill
+    )
+)
+```
+
+#### PixaSectionHeading
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaSectionHeading`
+**File**: `components/display/SectionHeading.kt`
+
+Section title with an optional subheading and a trailing accessory.
+
+```kotlin
+PixaSectionHeading(
+    heading = "Recent orders",
+    subheading = "Last 30 days",
+    trailing = SectionHeadingTrailing.TextButton(text = "See all", onClick = { seeAll() })
+    // also: SectionHeadingTrailing.None / IconButton(...) / Labels(...)
+)
+```
+
+#### PixaTag
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaTag`
+**File**: `components/display/Tag.kt`
+
+Compact status/metadata label. `TagType.Display` is non-interactive; other types support
+`onClick`/`onDismiss`.
+
+```kotlin
+PixaTag(
+    text = "In stock",
+    hierarchy = TagHierarchy.Secondary,
+    color = TagColor.Neutral,
+    type = TagType.Display
+)
 ```
 
 ---
@@ -1508,36 +1895,37 @@ PixaAlert(
 
 **Convenience**: `InfoAlert()`, `SuccessAlert()`, `WarningAlert()`, `ErrorAlert()`
 
-#### PixaBadge
+#### Badges
 
-**Import**: `com.pixamob.pixacompose.components.feedback.PixaBadge`
+**Import**: `com.pixamob.pixacompose.components.feedback.PixaNotificationBadge`
 **File**: `components/feedback/Badge.kt`
 
-**Variants**: `BadgeVariant.Default`, `Success`, `Error`, `Warning`, `Info`
+There is no single `PixaBadge`. The family is two components with distinct jobs, plus a positioning
+wrapper:
 
-**Styles**: `BadgeStyle.Filled`, `Outlined`, `Subtle`
+- **`PixaNotificationBadge`** — carries content: a `count`, `text`, or `icon`.
+- **`PixaHintBadge`** — a bare dot with no content, for "something changed here".
+- **`BadgedBox`** — positions any badge over its content.
+
+**Variants**: `BadgeVariant.Accent` (default), `Success`, `Warning`, `Error`, `OnBrand`.
+There is no `BadgeStyle`.
 
 ```kotlin
-Box {
+// Count badge over an icon
+BadgedBox(
+    badge = { PixaNotificationBadge(count = unreadCount, variant = BadgeVariant.Error, maxCount = 99) }
+) {
     PixaIcon(painter = painterResource(Res.drawable.ic_notifications))
-    PixaBadge(
-        content = unreadCount.toString(),
-        variant = BadgeVariant.Error,
-        style = BadgeStyle.Filled,
-        modifier = Modifier.align(Alignment.TopEnd)
-    )
 }
 
-// Dot indicator (notification dot)
-PixaBadge(dot = true, variant = BadgeVariant.Error)
-
-// Wrapper composable
-BadgedBox(
-    badge = { PixaBadge(content = "3") }
-) {
-    Icon(...)
+// Bare dot
+BadgedBox(badge = { PixaHintBadge(variant = BadgeVariant.Accent) }) {
+    PixaIcon(painter = painterResource(Res.drawable.ic_settings))
 }
 ```
+
+> `OnBrand` exists for badges sitting on brand-colored surfaces, where a colored badge would lose
+> contrast.
 
 #### Skeleton
 
@@ -1551,7 +1939,7 @@ Loading placeholders with shimmer animation.
 ```kotlin
 if (isLoading) {
     SkeletonCard()
-    SkeletonText(lines = 3)
+    SkeletonText(width = 120.dp)
 } else {
     ActualContent()
 }
@@ -1577,8 +1965,11 @@ PixaLinearIndicator(
 
 // Segmented progress
 SegmentedProgressIndicator(
-    segments = listOf(0.3f, 0.5f, 0.2f),
-    colors = listOf(red, green, blue)
+    segments = listOf(
+        ProgressSegment(progress = 1f),
+        ProgressSegment(progress = 0.5f),
+        ProgressSegment(progress = 0f)
+    )
 )
 
 // Page indicator (dots)
@@ -1586,26 +1977,57 @@ PixaPagerIndicator(pageCount = 5, currentPage = 2)
 
 // Loading spinner
 LoadingIndicator(modifier = Modifier.size(24.dp))
+
+// Compact pill showing progress inline
+PixaProgressPill(progress = 0.4f)
 ```
+
+**Also in this family**: `ProgressBar`, `SegmentedProgressIndicator`, `PagerIndicator`.
 
 #### PixaEmptyState
 
 **Import**: `com.pixamob.pixacompose.components.feedback.PixaEmptyState`
 **File**: `components/feedback/EmptyState.kt`
 
+Supports up to two actions (`primaryActionText`/`onPrimaryAction` and the secondary pair). The body
+text is `description`, not `message`.
+
 ```kotlin
 PixaEmptyState(
-    title = "No Messages",
-    message = "You don't have any messages yet",
+    type = EmptyStateType.Empty.NoContent,
+    title = "No messages",
+    description = "You don't have any messages yet",
     icon = painterResource(Res.drawable.ic_inbox_empty),
-    actionText = "Compose Message",
-    onAction = { navigateToCompose() }
+    primaryActionText = "Compose message",
+    onPrimaryAction = { navigateToCompose() }
 )
 
 // Specialized variants
+EmptyContent()
 EmptySearchResults(query = "keyword")
 NetworkError(onRetry = { retry() })
-PermissionDenied(onRequestPermission = { request() })
+ServerError(onRetry = { retry() })
+PermissionDenied(onRequestAccess = { request() }, onSignIn = { signIn() })
+```
+
+#### PixaSystemBanner
+
+**Import**: `com.pixamob.pixacompose.components.feedback.PixaSystemBanner`
+**File**: `components/feedback/SystemBanner.kt`
+
+Persistent, app-level status message. Unlike [Toast](#toast)/[Snackbar](#snackbar) it does not
+auto-dismiss — use it for conditions that stay true (offline, degraded service, maintenance).
+
+```kotlin
+PixaSystemBanner(
+    visible = isOffline,
+    message = "You're offline. Some features are unavailable.",
+    variant = SystemBannerVariant.Accent,
+    action = SystemBannerAction.Single(onClick = { retry() }),
+    // also: SystemBannerAction.None / Dual(...)
+    dismissible = true,
+    onDismiss = { dismissed = true }
+)
 ```
 
 ---
@@ -1621,26 +2043,35 @@ PermissionDenied(onRequestPermission = { request() })
 
 | Parameter | Type | Default | Description |
 |-----------|------|---------|-------------|
-| `title` | `String` | required | Nav bar title |
-| `navigationIcon` | `Painter?` | `null` | Back/menu icon |
-| `onNavigationClick` | `(() -> Unit)?` | `null` | Navigation callback |
-| `actions` | `List<TopNavAction>` | `emptyList()` | Action items (icon, badge, click) |
+| `title` | `String?` | `null` | Nav bar title |
+| `subtitle` | `String?` | `null` | Secondary line under the title |
+| `startActions` | `List<TopNavAction>` | `emptyList()` | Leading actions (back/menu live here) |
+| `endActions` | `List<TopNavAction>` | `emptyList()` | Trailing actions |
+| `collapsed` | `Boolean` | `false` | Collapsed treatment |
 | `size` | `SizeVariant` | `Medium` | Size preset |
+
+There is no `navigationIcon`/`onNavigationClick` — the leading icon is just the first `startActions`
+entry. `TopNavAction` fields are `icon`, `description`, `onClick`, `enabled`, `badge`, `tint`.
 
 ```kotlin
 PixaTopNavBar(
     title = "My App",
-    navigationIcon = painterResource(Res.drawable.ic_menu),
-    onNavigationClick = { openDrawer() },
-    actions = listOf(
+    startActions = listOf(
+        TopNavAction(
+            icon = painterResource(Res.drawable.ic_menu),
+            description = "Open navigation",
+            onClick = { openDrawer() }
+        )
+    ),
+    endActions = listOf(
         TopNavAction(
             icon = painterResource(Res.drawable.ic_search),
-            contentDescription = "Search",
+            description = "Search",
             onClick = { openSearch() }
         ),
         TopNavAction(
             icon = painterResource(Res.drawable.ic_more),
-            contentDescription = "More",
+            description = "More",
             onClick = { showMenu() },
             badge = 3
         )
@@ -1700,25 +2131,32 @@ when (selectedTab) {
 **Import**: `com.pixamob.pixacompose.components.navigation.PixaDrawer`
 **File**: `components/navigation/Drawer.kt`
 
-Side navigation drawer with configurable items and sections.
+Side navigation drawer. Items are grouped into `DrawerSection`s and identified by a stable `id`
+(not an index). The drawer renders itself as an overlay — it does not wrap your screen content.
 
 ```kotlin
 PixaDrawer(
-    isOpen = isOpen,
-    onClose = { isOpen = false },
-    items = listOf(
-        DrawerItem("Home", icon = Icons.Default.Home),
-        DrawerItem("Settings", icon = Icons.Default.Settings),
-        DrawerItem("Help", icon = Icons.Default.Help)
+    visible = isOpen,
+    onDismiss = { isOpen = false },
+    sections = listOf(
+        DrawerSection(
+            title = "Main",
+            items = listOf(
+                DrawerItem(id = "home", title = "Home", icon = painterResource(Res.drawable.ic_home)),
+                DrawerItem(id = "settings", title = "Settings", icon = painterResource(Res.drawable.ic_settings), badge = "3")
+            )
+        ),
+        DrawerSection(items = listOf(DrawerItem(id = "help", title = "Help")))
     ),
-    selectedIndex = selectedItem,
-    onItemSelected = {
-        selectedItem = it
+    selectedItemId = selectedId,
+    onItemClick = { item ->
+        selectedId = item.id
         isOpen = false
-    }
-) {
-    // Main content
-}
+    },
+    position = DrawerPosition.Start,
+    header = { DrawerHeader() },
+    footer = { DrawerFooter() }
+)
 ```
 
 #### PixaStepper
@@ -1759,26 +2197,20 @@ VerticalStepper(
 
 **Variants**: Default, Alert, Confirm, Destructive
 
+Actions are text + callbacks (`confirmText`/`onConfirm`, `dismissText`/`onDismiss`) — not composable
+button slots. `onDismissRequest` is the required dismissal callback.
+
 ```kotlin
 if (showDialog) {
     PixaDialog(
-        title = "Confirm Delete",
-        message = "Are you sure?",
-        onDismiss = { showDialog = false },
-        confirmButton = {
-            PixaButton(
-                text = "Delete",
-                onClick = { deleteItem(); showDialog = false },
-                variant = ButtonVariant.Filled
-            )
-        },
-        dismissButton = {
-            PixaButton(
-                text = "Cancel",
-                onClick = { showDialog = false },
-                variant = ButtonVariant.Ghost
-            )
-        }
+        onDismissRequest = { showDialog = false },
+        variant = DialogVariant.Destructive,
+        title = "Confirm delete",
+        message = "Are you sure? This cannot be undone.",
+        confirmText = "Delete",
+        onConfirm = { deleteItem(); showDialog = false },
+        dismissText = "Cancel",
+        onDismiss = { showDialog = false }
     )
 }
 
@@ -1788,26 +2220,8 @@ PixaConfirmDialog(title = "Confirm", message = "Are you sure?", onConfirm = { co
 PixaDestructiveDialog(title = "Delete", message = "This cannot be undone", onConfirm = { delete() })
 ```
 
-#### PixaBottomSheet
-
-**Import**: `com.pixamob.pixacompose.components.overlay.PixaBottomSheet`
-**File**: `components/overlay/BottomSheet.kt`
-
-```kotlin
-if (showSheet) {
-    PixaBottomSheet(
-        onDismiss = { showSheet = false },
-        title = "Filter Options"
-    ) {
-        FilterOptions()
-    }
-}
-
-// Specialized variants
-SelectOptionBottomSheet(options = listOf("A", "B", "C"), onSelected = { select(it) })
-ListBottomSheet(items = listOf(item1, item2), onItemSelected = { select(it) })
-ConfirmationBottomSheet(title = "Confirm?", onConfirm = { confirm() })
-```
+> **`PixaBottomSheet` has been replaced.** `components/overlay/BottomSheet.kt` no longer exists — the
+> sheet is now `PixaSheet` in the [Surfaces](#surfaces) category. See [PixaSheet](#pixasheet).
 
 #### PixaMenu
 
@@ -1818,20 +2232,37 @@ ConfirmationBottomSheet(title = "Confirm?", onConfirm = { confirm() })
 var showMenu by remember { mutableStateOf(false) }
 
 Box {
-    IconButton(onClick = { showMenu = true }) {
-        PixaIcon(painter = painterResource(Res.drawable.ic_more_vert))
-    }
+    PixaIconButton(onClick = { showMenu = true }, icon = painterResource(Res.drawable.ic_more_vert))
 
+    // Simple flat-item API. Selection is reported by onItemClick, not per-item callbacks.
     PixaMenu(
-        expanded = showMenu,
+        visible = showMenu,
         onDismiss = { showMenu = false },
         items = listOf(
-            MenuItem("Edit", onClick = { edit() }),
-            MenuItem("Delete", onClick = { delete() }),
-            MenuItem("Share", onClick = { share() })
-        )
+            MenuItem(id = "edit", title = "Edit"),
+            MenuItem(id = "share", title = "Share"),
+            MenuItem(id = "delete", title = "Delete", type = MenuItemType.Destructive)
+        ),
+        onItemClick = { item -> handleAction(item.id) }
     )
 }
+```
+
+`PixaMenuContent` is the richer API, taking the full `MenuContent` list — `Item`, `Chevron`,
+`Grabber`, `Search`, `Header`, `Paragraph`, and `Divider`:
+
+```kotlin
+PixaMenuContent(
+    visible = showMenu,
+    onDismiss = { showMenu = false },
+    content = listOf(
+        MenuContent.Header("Actions"),
+        MenuContent.Item(MenuItem(id = "copy", title = "Copy")),
+        MenuContent.Divider,
+        MenuContent.Item(MenuItem(id = "delete", title = "Delete", type = MenuItemType.Destructive))
+    ),
+    onItemClick = { handleAction(it.id) }
+)
 ```
 
 #### PixaPopover
@@ -1839,15 +2270,21 @@ Box {
 **Import**: `com.pixamob.pixacompose.components.overlay.PixaPopover`
 **File**: `components/overlay/Popover.kt`
 
-**Placements**: `PopoverPlacement.Top`, `Bottom`, `Start`, `End`
+**Positions**: `PopoverPosition.BottomCenter` (default) and the other `PopoverPosition` entries.
+There is no `PopoverPlacement`.
+
+`PixaPopover` is visibility-controlled and takes a required `heading`:
 
 ```kotlin
+var showInfo by remember { mutableStateOf(false) }
+
 PixaPopover(
-    content = { Text("Additional info here") },
-    placement = PopoverPlacement.Top
-) {
-    PixaIcon(painter = painterResource(Res.drawable.ic_info))
-}
+    visible = showInfo,
+    onDismiss = { showInfo = false },
+    heading = "About this field",
+    body = "We use this to personalise your results.",
+    position = PopoverPosition.BottomCenter
+)
 ```
 
 #### PixaTooltip
@@ -1855,16 +2292,109 @@ PixaPopover(
 **Import**: `com.pixamob.pixacompose.components.overlay.PixaTooltip`
 **File**: `components/overlay/Tooltip.kt`
 
-**Placements**: `TooltipPlacement.Top`, `Bottom`, `Start`, `End`
+**Positions**: `TooltipPosition.Top`, `Bottom`, `Start`, `End`
+**Variants**: `TooltipVariant.Prompted` (default), `Unprompted`
+**Pointer**: `TooltipPointerAlignment.Leading`, `Center`, `Trailing`
+
+`PixaTooltip` is visibility-controlled — you own the `visible` state:
 
 ```kotlin
+var showTip by remember { mutableStateOf(false) }
+
 PixaTooltip(
-    text = "Click to copy",
-    placement = TooltipPlacement.Bottom
+    tooltip = "Click to copy",
+    visible = showTip,
+    position = TooltipPosition.Bottom,
+    variant = TooltipVariant.Prompted,
+    autoDismissMs = 3000,
+    onDismiss = { showTip = false }
 ) {
-    IconButton(onClick = { copyToClipboard() }) {
-        PixaIcon(painter = painterResource(Res.drawable.ic_copy))
+    PixaIconButton(onClick = { showTip = true }, icon = painterResource(Res.drawable.ic_copy))
+}
+```
+
+`PixaTooltipBox` is the simpler wrapper that manages its own visibility:
+
+```kotlin
+PixaTooltipBox(tooltip = "Click to copy", position = TooltipPosition.Top) {
+    PixaIconButton(onClick = { copy() }, icon = painterResource(Res.drawable.ic_copy))
+}
+```
+
+### Surfaces
+
+Container surfaces that host other content. This category replaces the former
+`components/overlay/BottomSheet.kt`.
+
+#### PixaSheet
+
+**Import**: `com.pixamob.pixacompose.components.surfaces.PixaSheet`
+**File**: `components/surfaces/Sheet.kt`
+
+Replaces the removed `PixaBottomSheet`. `Expandable` sheets show a grabber and move through the
+`SheetSnapPoint` ladder (`Collapsed`/`Middle`/`Expanded`); `Fixed` sheets hug their content.
+
+```kotlin
+if (showSheet) {
+    PixaSheet(
+        onDismissRequest = { showSheet = false },
+        title = "Filter options",
+        presentation = SheetPresentation.Modal,       // or NonModal
+        expandability = SheetExpandability.Expandable, // or Fixed
+        initialSnapPoint = SheetSnapPoint.Middle
+    ) {
+        FilterOptions()
     }
+}
+
+// Convenience wrappers
+FixedDetailSheet(onDismissRequest = { close() }, title = "Details") { DetailBody() }
+FilterSheet(onDismissRequest = { close() }, title = "Filters") { Filters() }
+```
+
+#### PixaFullScreenModal
+
+**Import**: `com.pixamob.pixacompose.components.surfaces.PixaFullScreenModal`
+**File**: `components/surfaces/FullScreenModal.kt`
+
+For self-contained flows that take over the screen. Not an option-list presenter — prefer
+[PixaSheet](#pixasheet) or `PixaDropdown`'s own adaptive presentation for option selection.
+
+```kotlin
+if (showModal) {
+    PixaFullScreenModal(
+        onDismissRequest = { showModal = false },
+        title = "Edit profile",
+        presentation = FullScreenModalPresentation.StackedSheet,
+        confirmText = "Save",
+        dismissText = "Cancel",
+        onConfirm = { save() }
+    ) {
+        ProfileForm()
+    }
+}
+
+// Convenience wrappers
+ImmersiveFullScreenModal(onDismissRequest = { close() }, title = "Gallery") { Gallery() }
+TaskFullScreenModal(onDismissRequest = { close() }, title = "Checkout", onConfirm = { pay() }) { Checkout() }
+```
+
+#### PixaSurfaceCard
+
+**Import**: `com.pixamob.pixacompose.components.surfaces.PixaSurfaceCard`
+**File**: `components/surfaces/Card.kt`
+
+A surface-level card container. Distinct from [PixaCard](#pixacard) in `display/` — `Isolated` insets
+with a corner radius so it stands out; `Feed` is full-width with a module divider between cards.
+
+```kotlin
+PixaSurfaceCard(
+    context = SurfaceCardContext.Isolated,  // or Feed
+    onClick = { open() },
+    selected = isSelected,
+    onDismiss = { dismiss() }
+) {
+    CardBody()
 }
 ```
 
@@ -2366,7 +2896,7 @@ fun FilterSection(categories: List<String>) {
         ) {
             categories.forEach { category ->
                 PixaChip(
-                    label = category,
+                    text = category,
                     selected = category in selectedCategories,
                     onClick = {
                         selectedCategories = if (category in selectedCategories)
@@ -2471,8 +3001,13 @@ fun MainScreen() {
         topBar = {
             PixaTopNavBar(
                 title = "My App",
-                navigationIcon = painterResource(Res.drawable.ic_menu),
-                onNavigationClick = { /* open drawer */ }
+                startActions = listOf(
+                    TopNavAction(
+                        icon = painterResource(Res.drawable.ic_menu),
+                        description = "Open navigation",
+                        onClick = { /* open drawer */ }
+                    )
+                )
             )
         },
         bottomBar = {
@@ -2589,7 +3124,8 @@ class ItemsViewModel : ViewModel() {
 
    Need overlay?
    - Modal → `PixaDialog`
-   - Bottom options → `PixaBottomSheet`
+   - Bottom options → `PixaSheet`
+   - Full-screen flow → `PixaFullScreenModal`
    - Context menu → `PixaMenu`
    - Info → `PixaPopover`, `PixaTooltip`
 

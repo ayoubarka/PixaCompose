@@ -1,6 +1,8 @@
 package com.pixamob.pixacompose.components.navigation
 import com.pixamob.pixacompose.theme.SizeVariant
 
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -19,20 +21,25 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.actions.ButtonVariant
@@ -43,6 +50,8 @@ import com.pixamob.pixacompose.components.display.PixaAvatar
 import com.pixamob.pixacompose.components.feedback.PixaNotificationBadge
 import com.pixamob.pixacompose.components.feedback.BadgeVariant
 import com.pixamob.pixacompose.theme.*
+import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.elevationShadow
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
@@ -66,6 +75,16 @@ enum class TopNavTitleAlignment {
     Start,
     /** Title centered */
     Center
+}
+
+/**
+ * [Fixed] is opaque, docked to the screen top, with a title.
+ * [Floating] is transparent, titleless, designed for overlaying maps/images,
+ * with protective backgrounds on leading/trailing icons for visibility.
+ */
+enum class NavHeaderVariant {
+    Fixed,
+    Floating
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -128,26 +147,50 @@ private fun SizeVariant.toSizeConfig(): TopNavSizeConfig = when (this) {
     )
 }
 
+/** Spec: "Fixed Expanded"/"Fixed Collapsed" give pixel dimensions (460/356px height), but those read
+ * as full-screen Figma mockup frame captures, not the header bar's own height — the same false lead
+ * this codebase's Progress Circle token comment already flags for a different component. Absent a
+ * usable literal, [CollapsedHeightRatio]/[CollapsedTitleScaleRatio] are documented, conservative shrink
+ * ratios applied on top of whatever [SizeVariant] height/font-scale the caller already selected. */
+private const val CollapsedHeightRatio = 0.78f
+private const val CollapsedTitleScaleRatio = 0.85f
+
+/** Spec: "Leading Button: Must have 8px left padding (per changelog bugfix, Nov 2023)" — matches
+ * [HierarchicalSize.Spacing.Small] exactly. */
+private val LeadingActionStartPadding = HierarchicalSize.Spacing.Small
+
+/** Uses [HierarchicalSize.Shadow.Massive] for drop shadow on both Fixed and Floating variants. */
+val NavHeaderElevation = HierarchicalSize.Shadow.Massive
+
+/** Bottom border width using [HierarchicalSize.Border.Compact]. */
+private val NavHeaderBorderWidth = HierarchicalSize.Border.Compact
+
 // ═══════════════════════════════════════════════════════════════════════════════
 // BASE - Internal composables
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * Internal action button using PixaButton for consistent styling
+ * Internal action button using PixaButton for consistent styling.
+ * [protectionColor], when non-null, paints a solid chip behind the icon for visibility on complex backgrounds.
  */
 @Composable
 private fun ActionButton(
     action: TopNavAction,
     iconSize: Dp,
     contentColor: Color,
+    protectionColor: Color?,
+    mirrorForRtl: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Box(
-        modifier = modifier,
+        modifier = modifier
+            .then(if (mirrorForRtl && isRtl) Modifier.graphicsLayer(scaleX = -1f) else Modifier),
         contentAlignment = Alignment.Center
     ) {
         // Use action.tint or contentColor for the icon
         val iconColor = action.tint ?: contentColor
+        val chipColor = protectionColor ?: Color.Transparent
 
         PixaButton(
             onClick = action.onClick,
@@ -165,12 +208,12 @@ private fun ActionButton(
             modifier = Modifier.size(iconSize + 20.dp), // Touch target 44dp minimum
             customColors = ButtonStateColors(
                 default = ButtonColors(
-                    background = Color.Transparent,
+                    background = chipColor,
                     content = iconColor,
                     border = Color.Transparent
                 ),
                 disabled = ButtonColors(
-                    background = Color.Transparent,
+                    background = chipColor,
                     content = iconColor.copy(alpha = 0.5f),
                     border = Color.Transparent
                 )
@@ -208,33 +251,35 @@ private fun TopNavTitleSection(
         }
     ) {
         if (title != null) {
-            Text(
+            BasicText(
                 text = title,
                 style = AppTheme.typography.titleBold.copy(
-                    fontSize = AppTheme.typography.titleBold.fontSize * fontScale
+                    fontSize = AppTheme.typography.titleBold.fontSize * fontScale,
+                    color = AppTheme.colors.baseContentTitle,
+                    textAlign = when (alignment) {
+                        TopNavTitleAlignment.Start -> TextAlign.Start
+                        TopNavTitleAlignment.Center -> TextAlign.Center
+                    }
                 ),
-                color = AppTheme.colors.baseContentTitle,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                textAlign = when (alignment) {
-                    TopNavTitleAlignment.Start -> TextAlign.Start
-                    TopNavTitleAlignment.Center -> TextAlign.Center
-                }
+                modifier = Modifier.semantics { heading() }
             )
         }
 
         if (subtitle != null) {
             Spacer(modifier = Modifier.height(2.dp))
-            Text(
+            BasicText(
                 text = subtitle,
-                style = AppTheme.typography.captionRegular,
-                color = AppTheme.colors.baseContentSubtitle,
+                style = AppTheme.typography.captionRegular.copy(
+                    color = AppTheme.colors.baseContentSubtitle,
+                    textAlign = when (alignment) {
+                        TopNavTitleAlignment.Start -> TextAlign.Start
+                        TopNavTitleAlignment.Center -> TextAlign.Center
+                    }
+                ),
                 maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = when (alignment) {
-                    TopNavTitleAlignment.Start -> TextAlign.Start
-                    TopNavTitleAlignment.Center -> TextAlign.Center
-                }
+                overflow = TextOverflow.Ellipsis
             )
         }
     }
@@ -349,18 +394,21 @@ private fun TopNavTitleSection(
  * ```
  *
  * @param modifier Modifier for the top nav bar container
- * @param title Optional title text (null for no title)
+ * @param variant [NavHeaderVariant.Fixed] (opaque, carries [title]) or [NavHeaderVariant.Floating] (transparent, no title, background-protected icons)
+ * @param collapsed [NavHeaderVariant.Fixed] only; animates between expanded/collapsed states. Caller-driven via scroll listener. No effect on [NavHeaderVariant.Floating].
+ * @param title Optional title text; ignored when [variant] is [NavHeaderVariant.Floating]. Always single-line/truncating.
  * @param subtitle Optional subtitle text below title
- * @param titleComposable Optional custom title composable (overrides title/subtitle if provided)
- * @param titleAlignment Title alignment (Start by default, Center when no start actions)
- * @param startActions List of actions displayed at the start (left/leading)
- * @param endActions List of actions displayed at the end (right/trailing)
+ * @param titleComposable Optional custom title composable (overrides title/subtitle if provided); also ignored when [variant] is [NavHeaderVariant.Floating]
+ * @param titleAlignment Title alignment (Start or Center); forced to Start when [collapsed] is true
+ * @param startActions List of actions displayed at the start (leading)
+ * @param endActions List of actions displayed at the end (trailing)
+ * @param mirrorLeadingIconForRtl Whether leading icon flips for RTL (default true for back arrows)
  * @param profileImageUrl Optional profile image URL (creates avatar end action)
  * @param onAvatarClick Callback when avatar is clicked (required if profileImageUrl provided)
- * @param containerColor Background color of the top bar
+ * @param containerColor Background color override; defaults by variant (Fixed: surface, Floating: transparent)
  * @param contentColor Color for icons and text
  * @param size Size variant affecting height, icon sizes, and font scale
- * @param elevation Elevation for shadow effect (0.dp for no shadow)
+ * @param elevation Elevation for shadow effect (defaults to [NavHeaderElevation])
  * @param bottomDivider If true, shows a thin divider line at the bottom
  * @param includeSafeAreaPadding If true, adds status bar padding at top
  * @param enableScrolling If true and actions overflow, enables horizontal scrolling
@@ -368,17 +416,20 @@ private fun TopNavTitleSection(
 @Composable
 fun PixaTopNavBar(
     modifier: Modifier = Modifier,
+    variant: NavHeaderVariant = NavHeaderVariant.Fixed,
+    collapsed: Boolean = false,
     title: String? = null,
     subtitle: String? = null,
     titleComposable: @Composable (() -> Unit)? = null,
     titleAlignment: TopNavTitleAlignment? = null,
     startActions: List<TopNavAction> = emptyList(),
     endActions: List<TopNavAction> = emptyList(),
+    mirrorLeadingIconForRtl: Boolean = true,
     profileImageUrl: String? = null,
-    containerColor: Color = AppTheme.colors.baseSurfaceDefault,
+    containerColor: Color? = null,
     contentColor: Color = AppTheme.colors.baseContentTitle,
     size: SizeVariant = SizeVariant.Medium,
-    elevation: Dp = 0.dp,
+    elevation: Dp = NavHeaderElevation,
     bottomDivider: Boolean = false,
     includeSafeAreaPadding: Boolean = false,
     enableScrolling: Boolean = false,
@@ -391,7 +442,16 @@ fun PixaTopNavBar(
         }
     }
 
+    val isFloating = variant == NavHeaderVariant.Floating
     val sizeConfig = size.toSizeConfig()
+    val resolvedContainerColor = containerColor ?: if (isFloating) Color.Transparent else AppTheme.colors.baseSurfaceDefault
+    val protectionColor = if (isFloating) AppTheme.colors.baseSurfaceSubtle else null
+    val isCollapsed = collapsed && !isFloating
+
+    val targetHeight = if (isCollapsed) sizeConfig.height * CollapsedHeightRatio else sizeConfig.height
+    val targetFontScale = if (isCollapsed) sizeConfig.titleFontScale * CollapsedTitleScaleRatio else sizeConfig.titleFontScale
+    val animatedHeight by animateDpAsState(targetValue = targetHeight, animationSpec = AnimationUtils.standardSpring(), label = "nav_header_height")
+    val animatedFontScale by animateFloatAsState(targetValue = targetFontScale, animationSpec = AnimationUtils.standardSpring(), label = "nav_header_title_scale")
 
     // Calculate status bar padding
     val statusBarPadding = if (includeSafeAreaPadding) {
@@ -400,11 +460,12 @@ fun PixaTopNavBar(
         0.dp
     }
 
-    // Determine title alignment
-    val resolvedAlignment = titleAlignment ?: if (startActions.isEmpty()) {
-        TopNavTitleAlignment.Center
-    } else {
-        TopNavTitleAlignment.Start
+    // Determine title alignment — collapsed always left-aligns, per spec's Android guidance.
+    val resolvedAlignment = when {
+        isCollapsed -> TopNavTitleAlignment.Start
+        titleAlignment != null -> titleAlignment
+        startActions.isEmpty() -> TopNavTitleAlignment.Center
+        else -> TopNavTitleAlignment.Start
     }
 
     // Scroll state for actions
@@ -413,8 +474,8 @@ fun PixaTopNavBar(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .shadow(elevation)
-            .background(containerColor)
+            .then(if (elevation > 0.dp) Modifier.elevationShadow(elevation, RectangleShape) else Modifier)
+            .background(resolvedContainerColor)
     ) {
         // Status bar spacer
         if (statusBarPadding > 0.dp) {
@@ -425,27 +486,33 @@ fun PixaTopNavBar(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(sizeConfig.height)
+                .height(animatedHeight)
                 .padding(horizontal = sizeConfig.horizontalPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Start actions section
+            // Start actions section — spec: leading button gets an extra 8dp left inset.
             if (startActions.isNotEmpty()) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(sizeConfig.actionSpacing),
                     verticalAlignment = Alignment.CenterVertically,
-                    modifier = if (enableScrolling && startActions.size > 2) {
-                        Modifier.horizontalScroll(scrollState)
-                    } else {
-                        Modifier
-                    }
+                    modifier = Modifier
+                        .padding(start = LeadingActionStartPadding)
+                        .then(
+                            if (enableScrolling && startActions.size > 2) {
+                                Modifier.horizontalScroll(scrollState)
+                            } else {
+                                Modifier
+                            }
+                        )
                 ) {
-                    startActions.forEach { action ->
+                    startActions.forEachIndexed { index, action ->
                         ActionButton(
                             action = action,
                             iconSize = sizeConfig.iconSize,
-                            contentColor = contentColor
+                            contentColor = contentColor,
+                            protectionColor = protectionColor,
+                            mirrorForRtl = index == 0 && mirrorLeadingIconForRtl
                         )
                     }
                 }
@@ -453,31 +520,35 @@ fun PixaTopNavBar(
                 Spacer(modifier = Modifier.width(HierarchicalSize.Spacing.Small))
             }
 
-            // Title section (flexible weight)
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = HierarchicalSize.Spacing.Compact),
-                contentAlignment = when (resolvedAlignment) {
-                    TopNavTitleAlignment.Start -> Alignment.CenterStart
-                    TopNavTitleAlignment.Center -> Alignment.Center
-                }
-            ) {
-                when {
-                    titleComposable != null -> {
-                        // Custom title composable
-                        titleComposable()
+            // Title section (flexible weight) — spec: Floating headers carry no title at all.
+            if (!isFloating) {
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = HierarchicalSize.Spacing.Compact),
+                    contentAlignment = when (resolvedAlignment) {
+                        TopNavTitleAlignment.Start -> Alignment.CenterStart
+                        TopNavTitleAlignment.Center -> Alignment.Center
                     }
-                    title != null || subtitle != null -> {
-                        // Default title/subtitle
-                        TopNavTitleSection(
-                            title = title,
-                            subtitle = subtitle,
-                            alignment = resolvedAlignment,
-                            fontScale = sizeConfig.titleFontScale
-                        )
+                ) {
+                    when {
+                        titleComposable != null -> {
+                            // Custom title composable
+                            titleComposable()
+                        }
+                        title != null || subtitle != null -> {
+                            // Default title/subtitle
+                            TopNavTitleSection(
+                                title = title,
+                                subtitle = subtitle,
+                                alignment = resolvedAlignment,
+                                fontScale = animatedFontScale
+                            )
+                        }
                     }
                 }
+            } else {
+                Spacer(modifier = Modifier.weight(1f))
             }
 
             // End actions section
@@ -497,7 +568,9 @@ fun PixaTopNavBar(
                         ActionButton(
                             action = action,
                             iconSize = sizeConfig.iconSize,
-                            contentColor = contentColor
+                            contentColor = contentColor,
+                            protectionColor = protectionColor,
+                            mirrorForRtl = false
                         )
                     }
 
@@ -509,7 +582,7 @@ fun PixaTopNavBar(
                             size = sizeConfig.avatarSize,
                             modifier = Modifier.clickable(
                                 interactionSource = remember { MutableInteractionSource() },
-                                indication = ripple(bounded = false, radius = 24.dp),
+                                indication = null,
                                 role = Role.Button,
                                 onClick = onAvatarClick
                             )
@@ -519,12 +592,13 @@ fun PixaTopNavBar(
             }
         }
 
-        // Bottom divider
+        // Bottom divider — spec: "Border Weight: 1px inside."
         if (bottomDivider) {
-            androidx.compose.material3.HorizontalDivider(
-                modifier = Modifier.fillMaxWidth(),
-                thickness = 1.dp,
-                color = AppTheme.colors.baseBorderSubtle
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(NavHeaderBorderWidth)
+                    .background(AppTheme.colors.baseBorderSubtle)
             )
         }
     }

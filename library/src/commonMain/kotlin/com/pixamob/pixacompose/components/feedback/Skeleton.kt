@@ -36,8 +36,7 @@ import com.valentinilk.shimmer.shimmer
 import com.valentinilk.shimmer.shimmerSpec
 
 /**
- * PixaSkeleton family — migrated from Uber Base's Placeholder spec ("a
- * shimmering block that takes the place of content before it appears").
+ * PixaSkeleton family — a shimmering placeholder that takes the place of content before it appears.
  *
  * ### Purpose
  * Reduces perceived wait time on first loads, especially when parts of the

@@ -6,14 +6,12 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -34,8 +32,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.Saver
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -306,7 +304,7 @@ fun rememberColorPickerState(
  * @param selectionIconConfig Configuration for selection icon visibility and appearance in grid mode
  * @param onColorChanged Callback when color changes (debounced for performance)
  */
-@OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
+@OptIn(FlowPreview::class)
 @Composable
 fun PixaColorPicker(
     modifier: Modifier = Modifier,
@@ -495,10 +493,13 @@ private fun ColorPreview(
                 .border(HierarchicalSize.Border.Nano, AppTheme.colors.baseContentDisabled, RoundedCornerShape(HierarchicalSize.Radius.Medium)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                "Previous",
-                style = AppTheme.typography.captionRegular,
-                color = if (previousColor.luminance() > 0.5f) Color.Black else Color.White
+            BasicText(
+                text = "Previous",
+                style = AppTheme.typography.captionRegular.copy(
+                    // Label sits on an arbitrary user-picked colour, so no theme
+                    // token applies — ColorUtils resolves the readable contrast.
+                    color = previousColor.contrastColor()
+                )
             )
         }
 
@@ -513,10 +514,11 @@ private fun ColorPreview(
                 .border(HierarchicalSize.Border.Nano, AppTheme.colors.baseContentDisabled, RoundedCornerShape(HierarchicalSize.Radius.Medium)),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                "Current",
-                style = AppTheme.typography.captionRegular,
-                color = if (currentColor.luminance() > 0.5f) Color.Black else Color.White
+            BasicText(
+                text = "Current",
+                style = AppTheme.typography.captionRegular.copy(
+                    color = currentColor.contrastColor()
+                )
             )
         }
     }
@@ -539,25 +541,33 @@ private fun ModeSelector(
     ) {
         ColorPickerMode.entries.forEach { mode ->
             val isSelected = currentMode == mode
-            Surface(
+            val modeShape = RoundedCornerShape(HierarchicalSize.Radius.Small)
+            Box(
                 modifier = Modifier
                     .weight(1f)
                     .height(HierarchicalSize.Container.Compact)
-                    .clickable(enabled = enabled) { onModeChange(mode) },
-                shape = RoundedCornerShape(HierarchicalSize.Radius.Small),
-                color = if (isSelected) AppTheme.colors.brandSurfaceDefault else Color.Transparent,
-                border = BorderStroke(
-                    HierarchicalSize.Border.Nano,
-                    if (isSelected) AppTheme.colors.brandBorderDefault else AppTheme.colors.baseBorderDefault
-                )
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = mode.name,
-                        style = AppTheme.typography.captionBold,
-                        color = if (isSelected) AppTheme.colors.brandContentDefault else AppTheme.colors.baseContentBody
+                    .clip(modeShape)
+                    .background(
+                        if (isSelected) AppTheme.colors.brandSurfaceDefault else Color.Transparent
                     )
-                }
+                    .border(
+                        HierarchicalSize.Border.Nano,
+                        if (isSelected) AppTheme.colors.brandBorderDefault else AppTheme.colors.baseBorderDefault,
+                        modeShape
+                    )
+                    .clickable(enabled = enabled) { onModeChange(mode) },
+                contentAlignment = Alignment.Center
+            ) {
+                BasicText(
+                    text = mode.name,
+                    style = AppTheme.typography.captionBold.copy(
+                        color = if (isSelected) {
+                            AppTheme.colors.brandContentDefault
+                        } else {
+                            AppTheme.colors.baseContentBody
+                        }
+                    )
+                )
             }
         }
     }
@@ -607,12 +617,10 @@ private fun GridColorPicker(
                 modifier = Modifier
                     .aspectRatio(1f)
                     .clip(RoundedCornerShape(HierarchicalSize.Radius.Medium))
-                    .clickable(
-                        enabled = enabled,
-                        onClick = { onColorSelected(color) },
-                        interactionSource = remember { MutableInteractionSource() },
-                        indication = ripple()
-                    )
+                    // Plain clickable (ambient LocalIndication), matching the
+                    // mode selector and history swatches below — a Material
+                    // ripple would tint the very colour being previewed.
+                    .clickable(enabled = enabled) { onColorSelected(color) }
                     .drawCheckerboard()
                     .background(color)
                     .then(
@@ -628,8 +636,7 @@ private fun GridColorPicker(
                 contentAlignment = Alignment.Center
             ) {
                 if (isSelected && selectionIconConfig.visible) {
-                    val iconColor = selectionIconConfig.color
-                        ?: if (color.luminance() > 0.5f) Color.Black else Color.White
+                    val iconColor = selectionIconConfig.color ?: color.contrastColor()
 
                     Canvas(modifier = Modifier.size(selectionIconConfig.size)) {
                         val strokeWidthPx = selectionIconConfig.strokeWidth.toPx()
@@ -1023,9 +1030,11 @@ private fun ColorChannelSlider(
         horizontalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Small),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
+        BasicText(
             text = label,
-            style = AppTheme.typography.bodyBold,
+            style = AppTheme.typography.bodyBold.copy(
+                color = AppTheme.colors.baseContentTitle
+            ),
             modifier = Modifier.width(HierarchicalSize.Icon.Medium)
         )
 
@@ -1067,15 +1076,17 @@ private fun ColorChannelSlider(
             )
         }
 
-        Text(
+        BasicText(
             text = when (label) {
                 "H" -> "${(value * 360).roundToInt()}°"  // Hue in degrees
                 "A" -> "${(value * 100).roundToInt()}%"  // Alpha as percentage
                 else -> (value * 255).roundToInt().toString()  // RGB/S/V/L as 0-255
             },
-            style = AppTheme.typography.bodyRegular,
-            modifier = Modifier.width(HierarchicalSize.Container.Small),
-            textAlign = TextAlign.End
+            style = AppTheme.typography.bodyRegular.copy(
+                color = AppTheme.colors.baseContentTitle,
+                textAlign = TextAlign.End
+            ),
+            modifier = Modifier.width(HierarchicalSize.Container.Small)
         )
     }
 }
@@ -1173,9 +1184,11 @@ private fun ColorHistory(
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
-        Text(
-            "Recent Colors",
-            style = AppTheme.typography.captionBold,
+        BasicText(
+            text = "Recent Colors",
+            style = AppTheme.typography.captionBold.copy(
+                color = AppTheme.colors.baseContentTitle
+            ),
             modifier = Modifier.padding(bottom = HierarchicalSize.Spacing.Compact)
         )
 
