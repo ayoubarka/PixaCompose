@@ -1,63 +1,5 @@
 package com.pixamob.pixacompose.components.overlay
 
-/**
- * PixaTooltip — PixaCompose's equivalent of Uber Base's "Tooltip" component.
- *
- * Source: https://base.uber.com/6d2425e9f/p/63fdd3-tooltip.md
- *
- * Purpose:
- *   Brief, informative messages that introduce new content/features or give
- *   short step-by-step guidance — upsells, education, and disclosure of
- *   supplementary info. Not for critical information, first-run onboarding
- *   (use a popover), or feedback messaging (use a snackbar/toast).
- *
- * Anatomy:
- *   Container (background + border + shadow) + pointer arrow (connects to the
- *   anchor) + message text + optional trailing icon button (navigation or
- *   dismissal — icon-only, never a text button).
- *
- * Variants:
- *   - [TooltipVariant.Unprompted]: auto-appears, auto-dismisses after
- *     ~5-7s (default 6s), dismissible early via its own tap, a trailing X
- *     button, or Esc.
- *   - [TooltipVariant.Prompted]: caller-driven via [PixaTooltip]'s `visible`
- *     (hover/click), dismissed by the caller (mouse leave/click) or Esc.
- *     Per spec, avoid pairing a trailing button with a hover-only trigger —
- *     that's a call-site wiring decision this component can't detect.
- *   - Pointer side ([TooltipPosition]): Top/Bottom/Start/End, i.e. which edge
- *     of the anchor the container appears on.
- *   - Pointer alignment ([TooltipPointerAlignment]): Leading/Center/Trailing
- *     — where the arrow sits along that edge (spec's vertical/horizontal
- *     pointer-position axes, unified into one enum relative to the placement
- *     axis).
- *
- * States: Hidden → Appearing (fade in) → Visible → Dismissing (fade out),
- *   driven by `visible` + [AnimatedVisibility] fade transitions.
- *
- * Sizing: [SizeVariant]-driven via [HierarchicalSize] resolvers (padding,
- *   radius, spacing) plus a size-scaled typography tier. Border weight (1dp)
- *   and elevation are fixed per spec regardless of size tier.
- *
- * Adaptive behavior: width is capped at 50% of the measured screen width via
- *   [ScreenUtil.percentOfWidth] on every platform — the spec applies the same
- *   50% ceiling on both mobile and desktop, so no separate breakpoint
- *   handling is needed here.
- *
- * Customization: background/content/border colors, pointer side + alignment,
- *   size, trailing icon + its click handler, auto-dismiss duration, max-width
- *   fraction. Not exposed: text truncation (spec explicitly discourages it —
- *   content authors are responsible for keeping messages to 1-3 lines; this
- *   component wraps but never clips), multiple trailing actions (spec allows
- *   exactly one icon button), an outlined 4px border style (spec calls it an
- *   example variant, not a documented customization boundary).
- *
- * Out of scope (documented per the spec, not implemented — global/app-level
- *   concerns a single composable can't own):
- *   - "One at a time" — showing a second tooltip only after the first
- *     dismisses, when multiple exist in one experience.
- *   - Suppressing display during active-driving scenarios.
- */
-
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -127,9 +69,7 @@ enum class TooltipPosition {
 }
 
 /**
- * Where the pointer arrow sits along the anchor-facing edge (spec's
- * "Pointer Position" vertical/horizontal axes, unified relative to
- * [TooltipPosition]).
+ * Where the pointer arrow sits along the anchor-facing edge, relative to [TooltipPosition].
  */
 enum class TooltipPointerAlignment {
     Leading,
@@ -138,8 +78,7 @@ enum class TooltipPointerAlignment {
 }
 
 /**
- * Display type (spec: "By Display Type"). Governs default auto-dismiss
- * behavior and available dismissal gestures — see file-level KDoc.
+ * Display type. Governs default auto-dismiss behavior and available dismissal gestures.
  */
 enum class TooltipVariant {
     Unprompted,
@@ -178,17 +117,11 @@ data class TooltipSizeConfig(
 @Composable
 private fun getTooltipTheme(): TooltipColors {
     val colors = AppTheme.colors
-    // Inverse surface pairing (dark container / light content in light theme,
-    // and vice versa in dark theme) — matches the spec's default white-fill
-    // desktop example while staying theme-aware via semantic tokens.
+    // Inverse surface pairing: dark container / light content in light theme, and vice versa.
     return TooltipColors(
         background = colors.baseContentTitle,
         content = colors.baseSurfaceDefault,
-        // Border derived from content color at low alpha rather than a
-        // baseBorder* token: those tokens assume a light surface, but the
-        // tooltip's surface polarity is inverted, so a content-derived
-        // overlay (the same pattern Button/Chip/IconButton use for ripple
-        // tints) keeps contrast correct in both themes.
+        // Content-derived overlay keeps contrast correct in both themes (inverted surface polarity).
         border = colors.baseSurfaceDefault.copy(alpha = 0.16f)
     )
 }
@@ -205,8 +138,6 @@ private fun getTooltipSizeConfig(size: SizeVariant): TooltipSizeConfig {
     return TooltipSizeConfig(
         padding = HierarchicalSize.Padding.forVariant(size),
         cornerRadius = HierarchicalSize.Radius.forVariant(size),
-        // Spec: "Weight: 1px (standard) ... Alignment: Inside" — fixed
-        // regardless of size tier, the spec never scales border with size.
         borderWidth = HierarchicalSize.Border.Compact,
         textStyle = textStyle,
         offset = HierarchicalSize.Spacing.Small,
@@ -237,11 +168,8 @@ private fun TooltipPointerAlignment.toVerticalAlignment(): Alignment.Vertical = 
 private enum class PointerDirection { Up, Down, Left, Right }
 
 /**
- * Pointer arrow — a small filled triangle connecting the container to its
- * anchor. Uber Base defines no reusable arrow/notch shape token for this
- * (`CustomShapes.kt`'s `TabShape`/`NotchShape` model container geometry, not
- * a standalone directional triangle), so it's drawn locally with `Canvas`,
- * the same approach `Stepper.kt` uses for its checkmark glyph.
+ * Pointer arrow — small filled triangle connecting the tooltip to its anchor.
+ * Drawn locally with `Canvas` (no reusable directional-triangle shape in the library).
  */
 @Composable
 private fun PointerArrow(
@@ -392,50 +320,39 @@ private fun TooltipBubble(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaTooltip — brief contextual message anchored to [content] (Uber Base
- * "Tooltip" equivalent). See file-level KDoc for the full spec mapping.
+ * Brief contextual message anchored to [content].
  *
- * ## Usage Examples
+ * ### Purpose
+ * Step-by-step guidance, upsells, supplementary info. Not for critical messages,
+ * first-run onboarding (use popover), or feedback (use Toast/Snackbar).
  *
- * ```kotlin
- * // Prompted (hover/click-driven), no button
- * PixaTooltip(
- *     tooltip = "Settings menu",
- *     visible = isHovered,
- *     position = TooltipPosition.Bottom
- * ) { SettingsIcon() }
+ * ### Anatomy
+ * Container + pointer arrow + message + optional trailing icon button.
  *
- * // Unprompted upsell with dismiss button, auto-dismisses after ~6s
- * PixaTooltip(
- *     tooltip = "New invoice available",
- *     visible = showUpsell,
- *     variant = TooltipVariant.Unprompted,
- *     trailingIcon = painterResource(Res.drawable.ic_close),
- *     onDismiss = { showUpsell = false }
- * ) { InvoiceIcon() }
- * ```
+ * ### Variants
+ * [TooltipVariant.Unprompted] (auto-dismiss) or [TooltipVariant.Prompted] (caller-driven).
+ * [TooltipPosition] controls anchor edge; [TooltipPointerAlignment] controls arrow position.
  *
- * @param tooltip Message text. Keep to 1-2 lines (3 max) per spec — this
- *   component wraps within [maxWidthFraction] but never truncates.
- * @param visible Whether the tooltip is shown.
- * @param modifier Modifier for the anchor + tooltip wrapper.
- * @param variant [TooltipVariant.Unprompted] (auto-dismiss, tap/X/Esc to
- *   close early) or [TooltipVariant.Prompted] (caller-driven visibility).
- * @param position Which edge of the anchor the container appears on.
- * @param pointerAlignment Where the pointer arrow sits along that edge.
- * @param size [SizeVariant] driving padding/radius/typography.
- * @param colors Custom colors; falls back to the inverse-surface theme default.
- * @param maxWidthFraction Fraction of screen width the tooltip may occupy
- *   (spec: "no more than 50%" on both mobile and desktop).
- * @param autoDismissMs Auto-dismiss duration; defaults to 6000ms when
- *   [variant] is [TooltipVariant.Unprompted] (spec: 5-7s), null (no
- *   auto-dismiss) when [TooltipVariant.Prompted].
- * @param trailingIcon Optional single icon-only trailing button (navigation
- *   or dismissal). Per spec, avoid pairing this with a hover-only trigger.
- * @param trailingIconContentDescription Accessibility label for [trailingIcon].
- * @param onTrailingIconClick Callback for [trailingIcon] taps.
- * @param onDismiss Callback when the tooltip dismisses (timeout, tap, X, or Esc).
- * @param content Anchor content.
+ * ### States
+ * Hidden → Fade-in → Visible → Fade-out, driven by [visible].
+ *
+ * ### Sizing
+ * [SizeVariant]-driven. Width capped at 50% screen width.
+ *
+ * @param tooltip Message text (wraps, never truncates)
+ * @param visible Tooltip visibility
+ * @param variant Unprompted (auto-dismiss) or Prompted
+ * @param position Anchor edge
+ * @param pointerAlignment Arrow position along edge
+ * @param size Padding/radius/typography preset
+ * @param colors Custom color overrides (default: inverse-surface)
+ * @param maxWidthFraction Max screen-width fraction (default: 0.5)
+ * @param autoDismissMs Auto-dismiss duration (Unprompted default: 6000ms)
+ * @param trailingIcon Optional icon-only trailing button
+ * @param trailingIconContentDescription Accessibility label
+ * @param onTrailingIconClick Trailing icon tap callback
+ * @param onDismiss Dismiss callback (timeout, tap, Esc)
+ * @param content Anchor content
  */
 @Composable
 fun PixaTooltip(
@@ -481,10 +398,7 @@ fun PixaTooltip(
 
     Box(
         modifier = modifier
-            // Spec (WCAG 1.4.13): Esc must dismiss without moving focus off
-            // the trigger. Listening here (an ancestor of the anchor, not the
-            // popup) avoids stealing focus into a non-interactive popup while
-            // still intercepting Esc whenever the anchor subtree has focus.
+            // Esc dismisses without stealing focus from the anchor subtree.
             .onKeyEvent { event ->
                 if (isVisible && event.type == KeyEventType.KeyUp && event.key == Key.Escape) {
                     dismiss?.invoke()
@@ -582,43 +496,4 @@ fun PixaTooltipBox(
     }
 }
 
-// ════════════════════════════════════════════════════════════════════════════
-// USAGE EXAMPLES
-// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * USAGE EXAMPLES:
- *
- * 1. Basic prompted tooltip:
- * ```
- * PixaTooltip(
- *     tooltip = "This is a helpful tip",
- *     visible = showTooltip,
- *     onDismiss = { showTooltip = false }
- * ) {
- *     PixaIconButton(icon = infoIcon, onClick = { showTooltip = !showTooltip })
- * }
- * ```
- *
- * 2. Unprompted upsell with dismiss button and trailing pointer alignment:
- * ```
- * PixaTooltip(
- *     tooltip = "New invoice available",
- *     visible = showUpsell,
- *     variant = TooltipVariant.Unprompted,
- *     position = TooltipPosition.Bottom,
- *     pointerAlignment = TooltipPointerAlignment.Leading,
- *     trailingIcon = closeIcon,
- *     onDismiss = { showUpsell = false }
- * ) {
- *     BillingIcon()
- * }
- * ```
- *
- * 3. Quick tap-to-peek tooltip:
- * ```
- * PixaTooltipBox(tooltip = "Long press to edit") {
- *     EditButton()
- * }
- * ```
- */

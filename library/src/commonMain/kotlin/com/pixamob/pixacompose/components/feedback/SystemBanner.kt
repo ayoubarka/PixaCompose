@@ -54,8 +54,8 @@ import com.pixamob.pixacompose.utils.pixaRipple
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Semantic variant (Accent/Warning/Negative/Positive), each with fixed highest-contrast treatment.
- * Separate from [AlertVariant] — this component does not expose contrast customization.
+ * Semantic variant, each with fixed highest-contrast treatment. No contrast
+ * customization exposed — distinct from [AlertVariant].
  */
 enum class SystemBannerVariant {
     Accent,
@@ -65,17 +65,14 @@ enum class SystemBannerVariant {
 }
 
 /**
- * Trailing action model — action *count* directly changes the tap-target shape:
- * - [None]: message is static text, nothing is tappable.
- * - [Single]: the entire banner becomes one tap target.
- * - [Dual]: the message+icon content block is one tap target ([onPrimaryClick]),
- *   and a separate underlined CTA ([secondaryText]/[onSecondaryClick]) is a
- *   second, independent tap target — matching spec's "CTA text underlined;
- *   content block + icon is tap target."
+ * Trailing action model — action count changes the tap-target shape:
+ * - [None]: static text, nothing tappable.
+ * - [Single]: entire banner is one tap target.
+ * - [Dual]: content block + icon = one target ([onPrimaryClick]); underlined
+ *   CTA ([secondaryText]/[onSecondaryClick]) = second independent target.
  *
- * This is structurally different from [AlertAction] (Alert/Banner's single-slot
- * model) because System Banner explicitly supports *two* simultaneous tap
- * targets with two different shapes, which [AlertAction] has no case for.
+ * Structurally different from [AlertAction]'s single-slot model: System
+ * Banner supports two simultaneous tap targets.
  */
 sealed class SystemBannerAction {
     data object None : SystemBannerAction()
@@ -103,9 +100,8 @@ data class SystemBannerColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Each variant uses its saturated `*ContentDefault` token as background with
- * [ColorPalette.baseContentNegative] for highest contrast.
- * No caller-facing contrast/style knob — only the four semantic variants are customizable.
+ * Each variant uses saturated `*ContentDefault` as background with
+ * [ColorPalette.baseContentNegative] for contrast. No contrast knob.
  */
 @Composable
 private fun getSystemBannerColors(variant: SystemBannerVariant, colors: ColorPalette): SystemBannerColors =
@@ -117,8 +113,7 @@ private fun getSystemBannerColors(variant: SystemBannerVariant, colors: ColorPal
     }
 
 /**
- * Entrance/exit transitions using 300ms quintic ease-out for both directions.
- * Slides vertically from above (docked position) rather than bottom-anchored like other surfaces.
+ * Entrance/exit transitions: 300ms quintic ease-out, slides vertically from above.
  */
 private val systemBannerEnter = slideInVertically(
     initialOffsetY = { -it },
@@ -161,58 +156,48 @@ private fun DismissControl(color: Color, onDismiss: () -> Unit) {
 
 /**
  * PixaSystemBanner — communicates a global, high-priority state affecting the
- * entire app (not a single feature), appears without user action, and
- * persists across screens until dismissed or the triggering condition
- * resolves. [PixaAlert] is the inline/localized/rounded-and-inset
- * counterpart for feature-specific banners.
+ * entire app, appears without user action, and persists across screens until
+ * dismissed or resolved. [PixaAlert] is the inline counterpart for
+ * feature-specific banners.
  *
  * ### Anatomy
- * Required: container + [message]. Optional: leading [icon] (24dp, fixed —
- * Uber Base explicitly excludes badge-sized assets here, "unsupported due to
- * limited space"), trailing dismiss ([dismissible]/[onDismiss]), and
- * [action] (0/1/2 actions, each count changing the tap-target shape — see
- * [SystemBannerAction]).
+ * Required: container + [message]. Optional: leading [icon] (24dp, fixed),
+ * trailing dismiss, and [action] (0/1/2 tap targets — see [SystemBannerAction]).
  *
  * ### Variants
- * [SystemBannerVariant.Accent] (default) / `.Warning` / `.Negative` / `.Positive`.
- * All rendered at fixed maximum contrast (see [getSystemBannerColors]).
+ * [SystemBannerVariant.Accent]/`.Warning`/`.Negative`/`.Positive`.
+ * All rendered at fixed maximum contrast.
  *
  * ### States
- * [visible] is caller-owned (not internal `remember` state like [PixaAlert])
- * so System Banner persists across screen/navigation changes.
- * Hoist [visible] above your navigation host.
- * Entrance/exit use [systemBannerEnter]/[systemBannerExit] (300ms quintic ease-out).
+ * [visible] is caller-owned (not internal state) — hoist above navigation.
+ * Entrance/exit: 300ms quintic ease-out.
  *
  * ### Sizing
- * Icon is fixed at 24dp ([HierarchicalSize.Icon.Medium]).
- * [sidePadding] defaults to 64dp (not available in hierarchical size tiers).
- * [size] drives internal spacing/vertical padding.
+ * Icon fixed at 24dp. [sidePadding] defaults to 64dp. [size] drives spacing.
  *
  * ### Adaptive behavior
- * The container always spans full width.
- * [sidePadding] is exposed directly for responsive grid adjustments.
- * Status-bar color integration and z-ordering are caller-owned concerns.
+ * Container spans full width. [sidePadding] exposed for responsive grid.
+ * Status-bar integration and z-ordering are caller-owned.
  *
  * ### Customization
- * [customColors] overrides the fixed background/content pairing (caller is responsible for maintaining contrast).
- * Action count is capped at 2 by [SystemBannerAction]; anatomy is not otherwise overridable.
+ * [customColors] overrides background/content pairing (caller manages contrast).
+ * Action count capped at 2 by [SystemBannerAction].
  *
  * ### Usage notes
- * - Use only for critical functionality (connectivity loss) or system status (order status, chat).
- *   Not for promotions or ephemeral confirmations — use a snackbar for those.
- * - [SystemBannerAction.Dual]'s underlined CTA reuses [PixaLink], not a button.
- * - [SystemBannerAction] caps the underlined CTA at one.
+ * - Use only for critical functionality (connectivity loss) or system status.
+ *   Not for promotions or ephemeral confirmations (use snackbar).
+ * - [SystemBannerAction.Dual] underlined CTA uses [PixaLink].
  *
- * @param visible Caller-owned visibility (Default: must be supplied; no internal dismiss state)
- * @param message Required message text (Default line cap: [messageMaxLines])
+ * @param visible Caller-owned visibility (required)
+ * @param message Required message text
  * @param variant Semantic variant (Default: [SystemBannerVariant.Accent])
  * @param modifier Modifier for the banner
  * @param icon Optional leading icon painter, fixed at 24dp
  * @param action Trailing action model — 0/1/2 tap targets (Default: [SystemBannerAction.None])
- * @param dismissible Whether to show a trailing dismiss control (Default: false)
- * @param onDismiss Callback when the dismiss control is activated
+ * @param dismissible Whether to show trailing dismiss control (Default: false)
+ * @param onDismiss Callback when dismiss is activated
  * @param sidePadding Left/right inset (Default: 64dp)
- * @param size Size variant driving internal spacing/vertical padding (Default: [SizeVariant.Medium])
+ * @param size Size variant driving internal spacing (Default: [SizeVariant.Medium])
  * @param messageMaxLines Line cap for [message] (Default: 2)
  * @param customColors Optional [SystemBannerColors] override
  * @param contentDescription Accessibility description for the message

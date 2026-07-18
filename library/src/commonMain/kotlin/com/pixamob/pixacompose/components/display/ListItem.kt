@@ -50,11 +50,9 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Configuration variant, mapped from Uber Base's "Configuration Variants":
- * - [FullWidth]: a full-bleed row with a single continuous background tint
- *   for its active/selected state — no border, no corner radius.
- * - [Selection]: "16px insets with 12px rounded corners, outlined stroke" —
- *   an inset, bordered row used for selection patterns (radio/checkbox lists).
+ * Configuration variant.
+ * - [FullWidth]: full-bleed row with tinted active state — no border, no corner radius.
+ * - [Selection]: inset, bordered row with rounded corners for selection patterns.
  */
 enum class ListItemVariant {
     FullWidth,
@@ -62,12 +60,7 @@ enum class ListItemVariant {
 }
 
 /**
- * Row density, mapped from Uber Base's "Size Variants": [Standard] (64dp
- * minimum height) and [Compact] (48dp minimum height, always fits its
- * tallest content). This is a dedicated 2-tier enum rather than the generic
- * 8-tier [com.pixamob.pixacompose.theme.SizeVariant] because Uber Base's List
- * Item spec itself only defines these two named tiers (same reasoning
- * [DividerVariant] uses for Cell/Module rather than adopting `SizeVariant`).
+ * Row density: [Standard] (64dp minimum height) or [Compact] (48dp, fits tallest content).
  */
 enum class ListItemDensity {
     Standard,
@@ -75,12 +68,7 @@ enum class ListItemDensity {
 }
 
 /**
- * Leading/trailing icon-tier sizing, mapped from Uber Base's literal
- * 16/24/36px icon ladder. [Small] has no exact matching [HierarchicalSize.Icon]
- * tier (the ladder jumps 14→18dp around it) so it resolves to the closest
- * existing token (18dp) rather than introducing a new one-off token — the
- * same closest-token approach [com.pixamob.pixacompose.components.display.PixaAvatar]
- * already uses for its own Uber-derived icon sizes.
+ * Leading/trailing icon sizing. Resolves to [HierarchicalSize.Icon] tiers.
  */
 enum class ListItemIconSize {
     Small,
@@ -89,16 +77,14 @@ enum class ListItemIconSize {
 }
 
 /**
- * Leading content slot, mapped from Uber Base's "Leading Content Options".
+ * Leading content slot.
  */
 sealed class ListItemLeading {
-    /** No artwork — text only, row gets the plain 16dp side inset. */
+    /** No artwork — plain 16dp side inset. */
     data object Off : ListItemLeading()
 
     /**
-     * A 16/24/36px icon, centered in a fixed-width container matching the
-     * row's own minimum height (Uber Base's literal "centered in 64px
-     * containers" at Standard density).
+     * An icon centered in a fixed-width container matching the row's minimum height.
      */
     data class Icon(
         val size: ListItemIconSize = ListItemIconSize.Medium,
@@ -106,43 +92,33 @@ sealed class ListItemLeading {
     ) : ListItemLeading()
 
     /**
-     * Artwork larger than 36dp rendered at its natural size — avatars,
-     * badges, custom illustrations. Uber Base gives this a plain 16dp side
-     * inset rather than a fixed centering container (unlike [Icon]).
+     * Artwork larger than 36dp at its natural size — avatars, badges, illustrations.
      */
     data class Artwork(val content: @Composable () -> Unit) : ListItemLeading()
 }
 
 /**
- * Trailing content slot, mapped from Uber Base's "Trailing Content Options".
- * Each case carries its own alignment/inset rule per the spec, since they
- * differ (fixed-width centered container vs. right-aligned-with-padding vs.
- * truly flush).
+ * Trailing content slot. Each case has its own alignment/inset rule.
  */
 sealed class ListItemTrailing {
     data object Off : ListItemTrailing()
 
     /**
-     * A small 24dp icon/indicator (e.g. a chevron), centered in a
-     * fixed-width container — read-only, the row itself is the tap target.
-     * Per Uber Base: restrict to navigation into a subset of options, never
-     * as a generic "this row is tappable" affordance.
+     * Small icon/indicator (e.g. chevron), centered in a fixed-width container.
+     * Row itself is the tap target. Restrict to navigation into subsets of options.
      */
     data class Icon(val content: @Composable () -> Unit) : ListItemTrailing()
 
     /**
-     * An independently-clickable control (switch, icon button) — its own tap
-     * target distinct from the row's, right-aligned with 16dp padding from
-     * the row's edge. Per Uber Base, give it its own background (e.g.
-     * [com.pixamob.pixacompose.components.actions.IconButtonVariant.Tonal])
-     * so the separate tap zone reads clearly ("gray background protection").
+     * Independently-clickable control (switch, icon button) with its own tap target.
+     * Give it its own background so the separate tap zone reads clearly.
      */
     data class Control(val content: @Composable () -> Unit) : ListItemTrailing()
 
-    /** Right-aligned trailing text, 16dp padding from the row's edge. */
+    /** Right-aligned trailing text. */
     data class Caption(val text: String) : ListItemTrailing()
 
-    /** A flush-right button/pill — zero inset from the row's edge. */
+    /** Flush-right button/pill — zero inset. */
     data class Flush(val content: @Composable () -> Unit) : ListItemTrailing()
 }
 
@@ -187,12 +163,8 @@ private data class ListItemLayout(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Resolves density-driven layout numbers. Every value here is a direct,
- * exact token match to a literal Uber Base figure except
- * [ListItemLayout.containerWidth] at [ListItemDensity.Compact], which Uber
- * Base doesn't spec separately — it's derived from the row's own minimum
- * height so icon-centering stays consistent with how [ListItemDensity.Standard]
- * derives it (64px container == 64px row height).
+ * Resolves density-driven layout values. Standard container width matches row height
+ * (64dp); Compact container width is derived the same way (48dp).
  */
 private fun listItemLayoutFor(density: ListItemDensity): ListItemLayout = when (density) {
     ListItemDensity.Standard -> ListItemLayout(
@@ -212,21 +184,14 @@ private fun listItemLayoutFor(density: ListItemDensity): ListItemLayout = when (
 }
 
 private fun ListItemIconSize.toDp(): Dp = when (this) {
-    ListItemIconSize.Small -> HierarchicalSize.Icon.Small   // 18dp, closest token to Uber's literal 16dp
-    ListItemIconSize.Medium -> HierarchicalSize.Icon.Medium // 24dp, exact
-    ListItemIconSize.Large -> HierarchicalSize.Icon.Huge    // 36dp, exact
+    ListItemIconSize.Small -> HierarchicalSize.Icon.Small
+    ListItemIconSize.Medium -> HierarchicalSize.Icon.Medium
+    ListItemIconSize.Large -> HierarchicalSize.Icon.Huge
 }
 
 /**
- * Resolves the fixed color/border ladder per [ListItemVariant]. Border
- * widths land exactly on existing [HierarchicalSize.Border] tiers — 2px
- * ("borderOpaque") is [HierarchicalSize.Border.Medium], 3px
- * ("borderSelected"/focus) is [HierarchicalSize.Border.Large] — the same
- * pairing [com.pixamob.pixacompose.components.display.PixaTile] uses for its
- * own selected state, and the same focus-ring treatment
- * [com.pixamob.pixacompose.components.display.PixaAvatar] uses. Hover/pressed
- * are Uber Base's literal 4%/8% black state-layer overlays — fixed
- * percentages, not theme tokens, matching Tile/Avatar precedent.
+ * Resolves the fixed color/border ladder per [ListItemVariant]. Hover/pressed
+ * use black state-layer overlays (4%/8%).
  */
 @Composable
 private fun getListItemTheme(variant: ListItemVariant, colors: ColorPalette): ListItemStateColors {
@@ -408,85 +373,46 @@ private fun RowScope.ListItemTextColumn(
 /**
  * PixaListItem — a horizontal row for scanning stacked, related content.
  *
- * ### Purpose
- * Vertically stacked rows of text/images arranged horizontally, for
- * efficient scanning — search results, settings, navigation, selection
- * lists (radio/checkbox patterns).
- *
  * ### Anatomy
- * Optional [leading] slot ([ListItemLeading.Off]/[ListItemLeading.Icon]/[ListItemLeading.Artwork]),
- * up to 3 stacked text labels ([title] required, [subtitle], [caption] —
- * Uber Base's "label, paragraph, support paragraph"), and an optional
- * [trailing] slot ([ListItemTrailing.Icon]/[ListItemTrailing.Control]/[ListItemTrailing.Caption]/[ListItemTrailing.Flush]).
- * Cell/section dividers between rows are intentionally **not** rendered by
- * this component — a single row can't know if it's last in its list, and
- * Uber Base itself says never to place a divider after the last cell/section.
- * Compose them at the call site with [PixaDivider] instead:
- * `PixaDivider(variant = DividerVariant.Cell)` between rows,
- * `PixaDivider(variant = DividerVariant.Module)` between sections.
+ * Optional [leading] slot, up to 3 stacked text labels ([title], [subtitle], [caption]),
+ * optional [trailing] slot. Dividers between rows are not rendered here —
+ * compose [PixaDivider] at the call site instead.
  *
  * ### Variants
- * [ListItemVariant.FullWidth] (full-bleed, tinted active state, no border)
- * vs [ListItemVariant.Selection] (16dp-inset, 12dp-rounded, bordered — for
- * selection patterns).
+ * [ListItemVariant.FullWidth] (full-bleed, no border) vs [ListItemVariant.Selection]
+ * (inset, bordered, for selection patterns).
  *
  * ### States
- * default, hover/pressed (4%/8% black overlay), focus (3dp `accentBorderDefault`
- * ring), active/[selected] (brand-tinted background, or a `brandBorderFocus`
- * border for [ListItemVariant.Selection]), disabled (dimmed content, [enabled] = false),
- * preloading ([loading] → [SkeletonListItem]).
+ * Default, hover/pressed (4%/8% overlay), focus (accent border ring),
+ * active/[selected] (brand-tinted), disabled, preloading ([SkeletonListItem]).
  *
  * ### Sizing
- * [density] drives row height/padding/label-spacing/leading-container-width
- * through [HierarchicalSize] — [ListItemDensity.Standard] (64dp) and
- * [ListItemDensity.Compact] (48dp), Uber Base's own two named tiers, both
- * already at/above the 48dp WCAG touch-target floor by construction.
- * [leading]/[trailing] icon sizes use [ListItemIconSize] (16/24/36dp ladder).
- *
- * ### Adaptive behavior
- * Out of scope for the row itself — Uber Base's responsive guidance
- * (column span, page margins at 320/600/1136dp breakpoints) is a property of
- * the *list's container*, not a single row. Use `AppTheme.pageMargin` on the
- * surrounding list/screen for that, not a per-row override.
- *
- * ### Customization
- * [leading]/[trailing] content, [variant], [density], [selected]/[enabled]/[loading]
- * state, [singleLine] wrap-vs-truncate, [verticalAlignment] (center by
- * default; pass [Alignment.Top] for the "long content" edge case Uber Base
- * calls out), [customColors] override.
+ * [density] drives row height: Standard (64dp) or Compact (48dp).
+ * Icon sizes use [ListItemIconSize].
  *
  * ### Usage notes
- * - Stick to one artwork size per list; don't mix icon/avatar sizes across
- *   rows in the same list (Uber Base anti-pattern).
- * - Restrict [ListItemTrailing.Icon] chevrons to navigating into a subset of
- *   options — never as a generic "this row is tappable" affordance, and
- *   never as a stand-in for "opens a menu".
- * - Avoid stacking multiple icon indicators in [trailing]; break into
- *   separate rows instead.
- * - Give a [ListItemTrailing.Control] its own background (e.g. a
- *   `Tonal`/`Filled` icon button) so its independent tap target reads
- *   clearly next to the row's own tap target ("gray background protection").
- * - Don't use inline tags within [title]/[subtitle]/[caption] text.
+ * - Stick to one artwork size per list.
+ * - Restrict [ListItemTrailing.Icon] chevrons to navigation into subsets of options.
+ * - Give [ListItemTrailing.Control] its own background for a clear tap zone.
  *
  * @param title Required primary label
  * @param modifier Modifier for the row
- * @param subtitle Optional secondary label ("paragraph")
- * @param caption Optional tertiary label ("support paragraph")
- * @param onClick Row tap handler; null renders a non-interactive row (e.g. one whose only interactivity lives in [trailing])
- * @param variant [ListItemVariant.FullWidth] (default) or [ListItemVariant.Selection]
- * @param density [ListItemDensity.Standard] (default, 64dp) or [ListItemDensity.Compact] (48dp)
- * @param leading Leading content slot (Default: [ListItemLeading.Off])
- * @param trailing Trailing content slot (Default: [ListItemTrailing.Off])
- * @param selected Whether the row is in the active/selected state (Default: false)
- * @param enabled Whether the row is interactive (Default: true)
- * @param loading Whether to render the preloading [SkeletonListItem] placeholder (Default: false)
- * @param singleLine Truncate all text labels to one line instead of wrapping (Default: false)
- * @param verticalAlignment Vertical alignment of the row's children (Default: [Alignment.CenterVertically])
+ * @param subtitle Optional secondary label
+ * @param caption Optional tertiary label
+ * @param onClick Row tap handler; null = non-interactive
+ * @param variant FullWidth (default) or Selection
+ * @param density Standard (64dp, default) or Compact (48dp)
+ * @param leading Leading content slot (Default: Off)
+ * @param trailing Trailing content slot (Default: Off)
+ * @param selected Active/selected state (Default: false)
+ * @param enabled Interactive state (Default: true)
+ * @param loading Shows [SkeletonListItem] (Default: false)
+ * @param singleLine Truncate text to one line (Default: false)
+ * @param verticalAlignment Row children alignment (Default: CenterVertically)
  * @param customColors Optional [ListItemStateColors] override
- * @param contentDescription Accessibility description (defaults to title/subtitle/caption combined, per Uber Base's VoiceOver preview format)
+ * @param contentDescription Accessibility description (defaults to title/subtitle/caption combined)
  *
  * @sample
- * ```
  * PixaListItem(
  *     title = "Notifications",
  *     subtitle = "Push, Email, SMS",
@@ -494,7 +420,6 @@ private fun RowScope.ListItemTextColumn(
  *     trailing = ListItemTrailing.Icon { PixaIcon(Icons.Default.ChevronRight, contentDescription = null) },
  *     onClick = { openNotificationSettings() }
  * )
- * ```
  */
 @Composable
 fun PixaListItem(
@@ -652,25 +577,17 @@ fun PixaListItem(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * SelectionListItem — [PixaListItem] preset for [ListItemVariant.Selection],
- * Uber Base's inset/bordered row for radio- or checkbox-style selection
- * lists. Pair [trailing] with a read-only [com.pixamob.pixacompose.components.inputs.PixaCheckbox]
- * or [com.pixamob.pixacompose.components.inputs.RadioButton] (`onCheckedChange`/`onClick = null`)
- * so the row itself stays the single tap target, matching Uber Base's
- * interaction model — the same pattern
- * [com.pixamob.pixacompose.components.display.PixaTile] already uses.
+ * SelectionListItem — [PixaListItem] preset for [ListItemVariant.Selection].
+ * Pair [trailing] with a read-only [PixaCheckbox] or [RadioButton] (`onClick = null`)
+ * so the row itself stays the single tap target.
  *
  * @sample
- * ```
  * SelectionListItem(
  *     title = "Airport",
  *     selected = isSelected,
  *     onClick = { isSelected = !isSelected },
- *     trailing = ListItemTrailing.Icon {
- *         RadioButton(selected = isSelected, onClick = null)
- *     }
+ *     trailing = ListItemTrailing.Icon { RadioButton(selected = isSelected, onClick = null) }
  * )
- * ```
  */
 @Composable
 fun SelectionListItem(

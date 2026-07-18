@@ -36,11 +36,9 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Link size, mapped from Uber Base's three fixed Link size variants. Each
- * tier reuses [com.pixamob.pixacompose.theme.TextTypography]'s `action*`
- * family for fontSize/lineHeight/letterSpacing (the only Pixa tokens whose
- * numbers already line up with Uber's 14/20, 16/20, 18/24 pairings) — see
- * [getLinkSizeConfig] for why the weight is overridden on top of that base.
+ * Link size — Small, Medium, Large. Each tier reuses [AppTheme.typography]'s
+ * `action*` family for fontSize/lineHeight/letterSpacing (see [getLinkSizeConfig]
+ * for the weight override).
  */
 enum class LinkSize {
     Small,
@@ -76,15 +74,9 @@ data class LinkColors(
 /**
  * Resolves size-tier typography for [LinkSize].
  *
- * Uber Base pins Link to fontSize/lineHeight pairs of 14/20, 16/20, 18/24 —
- * numbers that only exist in Pixa's `action*` typography family
- * ([com.pixamob.pixacompose.theme.TextTypography.actionSmall]/`actionMedium`/`actionLarge`),
- * not in `label*` (a different 10/12/14 scale). Those `action*` tokens are
- * [FontWeight.W700] (bold, tuned for filled button labels); Uber Base
- * mandates Link stay Semibold ([FontWeight.W600]) specifically, so the
- * weight is overridden on top of the reused base rather than introducing a
- * parallel raw `TextStyle` — fontSize/lineHeight/letterSpacing remain fully
- * token-sourced, only the one attribute the spec calls out differently changes.
+ * Link uses `action*` typography tokens (actionSmall/actionMedium/actionLarge)
+ * for fontSize/lineHeight/letterSpacing, with [FontWeight.W600] (Semibold)
+ * overriding the default W700 bold weight of those tokens.
  */
 @Composable
 private fun getLinkSizeConfig(size: LinkSize): LinkSizeConfig {
@@ -92,7 +84,7 @@ private fun getLinkSizeConfig(size: LinkSize): LinkSizeConfig {
     return when (size) {
         LinkSize.Small -> LinkSizeConfig(
             textStyle = { typography.actionSmall.copy(fontWeight = FontWeight.W600) },
-            underlineThickness = HierarchicalSize.Border.Small // 1.5dp — matches Uber's 1.5px minimum
+            underlineThickness = HierarchicalSize.Border.Small // 1.5dp minimum stroke
         )
 
         LinkSize.Medium -> LinkSizeConfig(
@@ -108,11 +100,8 @@ private fun getLinkSizeConfig(size: LinkSize): LinkSizeConfig {
 }
 
 /**
- * Resolves Link's fixed color ladder. Uber Base scopes Link to exactly the
- * neutral `contentPrimary`/`contentSecondary`/`contentStateDisabled` +
- * `borderAccent` tokens (no brand/accent fill is specified for the enabled
- * state) — mapped onto Pixa's closest-named `base` content roles and the
- * `accent` group's border role for the focus ring.
+ * Resolves Link's fixed color ladder: neutral `base` content roles for text
+ * states and `accentBorderDefault` for the focus ring.
  */
 @Composable
 private fun getLinkTheme(colors: ColorPalette): LinkColors = LinkColors(
@@ -131,46 +120,30 @@ private fun getLinkTheme(colors: ColorPalette): LinkColors = LinkColors(
  * PixaLink — inline, text-based navigation control.
  *
  * ### Anatomy
- * A single text label with a mandatory underline drawn beneath it (1.5dp,
- * inside-aligned — [HierarchicalSize.Border.Small], matching Uber Base's
- * 1.5px minimum stroke). Unlike [PixaButton], Link has no icon/leading-
- * accessory slots and no background/border chrome — Uber Base explicitly
- * scopes Link to text + underline only.
+ * A single text label with a mandatory 1.5dp underline drawn beneath it
+ * ([HierarchicalSize.Border.Small]). No icon/accessory slots, no background
+ * or border chrome — text + underline only.
  *
  * ### Variants
- * [LinkSize.Small]/[LinkSize.Medium]/[LinkSize.Large] — see [getLinkSizeConfig].
- * There is no visual-hierarchy axis (no Filled/Tonal/Ghost): Uber Base
- * defines exactly one Link style, differentiated only by size.
+ * [LinkSize.Small]/[LinkSize.Medium]/[LinkSize.Large] — no visual-hierarchy
+ * axis; differentiated only by size.
  *
  * ### States
- * Enabled (`contentPrimary`), hover (`contentSecondary` — only fires on
- * platforms that report pointer hover, e.g. desktop/web targets), focus
- * (`contentPrimary` + a 2dp `borderAccent` outline via [HierarchicalSize.Border.Medium]
- * on an [AppTheme.shapes.pill] ring — Link's own 20px-corner-radius container
- * has no exact [HierarchicalSize.Radius] tier, and `pill` renders the same
- * fully-rounded stadium shape at Link's small footprint, so it's reused
- * instead of introducing a new one-off radius token), [visited] (caller-
- * supplied — Compose has no navigation-history concept, so "has this been
- * visited" is state the host app must track and pass in, same precedent as
- * [PixaButton]'s caller-driven `selected`), disabled (`contentStateDisabled`,
- * not clickable).
+ * Enabled, hover (desktop/web only), focus (2dp accent outline via [AppTheme.shapes.pill]),
+ * visited (caller-tracked), disabled (not clickable).
  *
  * ### Customization
- * Deliberately narrow, per Uber Base's "customization boundaries": no
- * variant/shape API, [customColors] only overrides the fixed token ladder
- * (not the color *categories* — Link is still always contentPrimary-class,
- * never brand-colored), font weight and underline are never optional.
+ * Deliberately narrow: no variant/shape API, [customColors] only overrides
+ * the color ladder (not the color categories), font weight and underline
+ * are fixed.
  *
  * ### Usage notes
- * - Use Link for navigation only (external sites, page sections, anchors,
- *   `mailto:`/`tel:`); use [PixaButton] for actions (submit, save, open a
- *   dialog) — not runtime-enforced, a content/IA rule per Uber Base.
+ * - Use Link for navigation only (external sites, page sections, anchors);
+ *   use [PixaButton] for actions (submit, save, open a dialog).
  * - Link text should be descriptive in isolation for screen readers; avoid
  *   embedding links mid-sentence for non-English audiences.
- * - No minimum touch target is specified on desktop; on mobile this
- *   composable pads its hit area up to [HierarchicalSize.TouchTarget.Small]
- *   (WCAG minimum) without inflating the visible text/underline, matching
- *   Uber Base's "mobile requires alignment with minimum touch targets" note.
+ * - On mobile, padded to [HierarchicalSize.TouchTarget.Small] (WCAG minimum)
+ *   without inflating the visible text/underline.
  *
  * @param text The link's visible label
  * @param onClick Callback when the link is activated
@@ -180,14 +153,11 @@ private fun getLinkTheme(colors: ColorPalette): LinkColors = LinkColors(
  * @param visited Whether to render the visited-state color (Default: false, caller-tracked)
  * @param description Accessibility description/hint appended to the "Link" trait announcement
  * @param customColors Optional custom [LinkColors] to override theme defaults
- * @param enforceMinTouchTarget Whether to pad the hit area to the WCAG touch minimum on mobile without resizing the visible text (Default: true)
+ * @param enforceMinTouchTarget Whether to pad the hit area to WCAG touch minimum on mobile (Default: true)
  *
  * @sample
  * ```
- * PixaLink(
- *     text = "View our privacy policy",
- *     onClick = { }
- * )
+ * PixaLink(text = "View our privacy policy", onClick = { })
  * ```
  */
 @Composable

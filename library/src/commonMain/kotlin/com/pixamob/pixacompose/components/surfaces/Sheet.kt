@@ -77,28 +77,27 @@ import kotlinx.coroutines.launch
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Uber Base's two presentation modes — same axis [com.pixamob.pixacompose.components.overlay.PixaDialog]
- * already uses. [Modal] dims the background via a scrim and blocks its interaction ("suitable when
- * background context unnecessary"); [NonModal] renders no scrim, leaving the background genuinely
- * interactive ("useful when background reference is needed") — the sheet's core purpose per spec:
- * "enable simultaneous interaction with two surfaces." */
+/**
+ * Presentation mode. [Modal]: dims background with scrim, blocks interaction.
+ * [NonModal]: no scrim, background stays interactive — for simultaneous two-surface interaction.
+ */
 enum class SheetPresentation {
     Modal,
     NonModal
 }
 
-/** [Expandable] sheets show a [SheetGrabber], support the [SheetSnapPoint] ladder via swipe/tap-cycle,
- * and scroll their body. [Fixed] sheets have no grabber, cannot expand/collapse, and "hug" their content
- * at a single height instead of resolving to a snap point. */
+/**
+ * [Expandable]: shows grabber, supports snap-point ladder via swipe/tap, scrollable body.
+ * [Fixed]: no grabber, single hugging height, no expansion.
+ */
 enum class SheetExpandability {
     Expandable,
     Fixed
 }
 
 /**
- * Uber Base's three mobile snap-point states. [Expanded] resolves to the spec's default "Top" position
- * (60dp inset from the screen top) — the "Near Full"/"Full" expanded variants are explicitly flagged by
- * the spec as requiring "custom navigation header integration" and are out of scope here.
+ * Three mobile snap-point states. [Expanded] = 60dp from screen top.
+ * Near-Full/Full variants requiring custom nav integration are out of scope.
  */
 enum class SheetSnapPoint {
     Collapsed,
@@ -140,34 +139,29 @@ private fun getSheetTheme(): SheetColors {
     )
 }
 
-/** Spec: Collapsed sheets occupy "10-30% screen height" — the midpoint of that documented range. */
+/** Collapsed height: midpoint of 10-30% screen height range. */
 private const val CollapsedHeightFraction = 0.2f
 
-/** Spec: Middle (default) sheets occupy "40-80% screen height" — the midpoint of that documented range. */
+/** Middle height: midpoint of 40-80% screen height range. */
 private const val MiddleHeightFraction = 0.6f
 
-/** Spec: "Expanded (Top, default): 60px from status bar, background and nav visible." The "Near Full"
- * and "Full" expanded variants are explicitly flagged as requiring custom navigation integration and are
- * not modeled by [SheetSnapPoint]. */
+/** Expanded inset from screen top. Near-Full/Full variants not modeled. */
 private val ExpandedTopInset = 60.dp
 
-/** Spec: "Side padding: 16px from screen edges" — matches [HierarchicalSize.Spacing.Large] exactly. */
+/** Side padding from screen edges. */
 private val SheetSidePadding = HierarchicalSize.Spacing.Large
 
-/** Spec: "Header padding: Includes 8px buffer around action buttons" — matches [HierarchicalSize.Spacing.Small]. */
+/** Header action button buffer. */
 private val HeaderActionBuffer = HierarchicalSize.Spacing.Small
 
-/** Spec gives no exact grabber width, only "typically 4-5px [thick]" — width is read from the existing
- * [com.pixamob.pixacompose.components.overlay.PixaBottomSheet] drag-handle precedent (32-48dp range);
- * 40dp is that range's midpoint, a one-off value with no dedicated token category to promote into. */
+/** Grabber dimensions. */
 private val GrabberWidth = 40.dp
 private val GrabberHeight = 4.dp
 
-/** Spec: drop shadow "16px blur... rgba(0,0,0,0.12)" — matches [HierarchicalSize.Shadow.Massive] exactly,
- * the same tier [com.pixamob.pixacompose.components.surfaces.PixaFullScreenModal]'s equivalent spec shadow uses. */
+/** Sheet elevation shadow. */
 private val SheetElevation = HierarchicalSize.Shadow.Massive
 
-/** Spec: entry/exit duration is "400ms" for both directions. */
+/** Entry/exit animation duration. */
 private const val SheetAnimDurationMillis = 400
 
 @Composable
@@ -192,8 +186,7 @@ private fun SheetSnapPoint.next(): SheetSnapPoint = when (this) {
     SheetSnapPoint.Expanded -> SheetSnapPoint.Collapsed
 }
 
-/** VoiceOver/TalkBack state label — spec: "Minimized/Half-screen/Full-screen" (iOS), "Half screen/
- * Expanded/Collapsed" (Android); this reads as the shared, platform-neutral vocabulary between the two. */
+/** Accessibility state label. */
 private fun SheetSnapPoint.stateLabel(): String = when (this) {
     SheetSnapPoint.Collapsed -> "Collapsed"
     SheetSnapPoint.Middle -> "Half-screen"
@@ -204,18 +197,14 @@ private fun SheetSnapPoint.stateLabel(): String = when (this) {
 // INTERNAL SHEET
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Enter: "Slides in from viewport edge... Quintic ease-out... 400ms." Reuses the already-promoted
- * [QuinticEaseOutEasing] rather than adding a second near-identical bezier curve to [AnimationUtils] —
- * the spec's literal `cubic-bezier(0.23, 1, 0.32, 1)` and this library's existing true-power quintic-out
- * curve are visually indistinguishable "fast start, decelerating end" shapes. */
+/** Enter: slide in from viewport edge + fade, Quintic ease-out, 400ms. */
 @Composable
 private fun sheetEnterTransition() = slideInVertically(
     initialOffsetY = { it },
     animationSpec = AnimationUtils.standardTween(durationMillis = SheetAnimDurationMillis, easing = QuinticEaseOutEasing)
 ) + fadeIn(animationSpec = AnimationUtils.standardTween(durationMillis = SheetAnimDurationMillis, easing = QuinticEaseOutEasing))
 
-/** Exit: "Quintic ease-in-and-out... 400ms" — reuses [QuinticEaseInOutEasing] for the same reason
- * [sheetEnterTransition] reuses [QuinticEaseOutEasing]. */
+/** Exit: slide out + fade, Quintic ease-in-out, 400ms. */
 private val SheetExitTransitionSpec = slideOutVertically(
     targetOffsetY = { it },
     animationSpec = AnimationUtils.standardTween(durationMillis = SheetAnimDurationMillis, easing = QuinticEaseInOutEasing)
@@ -348,64 +337,48 @@ private fun SheetHeader(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaSheet — a bottom-anchored surface that enables simultaneous interaction with two surfaces,
- * overlaying (or, in [SheetPresentation.NonModal], sitting alongside) a primary background surface.
- * Deliberately a new primitive under `components/surfaces/`
- * rather than a refactor of [com.pixamob.pixacompose.components.overlay.PixaBottomSheet] (kept
- * unchanged, per this migration's scope) — the two model different anatomies: [PixaBottomSheet] is a
- * simple slide-up container, while this component adds the spec's full header (grabber, title,
- * description, leading/trailing actions, progress-or-border) and multi-snap-point expand/collapse system.
+ * Bottom-anchored surface for simultaneous two-surface interaction.
  *
  * ### Anatomy
- * [SheetGrabber] (Expandable only) → [SheetHeader] (leading action → title/description → trailing
- * dismiss) → progress bar or border divider → scrollable [content].
+ * [SheetGrabber] (Expandable only) → [SheetHeader] (leading action → title/description →
+ * trailing dismiss) → progress bar or border divider → scrollable [content].
  *
  * ### Variants
- * [presentation] (Modal/NonModal) and [expandability] (Expandable/Fixed) are independent axes, per spec.
+ * [SheetPresentation]: Modal (scrim) or NonModal (interactive background).
+ * [SheetExpandability]: Expandable (grabber + snap points) or Fixed (single height).
  *
  * ### States
- * [SheetSnapPoint.Collapsed]/[SheetSnapPoint.Middle]/[SheetSnapPoint.Expanded] for [SheetExpandability.Expandable]
- * sheets — reachable by dragging the grabber (continuous drag, settles to the nearest snap point on
- * release) or tapping it (cycles Collapsed → Middle → Expanded → Collapsed, per spec). [SheetExpandability.Fixed]
- * sheets have no snap system; they hug [content] up to the Middle-tier height cap.
+ * Expandable: [SheetSnapPoint.Collapsed] / [SheetSnapPoint.Middle] / [SheetSnapPoint.Expanded],
+ * reachable by drag (settles to nearest) or tap (cycles Collapsed → Middle → Expanded → Collapsed).
+ * Fixed: no snap system, hugs content up to Middle height cap.
  *
  * ### Sizing / Adaptive behavior
- * Only the spec's narrow (<600dp) layout is implemented — full width, bottom-anchored, vertical
- * (Y-axis) motion. The ≥600dp side-anchored wide layout is explicitly marked "Not yet fully supported"
- * by Uber Base itself, so it is intentionally out of scope here rather than approximated.
- *
- * ### Customization
- * [progress]/[showProgress] map to the spec's Determinate ([progress] non-null)/Indeterminate
- * ([progress] null while [showProgress] is true) states, reusing [PixaLinearIndicator] rather than a
- * bespoke bar. When [showProgress] is false, a plain border divider renders instead, per spec: "Border —
- * displayed when no progress indicator active."
+ * Narrow (<600dp) layout only: full-width, bottom-anchored. Wide side-anchored layout is out of scope.
  *
  * ### Usage notes
- * [title] is non-nullable — spec: "Title mandatory (not optional)," required for W3C 2.4.2 compliance.
- * [trailingIcon]'s dismiss action is the spec's required primary dismissal ("X icon button... trailing
- * action, top right"); [dismissOnOutsideClick]/[dismissOnBackClick] are supplemental only, per spec's
- * anti-pattern guidance ("using passive/obscure dismiss methods as primary").
+ * [title] is mandatory. [trailingIcon] is the primary dismissal; outside-click and back are
+ * supplemental. Gate [onDismissRequest] at call site for unsaved-work confirmation.
  *
- * @param onDismissRequest Callback when the sheet should close (X button, outside tap, or back/ESC)
- * @param title Heading — mandatory per spec
- * @param modifier Modifier for the sheet panel
- * @param presentation Modal (scrim, blocks background) or NonModal (no scrim, background interactive)
- * @param expandability Expandable (grabber + snap points) or Fixed (single height, no grabber)
- * @param initialSnapPoint Starting [SheetSnapPoint] for [SheetExpandability.Expandable] sheets (spec default: Middle)
- * @param colors Custom colors overriding the default theme
- * @param description Optional supplementary text below [title]
- * @param headingMaxLines Title truncation limit (spec default: 2 lines, configurable to 3)
- * @param descriptionMaxLines Description truncation limit (spec default: 2 lines, configurable to 3)
- * @param titleAlignment Header text alignment (spec default: Center; Start for left alignment)
- * @param leadingIcon Optional leading header action (e.g. back arrow); requires [onLeadingClick]
+ * @param onDismissRequest Close callback (X, outside tap, ESC)
+ * @param title Mandatory heading
+ * @param modifier Modifier for the sheet surface
+ * @param presentation Modal or NonModal
+ * @param expandability Expandable (grabber + snap) or Fixed
+ * @param initialSnapPoint Starting snap point (default: Middle)
+ * @param colors Custom color overrides
+ * @param description Optional text below title
+ * @param headingMaxLines Title truncation (default: 2)
+ * @param descriptionMaxLines Description truncation (default: 2)
+ * @param titleAlignment Center (default) or Start
+ * @param leadingIcon Optional leading action icon (requires [onLeadingClick])
  * @param onLeadingClick Leading action callback
- * @param trailingIcon Optional custom painter for the required dismiss "X"; falls back to a text glyph when unset
- * @param showProgress Whether to render a progress bar in place of the header's border divider
- * @param progress Determinate progress (0f-1f) when non-null; indeterminate when null and [showProgress] is true
- * @param dismissOnOutsideClick Overlay-tap dismissal (supplemental only, per spec) — no effect when [presentation] is [SheetPresentation.NonModal]
- * @param dismissOnBackClick ESC/back dismissal (supplemental only, per spec)
- * @param onSnapPointChange Callback fired whenever the resolved [SheetSnapPoint] changes
- * @param content Scrollable body content, below the header
+ * @param trailingIcon Custom dismiss icon (falls back to text glyph)
+ * @param showProgress Show progress bar instead of border divider
+ * @param progress Determinate (0f-1f) or null for indeterminate
+ * @param dismissOnOutsideClick Overlay-tap dismissal (no effect in NonModal)
+ * @param dismissOnBackClick ESC/back dismissal
+ * @param onSnapPointChange Snap point change callback
+ * @param content Scrollable body content
  */
 @Composable
 fun PixaSheet(
@@ -593,8 +566,7 @@ fun PixaSheet(
 // CONVENIENCE VARIANTS
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Preset for the spec's "quick-edit detail views," "location details" use cases — [SheetExpandability.Fixed],
- * no grabber, no snap points, a single hugging height. */
+/** Preset for detail views — Fixed, no grabber, single hugging height. */
 @Composable
 fun FixedDetailSheet(
     onDismissRequest: () -> Unit,
@@ -613,8 +585,7 @@ fun FixedDetailSheet(
     )
 }
 
-/** Preset for the spec's "filters/settings affecting main content" use case — starts at
- * [SheetSnapPoint.Middle], [SheetPresentation.NonModal] so the primary surface stays referenceable/interactive. */
+/** Preset for filters/settings — starts at Middle, NonModal for background interactivity. */
 @Composable
 fun FilterSheet(
     onDismissRequest: () -> Unit,

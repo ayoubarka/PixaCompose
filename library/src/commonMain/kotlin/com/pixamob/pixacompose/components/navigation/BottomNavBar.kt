@@ -45,8 +45,8 @@ import com.pixamob.pixacompose.components.actions.ButtonShape
 
 import com.pixamob.pixacompose.components.actions.ButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
-import com.pixamob.pixacompose.components.display.PixaCard
-import com.pixamob.pixacompose.components.display.BaseCardVariant
+import com.pixamob.pixacompose.components.surfaces.PixaCard
+import com.pixamob.pixacompose.components.surfaces.BaseCardVariant
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
@@ -80,12 +80,7 @@ enum class NavIconStyle {
     Custom
 }
 
-/**
- * Size variant for bottom navigation bar
- */
-/**
- * Orientation for navigation items
- */
+/** Orientation for navigation items */
 enum class NavOrientation {
     /** Horizontal layout (standard bottom navigation) */
     Horizontal,
@@ -289,119 +284,43 @@ private fun CenterActionButton(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * BottomNavBar - Fully Dynamic Bottom Navigation Bar Component
+ * Bottom navigation bar with 2-5 items and optional center FAB.
  *
- * A flexible bottom navigation bar with support for 2-5 items, optional center actions (FAB),
- * animations, and full theme integration. Designed for multiplatform Compose with touch-friendly
- * dimensions and accessibility support.
+ * ### Anatomy
+ * Nav items (icon + optional label) + optional center FAB + card background.
  *
- * ## Key Features
- * - Fully dynamic: handles 2-5 items automatically with intelligent layout
- * - Optional center action button (FAB) with smart positioning
- * - Size variants (Small/Medium/Large) with consistent spacing
- * - Animated icon/color transitions on selection
- * - Theme-aware styling with AppTheme integration
- * - Accessibility semantics for screen readers
- * - Scrollable support for >5 items with auto-scroll to selected
- * - Tab display styles (IconOnly/TextOnly/IconWithText)
- * - Safe area padding support for iOS/Android notches
+ * ### Variants
+ * [TabDisplayStyle]: IconOnly, TextOnly, IconWithText.
+ * [NavIconStyle]: BoldLine, Custom.
+ * [NavOrientation]: Horizontal (standard), Vertical.
  *
- * ## Dynamic Behavior
- * - **2-4 items + center action**: Places FAB in middle, tabs distributed evenly on both sides
- * - **5 items or no center action**: Items fill entire width evenly, no FAB shown
- * - **>5 items**: Enables horizontal scrolling with auto-scroll to selected
- * - Validates item count (min 2, max recommended 5 for optimal UX)
+ * ### States
+ * Selected (animated color/scale), Disabled (per-item).
  *
- * ## Usage Examples
+ * ### Sizing
+ * [SizeVariant] Small (48dp), Medium (56dp), Large (64dp) — drives height, icon size, padding.
  *
- * ### Three tabs with center FAB:
- * ```kotlin
- * BottomNavBar(
- *     items = listOf(
- *         NavItem("Home", homeIconBold, homeIconLine),
- *         NavItem("Search", searchIconBold, searchIconLine),
- *         NavItem("Profile", profileIconBold, profileIconLine)
- *     ),
- *     selectedIndex = 0,
- *     onItemSelected = { index -> viewModel.navigateTo(index) },
- *     withCenterAction = true,
- *     centerIcon = addIcon,
- *     onCenterAction = { viewModel.showAddDialog() }
- * )
- * ```
+ * ### Dynamic behavior
+ * - 2-4 items + center FAB: FAB in middle, tabs on both sides
+ * - 5 items or no FAB: evenly distributed width
+ * - >5 items: horizontal scrolling + auto-scroll to selected
  *
- * ### Five tabs without center action:
- * ```kotlin
- * BottomNavBar(
- *     items = listOf(
- *         NavItem("Home", homeIconBold, homeIconLine),
- *         NavItem("Search", searchIconBold, searchIconLine),
- *         NavItem("Favorites", favIconBold, favIconLine),
- *         NavItem("Profile", profileIconBold, profileIconLine),
- *         NavItem("Settings", settingsIconBold, settingsIconLine)
- *     ),
- *     selectedIndex = currentTab,
- *     onItemSelected = { index -> handleNavigation(index) },
- *     withCenterAction = false,
- *     size = SizeVariant.Large
- * )
- * ```
- *
- * ### Two tabs with center FAB (minimal layout):
- * ```kotlin
- * BottomNavBar(
- *     items = listOf(
- *         NavItem("Feed", feedIconBold, feedIconLine),
- *         NavItem("Profile", profileIconBold, profileIconLine)
- *     ),
- *     selectedIndex = selectedTab,
- *     onItemSelected = onTabChange,
- *     withCenterAction = true,
- *     centerIcon = cameraIcon,
- *     onCenterAction = { openCamera() },
- *     size = SizeVariant.Medium
- * )
- * ```
- *
- * ### With badges and custom accessibility:
- * ```kotlin
- * BottomNavBar(
- *     items = listOf(
- *         NavItem(
- *             title = "Messages",
- *             iconSelected = msgIconBold,
- *             iconUnselected = msgIconLine,
- *             contentDescription = "Messages, 3 unread",
- *             badgeCount = 3
- *         ),
- *         NavItem("Calls", callIconBold, callIconLine),
- *         NavItem("Contacts", contactIconBold, contactIconLine)
- *     ),
- *     selectedIndex = selectedTab,
- *     onItemSelected = onTabChange,
- *     withCenterAction = true,
- *     centerIcon = addIcon,
- *     onCenterAction = { showAddMenu() }
- * )
- * ```
- *
- * @param items List of navigation items (2-5 recommended, >5 enables scrolling)
- * @param selectedIndex Currently selected item index (0-based)
- * @param onItemSelected Callback when an item is selected, receives item index
- * @param modifier Modifier for the entire navigation bar container
- * @param withCenterAction If true, shows a center FAB and arranges tabs around it
- * @param centerIcon Icon painter for center action button (required if withCenterAction=true)
- * @param centerContentDescription Accessibility description for center button
- * @param onCenterAction Callback for center action button press
- * @param centerEnabled Whether center action button is enabled
- * @param size Size variant affecting height, icon size, and spacing
- * @param iconStyle Icon style variant (BoldLine uses iconSelected/Unselected, Custom allows custom painters)
- * @param orientation Layout orientation (Horizontal is standard for bottom nav)
- * @param showBackground Whether to show card background (true for card wrapper)
- * @param cardVariant Card variant for background (Elevated, Outlined, Filled, Ghost)
- * @param tabDisplayStyle Display style for tabs (IconOnly/TextOnly/IconWithText)
- * @param enableScrolling If true and items > 5, enables horizontal scrolling
- * @param enableAutoScroll If true, auto-scrolls to selected item when scrolling is enabled
+ * @param items Navigation items (2+)
+ * @param selectedIndex 0-based selected index
+ * @param onItemSelected Callback receiving item index
+ * @param withCenterAction Shows center FAB when true
+ * @param centerIcon Painter for center action
+ * @param centerContentDescription Accessibility label for center button
+ * @param onCenterAction Center button press callback
+ * @param centerEnabled Center button enabled state
+ * @param size Height/icon/padding preset
+ * @param iconStyle BoldLine vs Custom icon painters
+ * @param orientation Horizontal or vertical layout
+ * @param showBackground Wraps in [PixaCard] when true
+ * @param cardVariant Card background variant
+ * @param tabDisplayStyle Icon/Text/Icons+Text per tab
+ * @param enableScrolling Horizontal scroll for >5 items
+ * @param enableAutoScroll Auto-scroll to selected item
  */
 @Composable
 fun PixaBottomNavBar(

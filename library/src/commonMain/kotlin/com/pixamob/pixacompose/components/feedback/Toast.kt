@@ -50,8 +50,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.display.PixaCard
-import com.pixamob.pixacompose.components.display.BaseCardVariant
+import com.pixamob.pixacompose.components.surfaces.PixaCard
+import com.pixamob.pixacompose.components.surfaces.BaseCardVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.elevationShadow
@@ -72,44 +72,35 @@ import kotlinx.coroutines.sync.withLock
 import kotlin.random.Random
 
 /**
- * Toast Component
+ * Toast — temporary notification messages that auto-dismiss and don't block
+ * interaction. Supports stacking, positioning, animations, and semantic colors.
  *
- * Temporary notification messages that auto-dismiss and don't block user interaction.
- * Supports stacking, positioning, animations, and semantic colors.
+ * ### Variants
+ * Info, Success, Warning, Error — each with semantic color mapping.
  *
- * Features:
- * - Four semantic variants: Info, Success, Warning, Error
- * - Three duration presets: Short (2s), Long (4s), Unlimited (manual dismiss)
- * - Multiple screen positions: Top, Bottom, TopStart, TopEnd, BottomStart, BottomEnd, Center
- * - Three visual styles: Filled, Outlined, Subtle
- * - Toast stacking with configurable limit (default 3)
- * - Smooth enter/exit animations based on position
- * - Optional icon and action button
- * - Full accessibility support
- * - Card-based layout with proper spacing
+ * ### Duration presets
+ * [ToastDuration.Short] (2s), [ToastDuration.Long] (4s),
+ * [ToastDuration.Unlimited] (manual dismiss).
+ *
+ * ### Visual styles
+ * [ToastStyle.Filled], [ToastStyle.Outlined], [ToastStyle.Subtle].
+ *
+ * ### Positioning
+ * Top, Bottom, TopStart, TopEnd, BottomStart, BottomEnd, Center.
+ *
+ * ### Stacking
+ * Configurable limit (default 3) with enter/exit animations.
  *
  * @sample
  * ```
- * // Basic usage with ToastHost
  * val toastState = rememberToastHostState()
+ * ToastHost(hostState = toastState, position = ToastPosition.Bottom)
  *
- * ToastHost(
- *     hostState = toastState,
- *     position = ToastPosition.Bottom
- * )
- *
- * // Show toast from coroutine
  * LaunchedEffect(Unit) {
  *     toastState.showToast(
  *         message = "File uploaded successfully",
- *         variant = ToastVariant.Success,
- *         duration = ToastDuration.Short
+ *         variant = ToastVariant.Success
  *     )
- * }
- *
- * // Quick success toast
- * scope.launch {
- *     toastState.showSuccessToast("Changes saved!")
  * }
  * ```
  */
@@ -200,10 +191,8 @@ data class ToastConfig(
 /**
  * Data class representing a toast item.
  *
- * Uber Base's content model: "Messages should employ either header text alone, body text alone, or
- * both combined" — [title] and [message] are therefore both nullable; at least one should be set
- * (enforced with a dev-time console warning, not a crash, matching [PixaIcon]'s existing pattern for
- * `contentDescription`).
+ * [title] and [message] are both nullable — at least one should be set
+ * (enforced with a dev-time console warning, not a crash).
  */
 @Stable
 data class ToastData(
@@ -222,9 +211,9 @@ data class ToastData(
     val customColors: ToastColors? = null
 )
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // TOAST HOST STATE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * State holder for managing toast queue and display
@@ -242,8 +231,8 @@ class PixaToastHostState(
     val currentToasts: List<ToastData> = _currentToasts
 
     /**
-     * Show a toast message. Per Uber Base's content model, [title] and [message] are both optional —
-     * pass a header alone, body alone, or both — but at least one should be set.
+     * Show a toast message. [title] and [message] are both optional —
+     * pass header alone, body alone, or both — but at least one should be set.
      */
     suspend fun showToast(
         message: String? = null,
@@ -401,9 +390,9 @@ fun rememberToastHostState(maxToasts: Int = 3): PixaToastHostState {
     return remember { PixaToastHostState(maxToasts) }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get toast colors based on variant and style
@@ -546,9 +535,9 @@ private fun getToastConfig(): ToastConfig {
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // TOAST ANIMATIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get enter transition based on position
@@ -621,9 +610,9 @@ private fun getAlignment(position: ToastPosition): Alignment {
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Toast - Single toast message display
@@ -641,16 +630,14 @@ internal fun Toast(
     val colors = data.customColors ?: getToastColors(data.variant, data.style, AppTheme.colors)
     val config = getToastConfig()
 
-    // Uber Base's content model: "either header text alone, body text alone, or both combined" —
-    // warn (don't crash) if a caller supplies neither, matching PixaIcon's dev-time console warning
-    // for a missing contentDescription rather than throwing in production.
+    // Warn (don't crash) if neither title nor message is supplied.
     if (data.title.isNullOrBlank() && data.message.isNullOrBlank()) {
         println("⚠️ PixaToast: both title and message are empty. A toast needs at least one.")
     }
-    // Uber Base writing guideline: "Keep toasts to less than 140 characters in English."
+    // Content length warning (recommended max: 140 characters).
     val contentLength = (data.title?.length ?: 0) + (data.message?.length ?: 0)
     if (contentLength > 140) {
-        println("⚠️ PixaToast: content is $contentLength characters, over Uber Base's 140-character guideline.")
+        println("⚠️ PixaToast: content is $contentLength characters, over 140-character guideline.")
     }
 
     val description = "${data.variant.name.lowercase()} toast: ${listOfNotNull(data.title, data.message).joinToString(". ")}"
@@ -711,8 +698,7 @@ internal fun Toast(
                     }
                 }
 
-                // Header (optional) + body (optional) — Uber Base: "prioritize the most important
-                // information in headers with supporting detail in body text."
+                // Header (optional) + body (optional) — priority in headers, detail in body.
                 Column(modifier = Modifier.weight(1f)) {
                     data.title?.takeIf { it.isNotBlank() }?.let { title ->
                         BasicText(
@@ -786,9 +772,14 @@ internal fun Toast(
 }
 
 /**
- * ToastHost - Container for displaying toast stack
+ * ToastHost — container for displaying a stack of toast notifications.
  *
- * @param hostState State holder managing toast queue
+ * ### Anatomy
+ * A full-screen Box that positions a Column of animated toast cards at the
+ * requested [position]. Each card follows [PixaCard] layout with icon, title,
+ * message, optional action button, and close affordance.
+ *
+ * @param hostState State holder managing the toast queue
  * @param position Screen position for toasts
  * @param modifier Modifier for the host container
  */
@@ -854,9 +845,9 @@ fun ToastHost(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // GLOBAL TOAST SYSTEM
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Global singleton toast manager for application-wide toast access
@@ -1163,9 +1154,9 @@ fun GlobalToastHost(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // EXTENSION FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Extension functions for easier toast access in composables
@@ -1297,9 +1288,9 @@ fun launchToast(block: suspend PixaToastHostState.() -> Unit) {
     PixaToastManager.launch(block)
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // USAGE EXAMPLES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * USAGE EXAMPLES:

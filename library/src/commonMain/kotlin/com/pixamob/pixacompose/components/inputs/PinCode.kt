@@ -53,9 +53,8 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Uber Base's two display modes. [Masked] replaces committed digits with a dot — "for sensitive
- * scenarios (bank accounts, card PINs)." [Unmasked] shows the actual characters — "for clarity" in
- * non-sensitive contexts like verbal dictation.
+ * Display mode for a PIN code slot. [Masked] replaces committed digits with a dot;
+ * [Unmasked] shows the actual characters.
  */
 enum class PinCodeVariant {
     Masked,
@@ -208,17 +207,13 @@ private fun SizeVariant.pinCodeConfig(): PinCodeSizeConfig {
     }
 }
 
-/** Uber Base: border "1px weight" default, "3px" active/error/success/read-only — mirrors the same
- * locked ratio [PixaTextField] applies (see `TextField.kt`'s `DefaultBorderWidth`/`ActiveBorderWidth`);
- * declared again here (not imported) since those are file-private and a PIN slot's border isn't the
- * same visual element as a text field's container border, just the same design-system ratio. */
+/** 1px default, 3px active/error/success/read-only — same ratio [PixaTextField] uses. */
 private val DefaultSlotBorderWidth = HierarchicalSize.Border.Compact
 private val ActiveSlotBorderWidth = HierarchicalSize.Border.Large
 
 /**
- * Resolves the placeholder character shown in an empty slot. Uber Base names three modes: "default
- * (displays as '9999' for 4-slot field)," a custom placeholder matching the code length 1:1, or a
- * shorter custom placeholder that loops across slots.
+ * Resolves the placeholder character shown in an empty slot. Default: "9". A custom string
+ * matching [length] 1:1, or a shorter custom string that loops across slots.
  */
 private fun resolvePlaceholderChar(placeholder: String?, index: Int, length: Int): Char? = when {
     placeholder == null -> '9'
@@ -231,8 +226,7 @@ private fun resolvePlaceholderChar(placeholder: String?, index: Int, length: Int
 // INTERNAL PIN CODE
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Hover/pressed state-layer scrim — Uber Base's literal "4% / 8% black overlay," matching the
- * convention already established across this library's other Uber Base migrations. */
+/** Hover/pressed state-layer scrim — 4% / 8% black overlay. */
 @Composable
 private fun BoxScope.PinSlotOverlayScrim(color: Color, shape: Shape) {
     Box(
@@ -297,8 +291,8 @@ private fun PinSlot(
                 }
             )
             .semantics {
-                // Masked fields omit the value from the accessibility tree per spec ("omit value
-                // announcement for security"); unmasked fields announce the actual character.
+                // Masked fields omit the value from the accessibility tree for security;
+                // unmasked fields announce the actual character.
                 if (variant == PinCodeVariant.Masked) {
                     hideFromAccessibility()
                 } else {
@@ -332,64 +326,46 @@ private fun PinSlot(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaPinCode — a Personal Identification Number field for secure authentication and access
- * control.
+ * PixaPinCode — a PIN code field for secure authentication and access control.
  *
  * ### Anatomy
- * Unlike a single-container text field, this renders "as many containers as the length of the
- * required code" (one square slot per character) while treating input as a single string — a single
- * hidden [BasicTextField] drives all slots so paste, backspace, and auto-advance all fall out of
- * normal string editing rather than manually juggling per-slot focus.
+ * One square slot per character, driven by a single hidden [BasicTextField] for paste,
+ * backspace, and auto-advance support.
  *
  * ### Content model
- * [length] (spec: 4–8 characters, coerced into that range) and [placeholder] resolve per-slot via
- * [resolvePlaceholderChar] — default "9" digit, a custom string matching [length] 1:1, or a shorter
- * custom string that loops across slots.
+ * [length] (4–8 characters) × [placeholder] default "9" digit, custom string matching
+ * [length] 1:1, or shorter string that loops across slots.
  *
  * ### Variants
- * [variant] (Masked/Unmasked, the spec's real axis — see [PinCodeVariant]) × [boxVariant] (reuses
- * [TextFieldVariant]'s Filled/Outlined/Ghost box family for visual consistency with [PixaTextField]).
+ * [variant] (Masked/Unmasked) × [boxVariant] (Filled/Outlined/Ghost).
  *
  * ### States
- * Enabled, focused ("Active" — 3px `brandBorderDefault` outline on the next-empty slot), disabled,
- * read-only (3px neutral outline, focusable/tab-navigable/value-submitted, mirrors [PixaTextField]),
- * hover/pressed (4%/8% black overlay), loading ([isLoading] — a [PixaCircularIndicator] overlay).
- * [isError]/[isSuccess] are real per spec but gated by [length]: "You cannot surface either on an
- * individual slot level, only once the input has been filled out" — both are ignored, on every slot,
- * until `value.length == length`.
+ * Enabled, focused (3px `brandBorderDefault` outline), disabled, read-only, hover/pressed
+ * (4%/8% black overlay), loading, [isError]/[isSuccess] (visible only once `value.length == length`).
  *
  * ### Sizing
- * [size] resolves slot side length through [HierarchicalSize.Input] (same ladder [PixaTextField]
- * uses). Spec: "intrinsic width... takes the size of its content," with slots shrinking to fit via
- * auto-layout Fill when space-constrained — implemented here as `Modifier.weight(1f)` + `aspectRatio(1f)`
- * per slot inside the row, the direct Compose translation of that behavior.
+ * [size] resolves slot side length via [HierarchicalSize.Input].
  *
- * ### Usage notes
- * Primary contexts per spec: two-factor authentication, account linking, trip/delivery ID, earner PIN
- * codes. [onComplete] fires once when the code reaches [length] characters — not named explicitly in
- * the spec text, but the standard OTP auto-submit pattern implied by "Complete" as a named state and
- * the 2FA use case; kept opt-in (nullable) so it's a convenience, not an imposed behavior.
- *
- * @param value Current code value (single string, one character per slot)
- * @param onValueChange Callback when the code changes; already length/keyboard-filtered before this fires
- * @param length Number of slots (spec: 4–8, coerced into that range)
- * @param modifier Modifier for the whole component (label + slots + helper text)
- * @param variant Masked (dot) or Unmasked (plaintext) display — see [PinCodeVariant]
- * @param boxVariant Slot box family — reuses [TextFieldVariant] (Filled, Outlined, Ghost)
+ * @param value Current code value
+ * @param onValueChange Callback when the code changes
+ * @param length Number of slots (4–8, coerced)
+ * @param modifier Modifier for the whole component
+ * @param variant Masked (dot) or Unmasked (plaintext) display
+ * @param boxVariant Slot box style (Filled, Outlined, Ghost)
  * @param size Size preset (Small, Medium, Large)
- * @param enabled Whether the field is enabled (not focusable — use [readOnly] if the value must still submit)
- * @param readOnly Whether the field is read-only (focusable, tab-navigable, value submitted — 3px outline)
- * @param isError Whether to show the error validation state — only visible once `value.length == length`
- * @param isSuccess Whether to show the success validation state — only visible once `value.length == length`
- * @param isLoading Whether to show a loading overlay (e.g. verifying the code server-side)
+ * @param enabled Whether the field is enabled
+ * @param readOnly Whether the field is read-only
+ * @param isError Error validation state — only visible once `value.length == length`
+ * @param isSuccess Success validation state — only visible once `value.length == length`
+ * @param isLoading Whether to show a loading overlay
  * @param label Optional label text above the slots
- * @param placeholder Optional placeholder string — see [resolvePlaceholderChar] for the three modes
+ * @param placeholder Optional placeholder string
  * @param helperText Optional helper text below the slots
  * @param errorText Optional error text (shown when [isError] and complete)
  * @param keyboardOptions Keyboard configuration (default: numeric PIN keypad)
  * @param interactionSource Interaction source for state
  * @param onComplete Fires once when the code reaches [length] characters
- * @param contentDescription Accessibility description for the whole field
+ * @param contentDescription Accessibility description
  */
 @Composable
 fun PixaPinCode(

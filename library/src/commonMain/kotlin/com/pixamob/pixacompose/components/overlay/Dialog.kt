@@ -74,10 +74,7 @@ import kotlin.math.roundToInt
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Semantic tint axis (Pixa-native addition, not part of Uber Base's Dialog vocabulary — mirrors the
- * semantic axis [CLAUDE.md] documents for other feedback surfaces like Alert/Toast). Purely visual;
- * orthogonal to [DialogPresentation] and the four Uber Base *content* types (Action/Alert/Message/
- * Configuration), which this component doesn't gate behind an enum — see the class doc for why. */
+/** Semantic tint axis for dialog icon and border accenting. Purely visual; orthogonal to [DialogPresentation]. */
 enum class DialogVariant {
     Default,
     Info,
@@ -87,10 +84,8 @@ enum class DialogVariant {
 }
 
 /**
- * Uber Base's two presentation modes. [Modal] blocks/dims the background (rendered via a full-screen
- * scrim + a focusable, input-blocking [Popup]) — "use when background content does not need to be
- * referenced." [NonModal] renders no scrim and uses a non-focusable [Popup] so background content stays
- * genuinely interactive — "allows interaction with background."
+ * Presentation mode. [Modal]: blocks background with scrim, input-blocking [Popup].
+ * [NonModal]: no scrim, background stays interactive.
  */
 enum class DialogPresentation {
     Modal,
@@ -98,19 +93,13 @@ enum class DialogPresentation {
 }
 
 /**
- * Uber Base's wide-viewport (≥600px) width ladder: xSmall (480px) / Small (640px) / Medium (800px) /
- * Large (viewport − 40px). On narrow viewports (<600px) this is ignored — width is always
- * "viewport width minus 16px gutters" per spec, regardless of tier.
+ * Wide-viewport (≥600dp) width tier. Ignored on narrow viewports (always bottom-docked, viewport − 32dp).
  */
 enum class DialogWidth {
-    XSmall,
-    Small,
-    Medium,
-    Large
+    XSmall, Small, Medium, Large
 }
 
-/** Maps the library's 8-tier [SizeVariant] down to Uber Base's 4-tier [DialogWidth], the same
- * bucket-down convention [com.pixamob.pixacompose.theme.forVariant] uses elsewhere in the theme layer. */
+/** Maps [SizeVariant] → [DialogWidth] for the width ladder. */
 fun SizeVariant.toDialogWidth(): DialogWidth = when (this) {
     SizeVariant.None, SizeVariant.Nano, SizeVariant.Compact -> DialogWidth.XSmall
     SizeVariant.Small -> DialogWidth.Small
@@ -119,8 +108,8 @@ fun SizeVariant.toDialogWidth(): DialogWidth = when (this) {
 }
 
 /**
- * Wide-viewport docking position — spec: "Default position: centered... Supports: top-left, top-right,
- * bottom-left, bottom-right (40px from edge)." Ignored on narrow viewports, which are always bottom-docked.
+ * Wide-viewport docking position. Ignored on narrow viewports (always bottom-docked).
+ * Positions: [Center], [TopLeft], [TopRight], [BottomLeft], [BottomRight] (40dp from edge).
  */
 enum class DialogPosition {
     Center,
@@ -238,9 +227,7 @@ private fun getDialogTheme(variant: DialogVariant): DialogColors {
     }
 }
 
-/** Wide-viewport panel width, in dp. Uber Base's fixed 480/640/800px tiers, with [DialogWidth.Large]
- * (and any tier that would otherwise overflow a borderline-wide viewport) resolving to
- * "viewport − 40px" — the same max-width Uber Base caps every wide tier at. */
+/** Resolves wide-viewport panel width from the 480/640/800 ladder, capped at viewport − 40dp. */
 private fun resolveWideDialogWidth(width: DialogWidth, screenWidth: Dp): Dp {
     val target = when (width) {
         DialogWidth.XSmall -> 480.dp
@@ -251,12 +238,10 @@ private fun resolveWideDialogWidth(width: DialogWidth, screenWidth: Dp): Dp {
     return target.coerceAtMost(screenWidth - WideEdgeMargin).coerceAtLeast(0.dp)
 }
 
-/** Spec: wide viewports cap every panel (regardless of width tier) at "Viewport − 40px" height, and
- * dock non-centered positions 40px from the screen edge. */
+/** Wide viewport: 40dp edge margin and max-height cap. */
 private val WideEdgeMargin = 40.dp
 
-/** Spec: narrow viewports inset the panel by "16px gutters" — read here as 16dp on each edge (32dp total
- * width reduction, 32dp total height reduction), since the spec gives one gutter value, not a per-side one. */
+/** Narrow viewport: 16dp gutter on each edge (32dp total). */
 private val NarrowEdgeMargin = 16.dp
 
 /** Narrow viewports are always bottom-docked; wide viewports honor [position], defaulting to centered. */
@@ -277,8 +262,7 @@ private fun resolveDialogAlignment(windowSizeClass: WindowSizeClass, position: D
 // INTERNAL DIALOG
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Enter: "Shifts up 16px via decelerate easing (Quintic EaseOut) over 400ms; fade in first 100ms" —
- * two independently-timed motions composed via Compose's [EnterTransition] `+` operator. */
+/** Enter: 16dp upward shift + fade (Quintic EaseOut, 400ms). */
 @Composable
 private fun dialogEnterTransition() = with(LocalDensity.current) {
     slideInVertically(
@@ -287,18 +271,15 @@ private fun dialogEnterTransition() = with(LocalDensity.current) {
     ) + fadeIn(animationSpec = AnimationUtils.standardTween(durationMillis = MotionDuration.Instant, easing = LinearEasing))
 }
 
-/** Exit: "Fades out over 100ms linear" — no accompanying motion, unlike the enter shift. */
+/** Exit: 100ms linear fade. */
 private val DialogExitTransition = fadeOut(
     animationSpec = AnimationUtils.standardTween(durationMillis = MotionDuration.Instant, easing = LinearEasing)
 )
 
 /**
- * "Shake" validation feedback: "9px x-axis offset (50ms linear), followed by spring animation
- * (stiffness: 475, damping: 6, mass: 0.4)." Compose's spring model takes `dampingRatio` (unitless) rather
- * than a raw damping coefficient, so the ratio is pre-computed here: `damping / (2·√(mass·stiffness))`
- * ≈ 6 / (2·√(0.4·475)) ≈ 0.22 (underdamped/bouncy) — kept local to Dialog since no other component's
- * spec calls for this exact curve yet, so promoting it into [AnimationUtils] would add an unused preset.
+ * Shake validation feedback: 9dp x-axis offset (50ms linear impulse + underdamped spring settle).
  */
+
 private val DialogShakeImpulse = AnimationUtils.standardTween<Float>(durationMillis = 50, easing = LinearEasing)
 private val DialogShakeSettle = AnimationUtils.standardSpring<Float>(dampingRatio = 0.22f, stiffness = 475f)
 
@@ -341,74 +322,51 @@ private fun DialogCloseButton(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaDialog — a container that floats on top of another surface, focusing a user's attention on
- * a single-step task, question, or message.
+ * Dialog floating over another surface for single-step tasks or messages.
  *
  * ### Anatomy
- * Fixed header ([title] + optional "X" via [showDismissIcon]/[dismissIcon]) → scrollable body
- * ([artwork] → [message] → [content]) → fixed button dock ([dismissText]/[confirmText]). Header and
- * button dock stay fixed while the body scrolls, per spec: "image scrolls away; heading/buttons remain
- * fixed when content exceeds max height."
- *
- * ### Content model
- * Uber Base names four dialog *types* (Action/Alert/Message/Configuration) that describe intended
- * *usage*, not distinct anatomy or behavior — an Action dialog is still header+body+buttons, just with
- * a choice list in [content]. This component doesn't gate that behind an enum; callers express it
- * through what they pass into [content]/[confirmText]/[dismissText].
+ * Fixed header ([title] + optional X) → scrollable body ([artwork] → [message] → [content]) →
+ * fixed button dock ([dismissText]/[confirmText]). Header and buttons stay fixed while body scrolls.
  *
  * ### Variants
- * [presentation] (Modal/NonModal, per spec) is the real Uber Base variant axis. [variant] is a
- * Pixa-native semantic tint (Default/Info/Success/Warning/Error) layered on top — see [DialogVariant].
+ * [DialogVariant]: Default, Info, Success, Warning, Error (semantic tint).
+ * [DialogPresentation]: Modal (scrim + blocking) or NonModal (no scrim).
+ * [DialogWidth] / [DialogPosition]: wide-viewport size/docking.
  *
  * ### States & motion
- * Enter (16px shift + fade, Quintic EaseOut, 400ms) and exit (100ms linear fade) run automatically.
- * [shakeTrigger] plays the spec's validation-error shake on increment — see "Validate errors inside the
- * dialog" under usage notes below.
+ * Enter: 16dp shift (Quintic EaseOut, 400ms) + fade (100ms linear). Exit: 100ms linear fade.
+ * [shakeTrigger] plays validation-error shake on increment.
  *
  * ### Sizing
- * [size] resolves to Uber Base's exact width ladder via [SizeVariant.toDialogWidth] — see [DialogWidth].
- * Narrow viewports (<600dp, [WindowSizeClass.Compact]) ignore the ladder entirely and use
- * "viewport width minus 16px gutters," bottom-docked; wide viewports center by default or dock to
- * [position], 40px from the edge.
- *
- * ### Adaptive behavior
- * Fully wired to [WindowSizeClass] (via [ScreenUtil]) — the narrow/wide split below 600dp is Uber Base's
- * own breakpoint, which happens to match this library's existing Compact/Medium boundary exactly.
- *
- * ### Customization
- * [artwork] is a free-form slot rather than a fixed Badge/Spot/Hero/Custom catalog — Uber Base's own
- * framework note says to "create a local component for the content you want to place inside," which
- * sanctions this over hand-modeling every artwork size as an enum.
+ * [SizeVariant] → [DialogWidth] via [SizeVariant.toDialogWidth]. Narrow viewports: bottom-docked,
+ * viewport − 32dp. Wide viewports: centered (or docked per [position]), 40dp from edge.
  *
  * ### Usage notes
- * Uber Base: single-step tasks only ("avoid multi-step flows"); short content ("consider a sheet or
- * full screen instead" for long/complex content); one at a time (avoid stacking); validate errors
- * inside the dialog via [shakeTrigger] rather than layering a second dialog. An explicit text button
- * and/or the "X" is required — don't rely on outside-click/ESC as the only dismissal for choice-based
- * dialogs (both are supplementary, never primary, per spec).
+ * Single-step tasks only. Prefer a sheet or full screen for long/complex content. Avoid stacking.
+ * Validate errors via [shakeTrigger] rather than a second dialog.
  *
- * @param onDismissRequest Callback when the dialog should close (X, Cancel, ESC, or outside click)
- * @param modifier Modifier for the dialog panel
- * @param variant Semantic tint (Pixa-native; see [DialogVariant])
- * @param presentation Modal (scrim, blocks background) or NonModal (no scrim, background interactive)
- * @param size Width tier, bucketed to Uber Base's ladder via [SizeVariant.toDialogWidth]
- * @param position Wide-viewport docking position (default: [DialogPosition.Center]); ignored on narrow viewports
- * @param colors Custom colors overriding [variant]'s theme
- * @param icon Optional icon shown above [title]
- * @param artwork Optional artwork slot at the top of the scrollable body (image/illustration/custom content)
- * @param title Heading — required by spec to "announce the context shift" for screen readers
- * @param headingMaxLines Heading truncation limit (spec default: 2 lines)
- * @param message Body text (optional for Action/Alert types, required for Message/Acknowledgment per spec)
- * @param confirmText Primary button text
- * @param dismissText Secondary/"Cancel"-style button text (rendered as a Ghost/tertiary button per spec)
+ * @param onDismissRequest Close callback (X, Cancel, ESC, outside click)
+ * @param modifier Modifier for the dialog surface
+ * @param variant Semantic tint (icon/border color accent)
+ * @param presentation Modal (scrim) or NonModal (no scrim)
+ * @param size Width tier → [DialogWidth]
+ * @param position Wide-viewport docking; ignored on narrow
+ * @param colors Custom color overrides
+ * @param icon Optional icon above title
+ * @param artwork Optional scrollable artwork slot
+ * @param title Heading text
+ * @param headingMaxLines Heading truncation (default: 2)
+ * @param message Body text
+ * @param confirmText Primary action button text
+ * @param dismissText Secondary/cancel button text
  * @param onConfirm Primary action callback
- * @param onDismiss Secondary action callback (defaults to [onDismissRequest] when unset)
- * @param dismissOnOutsideClick Overlay-click dismissal (supplementary only, per spec) — no effect when [presentation] is [DialogPresentation.NonModal]
- * @param dismissOnBackClick ESC/back dismissal (supplementary only, per spec)
- * @param showDismissIcon Whether to show the "X" dismiss icon in the header (default: true)
- * @param dismissIcon Optional custom painter for the "X" icon; falls back to a text glyph when unset
- * @param shakeTrigger Increment to play the spec's validation-error shake animation
- * @param content Custom content, appended after [message] in the scrollable body
+ * @param onDismiss Secondary action callback (defaults to onDismissRequest)
+ * @param dismissOnOutsideClick Overlay-tap dismissal (no effect in NonModal)
+ * @param dismissOnBackClick ESC/back dismissal
+ * @param showDismissIcon Show header X button (default: true)
+ * @param dismissIcon Custom X icon painter
+ * @param shakeTrigger Increment to trigger validation-error shake
+ * @param content Custom scrollable body content after message
  */
 @Composable
 fun PixaDialog(

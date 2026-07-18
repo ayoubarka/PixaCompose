@@ -54,14 +54,9 @@ import com.pixamob.pixacompose.utils.pixaRipple
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Container shape. Uber Base's Avatar spec fixes this to always-circular
- * ("Shape (always circular)" under its Fixed customization boundary, "Don't
- * scale or reshape...use the available Avatar sizes and shapes instead") —
- * [Circle] is therefore the default and the only spec-compliant choice.
- * [Rounded]/[Square] are kept as a pre-existing Pixa-native extension beyond
- * the Uber spec (not deleted, since removing working API surface without a
- * concrete reason would break callers), but reaching for them opts out of
- * spec fidelity — document that at the call site if used.
+ * Container shape. [Circle] is the default (recommended).
+ * [Rounded] and [Square] are available as extensions but deviate from
+ * standard avatar presentation — document when used.
  */
 enum class AvatarShape {
     Circle,
@@ -96,17 +91,11 @@ data class AvatarConfig(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Resolves per-[SizeVariant] avatar config. Typography pairing follows Uber
- * Base's literal table (24→Label Xsmall, 36→Label medium, 48→Heading Xsmall,
- * 64→Heading medium, 80→Heading Xlarge, 112→Display medium) mapped onto
- * Pixa's own tier names in the same relative order (label < title < headline
- * < header < display) since Pixa has no separate "Heading" family — 112's
- * `displayMedium` is a literal 1:1 name match, a useful anchor point.
+ * Resolves per-[SizeVariant] avatar config including typography, dimensions,
+ * initial cap, and icon-fallback support.
  *
- * [maxInitials]/[supportsIconFallback] encode two literal Uber Base content
- * rules: "size 24 drops to single letter; sizes 36+ support up to 2
- * characters," and "icon fallback sizes cap at 64...not available for sizes
- * 80 and 112."
+ * - Compact (24dp): single initial. Small+ (36dp+): up to 2 initials.
+ * - Icon fallback supported through Large (64dp); unavailable at Huge/Massive (80/112dp).
  */
 @Composable
 private fun getAvatarConfig(size: SizeVariant): AvatarConfig {
@@ -121,7 +110,7 @@ private fun getAvatarConfig(size: SizeVariant): AvatarConfig {
             supportsIconFallback = false
         )
         SizeVariant.Nano -> AvatarConfig(
-            size = HierarchicalSize.Avatar.Nano,  // 16dp — Pixa extension, below Uber's floor
+            size = HierarchicalSize.Avatar.Nano,  // 16dp
             textStyle = typography.labelSmall,
             iconSize = HierarchicalSize.Icon.Nano,
             statusSize = HierarchicalSize.Spacing.Compact,
@@ -131,7 +120,7 @@ private fun getAvatarConfig(size: SizeVariant): AvatarConfig {
         SizeVariant.Compact -> AvatarConfig(
             size = HierarchicalSize.Avatar.Compact,  // 24dp — Uber "Label Xsmall"
             textStyle = typography.labelSmall,
-            iconSize = HierarchicalSize.Icon.Nano,  // ~10dp, closest token to Uber's literal 12dp
+            iconSize = HierarchicalSize.Icon.Nano,  // ~10dp
             statusSize = HierarchicalSize.Spacing.Small,
             maxInitials = 1,  // "Size 24 drops to single letter"
             supportsIconFallback = true
@@ -155,10 +144,10 @@ private fun getAvatarConfig(size: SizeVariant): AvatarConfig {
         SizeVariant.Large -> AvatarConfig(
             size = HierarchicalSize.Avatar.Large,  // 64dp — Uber "Heading medium"
             textStyle = typography.headlineBold,
-            iconSize = HierarchicalSize.Icon.Medium,  // 24dp, closest token to Uber's literal 26dp
+            iconSize = HierarchicalSize.Icon.Medium,  // 24dp
             statusSize = HierarchicalSize.Icon.Compact,
             maxInitials = 2,
-            supportsIconFallback = true  // 64dp is Uber's icon-fallback cap — still supported
+            supportsIconFallback = true  // 64dp is icon-fallback cap
         )
         SizeVariant.Huge -> AvatarConfig(
             size = HierarchicalSize.Avatar.Huge,  // 80dp — Uber "Heading Xlarge"
@@ -188,8 +177,7 @@ private fun getAvatarShape(shape: AvatarShape, size: Dp): Shape {
 }
 
 /**
- * Extracts initials, capped at [maxChars] — the literal single-letter-at-24dp
- * / two-characters-at-36dp+ rule from Uber Base's content model.
+ * Extracts initials, capped at [maxChars].
  */
 private fun getInitials(name: String, maxChars: Int): String {
     val parts = name.trim().split(" ").filter { it.isNotBlank() }
@@ -202,25 +190,15 @@ private fun getInitials(name: String, maxChars: Int): String {
 }
 
 /**
- * First name only, per Uber Base's accessibility guidance: "show the user's
- * first name only, to protect privacy" rather than a full name.
+ * First name only — shows the user's first name to protect privacy.
  */
 private fun getFirstName(name: String): String =
     name.trim().split(" ").firstOrNull { it.isNotBlank() } ?: name
 
 /**
- * Rotation used by [PixaAvatarGroup]'s `useHashColor`. Uber Base recommends
- * an 8-swatch literal hex rotation (Blue600/Red600/Yellow300/Purple600/
- * Green600/Magenta600/Gray600/Orange600) to "diversify the background color
- * palette when many actors are involved" — but it explicitly notes this
- * default sequence is a *recommendation*, not a fixed customization boundary
- * (color selection is listed under "Flexible"). Hardcoding 8 raw hex swatches
- * would violate this project's "colors must come from AppTheme.colors.*"
- * rule, so the rotation instead cycles through 7 already-tokenized semantic
- * groups (brand/accent/info/success/warning/error/base), each paired with
- * its own `*ContentDefault` token for guaranteed contrast — preserving the
- * spec's actual intent (visually distinguishable, contrast-safe avatars)
- * without introducing untracked raw colors.
+ * Cycles through 7 tokenized semantic color groups (brand/accent/info/success/
+ * warning/error/base) for visually distinguishable avatars in a group.
+ * Each pair provides a surface + content color with guaranteed contrast.
  */
 @Composable
 private fun avatarHashColorFor(name: String, colors: ColorPalette): Pair<Color, Color> {
@@ -241,7 +219,7 @@ private fun avatarHashColorFor(name: String, colors: ColorPalette): Pair<Color, 
 // INTERNAL AVATAR
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Hover/pressed state-layer scrim — Uber Base's literal "base color + 4%/8% black overlay." */
+/** Hover/pressed state-layer scrim: black with 4%/8% alpha overlay. */
 @Composable
 private fun BoxScope.AvatarOverlayScrim(alpha: Float, shape: Shape) {
     Box(
@@ -257,58 +235,43 @@ private fun BoxScope.AvatarOverlayScrim(alpha: Float, shape: Shape) {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaAvatar — a circular visual representation of a person or business.
+ * PixaAvatar — circular visual representation of a person or business.
  *
  * ### Anatomy
- * A required circular container plus required content: a user photo, or a
- * fallback of initials / an icon / a [backgroundContent] vector pattern —
- * priority is image > icon (only at sizes where [AvatarConfig.supportsIconFallback]
- * is true) > [backgroundContent] > initials. An optional status badge overlays
- * the container ([statusBadge]/[secondaryStatusBadge], capped at 2 per Uber
- * Base's "avoid overloading an avatar with too many badges").
+ * Container + content: photo, or fallback of initials / icon / [backgroundContent].
+ * Priority: image > icon (at supported sizes) > [backgroundContent] > initials.
+ * Optional status badge overlays (max 2).
  *
  * ### Sizing
- * [size] resolves through [HierarchicalSize.Avatar], retuned to Uber Base's
- * exact 6-size ladder (24/36/48/64/80/112dp across Compact..Massive) — see
- * [getAvatarConfig]. Initials are capped at 1 character for [SizeVariant.Compact]
- * (24dp) and 2 for [SizeVariant.Small] (36dp) and above; icon fallback is
- * unavailable at [SizeVariant.Huge]/[SizeVariant.Massive] (80/112dp).
+ * [size] resolves through [HierarchicalSize.Avatar] (24/36/48/64/80/112dp).
+ * Compact (24dp): single initial. Small+ (36dp+): up to 2 initials.
+ * Icon fallback unavailable at Huge/Massive (80/112dp).
  *
  * ### States
- * Enabled, hover/pressed (4%/8% black scrim, only when [onClick] is set),
- * focus (3dp `accentBorderDefault` outline via keyboard focus), disabled
- * (dimmed surface/content tokens, image content at 40% opacity), preloading
- * ([isLoading] → [SkeletonCircle]). Uber Base has no direct active/selected
- * state on Avatar itself — "pair with list item controls" instead, which
- * this component doesn't attempt to own.
- *
- * ### Customization
- * [shape] defaults to [AvatarShape.Circle] (spec-compliant); [backgroundColor]/
- * [contentColor] are free-form theme-token overrides per Uber Base's
- * "Flexible: Color selection" boundary. [borderColor]/[borderWidth] default
- * to Uber's 1px inside-aligned border when unset.
+ * Enabled, hover/pressed (black scrim, only with [onClick]), focus (accent border),
+ * disabled (dimmed content, image at 40% opacity), preloading ([SkeletonCircle]).
  *
  * @param modifier Modifier for the avatar
- * @param size Avatar size (Default: [SizeVariant.Medium], 48dp)
- * @param shape Container shape (Default: [AvatarShape.Circle] — see [AvatarShape])
- * @param isLoading Whether to render the preloading [SkeletonCircle] (Default: false)
- * @param enabled Whether the avatar is interactive/full-opacity (Default: true)
- * @param imageUrl URL for a remote photo (Coil)
+ * @param size Avatar size (Default: Medium, 48dp)
+ * @param shape Container shape (Default: [AvatarShape.Circle])
+ * @param isLoading Shows [SkeletonCircle] (Default: false)
+ * @param enabled Whether interactive/full-opacity (Default: true)
+ * @param imageUrl Remote photo URL (Coil)
  * @param imageModel Alternative Coil image model
- * @param text Name used to derive initials (capped per size tier) and the first-name-only accessibility label
- * @param icon Icon fallback painter (ignored at sizes where icon fallback isn't supported — see [getAvatarConfig])
- * @param backgroundContent Vector/illustration fallback rendered behind initials (Uber Base's "Vector" content variant)
- * @param placeholder Placeholder shown while the image loads
+ * @param text Name for initials (capped per size) and the first-name accessibility label
+ * @param icon Icon fallback painter (unsupported at Huge/Massive)
+ * @param backgroundContent Vector/illustration behind initials
+ * @param placeholder Placeholder while image loads
  * @param backgroundColor Background color (defaults to theme token)
- * @param contentColor Content color for text/icon (defaults to theme token)
- * @param borderColor Border color (defaults to Uber's 1px inside-aligned border token when unset)
- * @param borderWidth Border width (Default: [HierarchicalSize.Border.Compact], 1dp)
- * @param onClick Optional click handler — enables hover/press/focus states
- * @param statusBadge Optional primary badge overlay
+ * @param contentColor Text/icon color (defaults to theme token)
+ * @param borderColor Border color (defaults to 1dp inside-aligned border)
+ * @param borderWidth Border width (Default: 1dp)
+ * @param onClick Click handler — enables hover/press/focus states
+ * @param statusBadge Primary badge overlay
  * @param statusPosition Position of [statusBadge]
- * @param secondaryStatusBadge Optional second badge overlay (max 2 total, per Uber Base)
+ * @param secondaryStatusBadge Second badge overlay (max 2)
  * @param secondaryStatusPosition Position of [secondaryStatusBadge]
- * @param contentDescription Accessibility description (defaults to a first-name-only label per Uber Base's privacy guidance)
+ * @param contentDescription Accessibility label (defaults to first-name-only)
  */
 @Composable
 fun PixaAvatar(
@@ -579,15 +542,15 @@ fun PixaAvatarGroup(
 }
 
 /**
- * Data class for avatar configuration in groups
+ * Avatar configuration for use in [PixaAvatarGroup].
  *
  * @param imageUrl URL for remote image
- * @param imageModel Alternative image model for Coil
+ * @param imageModel Alternative Coil image model
  * @param text Name used to derive initials
  * @param icon Icon painter to display
  * @param backgroundColor Background color (overrides [useHashColor])
  * @param contentColor Content color for text/icon
- * @param useHashColor Diversify the background color by rotating through tokenized semantic color groups, keyed off [text] — see [avatarHashColorFor]
+ * @param useHashColor Rotate through tokenized semantic color groups keyed off [text]
  * @param contentDescription Accessibility description
  */
 @Immutable

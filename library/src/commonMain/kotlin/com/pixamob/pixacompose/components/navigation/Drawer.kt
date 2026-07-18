@@ -140,51 +140,27 @@ private fun getDrawerSizeConfig(): DrawerSizeConfig {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaDrawer - Side navigation drawer
+ * Side navigation drawer with sections, header/footer slots, and scrim.
  *
- * ## Usage Examples
+ * ### Anatomy
+ * Scrim → drawer panel → header slot → sectioned item list → footer slot.
  *
- * ```kotlin
- * // Modal drawer
- * var drawerOpen by remember { mutableStateOf(false) }
- * PixaDrawer(
- *     visible = drawerOpen,
- *     onDismiss = { drawerOpen = false },
- *     selectedItemId = currentRoute,
- *     sections = listOf(
- *         DrawerSection(items = listOf(
- *             DrawerItem("home", "Home", painterResource(Res.drawable.ic_home)),
- *             DrawerItem("profile", "Profile", painterResource(Res.drawable.ic_user))
- *         )),
- *         DrawerSection("Settings", listOf(
- *             DrawerItem("settings", "Settings", painterResource(Res.drawable.ic_settings))
- *         ))
- *     ),
- *     onItemClick = { navigate(it.id) }
- * )
+ * ### Variants
+ * [DrawerPosition.Start] (default) or [DrawerPosition.End].
  *
- * // Drawer with header
- * PixaDrawer(
- *     visible = isOpen,
- *     onDismiss = { isOpen = false },
- *     header = {
- *         UserHeader(user = currentUser)
- *     },
- *     sections = navigationSections,
- *     onItemClick = { handleNavigation(it) }
- * )
- * ```
+ * ### States
+ * Open/closed via [visible], selected item via [selectedItemId], per-item disabled.
  *
  * @param visible Whether drawer is visible
- * @param onDismiss Callback when drawer should close
- * @param sections List of drawer sections
- * @param onItemClick Callback when item is clicked
- * @param modifier Modifier
+ * @param onDismiss Close callback
+ * @param modifier Modifier for the drawer panel
+ * @param sections Grouped drawer items
+ * @param onItemClick Item click callback
  * @param selectedItemId Currently selected item ID
- * @param position Drawer position (Start or End)
- * @param colors Custom colors
- * @param header Optional header content
- * @param footer Optional footer content
+ * @param position Start (left) or End (right)
+ * @param colors Custom color overrides
+ * @param header Optional composable above items
+ * @param footer Optional composable below items
  */
 @Composable
 fun PixaDrawer(

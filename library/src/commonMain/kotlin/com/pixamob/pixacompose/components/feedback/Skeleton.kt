@@ -35,69 +35,25 @@ import com.valentinilk.shimmer.rememberShimmer
 import com.valentinilk.shimmer.shimmer
 import com.valentinilk.shimmer.shimmerSpec
 
-/**
- * PixaSkeleton family — a shimmering placeholder that takes the place of content before it appears.
- *
- * ### Purpose
- * Reduces perceived wait time on first loads, especially when parts of the
- * screen are already cached. Per the spec, prefer a progress indicator
- * instead when the wait is triggered *by a user action* rather than an
- * initial/first-time load.
- *
- * ### Anatomy
- * Every placeholder block is a container + a shimmering gradient fill, both
- * required — this file's base [Skeleton] composable is the single place that
- * anatomy is assembled (border, background, clip, shimmer); every other
- * composable in this file builds on it rather than re-drawing that anatomy
- * itself.
- *
- * ### Variants
- * Layout presets: [SkeletonText], [SkeletonCircle], [SkeletonImage],
- * [SkeletonButton], [SkeletonCard], [SkeletonListItem]/[SkeletonList],
- * [SkeletonAvatarWithText], [SkeletonGrid], and [SkeletonCustom] for
- * arbitrary compositions.
- *
- * ### States
- * The spec names exactly 3: Loading (the shimmer itself), content-loaded
- * (see [SkeletonCrossfade] for the spec's 500ms linear fade transition), and
- * failure — "the component used for the error message can vary by context,"
- * which this library leaves to the caller (e.g. pairing with
- * `PixaEmptyState`) rather than hard-wiring a dependency from this file.
- *
- * ### Sizing
- * [getSkeletonConfig] resolves line-height/corner-radius by [SizeVariant].
- *
- * ### Motion
- * The shimmer sweep matches the spec's exact motion: 1000ms duration, 0ms
- * delay, 45° (upper-left to lower-right), [QuinticEaseInOutEasing], and a
- * ~40%-wide bright band within the gradient (approximated via
- * [shaderColorStops][ShimmerTheme.shaderColorStops] — see [rememberPixaShimmer]).
- * The library's own overshoot/travel-distance internals aren't independently
- * configurable to the spec's literal "-0.2 to 1.2" bounds without patching
- * the shimmer dependency itself, so that part is an accepted approximation.
- *
- * ### Accessibility
- * Every top-level composable defaults to `hideFromAccessibility()`
- * (decorative), matching most real-world use where a single "Loading"
- * announcement at the screen level is enough. Pass `contentDescription` to
- * have an individual placeholder announce a label instead (spec: "Loading
- * ETD" for individual elements, static-text "Loading" for a full page).
- *
- * ### Customization
- * [SkeletonConfig.shimmerDurationMillis]/[SkeletonConfig.shimmerDirection]
- * are exposed per-composable where relevant; border color/width are not
- * exposed per-instance (kept consistent library-wide via the same tokens
- * every other bordered surface uses).
- */
+// ════════════════════════════════════════════════════════════════════════════
+// PixaSkeleton family — shimmering placeholder that takes the place of
+// content before it appears. Reduces perceived wait time on first loads.
+//
+// Variants: SkeletonText, SkeletonCircle, SkeletonImage, SkeletonButton,
+// SkeletonCard, SkeletonListItem, SkeletonList, SkeletonAvatarWithText,
+// SkeletonGrid, SkeletonCustom.
+//
+// Shimmer: 1000ms sweep, 45°, QuinticEaseInOut, ~40% bright band.
+// Accessibility: hideFromAccessibility() by default (decorative).
+// ════════════════════════════════════════════════════════════════════════════
 
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Shimmer sweep angle. [Horizontal] is the spec's own default — "45° from
- * upper left to lower right." [Vertical] (90°) is a Pixa extension for
- * tall/portrait placeholder blocks where a diagonal sweep reads oddly.
+ * Shimmer sweep angle. [Horizontal] (45°) is the default; [Vertical] (90°)
+ * for tall/portrait blocks.
  */
 enum class ShimmerDirection {
     Horizontal,
@@ -119,7 +75,7 @@ data class SkeletonConfig(
     val width: Dp? = null,
     val cornerRadius: Dp = HierarchicalSize.Radius.Medium,
     val shimmerEnabled: Boolean = true,
-    // Spec: "duration: 1000ms... delay: 0ms."
+    // Duration: 1000ms, delay: 0ms.
     val shimmerDurationMillis: Int = 1000,
     val shimmerDirection: ShimmerDirection = ShimmerDirection.Horizontal
 )
@@ -158,13 +114,9 @@ private fun getSkeletonConfig(size: SizeVariant): SkeletonConfig {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Builds the spec-accurate shimmer motion: [durationMillis]/0ms delay,
- * [QuinticEaseInOutEasing], and a 45°/90° sweep angle from [direction].
- * [shaderColorStops] narrows the bright band to ~40% of the gradient width
- * (spec: "40% gradient highlight") instead of the shimmer library's default
- * full-width triangular fade; fill stays white per spec ("Fill color:
- * #FFFFFF") since [ShimmerTheme.blendMode] `DstIn` uses these as an alpha
- * mask over whatever `baseColor` the container already has.
+ * Builds the shimmer motion: [durationMillis]/0ms delay,
+ * [QuinticEaseInOutEasing], sweep angle from [direction].
+ * [shaderColorStops] narrows the bright band to ~40% gradient width.
  */
 @Composable
 private fun rememberPixaShimmer(durationMillis: Int, direction: ShimmerDirection): Shimmer {
@@ -199,26 +151,25 @@ private fun rememberPixaShimmer(durationMillis: Int, direction: ShimmerDirection
     return rememberShimmer(ShimmerBounds.View, theme = theme)
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // BASE COMPONENTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Base Skeleton composable — the anatomy every other composable in this file
- * builds on: container (background + 1dp inside-aligned border, per spec) +
- * shimmering gradient fill.
+ * Base Skeleton composable — container (background + 1dp border) +
+ * shimmering gradient fill. Every other composable in this file builds on it.
  *
  * @param modifier Modifier for the skeleton
- * @param width Width of the skeleton (null for fillMaxWidth)
- * @param height Height of the skeleton
- * @param shape Shape of the skeleton
+ * @param width Width (null for fillMaxWidth)
+ * @param height Height
+ * @param shape Shape
  * @param shimmerEnabled Whether to show shimmer animation
- * @param shimmerDurationMillis Shimmer sweep duration (Default: spec's 1000ms)
- * @param shimmerDirection Shimmer sweep angle (Default: spec's 45°)
- * @param baseColor Base color of the skeleton
- * @param showBorder Whether to draw the spec-required 1dp container border
+ * @param shimmerDurationMillis Shimmer sweep duration (Default: 1000ms)
+ * @param shimmerDirection Shimmer sweep angle (Default: 45°)
+ * @param baseColor Base color
+ * @param showBorder Whether to draw the 1dp container border (Default: true)
  * @param borderColor Border color (Default: [AppTheme.colors.baseBorderSubtle])
- * @param contentDescription Accessibility label; null (default) hides this element from accessibility as decorative
+ * @param contentDescription Accessibility label; null hides from a11y
  */
 @Composable
 fun Skeleton(
@@ -763,13 +714,11 @@ fun SkeletonCustom(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Crossfades between a loading skeleton and its final content — the spec's
- * "content loaded: placeholder fades out as content appears," at the exact
- * motion it specifies: 500ms, linear easing, no delay.
+ * Crossfades between a loading skeleton and its final content (500ms linear).
  *
  * @param loading Whether the skeleton (true) or [content] (false) is shown
  * @param modifier Modifier for the crossfade container
- * @param skeleton The loading placeholder, e.g. [SkeletonCard]/[SkeletonList]
+ * @param skeleton The loading placeholder
  * @param content The real content shown once loading completes
  */
 @Composable
@@ -791,9 +740,9 @@ fun SkeletonCrossfade(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // USAGE EXAMPLES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * USAGE EXAMPLES:
@@ -909,7 +858,7 @@ fun SkeletonCrossfade(
  * }
  * ```
  *
- * 12. Skeleton-to-content crossfade (spec's 500ms linear fade):
+ * 12. Skeleton-to-content crossfade (500ms linear fade):
  * ```
  * SkeletonCrossfade(
  *     loading = viewModel.isLoading,

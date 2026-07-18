@@ -1,63 +1,22 @@
 package com.pixamob.pixacompose.components.inputs
 
 /**
- * PixaTimePicker — PixaCompose's migration of Uber Base's "Time Picker" component.
+ * PixaTimePicker — Time or duration selection component.
  *
- * Source: https://base.uber.com/6d2425e9f/p/96a4c2-time-picker.md
+ * ### Variants
+ * - [TimePickerVariant.Wheel]: rotating column interface (hour/minute/AM-PM)
+ * - [TimePickerVariant.Stepper]: duration-focused +/- control via [QuantityStepper]
+ * - [TimePickerVariant.TimeOfDayPicker]: chip-based named time-slot picker (Pixa extension)
  *
- * Purpose:
- *   Lets users select either a specific time (a point on the clock) or a
- *   duration (a length of time), via two distinct interaction models the
- *   spec documents separately.
+ * ### States
+ * Enabled, Focus (3px accent outline around the whole control), Disabled.
  *
- * Anatomy / Variants (mobile, per spec — the spec's "Web Variants," Select
- *   Time Input and Timezone Input, are intentionally out of scope; see
- *   "Adaptive behavior" below):
- *   - [TimePickerVariant.Wheel] — spec's "Pinwheel": a rotating column
- *     interface (hour / minute / AM-PM) users swipe through. Backed by the
- *     third-party `dev.darkokoa.datetimewheelpicker` dependency (already
- *     approved in CLAUDE.md's dependency table) — not Material 3.
- *   - [TimePickerVariant.Stepper] — spec's "Stepper": a duration-focused
- *     +/- control. Built directly on [QuantityStepper] (same `inputs`
- *     package), which already implements this exact anatomy/behavior/focus
- *     model per its own migration from Uber Base's separate Stepper spec —
- *     a clean same-family reuse rather than a parallel implementation.
- *   - [TimePickerVariant.TimeOfDayPicker] — a Pixa-native extension (chip-based
- *     named time-slot picker) predating this migration and not defined by
- *     the spec, kept because it doesn't conflict with anything the spec
- *     requires and has no Material 3 dependency.
+ * ### Sizing
+ * [SizeVariant] scales height and typography.
  *
- *   Removed: the previous `Clock` variant (a Material 3 `TimePickerDefaults`
- *   circular clock face) is gone. It matched no variant this spec defines,
- *   and — being built entirely on `androidx.compose.material3.TimePicker` —
- *   directly violated CLAUDE.md's "no Material 3 UI components" constraint.
- *   Its `minTime`/`maxTime` parameters were already dead code (never wired
- *   to any variant, verified via `grep`), so they were dropped rather than
- *   preserved; `stepperConfig` now owns duration bounds instead.
- *
- * States: Enabled (`contentPrimary` on `backgroundPrimary` — mapped to
- *   `baseContentBody`/`baseSurfaceDefault`), Focus (3px `borderAccent` outline
- *   around the *whole* control, not sub-elements — [QuantityStepper] already
- *   implements this for Stepper; Wheel gets the same treatment via an added
- *   `focusable` + border wrapper), Disabled (`contentStateDisabled`).
- *
- * Sizing: [SizeVariant] (Small/Medium/Large) — a Pixa extension; the spec's
- *   own Small/Medium pixel tables describe fixed reference mockups, not a
- *   general size ladder.
- *
- * Adaptive behavior: the spec's "Narrow fills viewport width / Wide sits in
- *   a popover pointing to the entry point" responsive rule is intentionally
- *   out of scope for [PixaTimePicker] itself — it renders inline content only.
- *   Callers building a wide/desktop entry point should wrap [PixaTimePicker]
- *   in the existing `overlay/Popover.kt` themselves; baking popover-anchoring
- *   logic into this file would duplicate that component rather than reuse it.
- *   The spec's Web-only variants (Select Time Input, Timezone Input) are
- *   likewise out of scope — this library targets Android + iOS, not web.
- *
- * Customization: variant, mode (Single/Multiple/Range), format (12h/24h),
- *   size, colors, strings, `minuteInterval` (Wheel), `stepperConfig`
- *   (Stepper's customizable unit/bounds — spec: "customizable unit increases
- *   or decreases"), `wheelConfig`.
+ * ### Customization
+ * Variant, mode (Single/Multiple/Range), format (12h/24h),
+ * size, colors, strings, `minuteInterval`, `stepperConfig`, `wheelConfig`.
  */
 
 import androidx.compose.foundation.BorderStroke
@@ -201,7 +160,7 @@ data class WheelTimeConfig(
 data class StepperTimeConfig(
     val unitMinutes: Int = 15,
     val minDurationMinutes: Int = 0,
-    /** Default 8 hours, matching the spec's own accessibility example ("1 hour. 1 of 8"). */
+    /** Default 8 hours. */
     val maxDurationMinutes: Int = 480
 )
 
@@ -296,7 +255,7 @@ private fun defaultDurationLabel(minutes: Int): String {
  * A flexible time picker with multiple variants and full customization.
  * Supports single, multiple, and range selection modes.
  *
- * ## Usage Examples
+ * @sample
  *
  * ```kotlin
  * // Wheel time picker (spec: "Pinwheel")
@@ -645,11 +604,8 @@ private fun StepperTimePickerContent(
 }
 
 /**
- * Spec: "Tapping the +/- buttons will increase or decrease the values
- * accordingly." Delegates directly to [QuantityStepper], which already
- * implements this exact anatomy, the required min/max bounds, and the
- * spec's "focus around the whole component" outline — no need to
- * re-implement any of it here.
+ * Stepper time picker. Delegates to [QuantityStepper], which implements
+ * the anatomy, bounds, and focus outline.
  */
 @Composable
 private fun SingleStepperTimePicker(

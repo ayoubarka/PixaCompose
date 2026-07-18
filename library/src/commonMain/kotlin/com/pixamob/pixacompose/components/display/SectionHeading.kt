@@ -36,12 +36,8 @@ import com.pixamob.pixacompose.theme.SizeVariant
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Trailing content slot, mapped from Uber Base's Section Heading trailing
- * options: none, a single text button, a single icon button (mutually
- * exclusive with [TextButton] per spec), or up to 2 labels/paragraphs.
- * Renders in the top row next to [PixaSectionHeading]'s `heading`, bottom-
- * aligned with it, per the spec's "top content (heading + trailing) aligns
- * bottom" rule.
+ * Trailing content slot. Options: none, text button, icon button (mutually exclusive),
+ * or up to 2 labels. Renders in the top row bottom-aligned with heading.
  */
 sealed class SectionHeadingTrailing {
     data object None : SectionHeadingTrailing()
@@ -52,7 +48,7 @@ sealed class SectionHeadingTrailing {
         val contentDescription: String? = null
     ) : SectionHeadingTrailing()
 
-    /** Capped at 2 entries per spec anatomy; extra entries are dropped, not wrapped. */
+    /** Capped at 2 entries; extra entries are dropped. */
     data class Labels(val labels: List<String>) : SectionHeadingTrailing()
 }
 
@@ -73,10 +69,8 @@ data class SectionHeadingColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Resolves default content colors. Uber Base's "Disabled" state (`backgroundStateDisabled`
- * fill / `contentStateDisabled` text) only applies once [PixaSectionHeading]'s `enabled`
- * is false — headings are non-interactive by default, so there is no fill to
- * theme, only the text/icon content color per the spec's disabled row.
+ * Resolves default content colors. Headings are non-interactive by default,
+ * so only text content dims when disabled — no fill to theme.
  */
 @Composable
 private fun getSectionHeadingTheme(colors: ColorPalette, enabled: Boolean): SectionHeadingColors {
@@ -152,81 +146,48 @@ private fun TrailingContent(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaSectionHeading — starts a new content section and gives users an
- * overview of how content is structured on the screen.
+ * PixaSectionHeading — starts a content section and structures the screen.
  *
  * ### Anatomy
- * Required container + [heading]. Top content is [heading] plus an optional
- * [trailing] slot (text button, icon button, or up to 2 labels — text button
- * and icon button are mutually exclusive per spec). Bottom content is an
- * optional [subheading]. Top content aligns bottom, matching the spec's
- * "heading + trailing aligns bottom" rule.
- *
- * ### Variants
- * Driven by [trailing] ([SectionHeadingTrailing.None]/`.TextButton`/`.IconButton`/`.Labels`).
+ * Required [heading], optional [subheading], optional [trailing] slot
+ * (text button, icon button, or up to 2 labels — text and icon buttons
+ * are mutually exclusive). Top content aligns bottom.
  *
  * ### States
- * Preloading ([loading] → [SkeletonText] placeholders, matching the spec's
- * `backgroundPrimary`-filled placeholder), enabled (`contentTitle`/`contentSubtitle`),
- * disabled ([enabled] → `contentStateDisabled` on heading/subheading/labels;
- * hover/pressed/focus on [trailing] interactive elements are inherited for
- * free from the reused [PixaButton]/[PixaIconButton] Ghost variants rather
- * than reimplemented here).
+ * Preloading ([SkeletonText]), enabled, disabled (content dimmed).
+ * Interactive states on trailing controls inherited from [PixaButton]/[PixaIconButton].
  *
  * ### Sizing
- * [size] drives inter-line spacing and the reused trailing control's own
- * size tier. Uber Base doesn't define discrete heading height tiers itself
- * (only fixed icon-button/text-button row heights, which come from the
- * reused button components), so this follows Pixa's own [SizeVariant]
- * convention rather than a spec-defined ladder.
- *
- * ### Adaptive behavior
- * "Extend edge-to-edge" at narrow widths vs. "take the width of the UI
- * elements they represent" at wide widths is a caller-side layout concern —
- * this composable always fills its incoming width via `fillMaxWidth()`;
- * screen-level code controls edge-to-edge vs. contained width through
- * [AppTheme.pageMargin]/container width, per `CLAUDE.md`'s "adaptive
- * behavior is a default/fallback, explicit caller-provided sizes remain
- * authoritative" rule. No second responsive system is introduced here.
+ * [size] drives inter-line spacing and trailing control size.
  *
  * ### Customization
- * [customColors] overrides heading/subheading/label content color only
- * (per spec's "text style and color can be overridden to reduce prominence,
- * provided consistency is maintained" boundary); [headingStyle]/[subheadingStyle]
- * likewise allow swapping type scale for less-prominent repetitive sections.
- * Anatomy (required heading, optional subheading, single trailing slot) is
- * not overridable — a structural change the spec explicitly discourages.
+ * [customColors] overrides content colors; [headingStyle]/[subheadingStyle]
+ * swap type scale. Anatomy structure is not overridable.
  *
  * ### Usage notes
- * - Use to organize lists/cards/tiles into sections; never in place of a
- *   navigation header, and never stacked directly above one.
- * - Keep text style/color choices consistent across similar section headings
- *   in the same screen — inconsistent styling is the spec's named anti-pattern.
- * - Trailing content truncates to a single line and yields at most 30% of
- *   the row's width to [heading] when both are present (enforced via
- *   [BoxWithConstraints] below).
+ * - Use to organize lists/cards/tiles into sections.
+ * - Keep text style consistent across similar headings in the same screen.
+ * - Trailing content truncates to a single line and yields at most 30% width.
  *
- * @param heading Required heading text (wraps or truncates per [headingMaxLines])
+ * @param heading Required heading text
  * @param modifier Modifier for the heading container
  * @param subheading Optional supporting text below the heading
- * @param trailing Optional trailing slot (Default: [SectionHeadingTrailing.None])
- * @param size Size variant driving spacing and the trailing control's size (Default: [SizeVariant.Medium])
- * @param enabled Whether the heading (and any trailing control) is interactive (Default: true)
- * @param loading Whether to render the preloading [SkeletonText] placeholder (Default: false)
- * @param headingMaxLines Max lines before [heading] truncates (Default: 2, per spec's one/two-line configurations)
- * @param headingStyle Optional override of the heading's [TextStyle] (Default: `AppTheme.typography.titleBold`)
- * @param subheadingStyle Optional override of the subheading's [TextStyle] (Default: `AppTheme.typography.bodyRegular`)
- * @param customColors Optional [SectionHeadingColors] overriding heading/subheading/label content color
- * @param description Accessibility description appended to the heading trait announcement
+ * @param trailing Optional trailing slot (Default: None)
+ * @param size Size variant (Default: Medium)
+ * @param enabled Whether interactive (Default: true)
+ * @param loading Shows [SkeletonText] (Default: false)
+ * @param headingMaxLines Max heading lines (Default: 2)
+ * @param headingStyle Heading [TextStyle] override (Default: titleBold)
+ * @param subheadingStyle Subheading [TextStyle] override (Default: bodyRegular)
+ * @param customColors Optional content color override
+ * @param description Accessibility description
  *
  * @sample
- * ```
  * PixaSectionHeading(
  *     heading = "Recent orders",
  *     subheading = "Last 30 days",
  *     trailing = SectionHeadingTrailing.TextButton("See all") { }
  * )
- * ```
  */
 @Composable
 fun PixaSectionHeading(
@@ -270,8 +231,7 @@ fun PixaSectionHeading(
                 heading()
                 description?.let { contentDescription = it }
             },
-        // Fixed tight gap between heading/subheading lines (not size-driven,
-        // matching the spec's own heading-height ranges which don't vary this).
+        // Fixed tight gap between heading/subheading lines (not size-driven).
         verticalArrangement = Arrangement.spacedBy(HierarchicalSize.Spacing.Compact),
     ) {
         if (trailing == SectionHeadingTrailing.None) {

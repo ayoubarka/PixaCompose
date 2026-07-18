@@ -67,14 +67,11 @@ import kotlin.math.roundToInt
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Width behavior, mapped from Uber Base's segmented-control width types:
- * - [Fixed] = "Track occupies full container; segments divide equally" — labels
- *   truncate rather than widening the segment.
- * - [Intrinsic] = "Track length grows with the content in the segments" — each
- *   segment hugs its own content, so the track hugs the row.
+ * Width behavior:
+ * - [Fixed] — track fills its container, segments divide equally, labels truncate.
+ * - [Intrinsic] — track grows with segment content, each segment hugs its content.
  *
- * Both are single-row: Uber Base allows no text wrapping and no horizontal
- * scrolling within a segmented control.
+ * Single-row only: no text wrapping, no horizontal scrolling.
  */
 enum class SegmentedButtonWidth {
     Fixed,
@@ -95,14 +92,13 @@ enum class SegmentedButtonShape {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * A single segment. Mapped from Uber Base's content model: optional leading
- * [icon], required [label], optional [paragraph] descriptor below the label.
+ * A single segment: optional leading [icon], required [label], optional
+ * [paragraph] descriptor below the label.
  *
  * @param id Stable identity used for selection
- * @param label Primary text — keep to a few words (Uber Base: labels must fit one line)
+ * @param label Primary text — keep to a few words (must fit one line)
  * @param paragraph Optional secondary descriptor rendered below [label]
- * @param icon Optional leading icon — Uber Base recommends pairing icons with labels
- *   rather than shipping icon-only segments
+ * @param icon Optional leading icon — prefer pairing with labels over icon-only
  * @param enabled Whether this segment can be selected
  * @param contentDescription Overrides the default "[Label], [Paragraph]" screen-reader text
  */
@@ -118,11 +114,7 @@ data class SegmentedButtonItem(
 )
 
 /**
- * Colors for a segmented control, mapped from the Uber Base spec's tokens:
- * - [trackSurface] ← `backgroundTertiary` (the inactive/track background)
- * - [activeTileSurface] ← `backgroundPrimary` (the sliding active tile)
- * - [disabledContent] ← `contentStateDisabled`
- * - [focusBorder] ← `borderAccent` (keyboard focus ring)
+ * Colors for a segmented control.
  */
 @Immutable
 @Stable
@@ -156,9 +148,7 @@ private data class SegmentedButtonSizeConfig(
     val paragraphStyle: TextStyle
 )
 
-// Uber Base state overlays: "a 4% black overlay" on hover, "8% black overlay"
-// added on mouse down. These are the spec's own ratios, not a size/color token
-// the theme has an equivalent for, so they stay as named local constants.
+// State overlays: 4% on hover, 8% on mouse down (fixed ratios, not theme tokens).
 private const val HOVER_OVERLAY_ALPHA = 0.04f
 private const val PRESSED_OVERLAY_ALPHA = 0.08f
 
@@ -167,12 +157,10 @@ private const val PRESSED_OVERLAY_ALPHA = 0.08f
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Uber Base names `backgroundPrimary` for the active tile and `backgroundTertiary`
- * for the track behind it. In PixaCompose the base surface ramp inverts between
- * schemes — `baseSurfaceSubtle` is the *raised* surface in both light (base 50)
- * and dark (base 700), and `baseSurfaceDefault` is the recessed one (base 100 /
- * base 800) — so subtle-on-default reproduces Uber's tile-on-track contrast in
- * either scheme rather than only in light.
+ * Default colors for a segmented control. Uses [baseSurfaceSubtle] (raised) for
+ * the active tile and [baseSurfaceDefault] (recessed) for the track —
+ * subtle-on-default reproduces the tile-on-track contrast in both light and dark
+ * schemes.
  */
 @Composable
 private fun defaultSegmentedButtonColors(): SegmentedButtonColors = SegmentedButtonColors(
@@ -226,8 +214,8 @@ private fun segmentedButtonShapeFor(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * One segment: leading icon + label + optional paragraph, stacked per Uber Base's
- * anatomy. Renders no background of its own — the sliding tile behind it supplies
+ * One segment: leading icon + label + optional paragraph, stacked vertically.
+ * Renders no background of its own — the sliding tile behind it supplies
  * the active surface — only the hover/press overlay on top of it.
  */
 @Composable
@@ -282,7 +270,7 @@ private fun RowScope.SegmentedButtonSegment(
             .clip(tileShape)
             .background(overlayColor)
             .then(
-                // Uber Base focus state: "Outlined in 3 border borderAccent".
+                // Focus state: 3dp accent border.
                 if (isFocused && enabled) {
                     Modifier.border(HierarchicalSize.Border.Large, colors.focusBorder, tileShape)
                 } else {
@@ -294,9 +282,8 @@ private fun RowScope.SegmentedButtonSegment(
                 enabled = enabled,
                 role = Role.Button,
                 interactionSource = interactionSource,
-                // No indication: Uber Base specifies the press/hover feedback as
-                // explicit background overlays (drawn above), and a Material
-                // ripple is not available to this library.
+                // No ripple — press/hover feedback is rendered as explicit background
+                // overlays above, and Material ripple is not available.
                 indication = null,
                 onClick = onClick
             )
@@ -334,8 +321,7 @@ private fun RowScope.SegmentedButtonSegment(
                         color = contentColor,
                         textAlign = TextAlign.Center
                     ),
-                    // Uber Base: single row, no wrapping — fixed-width segments
-                    // truncate, intrinsic-width ones grow instead.
+                    // Single row, no wrapping — Fixed segments truncate, Intrinsic ones grow.
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -361,8 +347,7 @@ private fun RowScope.SegmentedButtonSegment(
 
 /**
  * PixaSegmentedButton — lets users pick one option from a linear set of 2–5
- * closely related choices, to input, filter, change presentation, or browse
- * content within the current view.
+ * closely related choices for input, filtering, or content re-presentation.
  *
  * ### Anatomy
  * A **track** (container with a 1px inside border) holds an **active tile** that
@@ -370,45 +355,37 @@ private fun RowScope.SegmentedButtonSegment(
  * optional leading icon, a label, and an optional paragraph.
  *
  * ### Variants
- * [SegmentedButtonWidth.Fixed] makes the track fill its container and divides it
- * equally between segments (labels truncate);
- * [SegmentedButtonWidth.Intrinsic] grows the track with segment content.
+ * [SegmentedButtonWidth.Fixed] — track fills its container, segments divide equally
+ * (labels truncate). [SegmentedButtonWidth.Intrinsic] — track grows with content.
  *
  * ### States
  * Preloading ([showSkeleton]), enabled, hover (4% overlay), focus (3dp accent
- * outline), pressed (8% overlay), and disabled (content drops to the disabled
- * token). Per-item [SegmentedButtonItem.enabled] disables a single segment;
- * [enabled] = false disables the whole control.
+ * outline), pressed (8% overlay), disabled. Per-item
+ * [SegmentedButtonItem.enabled] disables a single segment; [enabled] = false
+ * disables the whole control.
  *
  * ### Sizing
- * Segment height/padding/icon/label all derive from the shared button ladder for
- * [size], so a segment stays dimensionally in step with [PixaButton].
+ * Segment height/padding/icon/label derive from the shared button ladder for
+ * [size], keeping segments dimensionally in step with [PixaButton].
  *
  * ### Adaptive behavior
- * Uber Base's responsive rule is about *width*, not control scale: the control
- * matches the width of the main content on narrow viewports and may be resized
- * smaller on wide ones — with no horizontal scrolling or wrapping.
- * [SegmentedButtonWidth.Fixed] already expresses this; constrain the caller's
- * `modifier` to narrow it on wide viewports. [size] stays caller-authoritative
- * and is not silently overridden by [AppTheme.adaptiveSizeVariant].
+ * [SegmentedButtonWidth.Fixed] fills its container; constrain the caller's
+ * `modifier` to narrow it on wide viewports. [size] is caller-authoritative.
  *
  * ### Usage notes
- * - Provide 2–5 segments. Uber Base treats fewer as a job for a switch and more
- *   as a job for a scrolling button group; like [PixaButtonGroup]'s own item
- *   rule, this is a content rule, not runtime-enforced.
- * - Don't use this for binary yes/no choices — use a switch instead.
- * - Don't use it for multiple selections — this control is single-select only.
+ * - Provide 2–5 segments (not runtime-enforced).
+ * - Don't use for binary yes/no choices — use a switch instead.
+ * - Don't use for multiple selections — this is single-select only.
  *   Use [PixaButtonGroup] with [ButtonGroupSelectionMode.Multi] for that.
- * - Don't use it to navigate to a new view — that's [PixaTab]. A segmented
- *   control filters or re-presents the content already in the current view.
+ * - Don't use to navigate to a new view — that's [PixaTab]. A segmented
+ *   control filters or re-presents content in the current view.
  * - Prefer icon+label over icon-only segments.
- * - If this control swaps the content below it, fade that content in and out
+ * - Fade content in/out when segments swap content below
  *   (see `AnimationUtils.fadeInTransition`/`fadeOutTransition`).
  *
  * @param items The segments to render, in order (2–5)
  * @param selectedId Id of the currently selected segment
- * @param onSelectionChange Called with the newly selected id — only fires on an
- *   actual change, since a single-select control always keeps one selection
+ * @param onSelectionChange Called when a different segment is selected
  * @param modifier Modifier for the track
  * @param width Track width behavior (Default: [SegmentedButtonWidth.Fixed])
  * @param size Size variant applied to every segment (Default: [SizeVariant.Medium])
@@ -479,9 +456,8 @@ fun PixaSegmentedButton(
     val tileWidth = remember { Animatable(0f) }
     var tilePlaced by remember { mutableStateOf(false) }
 
-    // Uber Base: "The tile behind the active segment slides along the track to sit
-    // behind the newest selection." The first placement snaps — there is nowhere
-    // for it to have slid from.
+    // The sliding tile behind the active segment snaps on first placement (no previous
+    // position to animate from), then animates on subsequent changes.
     LaunchedEffect(targetX, targetTileWidth) {
         if (targetTileWidth <= 0f) return@LaunchedEffect
         if (!tilePlaced) {

@@ -27,47 +27,32 @@ import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 
 /**
- * EmptyState Component — an empty state display for when there is no content to show.
+ * EmptyState — a display for when there is no content to show.
  *
- * ### Purpose
- * Shown when there's no data or content to display — first-time use,
- * completed/cleared tasks, errors, or no search results. Per the spec: "an
- * empty state should never be a dead end" — always pair it with either a CTA
- * or a clear instruction about what to do next.
+ * Shown for first-time use, completed/cleared tasks, errors, or no search
+ * results. Always pair with a CTA or clear instruction.
  *
  * ### Anatomy
- * Required: headline (one line) + body text (1-2 sentences). Optional: a
- * badge/spot illustration and up to 2 CTA buttons — never an icon standing
- * in for the illustration slot (the spec explicitly calls this out: "don't
- * use an icon"), even though this composable renders the illustration
- * through the same [PixaIcon] primitive icons use internally.
+ * Required: headline (one line) + body text (1-2 sentences).
+ * Optional: badge/spot illustration and up to 2 CTA buttons.
  *
  * ### Variants
- * [EmptyStateType] is Pixa's richer, app-error-taxonomy extension of the
- * spec's 4 canonical illustration colors (black/green/yellow/red) — every
- * leaf still resolves to one of those 4 via [StateCategory] under the hood.
+ * [EmptyStateType] categorizes states: Empty, Network, Client, Server,
+ * Permission, and Custom — each resolving to one of 4 illustration colors
+ * via [StateCategory].
  *
  * ### States
- * Empty/failure/success are represented by [EmptyStateType]; there's a
- * built-in one-shot fade-in on first composition so a caller swapping from a
- * loading state into this composable gets the spec's "transition smoothly
- * from loading states" behavior for free.
+ * One-shot fade-in on first composition. Empty/failure/success are
+ * represented by [EmptyStateType].
  *
  * ### Sizing / Adaptive behavior
- * [size] is the explicit, caller-controlled tier (default: Medium). Set
- * [adaptiveSize] to derive it from [AppTheme.adaptiveSizeVariant] instead —
- * the spec's 3 breakpoints (Narrow/Medium/Large) are a viewport-width concern,
- * so this opts into [AppTheme.windowSizeClass] rather than inventing a
- * second responsive system, matching `PixaButton`'s `adaptiveWidth` opt-in
- * precedent. An explicit [size] always wins when [adaptiveSize] is false.
+ * [size] is explicit (default: Medium). Set [adaptiveSize] to derive from
+ * [AppTheme.adaptiveSizeVariant] instead.
  *
  * ### Customization
- * [titleMaxLines]/[descriptionMaxLines] default to unlimited (wrap), matching
- * "labels wrap by default but can be customized to truncate." Up to 2 CTAs
- * ([primaryActionText]/[secondaryActionText]). [illustrationContentDescription]
- * defaults to null (illustration hidden from accessibility, since it's
- * decorative by default); pass a label when the illustration is the only
- * carrier of information not repeated elsewhere.
+ * [titleMaxLines]/[descriptionMaxLines] default to unlimited (wrap).
+ * Up to 2 CTAs ([primaryActionText]/[secondaryActionText]).
+ * [illustrationContentDescription] defaults to null (hidden from a11y).
  *
  * @sample
  * ```
@@ -177,10 +162,8 @@ sealed class EmptyStateType {
 }
 
 /**
- * The spec's 4 canonical illustration colors — "black (first-use), green
- * (success), yellow (warning), red (failure)." Every [EmptyStateType] leaf
- * resolves to exactly one of these; there is no 5th "info/blue" illustration
- * color in the spec, so this enum doesn't have one either.
+ * 4 illustration color categories: FirstUse, Warning, Failure, Success.
+ * Every [EmptyStateType] leaf resolves to exactly one of these.
  */
 enum class StateCategory {
     /** Black illustration — onboarding / first-time use. */
@@ -193,9 +176,6 @@ enum class StateCategory {
     Success
 }
 
-/**
- * Empty state size variants
- */
 /**
  * Empty state colors
  */
@@ -219,19 +199,17 @@ data class EmptyStateConfig(
     val descriptionStyle: @Composable () -> TextStyle,
     val spacing: Dp,
     val contentSpacing: Dp,
-    // Null = no width cap, just fillMaxWidth — the spec's Narrow tier
-    // ("component width equals device width minus padding") has no fixed
-    // max-width, unlike Medium/Large which target a fixed content column.
+        // Null = no width cap, just fillMaxWidth
     val maxWidth: Dp?,
     val ctaSize: SizeVariant
 )
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Get empty state colors based on type
+ * Resolves colors per [EmptyStateType] and [StateCategory].
  */
 @Composable
 private fun getEmptyStateColors(
@@ -239,33 +217,26 @@ private fun getEmptyStateColors(
     colors: ColorPalette
 ): EmptyStateColors {
     return when (type) {
-        // Empty/no-content states read as neutral, onboarding-style guidance
-        // — the spec's "black" illustration color.
         is EmptyStateType.Empty -> EmptyStateColors(
             icon = colors.baseContentCaption,
             title = colors.baseContentTitle,
             description = colors.baseContentBody
         )
-        // Connection/timeout failures are system errors — spec's "red" example.
         is EmptyStateType.Network -> EmptyStateColors(
             icon = colors.errorContentDefault,
             title = colors.baseContentTitle,
             description = colors.baseContentBody
         )
-        // 4xx are recoverable, user-actionable issues — spec's "yellow."
         is EmptyStateType.Client -> EmptyStateColors(
             icon = colors.warningContentDefault,
             title = colors.baseContentTitle,
             description = colors.baseContentBody
         )
-        // 5xx are system errors — spec's "red" example.
         is EmptyStateType.Server -> EmptyStateColors(
             icon = colors.errorContentDefault,
             title = colors.baseContentTitle,
             description = colors.baseContentBody
         )
-        // Auth/permission issues are user-actionable (sign in, request access)
-        // — spec's "yellow."
         is EmptyStateType.Permission -> EmptyStateColors(
             icon = colors.warningContentDefault,
             title = colors.baseContentTitle,
@@ -288,18 +259,8 @@ private fun getEmptyStateColors(
 }
 
 /**
- * Get empty state configuration based on size
- */
-/**
- * Maps onto the spec's 3 breakpoint tiers directionally (Pixa's own type
- * ladder differs from Uber's `headingSmall`/`paragraphMedium` naming, but the
- * same larger-viewport-reads-bigger progression holds):
- * - Narrow (320-599px): no width cap ("device width minus padding") —
- *   [maxWidth] is null.
- * - Medium (600-1135px, spec: 472px) and Large (1136px+, spec: 536px) both
- *   approximate to [HierarchicalSize.Container.DialogMaxWidth] (560dp) — the
- *   only existing max-width token; a dedicated 472dp/536dp ladder would be a
- *   2-value category that exists nowhere else in the library.
+ * Maps [SizeVariant] to icon size, typography, spacing, and max width.
+ * Narrow tiers have no max-width cap; Medium+ clamp to [HierarchicalSize.Container.DialogMaxWidth].
  */
 @Composable
 private fun getEmptyStateConfig(size: SizeVariant): EmptyStateConfig {
@@ -330,7 +291,7 @@ private fun getEmptyStateConfig(size: SizeVariant): EmptyStateConfig {
             spacing = HierarchicalSize.Spacing.Large,
             contentSpacing = HierarchicalSize.Spacing.Medium,
             maxWidth = HierarchicalSize.Container.DialogMaxWidth,
-            // Spec is explicit for this tier: "button: medium size."
+            // Medium CTAs for Large+ tiers
             ctaSize = SizeVariant.Medium
         )
         else -> EmptyStateConfig(
@@ -346,7 +307,7 @@ private fun getEmptyStateConfig(size: SizeVariant): EmptyStateConfig {
 }
 
 /**
- * Get default message for empty state type
+ * Default title per [EmptyStateType]
  */
 private fun getDefaultTitle(type: EmptyStateType): String {
     return when (type) {
@@ -388,7 +349,7 @@ private fun getDefaultTitle(type: EmptyStateType): String {
 }
 
 /**
- * Get default description for empty state type
+ * Default description per [EmptyStateType]
  */
 private fun getDefaultDescription(type: EmptyStateType): String {
     return when (type) {
@@ -429,9 +390,9 @@ private fun getDefaultDescription(type: EmptyStateType): String {
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * EmptyState - Display when content is unavailable or errors occur
@@ -484,9 +445,7 @@ fun PixaEmptyState(
     val semanticDescription = contentDescription
         ?: "Empty state: $displayTitle. $displayDescription"
 
-    // One-shot fade-in on first composition — the spec's "transitions
-    // smoothly from loading states," without this composable needing to know
-    // anything about the loading state it's replacing.
+    // One-shot fade-in on first composition.
     val visibleState = remember { MutableTransitionState(false) }
     visibleState.targetState = true
 
@@ -505,10 +464,7 @@ fun PixaEmptyState(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(config.spacing)
         ) {
-            // Illustration — badge/spot artwork, never a stand-in icon glyph.
-            // Hidden from accessibility by default (decorative); pass
-            // [illustrationContentDescription] when it carries information
-            // not repeated in the headline/body.
+            // Illustration — badge/spot artwork. Hidden from a11y by default.
             if (showIcon && icon != null) {
                 PixaIcon(
                     painter = icon,
@@ -529,8 +485,7 @@ fun PixaEmptyState(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(config.contentSpacing)
             ) {
-                // Headline — required, one line by default; carries the
-                // a11y heading trait per the spec's VoiceOver/TalkBack guidance.
+                // Headline — required, carries a11y heading trait.
                 BasicText(
                     text = displayTitle,
                     style = config.titleStyle().copy(color = colors.title, textAlign = TextAlign.Center),
@@ -548,7 +503,7 @@ fun PixaEmptyState(
                 )
             }
 
-            // Actions — spec caps CTAs at 2 (primary + secondary).
+            // Actions — caps CTAs at 2 (primary + secondary).
             if (primaryActionText != null || secondaryActionText != null) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
@@ -580,9 +535,9 @@ fun PixaEmptyState(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // CONVENIENCE FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Empty content state
@@ -696,9 +651,9 @@ fun PermissionDenied(
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // USAGE EXAMPLES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * USAGE EXAMPLES:

@@ -1,25 +1,25 @@
 package com.pixamob.pixacompose.components.navigation
 
 /**
- * PixaStepper — Multi-step progress indicator for complex processes
- * (itineraries, account creation, form wizards).
+ * Multi-step progress indicator for processes (wizards, onboarding, itineraries).
  *
- * Anatomy: Each step = indicator + path lines + label content + optional trailing content.
- * Path visibility at first/last step is independently toggleable.
+ * ### Anatomy
+ * Indicator + connector path + label content + optional trailing content.
+ * Path at first/last step independently toggleable.
  *
- * Variants:
- *   - Artwork size: [StepArtworkSize.XSmall] through [StepArtworkSize.Large]
- *   - Artwork type: Dot, Number, Icon, CheckmarkNumber, IconNumber, Bar, or None
- *   - Connector style: Line, Separator, Dashed (Pixa), Arrow (Pixa)
- *   - Content style: Simple, Card, Compact
+ * ### Variants
+ * - Artwork size: [StepArtworkSize.XSmall]–[StepArtworkSize.Large]
+ * - Artwork type: Dot, Number, Icon, CheckmarkNumber, IconNumber, Bar, None
+ * - Connector: Line, Separator, Dashed, Arrow, None
+ * - Content style: Simple, Card, Compact
  *
- * States: Completed, Current (Active), Skipped, Error
+ * ### States
+ * Completed, Current, Skipped, Error, Pending.
  *
- * Sizing: Driven by [SizeVariant] via [StepArtworkSize.fromSizeVariant].
+ * ### Sizing
+ * [SizeVariant] → [StepArtworkSize] via [StepArtworkSize.fromSizeVariant].
  *
- * Customization: artwork size/type, path visibility, path color, content style, trailing content.
- *
- * Requirement: **At least 3 steps required**.
+ * > Requires at least 3 steps.
  */
 
 import androidx.compose.animation.animateColorAsState
@@ -54,9 +54,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.display.PixaCard
+import com.pixamob.pixacompose.components.surfaces.PixaCard
 import com.pixamob.pixacompose.utils.ComponentElevation
-import com.pixamob.pixacompose.components.display.BaseCardVariant
+import com.pixamob.pixacompose.components.surfaces.BaseCardVariant
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.components.feedback.SkeletonCircle
 import com.pixamob.pixacompose.components.feedback.SkeletonText
@@ -105,7 +105,7 @@ enum class StepArtworkSize {
     Large;
 
     companion object {
-        /** Maps the library-wide [SizeVariant] onto the spec's 4-tier artwork scale. */
+        /** Maps [SizeVariant] onto the 4-tier artwork scale. */
         fun fromSizeVariant(variant: SizeVariant): StepArtworkSize = when (variant) {
             SizeVariant.None, SizeVariant.Nano -> XSmall
             SizeVariant.Compact, SizeVariant.Small -> Small
@@ -116,9 +116,7 @@ enum class StepArtworkSize {
 }
 
 /**
- * Artwork shape at XSmall. Uber spec: "customizing XSmall icons beyond
- * circle/square shapes" causes line piercings — so XSmall is restricted to
- * these two shapes only, never an icon/number.
+ * Artwork shape at XSmall. Restricted to Circle/Square only (no icon/number at this size).
  */
 enum class StepArtworkShape {
     Circle,
@@ -127,10 +125,6 @@ enum class StepArtworkShape {
 
 /**
  * Connector style between steps.
- * [Line]/[Separator] correspond to the spec's "solid lines, enabled/disabled".
- * The remaining styles are Pixa extensions for transit-style itineraries,
- * which the spec explicitly allows ("path line colors can be customized for
- * transit-specific applications").
  */
 enum class StepConnectorStyle {
     /** Solid line connector (spec: enabled path) */
@@ -229,7 +223,7 @@ data class StepperConfig(
     val spacing: Dp,
     val minTouchTarget: Dp = HierarchicalSize.TouchTarget.Small,
     val animateConnector: Boolean = true,
-    /** XSmall is spec-restricted to bullet/stop artwork only (circle/square, no icons/numbers). */
+    /** XSmall is restricted to bullet/stop artwork (circle/square, no icons/numbers). */
     val isXSmall: Boolean = false
 )
 
@@ -254,9 +248,9 @@ data class StepColors(
     val subLabel: Color
 )
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get stepper configuration based on artwork size.
@@ -265,7 +259,7 @@ data class StepColors(
 private fun getStepperConfig(size: StepArtworkSize): StepperConfig {
     val typography = AppTheme.typography
     return when (size) {
-        // Spec: XSmall artwork is frame-clipped to 16x16dp, reserved for stops/bullets.
+        // XSmall artwork reserved for stops/bullets.
         StepArtworkSize.XSmall -> StepperConfig(
             indicatorSize = HierarchicalSize.Badge.Small,
             iconSize = HierarchicalSize.Icon.None,
@@ -335,9 +329,9 @@ private fun getStepColors(colors: ColorPalette): StepColors {
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // INTERNAL STEPPER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Step state enum
@@ -360,8 +354,6 @@ private fun resolveStepState(stepData: StepData, isCurrentStep: Boolean): StepSt
 
 /**
  * Get accessibility description for step.
- * Matches the Uber spec's VoiceOver/TalkBack phrasing exactly:
- * "Step [number] of [total], [label], [state]" e.g. "Step 1 of 3, Activate account, Complete".
  */
 private fun getStepAccessibilityDescription(
     stepNumber: Int,
@@ -416,9 +408,7 @@ private fun StepperHeader(
 }
 
 /**
- * Path spacer - invisible frame that preserves step alignment when a leading/trailing
- * path is toggled off, per the spec: "auto-layout-compatible invisible frames
- * maintaining positions when paths are disabled."
+ * Invisible frame preserving step alignment when a leading/trailing path is toggled off.
  */
 @Composable
 private fun PathSpacer(config: StepperConfig, orientation: StepperOrientation, modifier: Modifier = Modifier) {
@@ -453,7 +443,7 @@ private fun StepIndicator(
     strings: StepperStrings,
     onClick: (() -> Unit)?
 ) {
-    // Uber spec: XSmall artwork is reserved for stops/bullets — never icons/numbers.
+    // XSmall artwork reserved for stops/bullets — no icons/numbers.
     val effectiveType = if (config.isXSmall && indicatorType != StepIndicatorType.None) {
         StepIndicatorType.Dot
     } else {
@@ -461,8 +451,7 @@ private fun StepIndicator(
     }
 
     if (effectiveType == StepIndicatorType.None) {
-        // Spec: "Artwork none" keeps the path continuous with no visible indicator,
-        // but the frame still occupies space so alignment holds.
+        // Path continues with no visible indicator; frame still occupies space.
         Spacer(modifier = Modifier.size(config.indicatorSize))
         return
     }
@@ -933,35 +922,44 @@ private fun StepContent(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaStepper — Multi-step progress indicator (Uber Base "Progress Steps" equivalent).
+ * Multi-step progress indicator for complex processes.
  *
- * @param steps List of step data. Per the Uber spec, progress steps require **at
- *   least 3 steps** to function as an overview of a multi-step process; fewer
- *   than 3 throws [IllegalArgumentException].
- * @param currentStep Current step index (0-based)
- * @param modifier Modifier for the stepper
+ * ### Anatomy
+ * Indicator + connector + label + trailing content. First/last path independently toggleable.
+ *
+ * ### Variants
+ * [StepperOrientation.Vertical] (default) or [StepperOrientation.Horizontal].
+ * 8 [StepIndicatorType]s, 6 [StepConnectorStyle]s, 3 [StepContentStyle]s.
+ *
+ * ### States
+ * Completed, Current, Error, Skipped, Pending — driven by [StepData] flags.
+ *
+ * ### Sizing
+ * [SizeVariant] → [StepArtworkSize] via [StepArtworkSize.fromSizeVariant].
+ *
+ * @param steps Step data (at least 3 required)
+ * @param currentStep 0-based current step index
  * @param orientation Vertical or Horizontal layout
- * @param indicatorType Type of step indicator. Use [StepIndicatorType.None] for
- *   a continuous path with no visible artwork (spec: "Artwork none").
- * @param artworkShape Shape used at [StepArtworkSize.XSmall] (circle or square only, per spec)
- * @param connectorStyle Style of connector between steps
- * @param contentStyle Style for step content
- * @param cardShape Shape for Card content style (Rounded/Arrow/Pointy)
- * @param size Size preset — maps to [StepArtworkSize] via [StepArtworkSize.fromSizeVariant]
- * @param showLabels Whether to show step labels
- * @param showSubLabels Whether to show step subtitles
- * @param showHeader Whether to show integrated header ("Step X of Y")
- * @param showLeadingPath Show a path above the first step / before the first item
- *   (spec: "top and bottom paths can be toggled independently for first/last items")
- * @param showTrailingPath Show a path below the last step / after the last item
- * @param onStepClick Optional click handler for interactive navigation
- * @param isStepClickable Optional callback to determine if step is clickable
- * @param strings Localization strings
+ * @param indicatorType Dot, Number, Icon, CheckmarkNumber, etc.
+ * @param artworkShape Circle or Square at XSmall size
+ * @param connectorStyle Line, Dashed, Arrow, Separator, None
+ * @param contentStyle Simple, Card, Compact
+ * @param cardShape Rounded, Arrow, Pointy (for Card content)
+ * @param size Size preset
+ * @param showLabels Show/hide step labels
+ * @param showSubLabels Show/hide step subtitles
+ * @param showHeader Show "Step X of Y" header
+ * @param showLeadingPath Path before first step
+ * @param showTrailingPath Path after last step
+ * @param onStepClick Optional click handler
+ * @param isStepClickable Per-step clickability check
+ * @param strings Localized labels
+ * @param isLoading Shows skeleton placeholder
  */
 @Composable
 fun PixaStepper(
@@ -1118,8 +1116,7 @@ private fun VerticalStepper(
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    // Leading path above the first step, toggled per spec; invisible
-                    // frame keeps alignment identical whether shown or not.
+                    // Leading path above the first step; invisible frame preserves alignment.
                     if (index == 0) {
                         if (showLeadingPath && connectorStyle != StepConnectorStyle.None) {
                             Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Compact))
@@ -1277,9 +1274,9 @@ private fun HorizontalStepper(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // CONVENIENCE VARIANTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Vertical Stepper - Quick vertical layout
@@ -1339,99 +1336,8 @@ fun StepProgressHeader(
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // USAGE EXAMPLES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
-/**
- * USAGE EXAMPLES:
- *
- * 1. Basic vertical stepper (minimum 3 steps required):
- * ```
- * val steps = listOf(
- *     StepData(title = "Account Information", isCompleted = true),
- *     StepData(title = "Verification", isCompleted = false),
- *     StepData(title = "Complete", isCompleted = false)
- * )
- * var currentStep by remember { mutableStateOf(1) }
- *
- * Column {
- *     StepProgressHeader(currentStep, steps.size)
- *     VerticalStepper(
- *         steps = steps,
- *         currentStep = currentStep
- *     )
- * }
- * ```
- *
- * 2. Horizontal with numbers:
- * ```
- * HorizontalStepper(
- *     steps = steps,
- *     currentStep = currentStep,
- *     indicatorType = StepIndicatorType.Number
- * )
- * ```
- *
- * 3. Interactive stepper with navigation:
- * ```
- * PixaStepper(
- *     steps = steps,
- *     currentStep = currentStep,
- *     onStepClick = { step ->
- *         if (step < currentStep) {
- *             currentStep = step
- *         }
- *     }
- * )
- * ```
- *
- * 4. With icons and subtitles:
- * ```
- * PixaStepper(
- *     steps = steps,
- *     currentStep = 1,
- *     indicatorType = StepIndicatorType.Icon,
- *     showSubLabels = true
- * )
- * ```
- *
- * 5. Card-style stepper:
- * ```
- * PixaStepper(
- *     steps = steps,
- *     currentStep = currentStep,
- *     contentStyle = StepContentStyle.Card,
- *     orientation = StepperOrientation.Vertical
- * )
- * ```
- *
- * 6. XSmall bullet/stop indicators (spec-restricted to Dot artwork):
- * ```
- * PixaStepper(
- *     steps = steps,
- *     currentStep = currentStep,
- *     size = SizeVariant.Nano,
- *     showLabels = false
- * )
- * ```
- *
- * 7. Continuous path with no artwork ("Artwork none" per spec):
- * ```
- * PixaStepper(
- *     steps = steps,
- *     currentStep = currentStep,
- *     indicatorType = StepIndicatorType.None
- * )
- * ```
- *
- * 8. Itinerary-style stepper with leading/trailing path shown:
- * ```
- * PixaStepper(
- *     steps = steps,
- *     currentStep = currentStep,
- *     showLeadingPath = true,
- *     showTrailingPath = true
- * )
- * ```
- */
+// Usage examples omitted — see DOCUMENTATION.md for runnable snippets.

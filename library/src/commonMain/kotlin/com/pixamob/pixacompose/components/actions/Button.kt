@@ -58,15 +58,13 @@ import com.pixamob.pixacompose.utils.toDp
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Button hierarchy, mapped from Uber Base's Primary/Secondary/Tertiary/Outline/OnBrand
- * types onto Pixa's existing Filled/Tonal/Outlined/Ghost naming (kept per Pixa
- * convention rather than renamed to match Uber terms):
+ * Button hierarchy:
  * - [Filled] = Primary — single main action per screen.
- * - [Tonal] = Secondary — gray/tinted background, the most commonly used type.
+ * - [Tonal] = Secondary — tinted background, the most commonly used variant.
  * - [Ghost] = Tertiary — low-emphasis dismissive actions (cancel, skip, dismiss).
- * - [Outlined] = Outline — for actions available only within button groups.
- * - [OnBrand] = OnBrand — for buttons placed on brand-colored surfaces (membership,
- *   special offers), where a colored fill would lose contrast.
+ * - [Outlined] = Outline — for actions within button groups.
+ * - [OnBrand] = OnBrand — for buttons on brand-colored surfaces
+ *   where a colored fill would lose contrast.
  */
 enum class ButtonVariant {
     Filled,
@@ -83,12 +81,12 @@ enum class ButtonShape {
 }
 
 /**
- * Width behavior, mapped from Uber Base's Fill/Hug-content model:
+ * Width behavior:
  * - [Flexible] = Hug content — width auto-adjusts to label/icon length, single-line,
- *   truncates with ellipsis once it hits the layout edge.
- * - [Fixed] = the explicit-fixed-width case — content wraps to additional lines
- *   instead of truncating (override the line cap with `PixaButton(maxLines = ...)`).
- *   Combine with `Modifier.width(...)` on the call site to actually fix the width.
+ *   truncates with ellipsis at the layout edge.
+ * - [Fixed] = Explicit fixed width — content wraps to additional lines
+ *   instead of truncating (override with `PixaButton(maxLines = ...)`).
+ *   Combine with `Modifier.width(...)` on the call site to fix the width.
  * - [FullBleed] = Fill — spans the full container width, label/leading icon centered,
  *   trailing icon pinned to the end.
  */
@@ -224,18 +222,10 @@ internal fun getButtonSizeConfig(size: SizeVariant): ButtonSizeConfig {
 /**
  * Resolves the button's clip/border shape.
  *
- * [ButtonShape.Pill]/[ButtonShape.Circle] reuse [AppTheme.shapes.pill] instead
- * of a raw `RoundedCornerShape(sizeConfig.height / 2)`: `Radius.Full` (9999dp)
- * is clamped by Compose to half the shortest side at draw time, so it renders
- * an identical stadium/circle for any given box size — same pixels, token-backed.
- * [ButtonShape.Default] still builds a raw `RoundedCornerShape` from
- * [sizeConfig]'s per-tier [HierarchicalSize.Radius] value (already a token,
- * just not wrapped in an `AppTheme.shapes.*` preset) because the 5-tier
- * `AppTheme.shapes.rounded` family doesn't line up with Button's own
- * per-`SizeVariant` radius ladder — swapping it in would change the actual
- * rendered corner radius on several size tiers. [cornerRadiusOverride] (only
- * used for the FullBleed rectangular case) also has no `AppTheme.shapes`
- * equivalent since it's a caller-supplied one-off value, not a themed tier.
+ * [ButtonShape.Pill] and [ButtonShape.Circle] use [AppTheme.shapes.pill].
+ * [ButtonShape.Default] uses a raw [RoundedCornerShape] from the per-tier
+ * [HierarchicalSize.Radius]. [cornerRadiusOverride] is a caller-supplied
+ * value for the FullBleed rectangular case.
  */
 @Composable
 private fun buttonShapeFor(
@@ -248,9 +238,9 @@ private fun buttonShapeFor(
     else -> RoundedCornerShape(sizeConfig.cornerRadius)
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get button theme colors for a variant
@@ -345,9 +335,9 @@ private fun getButtonTheme(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // INTERNAL BUTTON (Core logic)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Internal button implementation with core functionality
@@ -494,9 +484,9 @@ private fun InternalButton(
         }
     }
 }
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * PixaButton — interactive control for triggering actions, confirming choices,
@@ -504,57 +494,47 @@ private fun InternalButton(
  *
  * ### Anatomy
  * WithLabel (text + optional leading/trailing icon) or IconOnly (a single icon,
- * or ≤2 characters for [ButtonShape.Circle]) — never combine an icon with text
- * on a circular button; the icon wins and the text is dropped if both are given.
+ * or ≤2 characters for [ButtonShape.Circle]) — never combine icon with text
+ * on a circular button; the icon wins and text is dropped.
  *
  * ### Variants
- * [ButtonVariant.Filled] (Primary — one per screen), [ButtonVariant.Tonal]
- * (Secondary — the default workhorse), [ButtonVariant.Ghost] (Tertiary —
+ * [ButtonVariant.Filled] (primary — one per screen), [ButtonVariant.Tonal]
+ * (secondary — the default workhorse), [ButtonVariant.Ghost] (tertiary —
  * dismissive escapes: "Not now", "Skip", "Go back"), [ButtonVariant.Outlined]
- * (Outline — button-group-only), [ButtonVariant.OnBrand] (branded surfaces).
- * [isDestructive] swaps brand tokens for error tokens on any variant — for the
- * two-step danger flow Uber Base recommends, start with `Tonal + isDestructive`
- * (caution) and confirm with `Filled + isDestructive` (commit).
+ * (outline — button-group-only), [ButtonVariant.OnBrand] (branded surfaces).
+ * [isDestructive] swaps brand tokens for error tokens on any variant.
  *
  * ### Sizes
- * [SizeVariant] resolves through [HierarchicalSize.Button]; Uber Base's own
- * 4-tier button scale maps onto it as: xSmall(28dp)→[SizeVariant.Compact]
- * (32dp, nearest tier at/above the 28dp web click-target minimum — the ladder
- * has no exact 28dp step), Small(36dp)→[SizeVariant.Small] (exact),
- * Medium(48dp, Uber's default)→[SizeVariant.Large] (exact — note this is
- * *not* Pixa's own default tier name), Large(56dp)→[SizeVariant.Huge] (exact).
+ * [SizeVariant] resolves through [HierarchicalSize.Button]; sizes range from
+ * None to Massive. [SizeVariant.Medium] is the default.
  *
  * ### Width & content wrapping
  * [ButtonWidthPolicy.Flexible] (hug content, single line, ellipsis-truncates),
  * [ButtonWidthPolicy.FullBleed] (fills the container, rectangular corners,
- * centers label/leading icon, pins trailing icon to the end), and
+ * centers label/leading icon, pins trailing icon), and
  * [ButtonWidthPolicy.Fixed] (wraps to [maxLines] lines instead of truncating —
  * pair with an explicit `Modifier.width(...)`).
  *
  * ### Adaptive behavior
- * [adaptiveWidth] opts a [ButtonWidthPolicy.Flexible] button into Uber Base's
- * narrow-viewport rule (scale to full width below the 600dp breakpoint, keep
- * intrinsic size above it) via [AppTheme.windowSizeClass]. Off by default —
- * an explicit [widthPolicy] always wins, adaptive behavior is opt-in, never a
- * hidden override.
+ * [adaptiveWidth] opts a [ButtonWidthPolicy.Flexible] button into auto-fill
+ * width below the 600dp breakpoint (via [AppTheme.windowSizeClass]), keeping
+ * intrinsic size above it. Off by default — explicit [widthPolicy] always wins.
  *
  * ### Usage notes
- * - One [ButtonVariant.Filled] button per screen (Uber Base's primary-button
- *   placement rule); multiple primary buttons are only sanctioned one-per-panel
- *   in multi-panel web tools.
+ * - One [ButtonVariant.Filled] button per screen.
  * - Labels: 1-3 words, sentence case, one action per button, no symbols/digits/
- *   punctuation/pronouns — this isn't enforced at runtime, it's a content rule.
+ *   punctuation/pronouns — content rule, not runtime-enforced.
  * - Prefer leaving buttons enabled with inline validation/errors over disabling
  *   them — a disabled button doesn't explain what's missing.
  *
  * @param onClick Callback when button is clicked
  * @param modifier Modifier for styling
- * @param text Optional button text content (null or empty for icon-only buttons)
+ * @param text Optional button text (null or empty for icon-only buttons)
  * @param variant Visual hierarchy (Default: [ButtonVariant.Filled])
  * @param isDestructive Whether this is a destructive action (uses error colors)
  * @param enabled Whether the button is enabled (Default: true)
  * @param loading Whether the button shows loading state (Default: false)
- * @param size Size variant (Default: Medium — see size mapping table above)
+ * @param size Size variant (Default: Medium)
  * @param shape Shape variant (Default: Default)
  * @param widthPolicy Width behavior — hug content, fill, or fixed-with-wrap
  * @param leadingIcon Optional icon before text
@@ -566,15 +546,12 @@ private fun InternalButton(
  * @param customTextStyle Optional custom text style to override size config
  * @param arrangement Content arrangement in the Row (Default: Center)
  * @param maxLines Line cap override; defaults to 1 (Flexible/FullBleed) or unlimited (Fixed)
- * @param adaptiveWidth Opt in to auto-fill width below the 600dp breakpoint (see Adaptive behavior above)
+ * @param adaptiveWidth Opt in to auto-fill width below the 600dp breakpoint
  *
  * @sample
  * ```
  * // Basic button
- * PixaButton(
- *     text = "Submit",
- *     onClick = { }
- * )
+ * PixaButton(text = "Submit", onClick = { })
  *
  * // Two-step danger flow
  * PixaButton(text = "Delete", variant = ButtonVariant.Tonal, isDestructive = true, onClick = { })
@@ -674,10 +651,10 @@ fun PixaButton(
     val hasText = !text.isNullOrBlank()
     val hasIcons = leadingIcon != null || trailingIcon != null
 
-    // Uber Base's narrow-viewport rule: below the 600dp breakpoint a button scales
-    // up to fill its container width; above it, the button keeps its intrinsic
-    // (hug-content) size. Opt-in only — explicit widthPolicy stays authoritative,
-    // this never overrides an explicit FullBleed/Fixed choice, only Flexible.
+    // Narrow-viewport rule: below the 600dp breakpoint a button scales up to fill
+    // its container width; above it, the button keeps its intrinsic size. Opt-in
+    // only — explicit widthPolicy stays authoritative, never overrides
+    // an explicit FullBleed/Fixed choice, only Flexible.
     val effectiveWidthPolicy = if (adaptiveWidth && widthPolicy == ButtonWidthPolicy.Flexible && windowSizeClass == WindowSizeClass.Compact) {
         ButtonWidthPolicy.FullBleed
     } else {
@@ -728,8 +705,7 @@ fun PixaButton(
             textStyle = customTextStyle ?: sizeConfig.textStyle(),
             shape = effectiveShape,
             contentColor = contentColor,
-            // Hug-content/fill truncate at one line; Fixed-width wraps by default,
-            // per Uber Base's "fixed-width buttons wrap to next line" rule.
+            // Hug-content/fill truncate at one line; Fixed-width wraps by default.
             maxLines = maxLines ?: if (effectiveWidthPolicy == ButtonWidthPolicy.Fixed) Int.MAX_VALUE else 1
         )
     }
@@ -738,11 +714,8 @@ fun PixaButton(
 /**
  * Button content layout helper.
  *
- * Circular buttons follow Uber Base's constraint: a single icon, OR up to 2
- * characters of text (initials/a digit) — never both combined. When both an
- * icon and text are supplied to a [ButtonShape.Circle] button, the icon wins
- * and the text is dropped, matching "icon-only" precedence elsewhere in this
- * file (see `effectiveShape` in [PixaButton]).
+ * Circular buttons show a single icon OR up to 2 characters of text — never both.
+ * When both are supplied, the icon wins and text is dropped.
  */
 @Composable
 private fun RowScope.ButtonContent(

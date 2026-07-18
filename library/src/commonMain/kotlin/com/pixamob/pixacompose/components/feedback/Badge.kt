@@ -36,12 +36,7 @@ import com.pixamob.pixacompose.theme.*
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Badge color, matching Uber Base's 5 approved badge colors exactly.
- *
- * This intentionally does *not* reuse the generic feedback semantic axis
- * (`Info`/`Neutral`, seen on [AlertVariant]/[ToastVariant]) — the Uber Base
- * badge spec only approves these 5, and adding the other feedback colors
- * here would offer combinations the spec doesn't sanction.
+ * Badge color. Limited to 5 semantic variants distinct from [AlertVariant]/[ToastVariant].
  */
 enum class BadgeVariant {
     /** Default for most contexts: unread/new content, general emphasis. */
@@ -81,17 +76,7 @@ private data class NotificationBadgeConfig(
 
 /**
  * Resolves container/icon/text sizing for [PixaNotificationBadge].
- *
- * Uber Base only defines two notification badge sizes (small 16dp / medium
- * 20dp), which map exactly onto [HierarchicalSize.Badge.Small]/`.Medium` — so
- * any [SizeVariant] other than [SizeVariant.Small] resolves to the medium
- * tier rather than inventing extra badge sizes the spec doesn't define.
- *
- * Icon size has no exact match in [HierarchicalSize.Icon] (spec wants 10dp/12dp,
- * the ladder jumps 10dp→14dp) — it's derived as a fixed proportion of the
- * container (0.6×) instead of a hardcoded per-tier literal, which reproduces
- * both spec ratios (10/16 = 0.625, 12/20 = 0.6) closely enough that the icon
- * still visually fills the container as the spec requires.
+ * Small → 16dp container, anything else → 20dp. Icon is 0.6× container size.
  */
 @Composable
 private fun getNotificationBadgeConfig(size: SizeVariant): NotificationBadgeConfig {
@@ -103,8 +88,7 @@ private fun getNotificationBadgeConfig(size: SizeVariant): NotificationBadgeConf
     return NotificationBadgeConfig(
         containerSize = containerSize,
         iconSize = containerSize * 0.6f,
-        // Uber's labelXSmall type ramp has no direct Pixa equivalent;
-        // labelSmall is the smallest existing label tier.
+        // labelSmall is the closest existing tier.
         textStyle = AppTheme.typography.labelSmall
     )
 }
@@ -127,8 +111,7 @@ private fun getBadgeColors(variant: BadgeVariant, colors: ColorPalette): BadgeCo
         background = colors.errorContentDefault,
         content = colors.baseContentNegative
     )
-    // Neutral base surface + brand content reads clearly against a brand-colored
-    // parent, which is the one thing OnBrand exists to solve.
+    // OnBrand uses neutral surface + brand content for readability against brand backgrounds.
     BadgeVariant.OnBrand -> BadgeColors(
         background = colors.baseSurfaceDefault,
         content = colors.brandContentDefault
@@ -140,44 +123,34 @@ private fun getBadgeColors(variant: BadgeVariant, colors: ColorPalette): BadgeCo
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Notification Badge — Uber Base's action-oriented indicator for counts,
- * capped strings, or a single filled icon on items that require attention
- * (unread messages, cart items, pending approvals).
+ * Notification badge for counts, capped strings, or a filled icon on items
+ * requiring attention (unread messages, cart items, pending approvals).
  *
  * ### Anatomy
- * Circular container (pill once content reaches 2+ characters) that hugs its
- * content — it never has fixed width. Holds either a numeric count / capped
- * string (`labelSmall` type), or a single filled icon; never both content
- * kinds combined with more than a decorative gap.
+ * Circular container (pill at 2+ characters) that hugs its content — never
+ * fixed width. Holds a numeric count / capped string, or a single filled
+ * icon; never both combined.
  *
  * ### Behavior
  * - `count` above [maxCount] renders as `"$maxCount+"`.
- * - `count == 0`, `count == null` with no [text]/[icon] renders nothing —
- *   per spec, hide the badge at zero rather than showing an empty circle.
- * - Has no tap behavior of its own — attach `onClick`/interaction to the
- *   *parent* element, never to the badge itself.
+ * - `count == 0`, `count == null` with no [text]/[icon] renders nothing.
+ * - No tap behavior — attach interaction to the parent element.
  *
  * ### Usage
- * Always anchor this to a parent element with a tap target of at least 44dp
- * (a tab, avatar, icon button) — never use standalone; the badge has
- * neither sufficient touch target nor accessible context by itself. Use
- * [BadgedBox] to position it over that parent.
+ * Always anchor to a parent with a tap target of at least 44dp via [BadgedBox].
  *
  * ### Accessibility
- * The badge is not independently focusable — its meaning must be conveyed
- * by the parent's content description (e.g. "Messages. 2 new
- * notifications. Button."), so [contentDescription] is left `null` by
- * default and the badge is excluded from the accessibility tree. Only pass
- * [contentDescription] for the rare case of a genuinely standalone badge.
+ * Not independently focusable — meaning must be conveyed by parent's content
+ * description. [contentDescription] defaults to `null` (excluded from a11y tree).
  *
- * @param count Numeric count to display; takes precedence over [text] when both are supplied.
- * @param text Capped string content (e.g. "NEW") when a plain count doesn't apply.
- * @param icon Filled icon painter, shown instead of [count]/[text] content.
- * @param variant Badge color, one of Uber Base's 5 approved colors.
- * @param size [SizeVariant.Small] (16dp) for dense UI like nav tabs, anything else resolves to medium (20dp).
- * @param maxCount Count ceiling before display switches to `"$maxCount+"` (default 99).
- * @param modifier Modifier applied to the badge container.
- * @param contentDescription Accessibility label; leave `null` unless the badge is genuinely standalone.
+ * @param count Numeric count; takes precedence over [text]
+ * @param text Capped string (e.g. "NEW")
+ * @param icon Filled icon painter, shown instead of count/text
+ * @param variant Badge color (Default: [BadgeVariant.Error])
+ * @param size [SizeVariant.Small] → 16dp, anything else → 20dp
+ * @param maxCount Ceiling before `"$maxCount+"` (Default: 99)
+ * @param modifier Modifier for the badge container
+ * @param contentDescription Accessibility label; leave `null` for parent-attached badges
  */
 @Composable
 fun PixaNotificationBadge(
@@ -253,33 +226,24 @@ fun PixaNotificationBadge(
 }
 
 /**
- * Hint Badge — Uber Base's subtle status signal without quantification, for
- * when presence matters more than an exact count (online status, new
- * feature availability).
+ * Hint badge — subtle status signal without quantification (online status,
+ * new feature availability).
  *
  * ### Anatomy
- * Fixed-size circular dot ([HierarchicalSize.Badge.Nano], 8dp). No
- * configurable content — do not attempt to add a label, number, or icon to
- * it; the dot itself is the entire signal. Never stretch or resize it.
+ * Fixed 8dp circular dot ([HierarchicalSize.Badge.Nano]). No configurable
+ * content — the dot itself is the entire signal.
  *
  * ### Behavior
- * Has no tap behavior of its own — same as [PixaNotificationBadge], attach
- * interaction to the parent, not the dot. Appears when its condition is
- * true and must have a defined dismissal path — a hint badge left
- * indefinitely visible with no way to clear it is a spec anti-pattern.
+ * No tap behavior — attach interaction to the parent. Must have a defined
+ * dismissal path.
  *
  * ### Usage
- * Always anchor this to a parent with a tap target of at least 44dp via
- * [BadgedBox]; never standalone.
+ * Always anchor to a parent with a tap target of at least 44dp via [BadgedBox].
  *
- * @param variant Badge color, one of Uber Base's 5 approved colors.
- * @param outlineColor When set, draws a thin outline in this color so the dot
- *   reads clearly against whatever it overlaps (mirrors Uber iOS's default
- *   "mask attachment" outline-matches-background behavior). Left
- *   [Color.Unspecified] (no outline) by default since Pixa has no notion of
- *   "the color directly behind this composable" to default it to automatically.
- * @param modifier Modifier applied to the dot.
- * @param contentDescription Accessibility label; leave `null` unless the dot is genuinely standalone.
+ * @param variant Badge color (Default: [BadgeVariant.Accent])
+ * @param outlineColor When set, draws a thin outline for contrast against backgrounds
+ * @param modifier Modifier for the dot
+ * @param contentDescription Accessibility label; leave `null` for parent-attached badges
  */
 @Composable
 fun PixaHintBadge(
@@ -315,14 +279,13 @@ fun PixaHintBadge(
 
 /**
  * BadgedBox — positions a [PixaNotificationBadge] or [PixaHintBadge] over a
- * parent element, satisfying the spec's "always attach the badge to a
- * parent element with a tap target of at least 44dp" requirement. Neither
- * badge reflows or resizes across viewports, so this offset is fixed rather
- * than breakpoint-driven.
+ * parent element with a tap target of at least 44dp.
  *
- * @param badge The badge composable ([PixaNotificationBadge] or [PixaHintBadge]) to overlay.
- * @param modifier Modifier for the container.
- * @param content The parent content the badge is attached to.
+ * Offset is fixed (not breakpoint-driven).
+ *
+ * @param badge The badge composable to overlay
+ * @param modifier Modifier for the container
+ * @param content The parent content the badge is attached to
  *
  * @sample
  * ```

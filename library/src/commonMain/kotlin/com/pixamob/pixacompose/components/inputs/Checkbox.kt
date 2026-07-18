@@ -119,14 +119,9 @@ data class CheckboxStateColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Uber Base's Customization Boundaries pin the checkbox border to a fixed
- * "always 1px inside alignment" regardless of size — unlike most Pixa
- * controls, border width is not part of the size ladder here, so every tier
- * below resolves to the same [HierarchicalSize.Border.Compact] rather than
- * scaling with [size]. [SizeVariant] itself is a Pixa extension beyond the
- * spec (which names only a single 48px "standard" checkbox) kept for
- * consistency with the rest of the library and because [CheckboxGroup]/
- * [PixaCheckboxTree]/existing call sites already depend on it.
+ * Border width is fixed at [HierarchicalSize.Border.Compact] (1px) across
+ * all size tiers. [SizeVariant] scales box size, corner radius, and label
+ * style.
  */
 @Composable
 private fun getCheckboxSizeConfig(size: SizeVariant): CheckboxSizeConfig {
@@ -167,21 +162,15 @@ private fun getCheckboxSizeConfig(size: SizeVariant): CheckboxSizeConfig {
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get checkbox colors based on variant.
  *
- * Uber Base's Customization Boundaries name only content-role tokens
- * (`contentPrimary`/`contentTertiary`/`contentStateDisabled`/`contentNegative`)
- * for this component — no filled-surface/background token at all, meaning
- * the spec's canonical checkbox is an outline-plus-checkmark control with no
- * solid fill. [CheckboxVariant.Outlined] is the closest existing Pixa match
- * to that and is now the default (see [PixaCheckbox]); [Filled]/[Ghost]
- * remain as pre-existing Pixa-native style extensions the spec doesn't
- * define but doesn't forbid either.
+ * [CheckboxVariant.Outlined] is the default; [Filled]/[Ghost] are
+ * alternative style extensions.
  */
 @Composable
 private fun getCheckboxTheme(
@@ -270,22 +259,17 @@ private fun getCheckboxTheme(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // BASE COMPONENT (Internal)
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Base Checkbox Box implementation.
  *
- * Hover/pressed use fixed black/white alpha scrims per Uber Base's states
- * table (4%/8% black while unselected, 10%/20% white while selected/
- * indeterminate — literal spec percentages, not theme tokens, same treatment
- * [com.pixamob.pixacompose.components.display.PixaTile]'s `TileOverlayScrim`
- * already uses for its own hover/pressed states). Focus renders a fixed 3px
- * ([HierarchicalSize.Border.Large]) outline in `brandBorderFocus` (closest
- * existing token to the spec's "borderSelected") in place of the normal
- * state border, rather than as a separate offset ring, to avoid growing the
- * checkbox's fixed footprint.
+ * Hover/pressed use fixed black/white alpha scrims (4%/8% black unselected,
+ * 10%/20% white selected/indeterminate). Focus renders a 3px
+ * ([HierarchicalSize.Border.Large]) outline in `brandBorderFocus` in place
+ * of the normal state border.
  */
 @Composable
 private fun PixaCheckboxBox(
@@ -430,15 +414,10 @@ private fun PixaCheckboxBox(
 /**
  * Base Checkbox implementation.
  *
- * Uses [Modifier.triStateToggleable] (not a plain `clickable(role = Role.Checkbox)`)
- * so the checked/unchecked/indeterminate value is announced programmatically
- * per spec's "states are announced programmatically" accessibility
- * requirement — a plain `clickable` conveys a role but never a checked
- * value. The whole row (box + label) is the click target and carries a
- * [HierarchicalSize.TouchTarget.Small] (48px, WCAG 2.5.5) minimum height,
- * per spec's "entire cell is the touch target" mobile rule and "minimum tap
- * target: 48px" requirement — this holds even when [CheckboxSizeConfig.boxSize]
- * is visually smaller.
+ * Uses [Modifier.triStateToggleable] so the checked/unchecked/indeterminate
+ * value is announced programmatically to assistive tech. The whole row
+ * (box + label) is the click target with a 48px minimum height
+ * ([HierarchicalSize.TouchTarget.Small]).
  */
 @Composable
 private fun PixaCheckbox(
@@ -530,7 +509,6 @@ private fun PixaCheckbox(
             .sizeIn(minHeight = HierarchicalSize.TouchTarget.Small)
             .then(clickModifier)
             .focusable(enabled = enabled, interactionSource = interactionSource),
-        // Uber Base: "checkbox and first-line text top-aligned" for wrapping labels.
         horizontalArrangement = if (labelPosition == CheckboxLabelPosition.End) {
             Arrangement.Start
         } else {
@@ -569,9 +547,9 @@ private fun PixaCheckbox(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Checkbox Label Position
@@ -584,53 +562,34 @@ enum class CheckboxLabelPosition {
 }
 
 /**
- * Checkbox - Multi-selection input control.
- * components, per the spec's own disambiguation note).
+ * PixaCheckbox — binary or tri-state selection control.
  *
- * A checkbox component for binary selection (checked/unchecked) or tri-state selection
- * (checked/unchecked/indeterminate). Commonly used in forms, settings, and multi-select lists.
- * Use a checkbox when selections are saved after a final button interaction;
- * use [PixaSwitch] instead when the toggle should take effect immediately.
+ * Use when selections are saved after a final button interaction;
+ * use [PixaSwitch] when the toggle takes effect immediately.
+ *
+ * ### Variants
+ * [CheckboxVariant.Outlined], [CheckboxVariant.Filled], [CheckboxVariant.Ghost].
+ *
+ * ### States
+ * Checked, unchecked, indeterminate (via [state]), disabled, error.
+ *
+ * ### Sizing
+ * [SizeVariant] (Small, Medium, Large) drives icon size, label typography.
  *
  * @param checked Whether the checkbox is checked
- * @param onCheckedChange Callback when checkbox state changes (null for read-only)
+ * @param onCheckedChange Callback (null for read-only)
  * @param modifier Modifier for the checkbox
  * @param enabled Whether the checkbox is enabled
  * @param label Optional text label
- * @param labelPosition Position of the label (Start or End)
- * @param variant Visual style (Default: [CheckboxVariant.Outlined] — the closest match to Uber Base's spec, which names only content-role tokens, no filled-surface token; [CheckboxVariant.Filled]/`.Ghost` are pre-existing Pixa extensions beyond the spec)
- * @param size Size variant (Small, Medium, Large) — a Pixa extension; the spec itself defines a single fixed 48px checkbox, see [getCheckboxSizeConfig]
- * @param state Explicit tri-state value (overrides checked parameter)
+ * @param labelPosition Label position (Start or End)
+ * @param variant Visual style (Outlined, Filled, Ghost)
+ * @param size Size variant (Small, Medium, Large)
+ * @param state Explicit tri-state value (overrides checked)
  *
  * @sample
  * ```
- * // Basic checkbox
  * var checked by remember { mutableStateOf(false) }
- * Checkbox(
- *     checked = checked,
- *     onCheckedChange = { checked = it }
- * )
- *
- * // Checkbox with label
- * Checkbox(
- *     checked = checked,
- *     onCheckedChange = { checked = it },
- *     label = "Accept terms and conditions"
- * )
- *
- * // Indeterminate checkbox (for "Select All" with partial selection)
- * Checkbox(
- *     state = CheckboxState.Indeterminate,
- *     onCheckedChange = { /* handle */ },
- *     label = "Select All"
- * )
- *
- * // Outlined variant
- * Checkbox(
- *     checked = checked,
- *     onCheckedChange = { checked = it },
- *     variant = CheckboxVariant.Outlined
- * )
+ * PixaCheckbox(checked = checked, onCheckedChange = { checked = it })
  * ```
  */
 @Composable
@@ -705,9 +664,9 @@ fun TriStateCheckbox(
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // CONVENIENCE VARIANTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Outlined Checkbox - Subtle checkbox style
@@ -758,164 +717,11 @@ fun LabeledCheckbox(
     )
 }
 
-// ============================================================================
-// USAGE EXAMPLES
-// ============================================================================
 
-/**
- * USAGE EXAMPLES:
- *
- * 1. Simple checkbox with label:
- * ```
- * var agreed by remember { mutableStateOf(false) }
- * Checkbox(
- *     checked = agreed,
- *     onCheckedChange = { agreed = it },
- *     label = "I agree to the terms and conditions"
- * )
- * ```
- *
- * 2. Form with multiple checkboxes:
- * ```
- * Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
- *     Checkbox(
- *         checked = newsletter,
- *         onCheckedChange = { newsletter = it },
- *         label = "Subscribe to newsletter"
- *     )
- *     Checkbox(
- *         checked = updates,
- *         onCheckedChange = { updates = it },
- *         label = "Receive product updates"
- *     )
- *     OutlinedCheckbox(
- *         checked = offers,
- *         onCheckedChange = { offers = it },
- *         label = "Special offers (optional)",
- *         size = SizeVariant.Small
- *     )
- * }
- * ```
- *
- * 3. CheckboxGroup for multi-select with "Select All":
- * ```
- * var selectedOptions by remember { mutableStateOf(setOf<String>()) }
- * CheckboxGroup(
- *     options = listOf("Option A", "Option B", "Option C", "Option D"),
- *     selected = selectedOptions,
- *     onSelectionChange = { selectedOptions = it },
- *     showSelectAll = true,
- *     selectAllLabel = "Select All Options"
- * )
- * ```
- *
- * 4. Manual tri-state checkbox (for hierarchical selection):
- * ```
- * val childStates = remember { mutableStateListOf(true, false, true) }
- * val allChecked = childStates.all { it }
- * val noneChecked = childStates.none { it }
- * val parentState = when {
- *     allChecked -> CheckboxState.Checked
- *     noneChecked -> CheckboxState.Unchecked
- *     else -> CheckboxState.Indeterminate
- * }
- *
- * TriStateCheckbox(
- *     state = parentState,
- *     onStateChange = { newState ->
- *         val shouldCheck = newState == CheckboxState.Checked
- *         childStates.replaceAll { shouldCheck }
- *     },
- *     label = "Parent: Select All Children",
- *     contentDescription = "Select all child items"
- * )
- *
- * Column(modifier = Modifier.padding(start = 24.dp)) {
- *     childStates.forEachIndexed { index, checked ->
- *         Checkbox(
- *             checked = checked,
- *             onCheckedChange = { childStates[index] = it },
- *             label = "Child $index",
- *             size = SizeVariant.Small
- *         )
- *     }
- * }
- * ```
- *
- * 5. Disabled checkbox (read-only state):
- * ```
- * Checkbox(
- *     checked = true,
- *     onCheckedChange = null,
- *     enabled = false,
- *     label = "This option is permanently enabled"
- * )
- * ```
- *
- * 6. Custom colors for branded checkboxes:
- * ```
- * Checkbox(
- *     checked = isPremium,
- *     onCheckedChange = { isPremium = it },
- *     label = "Premium Feature",
- *     customColors = CheckboxStateColors(
- *         checked = CheckboxColors(
- *             box = Color(0xFFFFD700), // Gold
- *             border = Color(0xFFB8860B),
- *             checkmark = Color.White,
- *             label = AppTheme.colors.baseContentBody
- *         ),
- *         // ... other states
- *     )
- * )
- * ```
- *
- * 7. Compact checkbox group with custom data:
- * ```
- * data class Feature(val id: String, val name: String, val isPro: Boolean)
- * val features = listOf(
- *     Feature("f1", "Dark Mode", false),
- *     Feature("f2", "Cloud Sync", true),
- *     Feature("f3", "Offline Mode", false)
- * )
- * var enabledFeatures by remember { mutableStateOf(setOf<Feature>()) }
- *
- * CheckboxGroup(
- *     options = features,
- *     selected = enabledFeatures,
- *     onSelectionChange = { enabledFeatures = it },
- *     optionLabel = { "${it.name}${if (it.isPro) " (Pro)" else ""}" },
- *     size = SizeVariant.Small,
- *     variant = CheckboxVariant.Outlined
- * )
- * ```
- *
- * 8. Hierarchical checkbox tree with parent/child indeterminate propagation:
- * ```
- * val tree = listOf(
- *     CheckboxTreeItem("all", "All Features", children = listOf(
- *         CheckboxTreeItem("basic", "Basic", children = listOf(
- *             CheckboxTreeItem("view", "View Only"),
- *             CheckboxTreeItem("edit", "Edit Access")
- *         )),
- *         CheckboxTreeItem("premium", "Premium", children = listOf(
- *             CheckboxTreeItem("export", "Export Data"),
- *             CheckboxTreeItem("analytics", "Analytics")
- *         ))
- *     ))
- * )
- * var selectedIds by remember { mutableStateOf(setOf<String>()) }
- * PixaCheckboxTree(
- *     items = tree,
- *     selectedIds = selectedIds,
- *     onSelectionChange = { selectedIds = it }
- * )
- * ```
- */
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // CHECKBOX GROUP & TREE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * CheckboxGroup - Multi-select checkbox list with optional "Select All" toggle.

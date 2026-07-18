@@ -51,16 +51,11 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Selection behavior, from the eBay Toggle Button Group spec's "single and multi selection pattern".
+ * Selection behavior — single and multi selection pattern. Both modes toggle off:
+ * re-tapping the selected option clears the group to an empty selection.
  *
- * Note that **both** modes toggle off — spec: "The selection state toggles on and off for both multi
- * and single select option list styles." [Single] is therefore *not* radio behavior: re-tapping the
- * selected option clears the group to an empty selection. This is the key semantic difference from
- * `PixaButtonGroup`'s `Single` mode, where re-tapping the current selection is a deliberate no-op.
- *
- * There is no `None` mode here: the spec is a selection pattern and explicitly rules out plain
- * actions — "Do not add CTAs or additional buttons to the option list." Use `PixaButtonGroup` for
- * groups of independently-triggered actions.
+ * [Single] is *not* radio behavior (re-tapping the current selection clears it).
+ * This differs from `PixaButtonGroup`'s `Single` mode, where re-tapping is a no-op.
  */
 enum class ToggleGroupSelectionMode {
     Single,
@@ -68,14 +63,10 @@ enum class ToggleGroupSelectionMode {
 }
 
 /**
- * The spec's three layout variants.
- *
- * - [Minimal] — compact options that wrap; the lightest treatment.
- * - [ListView] — full-width options stacked vertically, lead element inline.
- * - [Gallery] — fixed-width option cards that wrap, lead image stacked above the text.
- *
- * This is an anatomy axis, unlike `ButtonGroupLayout`'s Clustered/HorizontalScroll, which is an
- * overflow axis. The two enums are not interchangeable.
+ * Three layout variants:
+ * - [Minimal] — compact options that wrap
+ * - [ListView] — full-width options stacked vertically
+ * - [Gallery] — fixed-width option cards that wrap
  */
 enum class ToggleGroupLayout {
     Minimal,
@@ -84,10 +75,8 @@ enum class ToggleGroupLayout {
 }
 
 /**
- * The spec's optional "Lead element (optional — Icon or Image)". Modelled as a sealed type because
- * the two cases genuinely render differently (an icon is tinted and icon-sized; an image is
- * untinted, cropped, and in [ToggleGroupLayout.Gallery] becomes the tile's header), so a single
- * nullable slot could not express either faithfully.
+ * Optional lead element — Icon or Image. Sealed type because the two render differently:
+ * an icon is tinted and icon-sized; an image is untinted and cropped.
  */
 @Immutable
 sealed interface ToggleLeadElement {
@@ -105,9 +94,9 @@ sealed interface ToggleLeadElement {
 /**
  * One selectable option.
  *
- * [title] and [subtitle] are the spec's named content parts. Content rules the spec states but which
- * are the author's to honour (enforcing them in code would silently corrupt copy): titles are
- * sentence case, no ending punctuation, and at most ~20 characters; subtitles are sentence case.
+ * [title] and [subtitle] are the named content parts. Content rules (titles: sentence case,
+ * no ending punctuation, at most ~20 characters; subtitles: sentence case) are the
+ * author's to honour.
  */
 @Immutable
 @Stable
@@ -141,18 +130,12 @@ private data class ToggleOptionColors(
 // THEME PROVIDER
 // ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Spec: "Minimum height: 40px" for the minimal layout. Maps exactly onto the shared container
- * ladder's 40dp "secondary containers" tier — no local literal needed.
- */
+/** Minimum height (40dp) for minimal layout, mapped via [HierarchicalSize.Container.Small]. */
 private val OptionMinHeight = HierarchicalSize.Container.Small
 
 /**
- * The spec's per-layout width constraints (Minimal: min 72 / max 600; List view: min 140 / max 600;
- * Gallery: fixed 140). These stay local raw dp deliberately: they are one-off constraint values for
- * this pattern, and `HierarchicalSize` has no option-tile width category to hang them on. Inventing
- * one for a single component would add noise rather than reuse — the same reasoning behind the
- * existing one-off `HierarchicalSize.Container.DialogMaxWidth`.
+ * Per-layout width constraints (Minimal: min 72 / max 600; List view: min 140 / max 600;
+ * Gallery: fixed 140). Local dp because [HierarchicalSize] has no option-tile width category.
  */
 private val MinimalMinWidth = 72.dp
 private val ListMinWidth = 140.dp
@@ -166,13 +149,11 @@ private val OptionMaxWidth = 600.dp
 private val RestingBorderWidth = HierarchicalSize.Border.Compact
 private val SelectedBorderWidth = HierarchicalSize.Border.Medium
 
-/** Spec: "Title can wrap to 2 lines for title-only option." */
+/** Title wraps to 2 lines for title-only options. */
 private const val TitleMaxLines = 2
 
 /**
- * Spec: "Subtitle max: 2 lines" (its anti-pattern list separately says never beyond 3). Capping is
- * structural here, not editorial: the spec also requires that "all buttons in group must maintain
- * consistent height", which an unbounded subtitle would break.
+ * Subtitle capped at 2 lines to maintain consistent tile height across the group.
  */
 private const val SubtitleMaxLines = 2
 
@@ -190,8 +171,7 @@ private fun SizeVariant.toggleTypography(): ToggleOptionTypography {
             subtitle = typography.bodyLight
         )
 
-        // The spec names only Small / Medium / Large; Medium is the library's anchor and the
-        // fallback for tiers this pattern does not scale to.
+        // Medium is the library's anchor and the fallback for unscaled tiers.
         else -> ToggleOptionTypography(
             title = typography.subtitleBold,
             subtitle = typography.captionRegular
@@ -200,14 +180,10 @@ private fun SizeVariant.toggleTypography(): ToggleOptionTypography {
 }
 
 /**
- * Resolves the spec's four states — enabled, hover, disabled, focused — plus selection.
+ * Resolves the four states — enabled, hover, disabled, focused — plus selection.
  *
- * Selection maps the spec's three named changes onto tokens: border colour to `border.strong`
- * ([AppTheme.colors] `baseBorderFocus`, the strongest neutral border emphasis available), background
- * to `background.secondary` (`baseSurfaceSubtle`), and an increased border width. Hover and focus
- * have no values in the spec (it only points at its colour-token page), so they map to the nearest
- * existing interaction roles: `baseSurfaceFocus` for hover, and the strong border for focus so
- * keyboard users get a visible ring.
+ * Selection maps to tokens: border to `baseBorderFocus`, background to `baseSurfaceSubtle`,
+ * and increased border width. Hover maps to `baseSurfaceFocus`; focus uses the strong border.
  */
 @Composable
 private fun toggleOptionColors(
@@ -268,7 +244,7 @@ private fun ToggleLead(
 
         is ToggleLeadElement.Image -> if (layout == ToggleGroupLayout.Gallery) {
             // Gallery tiles are fixed-width, so the header image takes the full width. A square is
-            // the neutral default: the spec fixes gallery width but states no image aspect ratio.
+            // Square is the neutral default — gallery width is fixed but no image aspect ratio is stated.
             PixaImage(
                 source = lead.source,
                 contentDescription = contentDescription,
@@ -393,56 +369,36 @@ private fun ToggleOptionTile(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaToggleButtonGroup — a single and multi selection pattern that provides increased visual
- * emphasis for the available choices.
+ * PixaToggleButtonGroup — Single or multi selection pattern with visual emphasis for available choices.
  *
  * ### Purpose
- * Spec: use "when selection options exist in isolation, meaning they are not part of a multiple
- * selection groups", and avoid it "when multiple selection sections appear on the same page". Reach
- * for something else when the spec says so: `PixaRadioButton` for short binary choices,
- * `PixaCheckbox` for multiple choice inside a grouped form, a filter chip for filtering, and
- * `PixaTab` for navigating between views. This is a richer *option* pattern than `PixaButtonGroup`,
- * which groups plain actions — the spec forbids putting CTAs in this list.
+ * Use when selection options exist in isolation (not part of multiple selection groups on the same
+ * page). For short binary choices use [PixaRadioButton]; for multi-select in forms use [PixaCheckbox].
  *
  * ### Anatomy
- * A container of option tiles. Each tile is border + container + optional lead element (icon or
- * image) + a content area holding [ToggleOption.title] and optional [ToggleOption.subtitle]. The
- * tile's own border and background *are* the selection indicator; the spec forbids adding a
- * checkbox, radio, or checkmark on top.
+ * Container of option tiles. Each tile: border + container + optional lead element (icon or image) +
+ * [title] + optional [subtitle]. The border/background *are* the selection indicator — no checkmarks.
  *
  * ### Variants
- * [ToggleGroupLayout] covers the spec's Minimal / List view / Gallery layouts, and
- * [ToggleGroupSelectionMode] its single/multi selection. Both selection modes toggle off, so an
- * empty selection is reachable in either.
+ * [ToggleGroupLayout]: Minimal / ListView / Gallery.
+ * [ToggleGroupSelectionMode]: Single / Multi. Both toggle off (re-tap clears selection).
  *
  * ### States
- * Enabled, hover, focused, and disabled — the four the spec lists. It defines no error state, so
- * none is offered. [enabled] disables the whole group; [ToggleOption.enabled] disables one tile.
+ * Enabled, hover, focused, disabled. No error state. [enabled] disables the group;
+ * [ToggleOption.enabled] disables one tile.
  *
  * ### Sizing
- * The spec's per-layout width rules are applied structurally: Minimal is min 72dp wide, List view
- * min 140dp and full width, Gallery a fixed 140dp; all cap at 600dp, with a 40dp minimum height.
- * [size] drives the shared type scale, padding, radius, and lead-element size.
- *
- * ### Adaptive behavior
- * The spec names Small / Medium / Large sizes but gives no breakpoints, so [size] stays explicit and
- * caller-controlled rather than reading `AppTheme.adaptiveSizeVariant` — consistent with
- * `PixaButtonGroup`, which likewise leaves the breakpoint choice to the caller.
- *
- * ### Usage notes
- * Keep options "lightweight and short enough to scan instantly" and self-explanatory. The spec's
- * "all buttons in group must maintain consistent height/width" is enforced where it is structural
- * (one [size] and [layout] for the group, a capped subtitle, fixed gallery width); beyond that it is
- * a content rule, since only the author can keep option copy balanced.
+ * Per-layout width rules: Minimal min 72dp, ListView min 140dp (full width), Gallery fixed 140dp;
+ * all cap at 600dp, 40dp minimum height. [size] drives type scale, padding, radius, lead-element size.
  *
  * @param options The options to render, in order
  * @param selectedIds Currently selected option ids
- * @param onSelectionChange Called with the new selection after a tap; may be empty (both modes toggle off)
- * @param modifier Modifier for the group container
- * @param selectionMode Single or multi selection (Default: [ToggleGroupSelectionMode.Single])
- * @param layout Option anatomy/layout (Default: [ToggleGroupLayout.Minimal])
- * @param size Size applied to every option (Default: [SizeVariant.Medium])
- * @param enabled Whether the whole group is enabled (Default: true)
+ * @param onSelectionChange Called with the new selection; may be empty (both modes toggle off)
+ * @param modifier Modifier
+ * @param selectionMode Single or multi selection
+ * @param layout Option anatomy/layout
+ * @param size Size applied to every option
+ * @param enabled Whether the whole group is enabled
  */
 @Composable
 fun PixaToggleButtonGroup(
@@ -528,7 +484,7 @@ fun PixaToggleButtonGroup(
 /**
  * SingleToggleButtonGroup — single-select convenience wrapper over [PixaToggleButtonGroup].
  *
- * [selectedId] is nullable because the spec's single-select still toggles off to no selection.
+ * [selectedId] is nullable because single-select toggle can still result in no selection.
  */
 @Composable
 fun SingleToggleButtonGroup(

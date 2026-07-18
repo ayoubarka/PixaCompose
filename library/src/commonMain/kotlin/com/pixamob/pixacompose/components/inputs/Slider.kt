@@ -67,57 +67,42 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlin.math.roundToInt
 
 /**
- * PixaSlider — PixaCompose's equivalent of Uber Base's "Slider" component.
+ * PixaSlider — Single-value range selection control.
  *
- * Source: https://base.uber.com/6d2425e9f/p/30cac1-slider.md
+ * ### Anatomy
+ * Track (inactive + active fill) + one thumb, plus optional min/max icons,
+ * min/max labels, a value readout bubble, and discrete step ticks.
  *
- * Purpose:
- *   Lets a user select a single numeric value from a range, with immediate
- *   visual feedback (a filled track) for informed, in-the-moment decisions.
+ * ### Variants
+ * [SliderVariant]: Filled/Outlined/Ghost — visual treatment of track and thumb.
+ * The continuous vs discrete axis is expressed via [steps].
  *
- * Anatomy:
- *   Track (inactive + active fill) + one thumb, plus optional min/max icons,
- *   min/max labels, a live value readout, and discrete step ticks.
+ * ### States
+ * Enabled, disabled, dragging (thumb scales up), focused/dragging (value bubble).
  *
- * Variants:
- *   - [SliderVariant]: Filled/Outlined/Ghost — visual treatment of track and
- *     thumb, not a spec concept on its own; the spec's real variant axis is
- *     continuous (`steps == 0`) vs discrete (`steps > 0`) selection, which
- *     this component expresses via the [steps] parameter rather than a
- *     separate enum, since it's a value not a style choice.
+ * ### Sizing
+ * [size] via [HierarchicalSize] (track height, thumb size, elevation).
  *
- * States: enabled, disabled, dragging (thumb scales up), and
- *   focused/dragging + value label — a floating bubble appears above the
- *   thumb while it's being dragged or is keyboard-focused, per spec's
- *   "Active + value label" state.
+ * ### Interaction
+ * Drag thumb, tap track to jump, keyboard: arrows step by increment,
+ * Page Up/Down jump 10%, Home/End snap to bounds.
+ * RTL pointer math is mirrored automatically.
  *
- * Sizing: [SizeVariant]-driven via [HierarchicalSize] (track height, thumb
- *   size, thumb elevation) plus a size-scaled typography tier for labels and
- *   the value readout.
- *
- * Interaction: drag the thumb, tap anywhere on the track to jump to that
- *   value, or use the keyboard once focused — Left/Right/Up/Down arrows step
- *   by one increment (one step's worth if [steps] > 0, else 1% of the range),
- *   Page Up/Page Down jump by 10% of the range, Home/End snap to the range's
- *   min/max. Arrow-key direction follows the ambient
- *   [androidx.compose.ui.platform.LocalLayoutDirection] so Left/Right always
- *   read as "toward the start/end" rather than a fixed compass direction.
- *
- * Adaptive behavior: pointer-drag math is mirrored under
- *   [LayoutDirection.Rtl] (pointer coordinates are always physical-left-relative
- *   regardless of layout direction, unlike the thumb's `offset()`/`Alignment`
- *   positioning, which Compose already mirrors automatically) — smallest
- *   value renders on the right and largest on the left in RTL, per spec.
- *   No separate breakpoint system is introduced; this is a single-track
- *   control that doesn't have distinct mobile/desktop layouts to switch
- *   between.
- *
- * Customization: variant, size, custom [SliderColors], a [gradientBrush] for
- *   the track (e.g. color selection), min/max icons and labels, value
- *   formatting, and discrete step count. Not exposed: the value-label bubble
- *   can't be turned off independently of focus/drag state — per spec it's
- *   how the control communicates "you're actively changing this," not a
- *   decorative option.
+ * @param value Current value
+ * @param onValueChange Callback when value changes
+ * @param modifier Modifier
+ * @param variant Visual style
+ * @param size Size preset
+ * @param enabled Whether enabled
+ * @param steps Number of discrete steps (0 = continuous)
+ * @param valueRange Value range
+ * @param colors Custom colors
+ * @param gradientBrush Gradient for active track
+ * @param labelFormat Format function for value readout
+ * @param minIcon Optional min-end icon
+ * @param maxIcon Optional max-end icon
+ * @param minLabel Optional min-end label
+ * @param maxLabel Optional max-end label
  */
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -266,7 +251,7 @@ private fun getSliderSizeConfig(size: SizeVariant): SliderSizeConfig {
  *
  * A flexible slider with customizable range, steps, and visual styles.
  *
- * ## Usage Examples
+ * @sample
  *
  * ```kotlin
  * // Basic slider
@@ -555,10 +540,9 @@ private fun calculateNormalizedValue(x: Float, trackWidth: Float, steps: Int): F
 }
 
 /**
- * Keyboard stepping per spec: arrows/Page Up/Page Down step the value, Home/End
+ * Keyboard stepping: arrows/Page Up/Page Down step the value, Home/End
  * snap to the range bounds. Left/Right are mirrored under RTL so they always
- * mean "toward the start/end" of the visual track rather than a fixed compass
- * direction; Up/Down are direction-agnostic (increase/decrease) by convention.
+ * mean "toward the start/end" of the visual track; Up/Down are direction-agnostic.
  */
 private fun handleSliderKeyEvent(
     event: KeyEvent,
@@ -667,9 +651,8 @@ private fun ThumbContent(
 
 /**
  * Floating value readout shown above the thumb while it's being dragged or is
- * keyboard-focused — spec's "Active + value label" state. Positioned as a
- * same-size box aligned to the thumb's x-offset so it stays centered over the
- * thumb without needing to know the bubble's own (content-dependent) width.
+ * keyboard-focused. Positioned as a same-size box aligned to the thumb's
+ * x-offset so it stays centered over the thumb.
  */
 @Composable
 private fun ValueBubble(

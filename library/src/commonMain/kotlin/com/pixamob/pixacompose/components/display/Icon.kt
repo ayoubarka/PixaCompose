@@ -34,19 +34,11 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Semantic colour intent for an icon, mapped from the eBay iconography guidance:
- * "Icons are monochromatic by default. The majority will use our primary
- * foreground color token unless in a disabled state within a button", and
- * "Icons that convey semantic meaning, like attention, information, or
- * confirmation, can use semantic colors over primary or secondary backgrounds."
+ * Semantic colour intent for an icon.
  *
- * Reach for a tone only when the icon's *meaning* requires it. [Default] is the
- * monochrome primary-foreground case and covers the majority of icons.
- *
- * [Inverse] is the guidance's companion rule: "If the icon is over a background
- * container using a semantic color, the icon will use an inverse color scheme
- * instead" — i.e. use it for an icon sitting on a filled semantic surface, not
- * on the page background.
+ * Icons are monochrome by default ([Default]). Reach for a semantic tone only
+ * when the icon's meaning requires it. [Inverse] is for icons on filled
+ * semantic surfaces (not the page background).
  */
 enum class IconTone {
     /** Primary foreground — the monochrome default. */
@@ -64,7 +56,7 @@ enum class IconTone {
     Warning,
     Error,
 
-    /** Disabled state (the guidance's "disabled state within a button"). */
+    /** Disabled state. */
     Disabled,
 
     /** For an icon drawn on top of a filled/semantic container. */
@@ -76,9 +68,8 @@ enum class IconTone {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Where the icon artwork comes from. All three source types are supported
- * equally — [Url] matters for remotely-hosted marks that ship outside the
- * bundled asset set, and is the one source that is commonly multicolour.
+ * Source of icon artwork. All three types are supported equally.
+ * [Url] is for remotely-hosted marks that are commonly multicolour.
  */
 @Stable
 sealed class IconSource {
@@ -97,19 +88,12 @@ sealed class IconSource {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Ambient icon tint, implementing the guidance's pairing rule: "If an icon is
- * paired with a label or body of text, the icon will match the color of the
- * text."
+ * Ambient icon tint. When a component provides its resolved text colour here,
+ * any [PixaIcon] beneath it matches without repeating `tint = ...`.
+ * [Color.Unspecified] falls back to the monochrome primary-foreground token.
  *
- * A component that renders text alongside icons provides its resolved text
- * colour here once, and any [PixaIcon] beneath it matches without every call
- * site repeating `tint = ...`. [Color.Unspecified] means "nothing provided" —
- * [PixaIcon] then falls back to the monochrome primary-foreground token.
- *
- * This is the PixaCompose-owned replacement for Material 3's `LocalContentColor`,
- * which this primitive no longer depends on. It is deliberately icon-scoped
- * rather than a general content-colour ambient: components in this library pass
- * text colours explicitly, so a library-wide ambient would have no other reader.
+ * Icon-scoped ambient — components pass text colours explicitly, so a
+ * library-wide ambient is unnecessary.
  */
 val LocalIconTint = compositionLocalOf { Color.Unspecified }
 
@@ -129,14 +113,12 @@ private fun IconTone.toColor(): Color = when (this) {
 }
 
 /**
- * Resolves the effective tint, in precedence order:
- * 1. `tint == null` — caller opted out of tinting entirely; artwork keeps its
- *    own colours (logos, multicolour remote marks).
- * 2. an explicit [Color] — caller-supplied override wins.
- * 3. a non-[IconTone.Default] [tone] — a declared semantic meaning beats an
- *    ambient text colour.
- * 4. [LocalIconTint] — matches surrounding text, when a component provided it.
- * 5. the monochrome primary-foreground token.
+ * Resolves effective tint in precedence order:
+ * 1. `tint == null` — untinted (keeps artwork's own colours).
+ * 2. explicit [Color] — caller override.
+ * 3. non-[Default] [tone] — semantic meaning.
+ * 4. [LocalIconTint] — ambient text colour from parent component.
+ * 5. monochrome primary-foreground token (fallback).
  */
 @Composable
 private fun resolveIconTint(tint: Color?, tone: IconTone): Color? = when {
@@ -147,11 +129,8 @@ private fun resolveIconTint(tint: Color?, tone: IconTone): Color? = when {
 }
 
 /**
- * The approved icon sizes — every tier of the shared [HierarchicalSize.Icon]
- * ladder. This is PixaCompose's equivalent of the guidance's fixed 16/24px
- * asset sizes: the exact pixel values are eBay-asset-specific, but the rule
- * they exist to enforce ("Don't scale icons to arbitrary sizes. This leads to
- * aliasing and mismatched stroke widths") maps onto the ladder directly.
+ * All tiers of the [HierarchicalSize.Icon] ladder. Arbitrary sizes cause
+ * aliasing and mismatched stroke widths — prefer ladder tiers.
  */
 private fun approvedIconSizes(): List<Dp> =
     SizeVariant.entries.map { HierarchicalSize.Icon.forVariant(it) }
@@ -234,63 +213,37 @@ private fun UrlIcon(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaIcon — the single core icon primitive for the library. Refined against
- * eBay's iconography guidance.
+ * PixaIcon — the single core icon primitive for the library.
  *
- * ### Purpose
- * Renders one icon from a vector, painter, or URL [IconSource], sized from the
- * approved ladder and coloured from theme tokens.
- *
- * ### Colour
- * Monochrome by default: with no [tint] and no [tone], the icon uses the primary
- * foreground token. Set [tone] when the icon carries semantic meaning; provide
- * [LocalIconTint] (or pass [tint]) to match adjacent text. Pass `tint = null` to
- * keep the artwork's own colours — the escape hatch for logos and multicolour
- * remote marks. See [resolveIconTint] for the full precedence order.
+ * ### Color
+ * Monochrome by default. Set [tone] for semantic meaning; pass [tint] to match
+ * adjacent text; pass `tint = null` to keep artwork's own colors (logos,
+ * multicolour remote marks). See [resolveIconTint] for precedence.
  *
  * ### Sizing
- * [size] selects a tier of the shared [HierarchicalSize.Icon] ladder — prefer it.
- * [customSize] is an escape hatch that bypasses the ladder; the guidance is
- * explicit that arbitrary sizes cause "aliasing and mismatched stroke widths",
- * so an off-ladder [customSize] logs a development warning. Passing a ladder
- * token (e.g. `HierarchicalSize.Icon.Medium`) is always fine — that is how the
- * library's own components feed a resolved size through.
+ * [size] selects a [HierarchicalSize.Icon] ladder tier — prefer this.
+ * [customSize] is an escape hatch (logs a dev warning for off-ladder values).
  *
- * ### Selected state
- * "Some icons have an outlined and a filled version. The filled versions are
- * used to indicate a selected state or to increase their prominence within a
- * hierarchy." Supply the filled artwork as [selectedSource] and drive it with
- * [selected]; without a [selectedSource], [selected] has no effect (this
- * primitive never fabricates a filled variant from an outlined one).
+ * ### States
+ * Supply filled artwork as [selectedSource] and drive with [selected].
+ * Without [selectedSource], [selected] has no effect.
  *
  * ### Accessibility
- * [contentDescription] follows the Compose convention: a description for a
- * meaningful icon, `null` for a decorative one whose meaning is already carried
- * by adjacent text. The guidance does not address decorative-vs-meaningful
- * icons, so the Compose convention stands.
+ * [contentDescription] for meaningful icons; `null` marks decorative icons.
  *
- * ### Usage notes (caller's responsibility — layout, not this primitive)
- * - "Use 4px of spacing between 16px icons and text and 8px between 24px icons
- *   and text", with aligned vertical centres.
- * - "Do align icons to the top of the text box if paired with 3 or more lines of
- *   text" — don't centre them in that case.
- * - Prefer universally-understood icons; avoid icons whose meaning shifts across
- *   cultures, and don't use an icon where ambiguity would hurt comprehension.
- *
- * @param source The icon artwork (Vector, Resource, or Url)
- * @param contentDescription Accessibility description; `null` marks it decorative
+ * @param source Icon artwork (Vector, Resource, or Url)
+ * @param contentDescription Accessibility description; `null` = decorative
  * @param modifier Modifier for the icon
- * @param tint Explicit colour override. Defaults to [Color.Unspecified] meaning
- *   "resolve from [tone]/[LocalIconTint]"; pass `null` to keep original colours
- * @param tone Semantic colour intent (Default: [IconTone.Default], monochrome)
- * @param size Icon size variant from the approved ladder (Default: [SizeVariant.Medium])
- * @param customSize Off-ladder exact size — discouraged, see Sizing above
+ * @param tint Explicit colour. Default: resolve from [tone]/[LocalIconTint]; `null` = keep original colours
+ * @param tone Semantic colour intent (Default: monochrome)
+ * @param size Icon size variant from the ladder (Default: Medium)
+ * @param customSize Off-ladder exact size (discouraged)
  * @param selected Whether to render [selectedSource] instead of [source]
- * @param selectedSource Filled artwork used when [selected] is true
- * @param animation Enable the scale+fade entrance animation
+ * @param selectedSource Filled artwork when [selected] is true
+ * @param animation Enable scale+fade entrance animation
  * @param placeholder Placeholder painter for URL icons
  * @param error Error painter for URL icons
- * @param contentScale How to scale the content
+ * @param contentScale Content scaling mode
  */
 @Composable
 fun PixaIcon(

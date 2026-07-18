@@ -59,9 +59,7 @@ import com.pixamob.pixacompose.utils.pixaRipple
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Pixa's color-hierarchy vocabulary for the panel surface — orthogonal to the
- * Uber spec's own Standard/Compact (density) and Full-width/Inset (layout)
- * variant axes below, which are the ones the spec actually defines. */
+/** Color-hierarchy for the panel surface. */
 enum class AccordionVariant {
     Default,
     Outlined,
@@ -69,11 +67,9 @@ enum class AccordionVariant {
 }
 
 /**
- * Maps 1:1 onto the Uber Base spec's expand-behavior variant:
- * "Single active: limits an accordion to expand only one item at a time...
- * best for step-by-step processes, progressive disclosure, and form wizards."
- * "Multi-active: enables an accordion to expand multiple panels at a time...
- * for FAQs and comparative content."
+ * Expand behavior: limit to one panel at a time, or allow multiple.
+ * Single — for step-by-step processes, progressive disclosure, form wizards.
+ * Multiple — for FAQs and comparative content.
  */
 enum class AccordionExpansionMode {
     Single,
@@ -81,10 +77,8 @@ enum class AccordionExpansionMode {
 }
 
 /**
- * Uber Base's "Sizing" variant: [Standard] has a minimum cell height and
- * supports small/medium/large/custom artwork; [Compact] has no minimum
- * height, only supports small/medium artwork, and uses 12dp top/bottom
- * padding instead of a height floor.
+ * Sizing density: [Standard] has a minimum header height and supports all artwork sizes;
+ * [Compact] has no height floor, supports small/medium artwork only, uses 12dp padding.
  */
 enum class AccordionDensity {
     Standard,
@@ -92,10 +86,8 @@ enum class AccordionDensity {
 }
 
 /**
- * Uber Base's "Layout" variant: [FullWidth] spans the entire container;
- * [Inset] is a fixed spec combination — 16dp left/right outer margin, 12dp
- * corner radius, 2dp outline stroke — independent of [AccordionVariant] or
- * [AccordionDensity].
+ * Layout mode: [FullWidth] spans the entire container;
+ * [Inset] applies fixed outer margins (16dp), corner radius (12dp), and border (2dp).
  */
 enum class AccordionLayout {
     FullWidth,
@@ -184,13 +176,9 @@ private fun getAccordionTheme(variant: AccordionVariant): AccordionColors {
 }
 
 /**
- * [density]/[artworkSize] resolve the spec's two sizing tiers:
- * - [AccordionDensity.Standard]: a 64dp header floor ([HierarchicalSize.ListItem.Large]
- *   — "comfortable lists," the closest existing token to the spec's 64px
- *   minimum cell height) and small/medium/large/custom artwork.
- * - [AccordionDensity.Compact]: no height floor, 12dp top/bottom padding
- *   ([HierarchicalSize.Spacing.Medium]), and small/medium artwork only —
- *   [SizeVariant.Large]/above is coerced down to [SizeVariant.Medium].
+ * Resolves [AccordionDensity] × [artworkSize] into concrete layout values.
+ * - [AccordionDensity.Standard]: 64dp minimum header height, all artwork sizes.
+ * - [AccordionDensity.Compact]: no height floor, 12dp padding, artwork coerced to Medium max.
  */
 @Composable
 private fun getAccordionSizeConfig(
@@ -223,10 +211,7 @@ private fun getAccordionSizeConfig(
 }
 
 /**
- * [AccordionLayout.Inset]'s outer margin/corner/stroke are a fixed spec
- * combination, not size- or variant-driven — 16dp/12dp/2dp all happen to
- * already be exact [HierarchicalSize] tiers ([Padding.Large], [Radius.Large],
- * [Border.Medium]).
+ * Fixed layout values for [AccordionLayout.Inset]: 16dp margin, 12dp radius, 2dp border.
  */
 private object AccordionInsetSpec {
     val outerMargin get() = HierarchicalSize.Padding.Large
@@ -253,78 +238,45 @@ private fun accordionShapeFor(layout: AccordionLayout, sizeConfig: AccordionSize
 /**
  * PixaAccordion — a single collapsible panel.
  *
- * ### Purpose
- * "A vertical stack of collapsible panels that allows users to expand or
- * collapse each panel individually" — shortens pages by grouping related,
- * secondary/supporting content and reducing scroll. Not for essential
- * information: hiding content behind an accordion reduces its visibility.
+ * Groups secondary/supporting content to reduce page scroll.
+ * Not for essential information — hiding content reduces visibility.
  *
  * ### Anatomy
- * Heading area (title — required, [expandIcon] chevron button — required,
- * bottom divider — required, optional leading [icon] artwork) + a content
- * area that expands strictly below the title, never above. Content is one
- * level deep — nest a [PixaAccordionGroup]'s own content inside another
- * accordion only if you actually want a tree view instead (not supported
- * here, use a dedicated tree component).
+ * Heading: title, chevron [expandIcon], optional leading [icon], bottom divider.
+ * Content expands below the heading. Content is one level deep
+ * (no nested accordion support — use a tree component for that).
  *
  * ### Variants
- * [AccordionDensity] (Standard/Compact — the spec's own sizing axis),
- * [AccordionLayout] (FullWidth/Inset — the spec's own layout axis), and
- * [AccordionVariant] (Default/Outlined/Filled — Pixa's color-hierarchy
- * vocabulary, layered on top since the spec doesn't prescribe a color scheme).
+ * [AccordionDensity] (Standard/Compact), [AccordionLayout] (FullWidth/Inset),
+ * [AccordionVariant] (Default/Outlined/Filled).
  *
  * ### States
- * Enabled (collapsed), Active (expanded), Disabled, Focus (keyboard-visible
- * border ring), Pressed (ripple). Preloading/Hover are left to the caller
- * (skeleton loading and desktop-hover styling aren't part of this component's
- * own state machine, matching how `PixaButton` handles the same states).
+ * Collapsed, Expanded, Disabled, Focus (keyboard ring), Pressed (ripple).
  *
- * ### Icon rule
- * [expandIcon] is a required chevron-down painter — the spec fixes this
- * icon's identity ("ChevronDown (collapsed) ChevronUp (expanded)... do not
- * use chevronRight") and treats it as mandatory anatomy, so it is no longer
- * an optional parameter. It rotates 180° to represent the up state rather
- * than swapping painters, so only one asset is required per accordion.
+ * Chevron: required [expandIcon] is a chevron-down painter; rotated 180° when expanded.
+ * Only one asset needed — never swap painters or use chevronRight.
  *
- * ### Behavior
- * Expand/collapse runs over [AnimationUtils]'s [MotionDuration.Slow] (500ms)
- * using [AccelerateDecelerateEasing] — Uber Base's "accelerate-decelerate,
- * Quintic easeInOut." It's the nearest bundled easing curve; Compose has no
- * exact Quintic bezier preset already tokenized. Content fades and slides in over
- * 200ms with a 24dp settle-in shift ([HierarchicalSize.Spacing.Huge] — the
- * nearest generic spacing tier to the spec's 32px; a dedicated 32dp token
- * doesn't exist outside component-specific ladders like Card/Chip, which
- * would be the wrong category to borrow from). The container — not this
- * panel — is expected to scroll; this composable never wraps [content] in
- * its own scroll container, per the spec's "content should not scroll inside
- * of an individual panel" rule.
+ * ### Animation
+ * Expand/collapse: 500ms via [AccelerateDecelerateEasing]. Content fades/slides
+ * in over 200ms. Panel never wraps content in its own scroll container.
  *
  * ### Accessibility
- * The header carries `Role.Button`, a `stateDescription` of "Collapsed"/
- * "Expanded", and a `contentDescription` combining the title and state —
- * matching the spec's required VoiceOver/TalkBack announcements. Keyboard:
- * the header is focusable and clickable, so Enter/Space toggles it via
- * Compose's built-in key-to-click handling, matching "tab to panel, press
- * Enter/Space to open/close."
+ * Header carries Role.Button, collapsed/expanded stateDescription, title contentDescription.
+ * Keyboard: Enter/Space toggles via Compose's key-to-click.
  *
- * ### Adaptive behavior
- * Out of scope: the spec's breakpoints describe page-level grid column spans
- * (4/8/12-column), not a per-component size ladder — that's `AppTheme.pageMargin`/
- * screen-layout concern, not something this component should reimplement.
- *
- * @param title Header title (required, single line recommended)
+ * @param title Header label (single line recommended)
  * @param expanded Whether content is visible
- * @param onExpandedChange Callback when expanded state changes
- * @param expandIcon Required chevron-down painter; rotated 180° when expanded
+ * @param onExpandedChange Expanded state callback
+ * @param expandIcon Chevron-down painter (required); rotated 180° when expanded
  * @param modifier Modifier for styling
- * @param variant Color hierarchy (Default: [AccordionVariant.Default])
- * @param density Sizing tier (Default: [AccordionDensity.Standard])
- * @param layout Layout tier (Default: [AccordionLayout.FullWidth])
- * @param artworkSize Leading [icon] size tier (Default: [SizeVariant.Small]); coerced to Medium or below under [AccordionDensity.Compact]
- * @param colors Custom colors overriding theme defaults
+ * @param variant Color hierarchy (Default: Default)
+ * @param density Sizing tier (Default: Standard)
+ * @param layout Layout mode (Default: FullWidth)
+ * @param artworkSize Leading [icon] size (Default: Small); coerced to Medium max under [AccordionDensity.Compact]
+ * @param colors Custom color override
  * @param icon Optional leading artwork
  * @param enabled Whether the panel is interactive
- * @param staggerDelayMillis Extra enter delay for [content] (used by [PixaAccordionGroup] for the spec's 50ms-per-item stagger)
+ * @param staggerDelayMillis Staggered content enter delay for [PixaAccordionGroup] (50ms per item)
  * @param content Content shown when expanded
  */
 @OptIn(ExperimentalStdlibApi::class)
@@ -511,13 +463,19 @@ fun PixaAccordion(
 
 /**
  * A vertical stack of [PixaAccordion] panels sharing one [expansionMode].
- * Per the spec, items are closed by default ("recommended for presenting a
- * compact and organized interface") and a caller should avoid pre-expanding
- * every item ("can make a page look busier and create cognitive overload").
  *
- * Applies the spec's 50ms-per-item content-enter stagger via
- * [PixaAccordion.staggerDelayMillis] — only meaningful when several items
- * expand at once (typically [AccordionExpansionMode.Multiple]).
+ * Items closed by default — avoid pre-expanding every item to prevent cognitive overload.
+ * Applies 50ms-per-item content-enter stagger via [PixaAccordion.staggerDelayMillis]
+ * (meaningful when multiple items expand at once).
+ *
+ * @param items List of accordion panels
+ * @param expandIcon Chevron-down painter (shared across all panels)
+ * @param modifier Modifier for styling
+ * @param variant Color hierarchy (passed to each panel)
+ * @param density Sizing tier (passed to each panel)
+ * @param layout Layout mode (passed to each panel)
+ * @param expansionMode Single or Multiple panels open at once
+ * @param colors Custom color override (passed to each panel)
  */
 @Composable
 fun PixaAccordionGroup(

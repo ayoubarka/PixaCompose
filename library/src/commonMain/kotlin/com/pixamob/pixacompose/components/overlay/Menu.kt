@@ -86,20 +86,17 @@ data class MenuItem(
 )
 
 /**
- * Uber Base names 7 menu item kinds with materially different anatomy — modeled as sealed subtypes
- * (not a style enum on one row shape) per the anatomy-first migration rule. [Item] is spec's "Standard"
- * kind — kept under its pre-existing name for backward compatibility with existing callers.
+ * 7 menu content kinds with distinct anatomy, modeled as sealed subtypes.
  */
 @Stable
 sealed class MenuContent {
-    /** Standard — interactive option; optional leading icon, trailing shortcut label, checkbox. */
+    /** Standard interactive option. Optional icon, shortcut, checkbox. */
     data class Item(val menuItem: MenuItem) : MenuContent()
 
-    /** Chevron — "drills down to sub-menus"; same accessories as [Item] plus a trailing drill-down glyph. */
+    /** Option with trailing drill-down chevron for sub-menus. */
     data class Chevron(val menuItem: MenuItem, val chevronIcon: Painter? = null) : MenuContent()
 
-    /** Grabber — "highly interactive; enables reordering; supports optional switch." [switchOn]/[onSwitchChange]
-     * non-null renders the switch accessory; [dragHandleIcon] overrides the default glyph fallback. */
+    /** Reorderable option with drag handle + optional switch. */
     data class Grabber(
         val menuItem: MenuItem,
         val switchOn: Boolean? = null,
@@ -107,21 +104,20 @@ sealed class MenuContent {
         val dragHandleIcon: Painter? = null
     ) : MenuContent()
 
-    /** Search — "filters extensive menus; text field states match standard input component," so this
-     * wraps [PixaTextField] directly rather than a bespoke search field. */
+    /** Search query field. */
     data class Search(
         val query: String,
         val onQueryChange: (String) -> Unit,
         val placeholder: String = "Search"
     ) : MenuContent()
 
-    /** Header — "non-interactive label for categorizing/grouping options." */
+    /** Non-interactive section header. */
     data class Header(val title: String) : MenuContent()
 
-    /** Paragraph — "non-interactive; provides instructions or descriptions." */
+    /** Non-interactive description text. */
     data class Paragraph(val text: String) : MenuContent()
 
-    /** Divider — "decorative separator between option sections." */
+    /** Decorative separator. */
     object Divider : MenuContent()
 }
 
@@ -189,45 +185,31 @@ internal fun getMenuSizeConfig(): MenuSizeConfig {
     return MenuSizeConfig(
         minWidth = 160.dp,
         maxWidth = 280.dp,
-        // Spec: container "Height: 336px" — close enough to the pre-existing 320dp cap to read as the
-        // same real max-height figure (unlike the spec's 666px width, which reads as a wide desktop
-        // mockup canvas, not a usable literal) — adopted as the spec-exact value.
         maxHeight = 336.dp,
         itemHeight = HierarchicalSize.ListItem.Medium,
         itemPadding = HierarchicalSize.Spacing.Medium,
         iconSize = HierarchicalSize.Icon.Small,
         textStyle = typography.bodyRegular,
         headerStyle = typography.captionBold,
-        // Spec: "12 rounded corners" (i.e. 12px radius) — matches HierarchicalSize.Radius.Large exactly,
-        // was previously Radius.Medium (8dp), a mismatch this migration corrects.
         cornerRadius = HierarchicalSize.Radius.Large,
-        // Spec: "shallow-below drop shadow" — the exact phrase ElevationUtils.ComponentElevation.High's
-        // own doc comment uses to describe menus/popovers/dropdowns; expressed via that shared resolver
-        // (see [ComponentElevation]) instead of a raw Dp so there's one semantic elevation scale, not two.
         elevation = ComponentElevation.High.toDp(),
         spacing = HierarchicalSize.Spacing.Small
     )
 }
 
-/** Spec: item heights by kind — 88/52/56/56/56/64/32px. Standard/Chevron/Grabber (56px) and Paragraph
- * (64px) land exactly on [HierarchicalSize.ListItem]'s Medium/Large tiers and use those directly;
- * Search/Header/Divider don't match any tier and are kept as documented one-off literals sourced
- * directly from the spec's own per-kind dimension table (unlike the container's 666px width, these
- * heights vary meaningfully per kind, reading as real values rather than a repeated frame capture). */
+/** Per-kind item heights for kinds that don't match [HierarchicalSize.ListItem] tiers. */
 private val SearchItemHeight = 88.dp
 private val HeaderItemHeight = 52.dp
 private val DividerItemHeight = 32.dp
 private val ParagraphItemHeight = HierarchicalSize.ListItem.Large
 
-/** Spec: "Focus: Keyboard/voice navigation highlight; 3px accent border" — matches [HierarchicalSize.Border.Large]. */
+/** Focus highlight border width. */
 private val MenuFocusBorderWidth = HierarchicalSize.Border.Large
 
-/** Spec: all states "maintain 1px border weight with inside alignment." */
+/** Default border width for all states. */
 private val MenuBorderWidth = HierarchicalSize.Border.Compact
 
-/** Spec: "Hover: Appears on cursor pause; 4% black overlay" — a translucent scrim, the same
- * `Color.Black.copy(alpha = ...)` exception this codebase's overlay/dialog scrims already use rather
- * than a themed token, since a hover wash isn't meant to invert between light/dark theme. */
+/** Hover overlay color. */
 private val MenuHoverOverlay = Color.Black.copy(alpha = 0.04f)
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -235,12 +217,32 @@ private val MenuHoverOverlay = Color.Black.copy(alpha = 0.04f)
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaMenu - Context menu with actions
+ * PixaMenu - Convenience wrapper around [PixaMenuContent] for a flat list of
+ * [MenuItem]s (the most common case). Use [PixaMenuContent] directly when you
+ * need headers, dividers, or mixed item types.
  *
- * ## Usage Examples
+ * ### Purpose
+ * Context menu with actions triggered by a user interaction.
  *
+ * ### Anatomy
+ * A rounded, elevated, 1px-bordered container (12px radius, shallow-below
+ * shadow) around a scrollable list of items — see [PixaMenuContent] for
+ * full anatomy details.
+ *
+ * ### States
+ * Interactive items support Enabled, Hover, Focus, Active ([MenuItem.selected]),
+ * and Disabled ([MenuItemType.Disabled]).
+ *
+ * @param visible Whether menu is visible
+ * @param onDismiss Callback when menu should close
+ * @param items Flat list of menu items
+ * @param onItemClick Callback when an item is clicked
+ * @param modifier Modifier
+ * @param colors Custom colors
+ * @param alignment Menu alignment
+ *
+ * @sample
  * ```kotlin
- * // Basic menu
  * var showMenu by remember { mutableStateOf(false) }
  * Box {
  *     IconButton(onClick = { showMenu = true }) {
@@ -250,36 +252,13 @@ private val MenuHoverOverlay = Color.Black.copy(alpha = 0.04f)
  *         visible = showMenu,
  *         onDismiss = { showMenu = false },
  *         items = listOf(
- *             MenuItem("edit", "Edit", painterResource(Res.drawable.ic_edit)),
- *             MenuItem("share", "Share", painterResource(Res.drawable.ic_share)),
+ *             MenuItem("edit", "Edit", icon),
  *             MenuItem("delete", "Delete", type = MenuItemType.Destructive)
  *         ),
  *         onItemClick = { item -> handleAction(item.id) }
  *     )
  * }
- *
- * // Menu with sections
- * PixaMenu(
- *     visible = isVisible,
- *     onDismiss = { isVisible = false },
- *     content = listOf(
- *         MenuContent.Header("Actions"),
- *         MenuContent.Item(MenuItem("copy", "Copy")),
- *         MenuContent.Item(MenuItem("paste", "Paste")),
- *         MenuContent.Divider,
- *         MenuContent.Item(MenuItem("delete", "Delete", type = MenuItemType.Destructive))
- *     ),
- *     onItemClick = { handleItem(it) }
- * )
  * ```
- *
- * @param visible Whether menu is visible
- * @param onDismiss Callback when menu should close
- * @param items List of menu items (simple API)
- * @param onItemClick Callback when item is clicked
- * @param modifier Modifier
- * @param colors Custom colors
- * @param alignment Menu alignment
  */
 @Composable
 fun PixaMenu(
@@ -309,10 +288,8 @@ fun PixaMenu(
  *
  * ### Anatomy
  * A rounded, elevated, 1px-bordered container (spec: 12px radius, "shallow-below" shadow) around a
- * scrollable list of the spec's 7 item kinds — see [MenuContent]'s own per-subtype docs. A scroll
- * indicator (the default Compose scrollbar-affordance of an overflowing [LazyColumn]) shows when
- * content exceeds [MenuSizeConfig.maxHeight], per spec: "Scroll indicator displays when content exceeds
- * container height."
+ * scrollable list of 7 item kinds — see [MenuContent]'s per-subtype docs. A scroll indicator
+ * (default Compose scrollbar-affordance) shows when content exceeds [MenuSizeConfig.maxHeight].
  *
  * ### States
  * Interactive kinds (Standard/Chevron/Grabber) resolve all 5 states the spec names: Enabled (default),
@@ -371,14 +348,10 @@ fun PixaMenuContent(
 }
 
 /**
- * The menu surface's option rows, without the [Popup] or the elevated container chrome that
- * [PixaMenuContent] wraps around them.
+ * Menu option rows without the [Popup] or elevated container chrome.
  *
- * Extracted so a host that already owns a surface can present the exact same Uber Base item anatomy
- * and 5-state behavior instead of re-implementing a parallel option list — specifically
- * `PixaDropdown`, which presents these rows inside a `PixaSheet` on compact screens and inside
- * [PixaMenuContent] on larger ones. Kept `internal`: it is a composition detail of the menu surface,
- * not a second public menu API.
+ * Extracted so a host with its own surface can reuse the same item anatomy and state behavior
+ * (e.g. `PixaDropdown` on compact screens). Internal — not a second public menu API.
  */
 internal fun LazyListScope.menuContentItems(
     content: List<MenuContent>,

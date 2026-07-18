@@ -1,70 +1,37 @@
 package com.pixamob.pixacompose.components.feedback
 
 /**
- * PixaSnackbar — PixaCompose's equivalent of Uber Base's "Snackbar" component.
+ * PixaSnackbar — ephemeral, passive acknowledgment after a user-initiated
+ * action (e.g. "Item deleted"). Never blocks the workflow. Not for global
+ * system messaging, promotions, or critical/emergency messages (use
+ * [PixaAlert] for colored feedback surfaces).
  *
- * Source: https://base.uber.com/6d2425e9f/p/72a605-snackbar.md
+ * ### Anatomy
+ * Container + message (required) + optional leading content (icon 24dp,
+ * loading spinner 24dp, or photo 48dp — mutually exclusive) + optional
+ * single trailing action (text button or icon dismiss — never both).
  *
- * Purpose:
- *   An ephemeral, passive acknowledgment shown after a user-initiated action
- *   (e.g. "Item deleted", "Downloading your file") — lightweight feedback
- *   that never blocks the workflow. Not for global system messaging,
- *   engagement/promotional content, or critical/emergency messages (timing
- *   may be insufficient for users with disabilities per WCAG 2.2 — use a
- *   persistent surface instead).
+ * ### Variants
+ * [SnackbarVariant] is a **semantic/accessibility axis only** — color is
+ * fixed gray across all variants. Use [PixaAlert] for colored feedback.
  *
- * Anatomy:
- *   Container (required) + message (required) + optional leading content
- *   (icon 24dp, loading spinner 24dp, or photo 48dp — mutually exclusive,
- *   never combined) + optional single trailing action (tertiary text button
- *   OR icon dismiss button — never both at once, per spec's "single button
- *   maximum").
+ * ### States
+ * shown → (optionally auto-dismisses) → dismissed, driven by
+ * [PixaSnackbarHostState]'s single-item queue.
  *
- * Variants:
- *   [SnackbarVariant] is a **semantic/accessibility axis only** — per the
- *   spec's customization boundaries ("Snackbars use gray colors exclusively
- *   ... Custom color use not supported; use Banner component for additional
- *   colors"), background/message color is fixed and identical across every
- *   variant. Selecting `Loading`/`Success`/`Warning`/`Error` only changes the
- *   accessibility label and (for `Loading`) auto-renders the spinner; it does
- *   **not** tint the container. For a colored feedback surface, use
- *   [com.pixamob.pixacompose.components.feedback.PixaAlert] instead (Pixa's
- *   analog of Uber's separate Banner component).
+ * ### Sizing
+ * Narrow screens: full width minus 8dp gutters. Wide screens: 320-540dp.
+ * [SizeVariant] scales padding/radius/type only.
  *
- * States: shown → (optionally auto-dismisses) → dismissed, driven by
- *   [PixaSnackbarHostState]'s single-item queue — see Behavior below.
+ * ### Adaptive behavior
+ * Width breakpoint via [WindowSizeClass] (Compact < 600dp).
  *
- * Sizing: width follows the spec's breakpoint table exactly via
- *   [WindowSizeClass] (Compact break matches the spec's 600px cutoff):
- *   narrow screens fill the width minus an 8dp gutter each side; wide
- *   screens clamp to 320-540dp. [SizeVariant] scales padding/radius/type
- *   tier only — leading-content size (24/48dp), border (1dp), and the width
- *   breakpoints themselves are spec-fixed and don't scale with it.
- *
- * Adaptive behavior: width breakpoint via [ScreenUtil]/[WindowSizeClass],
- *   matching the Popover/Tooltip precedent rather than inventing a second
- *   responsive system.
- *
- * Customization: variant (semantic/a11y only, see above), duration, leading
- *   content, single trailing action, position. Not exposed: arbitrary
- *   background/message color override — removed in this migration; see the
- *   fidelity notes in the PR/commit description for why.
- *
- * Behavior (spec-preserved):
- *   - **Single visible snackbar** — [PixaSnackbarHostState] queues
- *     subsequent calls and shows them one after another.
- *   - Dismissed by: swipe (mobile), trailing action tap, or timeout.
- *   - Follows navigation stack changes — the root-level
- *     [GlobalSnackbarHost]/[PixaSnackbarManager] singleton is
- *     screen-independent already.
- *   - **Progress pattern**: show a `Loading` snackbar, then immediately show
- *     a `Success`/`Error` snackbar once the action completes — the spec
- *     models this as two sequential snackbars, not one mutating instance;
- *     TalkBack's "Loading complete" announcement falls out of that second
- *     snackbar's own appearance announcement.
- *   - **Follow-up pattern**: after an "Undo"/"Retry" action fires, show a
- *     confirmation snackbar once it completes (content-flow guidance, not
- *     enforced by this component).
+ * ### Behavior
+ * - **Single visible snackbar** — [PixaSnackbarHostState] queues subsequent
+ *   calls and shows them in order.
+ * - Dismissed by: swipe (mobile), trailing action tap, or timeout.
+ * - **Progress pattern**: show `Loading`, then `Success`/`Error` once the
+ *   action completes (two sequential snackbars, not one mutating instance).
  */
 
 import androidx.compose.animation.AnimatedVisibility
@@ -143,9 +110,8 @@ import kotlin.math.abs
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Semantic/accessibility axis only — see file-level KDoc. Does **not** change
- * container color; only the accessibility label and (for [Loading]) the
- * auto-rendered leading spinner.
+ * Semantic/accessibility axis only — does **not** change container color.
+ * Only the accessibility label and (for [Loading]) the auto-rendered spinner.
  */
 enum class SnackbarVariant {
     Default,
@@ -160,10 +126,8 @@ enum class SnackbarVariant {
 
 enum class SnackbarDuration(val milliseconds: Long) {
     /**
-     * Spec default: duration derived from the rendered message's line count
-     * (1 line → 3000ms, 2 lines → 5000ms, 3+ lines → 7000ms), measured live
-     * via text layout. The `-2L` sentinel is resolved dynamically in
-     * [Snackbar]/[PixaSnackbarHostState] — never used as a literal delay.
+     * Duration derived from rendered message line count (1→3000ms, 2→5000ms,
+     * 3+→7000ms). Resolved dynamically via text layout.
      */
     Auto(-2L),
     Short(4000L),
@@ -172,12 +136,8 @@ enum class SnackbarDuration(val milliseconds: Long) {
 }
 
 /**
- * Where the snackbar appears. Spec default is [Top] (mobile: flush to the
- * status bar; wide/desktop: 16dp below the top nav). The remaining five are
- * the spec's desktop-web-only positioning overrides (all 16dp from their
- * edge) — the spec recommends staying consistent within one app rather than
- * mixing positions, but doesn't gate them by platform at the type level, so
- * they're available everywhere; use them sparingly on mobile.
+ * Where the snackbar appears. [Top] is default. The remaining five are
+ * positioning overrides — use sparingly on mobile.
  */
 enum class SnackbarPosition {
     Top,
@@ -215,21 +175,19 @@ data class SnackbarConfig(
     val elevation: ComponentElevation = ComponentElevation.Medium,
     val cornerRadius: Dp,
     val swipeToDismissThreshold: Float = 0.3f,
-    /** Spec: leading icon/spinner is fixed at 24dp regardless of [SizeVariant]. */
+    /** Leading icon/spinner fixed at 24dp regardless of [SizeVariant]. */
     val leadingIconSize: Dp = HierarchicalSize.Icon.Medium,
-    /** Spec: leading photo is fixed at 48dp regardless of [SizeVariant]. */
+    /** Leading photo fixed at 48dp regardless of [SizeVariant]. */
     val leadingPhotoSize: SizeVariant = SizeVariant.Medium,
-    /** Spec: border is fixed 1dp regardless of [SizeVariant]. */
+    /** Border fixed at 1dp regardless of [SizeVariant]. */
     val borderWidth: Dp = HierarchicalSize.Border.Compact
 )
 
 /**
  * Data class representing a snackbar item.
  *
- * Leading content is mutually exclusive and resolved in this priority order:
- * [SnackbarVariant.Loading] spinner → [photoUrl]/[photoModel] → [icon]
- * (when [showIcon] is true) — matching the spec's "icon, spinner, or photo"
- * anatomy (never combined).
+ * Leading content is mutually exclusive: [SnackbarVariant.Loading] spinner
+ * → [photoUrl]/[photoModel] → [icon] (never combined).
  */
 @Stable
 data class SnackbarData(
@@ -257,15 +215,13 @@ enum class SnackbarResult {
     Dismissed
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // SNACKBAR HOST STATE
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * State holder for managing snackbar queue and display.
- *
- * Spec: "Only one snackbar displays at a time" — subsequent calls while one
- * is visible are queued and shown in order once the current one dismisses.
+ * State holder managing snackbar queue and display.
+ * Only one snackbar at a time; subsequent calls are queued.
  */
 @Stable
 class PixaSnackbarHostState {
@@ -281,7 +237,7 @@ class PixaSnackbarHostState {
     /**
      * Show a snackbar message
      *
-     * @return Result indicating whether action was performed or dismissed
+     * @return Result indicating action performed or dismissed
      */
     suspend fun showSnackbar(
         message: String,
@@ -433,10 +389,8 @@ class PixaSnackbarHostState {
     }
 
     /**
-     * Show a loading snackbar (spec: "Progress Snackbars remain on-screen
-     * until action completes"). Always indefinite — dismiss it explicitly
-     * (or just show the follow-up snackbar, which replaces it) once the
-     * action finishes.
+     * Show a loading snackbar. Always indefinite — dismiss explicitly or
+     * replace with a follow-up snackbar once the action finishes.
      */
     suspend fun showLoadingSnackbar(
         message: String,
@@ -459,9 +413,9 @@ fun rememberSnackbarHostState(): PixaSnackbarHostState {
     return remember { PixaSnackbarHostState() }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // GLOBAL SNACKBAR MANAGER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Global singleton for showing snackbars from anywhere in the app.
@@ -699,7 +653,7 @@ fun currentSnackbarManager(): PixaSnackbarHostState {
  * It initializes the PixaSnackbarManager singleton and displays snackbars.
  *
  * @param modifier Modifier for the host container
- * @param position Where the snackbar appears (spec default: [SnackbarPosition.Top])
+ * @param position Where the snackbar appears (Default: [SnackbarPosition.Top])
  * @param size [SizeVariant] driving padding/radius/typography
  *
  * @sample
@@ -745,9 +699,9 @@ fun GlobalSnackbarHost(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // EXTENSION FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Remember a coroutine scope and show a snackbar
@@ -878,23 +832,17 @@ fun launchSnackbar(block: suspend PixaSnackbarHostState.() -> Unit) {
     PixaSnackbarManager.launch(block)
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Snackbar colors — spec: "gray colors exclusively," identical across every
- * [SnackbarVariant]. Uses the same inverse-surface pairing as
- * [com.pixamob.pixacompose.components.overlay.PixaTooltip] (dark
- * container/light text in light theme, and vice versa), since both
- * components are the spec's "passive gray acknowledgment" family.
+ * Snackbar colors — gray only, identical across all [SnackbarVariant].
+ * Uses inverse-surface pairing (dark container/light text in light theme).
  */
 @Composable
 private fun getSnackbarColors(colors: ColorPalette): SnackbarColors {
-    // Tertiary action color computed from the inverse content color rather
-    // than a fixed "actionLabel" token — same pattern PixaTooltip's border
-    // uses, standing in for the spec's `InverseBackgroundTertiary` token
-    // (black + 20% white) that Pixa's palette has no literal equivalent for.
+    // Action color computed from inverse content color (same pattern as PixaTooltip).
     val message = colors.baseSurfaceDefault
     return SnackbarColors(
         background = colors.baseContentTitle,
@@ -925,43 +873,40 @@ private fun getSnackbarConfig(size: SizeVariant): SnackbarConfig {
 }
 
 /**
- * Resolves the spec's width breakpoint table via the library's existing
- * [WindowSizeClass] model — its Compact cutoff (<600dp) matches the spec's
- * "Narrow (≤600px)" tier exactly, so no new breakpoint is introduced.
+ * Resolves width breakpoint via [WindowSizeClass]: Compact (<600dp) = full
+ * width minus 8dp gutters; wider = 320-540dp clamp.
  */
 @Composable
 private fun getSnackbarWidthModifier(): Modifier {
     val screenWidth = ScreenUtil.getScreenWidth()
     val windowSizeClass = windowSizeClassOf(screenWidth)
     return if (windowSizeClass == WindowSizeClass.Compact) {
-        // Narrow: 100% width minus an 8dp gutter each side (spec: "Gutters: Size 8").
+        // Narrow: full width minus 8dp gutter each side.
         Modifier
             .fillMaxWidth()
             .padding(horizontal = HierarchicalSize.Spacing.Small)
     } else {
-        // Wide: spec-exact 320-540dp clamp — doesn't map onto an existing
-        // HierarchicalSize tier (Container.DialogMaxWidth is 560dp, a
-        // different component's figure), so these are named local constants.
+        // Wide: 320-540dp clamp.
         Modifier.widthIn(min = SnackbarWideMinWidth, max = SnackbarWideMaxWidth)
     }
 }
 
-/** Spec-exact wide/desktop minimum width (distinct from any existing container token). */
+/** Wide/desktop minimum width. */
 private val SnackbarWideMinWidth = 320.dp
 
-/** Spec-exact wide/desktop maximum width. */
+/** Wide/desktop maximum width. */
 private val SnackbarWideMaxWidth = 540.dp
 
-/** Spec: message-length-driven auto duration table (line count → display time). */
+/** Auto duration: line count → display time. */
 private fun autoDismissMsFor(lineCount: Int): Long = when {
     lineCount <= 1 -> 3000L
     lineCount == 2 -> 5000L
     else -> 7000L
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Snackbar - Single snackbar message display
@@ -988,8 +933,7 @@ internal fun Snackbar(
 
     val shape = RoundedCornerShape(config.cornerRadius)
 
-    // Spec: Auto duration is derived from the *rendered* line count, so it's
-    // resolved here (post text-layout) rather than up front in the host state.
+    // Auto duration is derived from the rendered line count (post text-layout).
     var measuredLineCount by remember(data.id) { mutableStateOf(1) }
     LaunchedEffect(data.id, data.duration, measuredLineCount) {
         if (data.duration == SnackbarDuration.Auto) {
@@ -1008,9 +952,7 @@ internal fun Snackbar(
                 alpha = 1f - (abs(offsetX) / 1000f).coerceIn(0f, 0.5f)
             }
             .pointerInput(Unit) {
-                // Explicitly qualified: this composable also has a `size:
-                // SizeVariant` parameter, which would otherwise shadow
-                // PointerInputScope's own `size: IntSize`.
+                // Qualified to avoid shadowing `size: SizeVariant`.
                 detectHorizontalDragGestures(
                     onDragEnd = {
                         if (abs(offsetX) > this@pointerInput.size.width * dismissThreshold) {
@@ -1027,7 +969,7 @@ internal fun Snackbar(
                 }
             }
             .semantics {
-                // Spec: "Label: Message text" — no variant-name prefix.
+                // Label = message text with no variant prefix.
                 this.contentDescription = data.message
             }
     ) {
@@ -1045,11 +987,11 @@ internal fun Snackbar(
                 horizontalArrangement = Arrangement.spacedBy(config.actionSpacing),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Leading content: spinner (Loading) > photo > icon — mutually exclusive.
+                // Leading content: spinner > photo > icon — mutually exclusive.
                 when {
                     data.variant == SnackbarVariant.Loading -> {
                         PixaCircularIndicator(
-                            sizePreset = SizeVariant.Large, // -> Icon.Medium = 24dp, spec-exact
+                            sizePreset = SizeVariant.Large, // -> Icon.Medium = 24dp
                             variant = ProgressVariant.Neutral,
                             customColors = ProgressColors(
                                 progress = colors.message,
@@ -1062,7 +1004,7 @@ internal fun Snackbar(
 
                     data.photoUrl != null || data.photoModel != null -> {
                         PixaAvatar(
-                            size = config.leadingPhotoSize, // Medium = 48dp, spec-exact
+                            size = config.leadingPhotoSize, // Medium = 48dp
                             imageUrl = data.photoUrl,
                             imageModel = data.photoModel
                         )
@@ -1078,10 +1020,8 @@ internal fun Snackbar(
                     }
                 }
 
-                // Message — spec: truncation not recommended (accessibility
-                // concern for enlarged text), so no maxLines/overflow cap;
-                // onTextLayout still measures the rendered line count to
-                // drive SnackbarDuration.Auto's spec timing table.
+                // No maxLines/overflow cap (truncation is an a11y concern);
+                // onTextLayout measures line count for Auto duration.
                 BasicText(
                     text = data.message,
                     style = config.messageStyle().copy(color = colors.message),
@@ -1089,8 +1029,7 @@ internal fun Snackbar(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Trailing action — spec: single button maximum (text action OR
-                // icon dismiss, never both). actionLabel takes priority.
+                // Trailing action — text action OR icon dismiss (never both).
                 when {
                     data.actionLabel != null -> {
                         Box(
@@ -1117,10 +1056,7 @@ internal fun Snackbar(
                     }
 
                     data.withDismissAction -> {
-                        // No bundled icon set exists in this library (Painters
-                        // are always caller-supplied), so the default dismiss
-                        // affordance is a lightweight glyph rather than routing
-                        // through PixaIconButton, which requires a Painter.
+                    // Dismiss glyph instead of PixaIconButton (no bundled icon assets).
                         Box(
                             modifier = Modifier
                                 .size(HierarchicalSize.TouchTarget.Small)
@@ -1153,7 +1089,7 @@ internal fun Snackbar(
  *
  * @param hostState State holder managing snackbar queue
  * @param modifier Modifier for the host container
- * @param position Where the snackbar appears (spec default: [SnackbarPosition.Top])
+ * @param position Where the snackbar appears (Default: [SnackbarPosition.Top])
  * @param size [SizeVariant] driving padding/radius/typography
  */
 @Composable
@@ -1175,17 +1111,13 @@ fun SnackbarHost(
         SnackbarPosition.BottomEnd -> Alignment.BottomEnd
     }
     val isTopEdge = position == SnackbarPosition.Top || position == SnackbarPosition.TopStart || position == SnackbarPosition.TopEnd
-    // Slide direction follows the edge the snackbar is anchored to — top
-    // positions slide down from above, bottom positions slide up from below.
+    // Top positions slide down; bottom positions slide up.
     val slideSign = if (isTopEdge) -1 else 1
 
     Box(
         modifier = modifier
             .fillMaxSize()
-            // Approximates the spec's "flush to status bar" (top) / safe-area
-            // (bottom) margin; real inset-awareness is a host-app concern —
-            // this library has no platform WindowInsets plumbing (same
-            // approach Toast.kt already takes for its own positioning).
+            // Approximates status-bar / safe-area margin; real insets are host-app concern.
             .padding(HierarchicalSize.Spacing.Medium),
         contentAlignment = alignment
     ) {
@@ -1220,12 +1152,12 @@ fun SnackbarHost(
     }
 }
 
-/** Spec: 1000ms enter/exit transition duration, shared by fade + slide. */
+/** Enter/exit transition duration (1000ms) shared by fade + slide. */
 private const val SnackbarMotionDurationMs = 1000
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // USAGE EXAMPLES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * USAGE EXAMPLES:

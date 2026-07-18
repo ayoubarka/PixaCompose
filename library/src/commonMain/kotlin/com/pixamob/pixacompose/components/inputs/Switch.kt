@@ -36,49 +36,39 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 import com.pixamob.pixacompose.utils.pixaRipple
 
 /**
- * PixaSwitch — PixaCompose's equivalent of Uber Base's "Switch" component.
+ * PixaSwitch — Binary on/off control with immediate effect.
  *
- * Source: https://base.uber.com/6d2425e9f/p/005456-switch.md
+ * ### Anatomy
+ * Track (sliding channel) + knob (thumb), with optional label and description.
  *
- * Purpose: a binary on/off control with immediate effect — modeled after a
- *   physical light switch, not a two-step "select then confirm" control like
- *   a checkbox (see spec's "Switch vs. Checkbox": a switch is immediate, a
- *   check takes effect after a button tap).
+ * ### Variants
+ * [SwitchVariant]: Filled/Outlined/Ghost — each maps onto its own token set.
  *
- * Anatomy: track (the sliding channel) + knob (the interactive thumb) — both
- *   required, neither omittable. An optional label (+ secondary description)
- *   can sit on either side of the control.
+ * ### States
+ * Enabled (on/off), disabled, hover (knob shadow steps up), focus
+ * (3dp `accentBorderFocus` ring), and [loading] (skeleton placeholder).
  *
- * Variants: [SwitchVariant] (Filled/Outlined/Ghost) is a PixaCompose visual
- *   axis, not a spec concept — the spec only distinguishes on/off track and
- *   knob coloring, which each variant maps onto its own token set.
+ * ### Sizing
+ * [SizeVariant]-driven via [HierarchicalSize].
  *
- * States: enabled-on, enabled-off, disabled (no shadow on either part, per
- *   spec), hover (knob shadow steps up one [HierarchicalSize.Shadow] tier
- *   over 200ms, matching spec's "0px 2px 8px, 200ms transition"), focus (a
- *   3dp `accentBorderFocus` ring around the whole control, matching spec's
- *   "3px borderAccent outline"), and preloading (a [Skeleton] placeholder
- *   shaped like the track, via [loading]).
+ * ### Behavior
+ * Tapping the switch or its label toggles immediately via [Modifier.toggleable].
+ * Use [PixaCheckbox] when a confirmation step is needed.
  *
- * Sizing: [SizeVariant]-driven via [HierarchicalSize] (track width/height,
- *   knob size, elevation, border, label typography).
- *
- * Behavior: tapping the switch OR its label toggles the value immediately,
- *   no confirmation step — implemented via [Modifier.toggleable] (not a
- *   plain `clickable(role = Role.Switch)`) so the accessibility tree gets a
- *   proper `ToggleableState`, which VoiceOver/TalkBack need to announce
- *   "On"/"Off" per spec. Each switch is independent; this component has no
- *   notion of a linked group.
- *
- * Adaptive behavior: none specified by the spec beyond per-size metrics
- *   already covered by [SizeVariant] — this is a single fixed-proportion
- *   control, not a layout that reflows across breakpoints.
- *
- * Customization: variant, size, custom [SwitchColors], label + position +
- *   description, error-state override, loading placeholder. Not exposed:
- *   a "confirm before applying" mode — per spec that's explicitly what a
- *   checkbox is for instead ("Don't use switches for ... delayed state
- *   changes (use checkboxes with confirmation buttons)").
+ * @param checked Whether the switch is on or off
+ * @param onCheckedChange Callback when switch state changes
+ * @param modifier Modifier
+ * @param variant Visual style variant (Filled, Outlined, Ghost)
+ * @param size Size preset (Small, Medium, Large)
+ * @param enabled Whether the switch is enabled
+ * @param isError Error state (overrides variant colors)
+ * @param loading Renders a [Skeleton] placeholder shaped like the track
+ * @param colors Custom colors (null = use theme)
+ * @param label Optional label text
+ * @param labelPosition Position of label (Start or End)
+ * @param description Optional secondary text below label
+ * @param interactionSource Interaction source for state
+ * @param contentDescription Accessibility description
  */
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -249,7 +239,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
  *
  * A flexible switch with smooth animations and full customization.
  *
- * ## Usage Examples
+ * @sample
  *
  * ```kotlin
  * // Basic switch
@@ -275,7 +265,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
  *     size = SizeVariant.Large
  * )
  *
- * // Loading placeholder (spec's "Preloading" state)
+ * // Loading placeholder
  * PixaSwitch(
  *     checked = false,
  *     onCheckedChange = {},
@@ -301,7 +291,7 @@ private fun getSwitchTheme(variant: SwitchVariant): SwitchColors {
  * @param size Size preset (Small, Medium, Large)
  * @param enabled Whether the switch is enabled
  * @param isError Whether the switch is in error state (overrides variant colors, not disabled colors)
- * @param loading Whether to render the spec's "Preloading" placeholder (a [Skeleton] shaped like the track) instead of the interactive switch
+ * @param loading Whether to render a [Skeleton] placeholder shaped like the track instead of the interactive switch
  * @param colors Custom colors (null = use theme)
  * @param label Optional label text
  * @param labelPosition Position of label (Start or End)
@@ -507,9 +497,9 @@ fun PixaSwitch(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Convenience Variants
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * FilledSwitch - Filled style switch
@@ -610,9 +600,9 @@ fun MinimalSwitch(
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Specialized Variants
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * ToggleSwitch - Simple toggle without label

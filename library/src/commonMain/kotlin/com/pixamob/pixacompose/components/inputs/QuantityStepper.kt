@@ -1,65 +1,37 @@
 package com.pixamob.pixacompose.components.inputs
 
 /**
- * QuantityStepper — PixaCompose's equivalent of Uber Base's "Stepper" component.
+ * QuantityStepper — Numeric increment/decrement input control.
  *
- * Source: https://base.uber.com/6d2425e9f/p/53dd73-stepper.md
+ * A numeric input letting users increment/decrement a value via plus/minus
+ * buttons (passenger count, order item count), with a formatting hook for
+ * temporal values (duration/time pickers).
  *
- * Not to be confused with [com.pixamob.pixacompose.components.navigation.PixaStepper]
- * (Pixa's migration of Uber Base's separate "Progress Steps" spec) — the two
- * share only a name; this one is a numeric increment/decrement input, that
- * one is a multi-step wizard/itinerary indicator. No existing PixaCompose
- * component matched this spec, so it is new.
+ * ### Anatomy
+ * Left button (decrement) + center value display + right button (increment),
+ * spaced 16px apart. Buttons are plain circles with plus/minus glyphs.
  *
- * Purpose:
- *   A numeric input letting users increment/decrement a value via plus/minus
- *   buttons (passenger count, order item count), with a formatting hook for
- *   temporal values (duration/time pickers).
+ * ### Variants
+ * - [QuantityStepperVariant.Narrow]: buttons hug the value display (compact inline group)
+ * - [QuantityStepperVariant.Wide]: buttons pin to the row's edges, value centered
+ * - [TimeQuantityStepper]: formatting wrapper over [QuantityStepper] via `valueLabel`
  *
- * Anatomy:
- *   Left button (decrement) + center value display + right button (increment),
- *   spaced 16px apart (spec-fixed, not size-dependent) — see
- *   [QuantityStepperSizeConfig.elementSpacing]. Buttons are plain circles with
- *   plus/minus glyphs (no icon assets — drawn glyphs only, per spec's "text
- *   only, no icons" content rule).
+ * ### States
+ * Enabled, Focus (3px accent border around the whole component), Disabled,
+ * Preloading ([Skeleton] placeholder), [isError].
  *
- * Variants:
- *   - [QuantityStepperVariant.Narrow]: buttons hug the value display (compact
- *     inline group) — spec: "constrained layouts."
- *   - [QuantityStepperVariant.Wide]: buttons pin to the row's edges, value
- *     centered — spec: "expansive layouts."
- *   - Time Stepper: not a separate control per spec's own "Stepper buttons
- *     follow button component behavior" note — implemented as [TimeQuantityStepper],
- *     a thin formatting wrapper over the same primitive via `valueLabel`.
+ * ### Sizing
+ * [SizeVariant] resolves to [HierarchicalSize.Button] tiers (Medium = 36dp).
+ * Value typography fixed to `labelLarge` regardless of size.
  *
- * States: Enabled, Focus (3px `accentBorderFocus` around the *whole* component,
- *   not per-button — see [PixaQuantityStepper]), Disabled, Preloading (entire
- *   component swapped for a [Skeleton] placeholder). `isError` is a Pixa
- *   extension beyond the spec, kept for consistency with sibling inputs
- *   ([Checkbox], [RadioButton], `TextField`) that all expose it.
+ * ### Customization
+ * [variant], [size], [min]/[max]/[step] bounds (required), [valueLabel],
+ * [isError]. No decimal steps (Int value type).
  *
- * Sizing: [SizeVariant] resolves to [HierarchicalSize.Button] tiers — Medium
- *   maps to `Button.Small` (36dp), an exact match for the spec's "Default
- *   button size: 36×36px small circles." Value typography stays fixed to
- *   `labelLarge` (spec: "LabelLarge... text styling fixed") regardless of size.
- *
- * Adaptive behavior: out of scope — the spec defines no responsive breakpoints
- *   beyond "extends to container width; values truncate," which [QuantityStepperVariant.Wide]
- *   plus the value display's `TextOverflow.Ellipsis` already covers.
- *
- * Customization: [variant], [size], [min]/[max]/[step] bounds (required, no
- *   unlimited-range default, per spec's anti-pattern), [valueLabel] formatting
- *   hook, [isError]. Not exposed: decimal steps (the `Int` value type
- *   structurally forbids them, per spec's "no decimals permitted"), per-button
- *   independent focus/color overrides (spec: "color palette derives from
- *   system tokens... limiting custom override potential").
- *
- * Usage rules preserved from spec:
- *   - `min`/`max` are required parameters (no unbounded default) — "there
- *     should be a limit to the minimum and maximum values."
- *   - Whole numbers only — enforced structurally via `Int`, not a runtime check.
- *   - Screen-reader focus wraps the whole component, not individual buttons —
- *     see [PixaQuantityStepper]'s merged semantics + [CustomAccessibilityAction]s.
+ * ### Usage rules
+ * - `min`/`max` are required parameters
+ * - Whole numbers only
+ * - Screen-reader focus wraps the whole component, not individual buttons
  */
 
 import androidx.compose.animation.animateColorAsState
@@ -157,13 +129,9 @@ data class QuantityStepperStateColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Spec: "Default button size: 36×36px small circles" — an exact match for
- * [HierarchicalSize.Button.Small]. [SizeVariant] itself is a Pixa extension
- * (the spec shows one fixed size); [glyphSize]/[glyphStroke] are not
- * spec-dictated so are derived as a fixed fraction of [buttonSize] rather
- * than hand-picked per tier. [elementSpacing] stays fixed at
- * [HierarchicalSize.Spacing.Large] (16dp, exact spec match) across all sizes,
- * per the spec's flat "16px" figure — it is not part of the size ladder.
+ * Button size maps 36dp to [HierarchicalSize.Button.Small]. [glyphSize]/[glyphStroke]
+ * are derived as a fraction of [buttonSize]. [elementSpacing] fixed at 16dp
+ * ([HierarchicalSize.Spacing.Large]) across all sizes.
  */
 @Composable
 private fun getQuantityStepperSizeConfig(size: SizeVariant): QuantityStepperSizeConfig {
@@ -181,15 +149,12 @@ private fun getQuantityStepperSizeConfig(size: SizeVariant): QuantityStepperSize
     )
 }
 
-/** Plus/minus glyph bounding box as a fraction of the button diameter; spec shows the glyph but not a ratio. */
+/** Plus/minus glyph bounding box as a fraction of the button diameter. */
 private const val GlyphSizeRatio = 0.4f
 
 /**
- * Spec's states table names only content-role tokens (`contentPrimary`,
- * `backgroundTertiary`, `borderAccent`, `backgroundStateDisabled`,
- * `contentStateDisabled`) — no `isError` state at all. `error` below is a
- * Pixa extension mapped onto the library's existing error tokens, matching
- * how [Checkbox]/[RadioButton] extend their own specs the same way.
+ * Maps variant state colors to theme tokens. `error` is a Pixa extension
+ * using existing error tokens.
  */
 @Composable
 private fun getQuantityStepperTheme(colors: ColorPalette): QuantityStepperStateColors {
@@ -223,11 +188,9 @@ private fun getQuantityStepperTheme(colors: ColorPalette): QuantityStepperStateC
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Plus/minus glyph button. Individually hidden from the accessibility tree
- * ([hideFromAccessibility]) per spec: "the focus state is around the whole
- * component instead of each button" — [PixaQuantityStepper] carries the
- * merged, adjustable semantics instead. Visual click/ripple behavior is
- * unaffected; only screen-reader traversal is collapsed to the parent.
+ * Plus/minus glyph button. Hidden from accessibility tree
+ * ([hideFromAccessibility]) — [PixaQuantityStepper] carries merged semantics
+ * so screen-reader focus wraps the whole component, not individual buttons.
  */
 @Composable
 private fun StepperGlyphButton(
@@ -290,12 +253,8 @@ private fun StepperGlyphButton(
  *
  * Uses `Modifier.semantics(mergeDescendants = true)` with [stateDescription]
  * and two [CustomAccessibilityAction]s so assistive tech can adjust the value
- * without ever focusing an individual button — the closest achievable analog
- * in Compose's semantics API to the spec's VoiceOver "Adjustable, swipe up or
- * down" / TalkBack "Slider, use volume keys" behavior, which are platform
- * accessibility-service gestures outside Compose's direct control. Focus
- * renders a fixed 3px ([HierarchicalSize.Border.Large]) `accentBorderFocus`
- * outline around the whole container, per spec.
+ * without focusing individual buttons. Focus renders a 3px accent border
+ * outline around the whole container.
  */
 @Composable
 private fun PixaQuantityStepper(
@@ -397,26 +356,17 @@ private fun PixaQuantityStepper(
  *
  * @param value Current numeric value
  * @param onValueChange Callback when the value changes via either button
- * @param min Minimum bound (inclusive). Required — the spec calls unbounded
- *   ranges an anti-pattern, so there is no unlimited default.
- * @param max Maximum bound (inclusive). Required, same rationale as [min].
+ * @param min Minimum bound (inclusive, required)
+ * @param max Maximum bound (inclusive, required)
  * @param modifier Modifier for the stepper
- * @param step Whole-number increment/decrement amount (default 1). Must stay
- *   constant across the component's lifetime per spec.
+ * @param step Whole-number increment/decrement amount (default 1)
  * @param enabled Whether the stepper is interactive
- * @param isError Whether to show the stepper in error state (Pixa extension,
- *   not in the spec — see [getQuantityStepperTheme])
- * @param isLoading Preloading state — replaces the entire component with a
- *   [Skeleton] placeholder, per spec
- * @param variant [QuantityStepperVariant.Narrow] (default, buttons hug the
- *   value) or `.Wide` (buttons pin to row edges)
- * @param size Size variant (Small, Medium, Large) — Medium (default) maps to
- *   the spec's exact 36×36px button size
- * @param valueLabel Formats the displayed value; defaults to plain digits.
- *   Override for temporal/unit-suffixed display — see [TimeQuantityStepper].
- * @param contentDescription Accessibility label describing what the value
- *   represents (e.g. "Passenger count"), read by screen readers alongside
- *   the current value
+ * @param isError Whether to show error state
+ * @param isLoading Preloading state — renders a [Skeleton] placeholder
+ * @param variant [QuantityStepperVariant.Narrow] (default) or `.Wide`
+ * @param size Size variant (Small, Medium, Large)
+ * @param valueLabel Formats the displayed value; defaults to plain digits
+ * @param contentDescription Accessibility label for the value being adjusted
  *
  * @sample
  * ```
@@ -486,7 +436,7 @@ fun QuantityStepper(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Wide QuantityStepper — buttons pin to the row's edges (spec: "for expansive layouts").
+ * Wide QuantityStepper — buttons pin to the row's edges.
  */
 @Composable
 fun WideQuantityStepper(
@@ -515,9 +465,8 @@ fun WideQuantityStepper(
 }
 
 /**
- * Time QuantityStepper — spec's "Time Stepper" variant, implemented as a
- * formatting wrapper over [QuantityStepper] rather than a separate control,
- * per the spec's own "stepper buttons follow button component behavior" note.
+ * Time QuantityStepper — formatting wrapper over [QuantityStepper] for
+ * duration values, displayed as minutes with a "min" suffix.
  */
 @Composable
 fun TimeQuantityStepper(

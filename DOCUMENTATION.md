@@ -152,13 +152,13 @@ library/src/commonMain/kotlin/com/pixamob/pixacompose/
 │   ├── Dimen.kt           # Hierarchical sizing system
 │   ├── CustomShapes.kt    # Decorative shapes (Concave, Wave, Bubble, etc.)
 │   └── ShapeStyle.kt      # Shape style configuration
-├── components/      # 59 component files by category
+├── components/      # 62 component files by category
 │   ├── actions/     # Button, Chip, Accordion, Tab, IconButton, FAB, ButtonGroup,
 │   │                #   SegmentedButton, ButtonDock, Link, SlidingButton, TimedButton
 │   ├── inputs/      # TextField, TextArea, SearchBar, Slider, RangeSlider, Switch, Checkbox,
-│   │                #   RadioButton, Dropdown, DatePicker, TimePicker, ColorPicker,
+│   │                #   RadioButton, Dropdown, Calendar, DatePicker, TimePicker, ColorPicker,
 │   │                #   ToggleButtonGroup, PinCode, QuantityStepper, StarRating
-│   ├── display/     # Card, Avatar, Icon, Image, Chart, Divider, ListItem, Tile,
+│   ├── display/     # Card, Banner, Avatar, Icon, Image, MediaContainer, Chart, Divider, ListItem, Tile,
 │   │                #   MessageCard, SectionHeading, Tag, Accordion
 │   ├── feedback/    # Alert, Toast, Snackbar, Badge, Skeleton, Indicator, EmptyState, SystemBanner
 │   ├── navigation/  # TopNavBar, BottomNavBar, TabBar, Drawer, Stepper
@@ -280,7 +280,7 @@ AppTheme.colors.errorContentDefault         // Error text
 
 ### Typography
 
-`TextTypography` provides 32 text styles across 9 semantic groups, all accessed through `AppTheme.typography.*`. Raw `TextStyle(...)` must never appear inside a component (existing exceptions in `Chip.kt`/`DatePicker.kt` are tracked as debt, see below).
+`TextTypography` provides 32 text styles across 9 semantic groups, all accessed through `AppTheme.typography.*`. Raw `TextStyle(...)` must never appear inside a component (existing exceptions in `Chip.kt`/`DatePicker.kt`/`Calendar.kt` are tracked as debt, see below).
 
 Scale rules (mirrors the `HierarchicalSize` mathematical model):
 - Base size is `bodyRegular` at 16sp; sizes step by ~1.25x per tier going up, and down through Caption/Footnote/Label/Action.
@@ -327,7 +327,7 @@ Scale rules (mirrors the `HierarchicalSize` mathematical model):
 
 - **Line heights realigned to the 4sp baseline grid.** `subtitle*` (26→28sp), `labelMedium` (18→20sp), `labelSmall`/`actionMini` (14→16sp), `actionSmall` (18→20sp), `actionExtraLarge` (26→28sp), and `actionHuge` (30→32sp) were nudged to the nearest 4sp multiple so every text style aligns with the same spacing grid the rest of the theme uses. Font sizes, weights, and letter spacing are unchanged.
 - **No tokens were removed.** An audit of `library/src` and `androidApp/src` found several tokens with zero current call sites (`displayMedium`, `headerRegular`, `headlineRegular`, `titleLight`, `subtitleLight`, `overline`, `footnoteRegular`). Each is semantically distinct from its siblings (a genuine weight step within an intentional Bold→Regular→Light ladder, or, for `overline`, the only wide-tracking uppercase-label style) rather than a visual duplicate, so per the "preserve names where already good" rule they were kept as unused-but-valid API surface, not deleted.
-- **Known debt, not fixed here:** `Chip.kt` and `DatePicker.kt` construct raw `TextStyle(...)` instead of using `AppTheme.typography.*` tokens. Left out of scope since fixing them means picking replacement tokens per call site (a component-level change), not a typography-model change.
+- **Known debt, not fixed here:** `Chip.kt`, `DatePicker.kt`, and `Calendar.kt` construct raw `TextStyle(...)` instead of using `AppTheme.typography.*` tokens (the month-nav chevron and stepper +/- glyphs are decorative characters, not `PixaIcon` assets, so they track `HierarchicalSize.Icon.Medium` numerically rather than through a text-style token). Left out of scope since fixing them means picking replacement tokens per call site (a component-level change), not a typography-model change.
 
 ### Font Customization
 
@@ -417,7 +417,7 @@ Remaining `RoundedCornerShape(HierarchicalSize.Radius.X)`-style calls elsewhere 
 | Dialogs | `HierarchicalSize.Radius.Huge` (16dp) | Matches Uber's "large container" tier (their 16px, sheets/dialogs). |
 | Bottom sheets | `HierarchicalSize.Radius.Huge` (16dp) top corners only, or `height / 2` for a drag-handle affordance | Sheets are the same "large container" tier as dialogs; the handle itself is a small pill, not part of the sheet's own corner radius. |
 | Badges | `HierarchicalSize.Radius.Small`/`Medium` (6–8dp) for count/label badges; `CircleShape` for dot badges | Matches Uber's "small component" tier (their 4px tags, scaled slightly for Pixa's denser badge content). Dot badges have no meaningful corner radius concept — always a circle. |
-| FABs | `CircleShape` (default) or `HierarchicalSize.Radius.Large` for the extended/rectangular FAB variant | A FAB's default shape is circular by convention; only the extended (icon+label) variant needs a rounded-rect radius. |
+| FABs | `CircleShape` for `PixaFAB`/`PixaExpandableFab`'s circular buttons; `AppTheme.shapes.pill` (via `PixaButton`) for `PixaFabPill` | Circle and pill are two distinct FAB anatomies per the LINE spec, not a size variant of one shape — there is no rectangular/rounded-rect FAB shape. |
 
 #### When to use which shape
 
@@ -740,47 +740,55 @@ PixaIconButton(
 )
 ```
 
-#### PixaFAB
+#### PixaFAB family (PixaFAB / PixaFabPill / PixaExpandableFab)
 
-**Import**: `com.pixamob.pixacompose.components.actions.PixaFAB`
-**File**: `components/actions/PixaFAB.kt`
+**File**: `components/actions/FAB.kt`
 
-Floating Action Button for primary actions, supporting mini, standard, extended, and large variants.
+A floating-action-button family (LINE Design System FAB spec), not one overloaded
+component — three roles, each its own composable:
 
-**Variants**: `FABVariant.Filled`, `Tonal`, `Outlined`
+| Composable | Role | Anatomy |
+|---|---|---|
+| `PixaFAB` | Single-action circle FAB — runs its action immediately | Icon only, never a label (source: "do not add text inside the floating button") |
+| `PixaFabPill` | Pill FAB — also runs its action immediately, just pill-shaped | Optional icon + required label, thin wrapper over `PixaButton(shape = ButtonShape.Pill)` |
+| `PixaExpandableFab` | Expandable circle FAB — opens a child-action menu | Main button (reuses `PixaFAB`) + up to 5 child actions (each reusing `PixaButton(shape = ButtonShape.Circle)`) + dimmer/scrim, owned by this component |
 
-**Sizes**: `SizeVariant.Medium` (48dp mini), `Large` (56dp standard, default), `Huge` (96dp large)
-
-**Key Parameters**:
-| Parameter | Type | Default | Description |
-|-----------|------|---------|-------------|
-| `icon` | `Painter` | required | Icon painter |
-| `onClick` | `() -> Unit` | required | Click handler |
-| `label` | `String?` | `null` | Label text (extended FAB when set) |
-| `size` | `SizeVariant` | `Large` | Size preset |
-| `variant` | `FABVariant` | `Filled` | Visual style |
-| `enabled` | `Boolean` | `true` | Interactive state |
-| `colors` | `FABColors` | `FABColors()` | Custom color overrides |
-| `contentDescription` | `String?` | `null` | Accessibility description |
-
-**Extended FAB**: When `label` is not null, the FAB expands horizontally with an animated label to the right of the icon. Padding: 16dp left, 20dp right.
-
-**Convenience Variants**: `MiniFAB(icon, onClick, modifier)`, `StandardFAB(icon, onClick, modifier)`, `ExtendedFAB(icon, label, onClick, modifier)`
+**`PixaFAB`** — **Variants**: `FABVariant.Filled`, `Tonal`, `Outlined`. **Sizes**: `SizeVariant.Medium` (48dp), `Large` (56dp, default), `Huge` (96dp — a deliberate one-off tier, no exact `HierarchicalSize.Container` rung sits at 96dp).
 
 ```kotlin
-// Standard FAB
 PixaFAB(
     icon = painterResource(Res.drawable.ic_add),
     onClick = { addItem() }
 )
+```
 
-// Extended FAB with label
-PixaFAB(
-    icon = painterResource(Res.drawable.ic_create),
-    label = "Compose",
-    onClick = { composeMessage() }
+**`PixaFabPill`** — always fires `onClick` immediately; not the same thing as the expandable menu pattern. Defaults to a neutral white/bordered theme (per the source's design-spec table), not a brand-filled one — pass `customColors` to override.
+
+```kotlin
+PixaFabPill(
+    label = "Refresh",
+    icon = painterResource(Res.drawable.ic_refresh),
+    onClick = { refresh() }
 )
 ```
+
+**`PixaExpandableFab`** — child actions are modeled as `FabAction(icon, onClick, label = null, contentDescription = null)`; `actions` is capped at 5 (source: "do not use more than five buttons except for main button" — extras are silently dropped). Two states, Default and Expanded: selecting the main button flips `expanded`, shows the dimmer + child rows, and crossfades the main icon to `closeIcon`. The dimmer/scrim and child menu render in a `Popup` anchored to `dockAlignment` (default `BottomEnd`) — **this component owns overlay/dimmer positioning for its menu**, but the main button itself stays caller-positioned exactly like plain `PixaFAB` (place it via your own `Modifier.align(...)`, matching `dockAlignment`, so the menu appears directly above it).
+
+```kotlin
+PixaExpandableFab(
+    icon = painterResource(Res.drawable.ic_add),
+    closeIcon = painterResource(Res.drawable.ic_close),
+    actions = listOf(
+        FabAction(icon = painterResource(Res.drawable.ic_photo), label = "Photo", onClick = { addPhoto() }),
+        FabAction(icon = painterResource(Res.drawable.ic_camera), label = "Camera", onClick = { openCamera() })
+    ),
+    modifier = Modifier.align(Alignment.BottomEnd)
+)
+```
+
+**Convenience Variants**: `MiniFAB(icon, onClick, modifier)`, `StandardFAB(icon, onClick, modifier)` (both `PixaFAB` presets).
+
+> The old `label`-driven "extended FAB" mode and `ExtendedFAB` convenience were removed from `PixaFAB` — they put text inside the circular FAB, which the LINE spec explicitly flags as a don't. Use `PixaFabPill` for an icon+label, immediate-trigger FAB instead.
 
 #### PixaAccordion
 
@@ -1058,7 +1066,23 @@ PixaTextArea(
 **Import**: `com.pixamob.pixacompose.components.inputs.PixaSearchBar`
 **File**: `components/inputs/SearchBar.kt`
 
-Search-specific input with built-in search icon.
+Migrated to the [eBay Playbook Search Field](https://playbook.ebay.com/design-system/components/search-field) spec (2026-07-18). Filters a list using characters typed into the field; the leading search icon is a static, always-visible affordance (never hidden once text is entered).
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `value` / `onValueChange` | `String` / `(String) -> Unit` | required | The only filtering contract — wire `onValueChange` to filter your own list live |
+| `variant` | `SearchBarVariant` | `Filled` | `Filled`/`Outlined`/`Elevated` — a Pixa styling axis, not from the source spec |
+| `size` | `SizeVariant` | **`Small`** | Small=32dp/Medium=40dp/Large=48dp visual height; `Small` default per source ("small as default") — differs from every sibling input's `Medium` default |
+| `trailingAccessoryIcon` / `onTrailingAccessoryClick` | `Painter?` / `(() -> Unit)?` | `null` | Default trailing accessory (source example: a camera button); generalized rather than hardcoded to one icon |
+| `showClearButton` | `Boolean` | `true` | Enables the focused+non-empty clear affordance |
+| `onSearch` | `(() -> Unit)?` | `null` | IME "search" key trigger |
+| `suggestions` / `showSuggestions` / `onSuggestionClick` | — | — | Typeahead dropdown — a **Pixa addition**, not part of the source anatomy |
+
+**Clear-button replacement** (source-confirmed): the trailing accessory is replaced by a clear glyph only while the field **is focused and holds text**. Unfocusing — even with text still present — reverts the trailing slot back to `trailingAccessoryIcon`. This is different from "clear button shows whenever there's text."
+
+**Width**: always constrained to 200–480dp (source-confirmed, uniform across sizes), which alone reproduces "full width on small screens" on any phone-width layout. Touch target never drops below 48dp regardless of visual height (source: "tap target is 48px across all sizes").
+
+**Not part of this component** (per source, these are external composition, not anatomy): a cancel/back button placed next to the field in a dedicated search view, and a "search" button placed after the field for server-triggered refresh. Compose these yourself alongside `PixaSearchBar`.
 
 ```kotlin
 var query by remember { mutableStateOf("") }
@@ -1070,6 +1094,8 @@ PixaSearchBar(
     onSearch = { performSearch(query) }
 )
 ```
+
+> Breaking change from the pre-migration API: `clearIcon` was removed (the clear affordance now renders a built-in glyph, matching `PixaTextField`'s `onClear` pattern); `voiceSearchIcon`/`onVoiceSearch` were renamed to the generic `trailingAccessoryIcon`/`onTrailingAccessoryClick`.
 
 **Convenience Variants**: `ProductSearchBar`, `LocationSearchBar`, `ContactSearchBar`
 
@@ -1382,14 +1408,67 @@ PixaDropdown(
 > `DropdownColors` describes the field only. The option surface is themed by the menu layer
 > (`MenuColors`), so it no longer carries `menuBackground`/`menuItemHover`/`selectedBackground`.
 
+#### PixaCalendar
+
+**Import**: `com.pixamob.pixacompose.components.inputs.PixaCalendar`
+**File**: `components/inputs/Calendar.kt`
+
+The reusable calendar browsing/selection primitive — month navigators, weekday header,
+day grid, current-day highlight, and range-edge/range-fill visualization (anatomy per the
+eBay Playbook Calendar spec). Owns all month-grid rendering in the library; `PixaDatePicker`'s
+`Calendar` variant composes this rather than duplicating grid logic.
+
+**Selection Modes**: `DateSelectionMode.Single`, `Multiple`, `Range` (also shared by `PixaDatePicker`)
+
+```kotlin
+PixaCalendar(
+    mode = DateSelectionMode.Range,
+    minDate = LocalDate(2026, 1, 1),
+    maxDate = LocalDate(2026, 12, 31),
+    maxRangeDays = 14,
+    onRangeSelected = { start, end -> /* ... */ }
+)
+
+// Two months side by side ("Double Picker" in the eBay spec)
+PixaCalendar(
+    mode = DateSelectionMode.Single,
+    doubleMonth = true,
+    onDateSelected = { date -> /* ... */ }
+)
+```
+
+#### PixaHeatmapCalendar
+
+**Import**: `com.pixamob.pixacompose.components.inputs.PixaHeatmapCalendar`
+**File**: `components/inputs/Calendar.kt`
+
+Kizitonwose-backed activity heatmap over a date range — a Pixa-native browsing/visualization
+surface (not part of the eBay Calendar spec), kept in the Calendar family because it is
+month-grid presentation, not a date-field input flow. Drives per-day visualization from
+`CalendarConfig`'s `activityDots`/`heatmapIntensity` maps.
+
+```kotlin
+PixaHeatmapCalendar(
+    calendarConfig = CalendarConfig(
+        heatmapIntensity = mapOf(LocalDate(2026, 7, 10) to 0.8f)
+    ),
+    onDateSelected = { date -> /* ... */ }
+)
+```
+
 #### PixaDatePicker
 
 **Import**: `com.pixamob.pixacompose.components.inputs.PixaDatePicker`
 **File**: `components/inputs/DatePicker.kt`
 
-**Variants**: `DatePickerVariant.Calendar`, `Wheel`, `MonthDayPicker`, `WeekdayPicker`, `MonthPicker`, `DayCountPicker`, `SchedulePicker`
+**Variants**: `DatePickerVariant.Calendar`, `Wheel`, `HeatMap`, `MonthDayPicker`, `WeekdayPicker`, `MonthPicker`, `DayCountPicker`, `SchedulePicker`
 
 **Selection Modes**: `DateSelectionMode.Single`, `Multiple`, `Range`
+
+`Calendar` and `HeatMap` variants internally compose `PixaCalendar`/`PixaHeatmapCalendar` —
+`PixaDatePicker` owns only the field/trigger surface, callback wiring, and the other
+non-calendar variants (Wheel, and the recurrence-style pickers below); it holds no
+grid/month-nav code of its own.
 
 ```kotlin
 var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -1402,7 +1481,18 @@ PixaDatePicker(
     }
 )
 
-// Schedule Picker (repeat intervals)
+// Field-first: shows a compact date field that expands PixaCalendar inline when tapped,
+// instead of always rendering the calendar surface (opt-in; default is the always-visible
+// behavior above).
+PixaDatePicker(
+    variant = DatePickerVariant.Calendar,
+    asField = true,
+    onDateSelected = { epochMillis -> selectedDate = epochMillis.toLocalDate() }
+)
+
+// Schedule Picker (repeat intervals) — a recurrence-selector taxonomy, not a date-value
+// picker: WeekdayPicker/MonthPicker/DayCountPicker/MonthDayPicker/SchedulePicker all pick
+// an abstract weekday/month/day-count index rather than a LocalDate.
 PixaDatePicker(
     variant = DatePickerVariant.SchedulePicker,
     scheduleConfig = ScheduleConfig(
@@ -1439,17 +1529,46 @@ PixaTimePicker(
 **Import**: `com.pixamob.pixacompose.components.inputs.PixaColorPicker`
 **File**: `components/inputs/ColorPicker.kt`
 
-**Modes**: `ColorPickerMode.Grid`, `Spectrum`, `Palette`, `Custom`
+Presentation-agnostic color-selection primitive — 2D saturation/value field, hue slider,
+optional alpha slider, live preview swatch, hex + R/G/B entry, and an optional recent-colors
+row. Renders inline content only; use [ColorPickerDialog]/[ColorPickerSheet] (thin wrappers
+around `PixaDialog`/`PixaSheet`) to launch it as a dialog or bottom sheet, or embed
+`PixaColorPicker` directly in any other container.
+
+Recent colors live on `ColorPickerState` (seed via `rememberColorPickerState`'s
+`initialRecentColors`, persisted across recomposition/config changes) but nothing is added
+implicitly while dragging — call `state.commitToRecents()` at the point selection is
+confirmed (both wrappers already do this on confirm/dismiss).
 
 ```kotlin
 val colorState = rememberColorPickerState(initialColor = Color.Red)
 
+// Inline
 PixaColorPicker(
     state = colorState,
-    mode = ColorPickerMode.Grid,
-    showAlpha = true
+    showAlpha = true,
+    showRgbFields = true
+)
+
+// Dialog wrapper
+var showPicker by remember { mutableStateOf(false) }
+if (showPicker) {
+    ColorPickerDialog(
+        onDismissRequest = { showPicker = false },
+        onColorConfirmed = { selected -> /* use selected */ }
+    )
+}
+
+// Bottom sheet wrapper
+ColorPickerSheet(
+    onDismissRequest = { showSheet = false },
+    onColorConfirmed = { selected -> /* use selected */ }
 )
 ```
+
+**Note**: there's no platform screen-color-sampling API in PixaCompose. Pass
+`eyedropperIcon`/`onEyedropperClick` to surface a dropper action — the caller owns the actual
+sampling implementation.
 
 #### PixaToggleButtonGroup
 
@@ -1554,50 +1673,103 @@ PixaStarRating(
 
 ### Display
 
-#### PixaCard
+#### PixaContentCard
 
-**Import**: `com.pixamob.pixacompose.components.display.PixaCard`
-**File**: `components/display/Card.kt`
+**Import**: `com.pixamob.pixacompose.components.display.PixaContentCard`
+**File**: `components/display/ContentCard.kt`
 
-**Variants**: `BaseCardVariant.Elevated`, `Outlined`, `Filled`, `Tonal`, `Ghost`
-
-**Elevations**: `BaseCardElevation.None`, `Low`, `Medium`, `High`, `Highest`
-
-**Padding**: `SizeVariant.None`, `Compact`, `Small`, `Medium` (default), `Large`, `Huge`, `Massive`
+The reusable card family. Built on `PixaSurfaceCard` (`components/surfaces/Card.kt` — the bare
+container primitive; see [below](#pixasurfacecard)). `PixaContentCard` is the base anatomy:
+composable slots for media, leading icon/avatar, eyebrow, title/subtitle, body, metadata, status/
+progress/rating, primary/secondary actions, and footer — every slot optional, collapsing with no
+leftover spacing when omitted.
 
 ```kotlin
-PixaCard(
-    variant = BaseCardVariant.Elevated,
-    elevation = BaseCardElevation.Medium,
-    padding = SizeVariant.Medium,
-    onClick = { navigateToDetail() }
-) {
-    Column {
-        Text("Card Title", style = AppTheme.typography.headlineBold)
-        Text("Card content", style = AppTheme.typography.bodyRegular)
-    }
-}
+PixaContentCard(
+    leading = { PixaIcon(source = IconSource.Vector(Icons.Default.Person), contentDescription = null) },
+    title = "Card title",
+    subtitle = "Supporting subtitle",
+    body = "Body copy wraps up to bodyMaxLines.",
+    metadata = listOf("Author name", "2h ago"), // auto-joined with "•"
+    onClick = { open() }
+)
 ```
 
-**Specialized Cards**:
+**Archetype presets** — each a thin wrapper over `PixaContentCard`, extracted from real-app card
+examples cited in the [Justinmind card UI article](https://www.justinmind.com/ui-design/cards) and
+grouped by anatomy rather than one-per-example:
+
+| Preset | Real-app inspiration | Anatomy |
+|---|---|---|
+| `PixaProductCard` | Shopping/headphones/shoe/hair-care apps, AliExpress, NFT marketplaces | media, eyebrow (discount/rarity), title, metadata (price/rating), cart action |
+| `PixaArticleCard` | Space-news portal, magazine app, Sky News, streaming service, e-learning courses | media, eyebrow (category/status), title, body (excerpt), metadata (author/date) |
+| `PixaBookingCard` | Hotel/travel booking sites, Skyscanner, Wander, meeting-room booking | media, title, metadata (location/price), status (rating), CTA |
+| `PixaTaskCard` | Trello (kanban task item) | compact, leading, eyebrow (label), title, metadata (assignee/due date) |
+| `PixaPinCard` | Pinterest (masonry pin grid) | variable-height media, optional title, trailing overflow menu |
+| `PixaAppCard` | Google Play (horizontal app rows) | compact icon + name + rating tile |
+| `PixaContactCard` | Supperto/Teamup (contacts, conversations, hiring rows) | leading avatar, title/subtitle, trailing accessory, metadata |
+| `PixaStatCard` | Finalytic/Skillex/Savings-app dashboards | leading icon, value, label, trend and/or progress bar |
+| `PixaActionCard` | Settings rows, feature dashboards, mood/session pickers | `Row` (leading label) or `Centered` (focal icon) layout, optional CTA |
+| `PixaSelectCard` | Travel-activity toggles, e-learning status filters | owns the toggle interaction model (`selected` + `Role.Checkbox`/`RadioButton`) |
+| `PixaMessageCard` | Promo/campaign notification banners | heading/paragraph/CTA + top-or-trailing artwork with a background-adaptive CTA chip |
+
 ```kotlin
-InfoCard(title = "Info", description = "Static information", icon = Icons.Default.Info)
-ActionCard(title = "Settings", onClick = { navigate() }, icon = Icons.Default.Settings)
-ActionCtaCard(icon = IconSource.Vector(Icons.Default.Star), title = "Go Premium", description = "Unlock all features", ctaText = "Upgrade", onCtaClick = { upgrade() })
-SelectCard(title = "Option", isSelected = selected, onClick = { toggle() })
-MediaCard(imageUrl = url, title = "Article", subtitle = "Category")
-VideoCard(imageUrl = url, title = "Tutorial", duration = "4:12", showPlayButton = true, onClick = { play() })
-StatCard(value = "42", label = "Active", trend = "+12%", trendPositive = true)
-ListItemCard(title = "Notifications", leadingIcon = Icons.Default.Notifications)
-FeatureCard(title = "Fast Setup", description = "Get started in minutes", icon = Icons.Default.Speed)
-CompactInfoCard(title = "Health", icon = Icons.Default.FavoriteBorder)
-SummaryCard(title = "Summary", items = listOf("Total" to "12", "Done" to "10"))
-PricingCard(planName = "Pro", price = "$9.99/month", features = listOf("Feature 1", "Feature 2"),
-    ctaText = "Choose plan", onCtaClick = { subscribe() })
-ProfileCard(avatarUrl = url, name = "John Doe", role = "Developer")
-NotificationCard(title = "New message", message = "You have a new message", time = "2m ago")
-TestimonialCard(avatarUrl = url, quote = "Great product!", authorName = "Jane", authorRole = "CEO")
+PixaProductCard(
+    media = PixaCardMedia(source = PixaImageSource.Url(url), height = 160.dp),
+    title = "Wireless headphones",
+    eyebrow = { PixaTag(text = "Sale", color = TagColor.Error) },
+    metadata = listOf("$79.99", "4.6 ★"),
+    primaryAction = PixaCardAction(label = "Add to cart", onClick = { addToCart() })
+)
+
+PixaMessageCard(
+    heading = "Free delivery",
+    paragraph = "On orders over $30.",
+    ctaText = "Learn more",
+    onCtaClick = { open() },
+    artwork = MessageCardArtwork(source = PixaImageSource.Url(bannerUrl), position = MessageCardArtworkPosition.Top)
+)
 ```
+
+Testimonial, pricing, and multi-stat summary cards from the article don't get dedicated presets —
+their anatomy is fully expressible via `PixaContentCard`'s existing slots (e.g. testimonial:
+`body` = quote, `status` = a `PixaStarRating`, `footer` = an avatar + author row).
+
+#### PixaBanner
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaBanner`
+**File**: `components/display/Banner.kt` (new)
+
+New component, migrated from the [eBay Playbook Banner](https://playbook.ebay.com/design-system/components/banner) spec (2026-07-18). A full-bleed, expressive promo/marketing banner ("curations, promotions, events, and programs with a CTA") — distinct from `PixaSystemBanner` (`components/feedback/SystemBanner.kt`), which is for system status, not promotions.
+
+**Anatomy**: overline → headline → body (hidden below 600dp width) → single action button → disclaimer, laid over `background`.
+
+**`BannerBackground` variants** (sealed class — each carries its own required content):
+| Variant | Content |
+|---|---|
+| `Image` | Full-bleed photo; text gets an automatic scrim + radial gradient + drop shadow for legibility |
+| `Color` | Solid color background, optional foreground PNG image, caller-supplied colors |
+| `InsetImage` | Fixed light-neutral background + black text, rounded-corner inset image (not caller-themed) |
+| `MultiDestination` | Solid color background + a scrollable rail of independently-tappable `BannerDestination`s |
+| `Loyalty` | Solid color background, no image — for dense, height-constrained pages |
+
+**Sizing**: responsive by construction (`Modifier.aspectRatio`, no fixed height) — height scales with measured width per the source. `height: BannerHeight` (`Tall`/`Short`) adjusts the ratio; the source confirms both tiers exist and their use-cases but not the exact size delta between them (approximated).
+
+```kotlin
+PixaBanner(
+    headline = "Summer Sale",
+    actionLabel = "Shop now",
+    onActionClick = { navigateToSale() },
+    background = BannerBackground.Image(painter = saleImage),
+    overline = "Limited time",
+    onClick = { navigateToSale() }
+)
+```
+
+Multiple banners: `PixaBannerCarousel(banners = listOf({ PixaBanner(...) }, { PixaBanner(...) }))` — stacks vertically with no controls below 600dp width ("we do not use carousels" on small screens per the source); auto-scrolls with dot indicators + back/forward/pause-play controls at 600dp+.
+
+> `Color`/`MultiDestination`/`Loyalty` take literal `Color` values, not `AppTheme.colors` tokens — the source requires banner colors to stay fixed across light/dark theme switches ("in dark mode, banners do not change color"), which theme tokens don't guarantee.
+> Content-length guidance from the source (overline/headline ≤33 chars, body/disclaimer ≤65 chars, button label 1–4 words) is documented in KDoc only, not runtime-enforced.
 
 #### PixaAvatar
 
@@ -1719,6 +1891,63 @@ CompositionLocalProvider(LocalImageLoader provides imageLoader) {
 
 **Features**: Crossfade animations, loading shimmer, error fallback, tinting, Coil caching.
 
+#### PixaMediaContainer
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaMediaContainer`
+**File**: `components/display/MediaContainer.kt`
+
+Migrated from eBay Playbook's Media Container spec. A framed surface for still/animated media with
+three anatomy layers: **Matte** (background, adapts light/dark) → **Media** (the content) →
+**Scrim** (a toggleable, light radial overlay that stays constant across light/dark mode).
+
+**Ratio**: `MediaContainerRatio` — `Square` (1:1), `Portrait2x3`, `Portrait4x5`, or `Wide16x9`. Only
+these four are exposed; the spec calls arbitrary ratios out as introducing inconsistency.
+
+**Fill type**: `MediaContainerFillType.Fill` (default, crops to fill), `.Fit` (letterboxes over the
+matte), or `.Auto` (fills when the source's own ratio is within `autoFillTolerance`, default 75%, of
+the container ratio — otherwise falls back to `.Fit`). `.Auto` only has a source ratio to compare for
+`PixaImageSource.Url`/`Resource`/`DrawableResource`; vector/SVG sources and custom media behave like
+`.Fit` under `.Auto`.
+
+**Media source**: `MediaContainerSource.Image` reuses `PixaImage`'s existing `PixaImageSource` types.
+`MediaContainerSource.Custom` is the escape hatch for media types the spec covers that PixaCompose has
+no renderer for yet — video, GIF, 3D assets, Rive animations — callers supply their own composable and
+the container still provides ratio framing, matte, scrim, and the disabled treatment around it.
+
+**Corner radius is not customizable**: the container measures itself and applies 16dp
+(`AppTheme.shapes.rounded.extraLarge`) at 80dp x 80dp and above, 8dp (`.medium`) below — matching the
+spec's threshold exactly. The spec explicitly discourages border-radius and scrim-opacity overrides,
+so neither is exposed as a parameter.
+
+**Disabled state**: `enabled = false` desaturates and dims the media layer to 40% opacity (the same
+value `PixaAvatar` already uses for disabled images).
+
+```kotlin
+// Product image, square, fill (the common case)
+PixaMediaContainer(
+    url = product.imageUrl,
+    contentDescription = product.name,
+    modifier = Modifier.fillMaxWidth(),
+    ratio = MediaContainerRatio.Square
+)
+
+// Letterboxed hero, matte visible around the content
+PixaMediaContainer(
+    source = MediaContainerSource.Image(PixaImageSource.Url(hero.imageUrl)),
+    contentDescription = hero.title,
+    modifier = Modifier.fillMaxWidth(),
+    ratio = MediaContainerRatio.Wide16x9,
+    fillType = MediaContainerFillType.Fit
+)
+
+// Custom media — e.g. a caller-supplied video player, since PixaCompose has no built-in one
+PixaMediaContainer(
+    source = MediaContainerSource.Custom { MyVideoPlayer(videoUrl) },
+    modifier = Modifier.fillMaxWidth(),
+    ratio = MediaContainerRatio.Wide16x9
+)
+```
+
 #### PixaChart
 
 **Import**: `com.pixamob.pixacompose.components.display.PixaChart`
@@ -1800,27 +2029,6 @@ PixaTile(
 )
 ```
 
-#### PixaMessageCard
-
-**Import**: `com.pixamob.pixacompose.components.display.PixaMessageCard`
-**File**: `components/display/MessageCard.kt`
-
-Promotional/informational card with a heading, paragraph, optional artwork, and a CTA.
-
-```kotlin
-PixaMessageCard(
-    heading = "Free delivery",
-    paragraph = "On orders over $30.",
-    ctaText = "Learn more",
-    onCtaClick = { open() },
-    artwork = MessageCardArtwork(
-        source = PixaImageSource.Url(bannerUrl),
-        position = MessageCardArtworkPosition.Top,
-        fit = MessageCardArtworkFit.Fill
-    )
-)
-```
-
 #### PixaSectionHeading
 
 **Import**: `com.pixamob.pixacompose.components.display.PixaSectionHeading`
@@ -1853,6 +2061,59 @@ PixaTag(
     type = TagType.Display
 )
 ```
+
+#### PixaCarousel
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaCarousel`
+**File**: `components/display/Carousel.kt` (new)
+
+New component, migrated from the [Ant Design](https://ant.design/components/carousel) and
+[eBay Playbook](https://playbook.ebay.com/design-system/components/carousel) Carousel specs
+(2026-07-18). Generic, slot-based carousel — every slide is an arbitrary composable, not an
+image. Not to be confused with `PixaBannerCarousel` (`Banner.kt`), the unrelated full-bleed
+promo-banner pager.
+
+**Anatomy** (eBay Playbook): optional container-level `title` + "see all" link (rendered via
+`PixaSectionHeading`) → horizontally scrollable slides (`HorizontalPager`) → pagination dots
+(`PixaPagerIndicator`) → optional arrow buttons. The group title/see-all pair is intentionally
+container-level, not per-slide — it names the whole group, per eBay's "include a title on each
+carousel" guidance. Per-slide structured metadata (title/description/content slot) is a separate,
+optional concern: use `PixaCarouselItem` with the `items: List<PixaCarouselItem>` overload, or
+skip it entirely with the primary `itemContent: @Composable (Int) -> Unit` API.
+
+**Interaction**: swipe/drag/fling (native `HorizontalPager`), tap indicator dots or arrow buttons,
+keyboard Left/Right arrows once the carousel is focused (RTL-aware). Arrows are caller-supplied —
+there's no bundled icon set in this repo — so they only render when `arrowIcon` (a single
+chevron-left `Painter`, rotated 180° for "next") is provided.
+
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `itemCount` / `items` | `Int` / `List<PixaCarouselItem>` | required | Slide count, or structured slides |
+| `itemContent` | `@Composable (Int) -> Unit` | required (index overload only) | Per-slide content |
+| `title` / `onSeeAllClick` | `String?` / `(() -> Unit)?` | `null` | Container-level heading + "see all" |
+| `arrowVisibility` | `CarouselArrowVisibility` | `Adaptive` | `Hidden`/`HoverVisible`/`AlwaysVisible`/`Adaptive` (maps `AppTheme.windowSizeClass`) |
+| `transitionEffect` | `CarouselTransitionEffect` | `Scroll` | `Scroll` or `Fade` |
+| `autoPlay` / `autoPlayIntervalMillis` | `Boolean` / `Long` | `false` / `3000` | Auto-advance |
+| `infiniteScroll` | `Boolean` | `false` | Wraparound looping |
+| `adaptiveHeight` | `Boolean` | `false` | Resize to current slide's height on settle |
+
+```kotlin
+PixaCarousel(
+    items = listOf(
+        PixaCarouselItem(title = "Wireless Headphones", description = "$79.99") { PixaImage(...) },
+        PixaCarouselItem(title = "Smart Watch", description = "$199.99") { PixaImage(...) }
+    ),
+    title = "Recommended for you",
+    onSeeAllClick = { seeAll() },
+    arrowIcon = painterResource(Res.drawable.ic_chevron_left)
+)
+```
+
+> eBay's fractional tile-count/partial-peek breakpoint table (1.5–2.5 tiles on small screens up
+> to 5 on x-large) doesn't map 1:1 onto Pixa's 3-tier `WindowSizeClass` — use `contentPadding` and
+> `slideSpacing` directly to achieve a peek effect for your own layout instead.
+> `infiniteScroll`, `adaptiveHeight`, and `transitionEffect = Fade` are confirmed Ant Design
+> features implemented as approximations — see the KDoc on `PixaCarousel` for the exact caveats.
 
 ---
 
@@ -2384,8 +2645,11 @@ TaskFullScreenModal(onDismissRequest = { close() }, title = "Checkout", onConfir
 **Import**: `com.pixamob.pixacompose.components.surfaces.PixaSurfaceCard`
 **File**: `components/surfaces/Card.kt`
 
-A surface-level card container. Distinct from [PixaCard](#pixacard) in `display/` — `Isolated` insets
-with a corner radius so it stands out; `Feed` is full-width with a module divider between cards.
+The Uber Base-aligned card container primitive — background/border/shape/elevation/dismiss/
+loading, no anatomy of its own. `Isolated` insets with a corner radius so it stands out; `Feed` is
+full-width with a module divider between cards. Build a finished card on top of it with
+[PixaContentCard](#pixacontentcard) (`components/display/ContentCard.kt`), or compose your own
+layout directly in `content` for anything simpler.
 
 ```kotlin
 PixaSurfaceCard(
@@ -2395,6 +2659,28 @@ PixaSurfaceCard(
     onDismiss = { dismiss() }
 ) {
     CardBody()
+}
+```
+
+#### PixaCard
+
+**Import**: `com.pixamob.pixacompose.components.surfaces.PixaCard`
+**File**: `components/surfaces/Card.kt`
+
+Legacy `ConstraintLayout`-based card container, kept only because `BottomNavBar`, `Stepper`,
+`Toast`, `Alert`, and `Chart` still build on it internally. Not the base for new card-like
+components — use [PixaSurfaceCard](#pixasurfacecard)/[PixaContentCard](#pixacontentcard) instead.
+
+**Variants**: `BaseCardVariant.Elevated`, `Outlined`, `Filled`, `Tonal`, `Ghost`
+
+```kotlin
+PixaCard(
+    variant = BaseCardVariant.Elevated,
+    padding = SizeVariant.Medium,
+    onClick = { navigateToDetail() }
+) {
+    val (title, description) = createRefs()
+    // ConstraintLayoutScope — use constrainAs() for positioning
 }
 ```
 
@@ -2965,11 +3251,11 @@ fun SettingsScreen() {
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(0.dp)
     ) {
-        ListItemCard(
+        PixaActionCard(
             title = "Profile",
             subtitle = "Manage your account",
-            leadingIcon = Icons.Default.Person,
-            trailingIcon = Icons.Default.ChevronRight,
+            leading = { PixaIcon(source = IconSource.Vector(Icons.Default.Person), contentDescription = null) },
+            trailing = { PixaIcon(source = IconSource.Vector(Icons.Default.ChevronRight), contentDescription = null) },
             onClick = { navigateToProfile() }
         )
 

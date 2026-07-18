@@ -63,10 +63,8 @@ enum class TabBarVariant {
 }
 
 /**
- * Uber Base's "Width Types" variant axis. [FixedWidth]: "all tabs equal width (container width ÷ tab
- * count)... maximum 4 tabs on mobile... all content must fit without scrolling." [IntrinsicWidth]:
- * "width determined by label length plus 16px padding on sides... supports horizontal scrolling for
- * overflow."
+ * Width distribution mode. [FixedWidth]: equal-width tabs, no scrolling, up to 4 tabs recommended.
+ * [IntrinsicWidth]: content-width tabs with horizontal scroll for overflow.
  */
 enum class TabBarWidthMode {
     FixedWidth,
@@ -186,9 +184,6 @@ private fun getTabBarTheme(variant: TabBarVariant): TabBarColors {
         TabBarVariant.Pill -> TabBarColors(
             background = colors.baseSurfaceSubtle,
             selectedBackground = colors.brandContentDefault,
-            // Spec-adjacent fix: was a hardcoded `Color.White` literal, which violates this codebase's
-            // "always AppTheme.colors.*" hard rule — the theme's own lightest surface tone reads the
-            // same in light mode and stays theme-correct in dark mode.
             selectedContent = colors.baseSurfaceDefault,
             unselectedContent = colors.baseContentBody,
             indicator = colors.brandContentDefault,
@@ -203,45 +198,30 @@ private fun getTabBarTheme(variant: TabBarVariant): TabBarColors {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaTabBar — a navigational component that allows users to move easily between groups of related
- * content.
+ * Navigational tab bar for switching between content groups.
  *
  * ### Anatomy
- * Container with a 1px bottom border → tabs (label + optional leading icon) → an active tab highlight
- * that slides between tabs on selection change, per spec: "Transition: animated highlight movement
- * between tabs." The sliding indicator is drawn once, as a single overlay tracking the selected tab's
- * measured bounds, rather than a static mark redrawn under whichever tab happens to be selected.
+ * Bottom-bordered container → tabs (label + optional icon) → animated sliding indicator
+ * (single overlay tracking selected tab's measured bounds).
  *
  * ### Variants
- * [widthMode] is the spec's real "Width Types" axis — [TabBarWidthMode.FixedWidth] (default; all tabs
- * equal width, `SpaceEvenly`, no scrolling — spec: "maximum 4 tabs on mobile") vs
- * [TabBarWidthMode.IntrinsicWidth] (content-width tabs, horizontally scrollable overflow, last tab
- * naturally aligns to the container's trailing edge at max scroll). The legacy [scrollable] flag still
- * works (`true` behaves as [TabBarWidthMode.IntrinsicWidth]) for callers on the pre-migration API.
- * [variant] (Underline/Filled/Pill) is a separate, Pixa-native styling axis — spec's own anatomy only
- * describes an underline-style highlight, so Filled/Pill are kept as pre-existing extensions rather than
- * removed, per this migration's backward-compatibility rule.
+ * [TabBarVariant]: Underline, Filled, Pill.
+ * [TabBarWidthMode.FixedWidth]: equal-width, no scrolling, up to 4 tabs recommended.
+ * [TabBarWidthMode.IntrinsicWidth]: content-width, scrollable overflow.
  *
- * ### Sizing / Adaptive behavior
- * [SizeVariant.Medium]'s horizontal padding (16dp) matches the spec's "16px padding" exactly, for both
- * width modes. On wide viewports ([WindowSizeClass.Medium]/[Expanded], ≥600dp), [TabBarWidthMode.IntrinsicWidth]
- * gets a leading margin — spec: "First tab aligns with content margins... leading margin compensates for
- * larger content margins" — and the container renders the spec's wide-breakpoint drop shadow (16px
- * blur/4dp Y/12% alpha, mapped to [HierarchicalSize.Shadow.Massive]).
+ * ### Sizing
+ * [SizeVariant] Small (40dp), Medium (48dp), Large (56dp) — height, padding, icon size, text style.
+ * Wide viewports add leading margin for intrinsic mode + drop shadow.
  *
- * ### Usage notes
- * Spec recommends at least 2 tabs and at most 4 for [TabBarWidthMode.FixedWidth] on mobile — neither is
- * runtime-enforced (a component library shouldn't throw on a caller's content choices), just documented.
- *
- * @param tabs List of tab items
- * @param selectedIndex Currently selected tab index
- * @param onTabSelected Callback when tab is selected
- * @param modifier Modifier
- * @param variant Visual style variant (Pixa-native axis, separate from [widthMode])
- * @param widthMode Fixed (equal-width, spec default for mobile) or Intrinsic (content-width, scrollable)
- * @param size Size preset
- * @param colors Custom colors
- * @param scrollable Legacy flag; `true` is equivalent to `widthMode = TabBarWidthMode.IntrinsicWidth`
+ * @param tabs Tab items
+ * @param selectedIndex 0-based selected index
+ * @param modifier Modifier for the tab bar
+ * @param onTabSelected Selection callback
+ * @param variant Underline, Filled, or Pill
+ * @param widthMode FixedWidth (even) or IntrinsicWidth (content-sized)
+ * @param size Height/padding/icon preset
+ * @param colors Custom color overrides
+ * @param scrollable Legacy alias for IntrinsicWidth
  */
 @Composable
 fun PixaTabBar(
@@ -274,8 +254,7 @@ fun PixaTabBar(
         }
     }
 
-    // Selected tab's measured bounds, populated by each tab's onGloballyPositioned — drives the single
-    // sliding indicator overlay rather than a per-tab static mark.
+    // Single sliding indicator driven by the selected tab's measured bounds.
     val tabBounds = remember { mutableStateMapOf<Int, Pair<Dp, Dp>>() }
     val selectedBounds = tabBounds[selectedIndex]
     val animatedIndicatorX by animateDpAsState(
@@ -307,8 +286,7 @@ fun PixaTabBar(
                 horizontalArrangement = if (isIntrinsic) Arrangement.Start else Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Spec: wide viewports give Intrinsic tabs a leading margin so the first tab aligns
-                // with the page's content margins instead of the raw container edge.
+                // Wide viewports give Intrinsic tabs leading margin for content alignment.
                 if (isIntrinsic && isWide) {
                     Spacer(modifier = Modifier.width(sizeConfig.horizontalPadding))
                 }
@@ -327,7 +305,7 @@ fun PixaTabBar(
                 }
             }
 
-            // Single sliding indicator overlay — Underline variant only, per spec's own anatomy.
+            // Single sliding indicator overlay — Underline variant only.
             if (variant == TabBarVariant.Underline && selectedBounds != null) {
                 Box(
                     modifier = Modifier
@@ -341,7 +319,7 @@ fun PixaTabBar(
             }
         }
 
-        // Spec: "Container with bottom border" (1px inside alignment).
+        // Container bottom border.
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -426,7 +404,7 @@ private fun TabBarItemContent(
                     modifier = Modifier.size(sizeConfig.iconSize)
                 )
             }
-            // Spec: "Text doesn't wrap or truncate" — single line, unbounded (never Ellipsis).
+            // Single line, no truncation.
             BasicText(
                 text = item.title,
                 style = sizeConfig.textStyle.copy(color = contentColor),

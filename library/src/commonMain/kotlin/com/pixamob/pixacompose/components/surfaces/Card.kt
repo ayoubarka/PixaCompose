@@ -26,39 +26,68 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.Shape
-import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.constraintlayout.compose.ConstraintLayout
+import androidx.constraintlayout.compose.ConstraintLayoutScope
 import com.pixamob.pixacompose.components.feedback.Skeleton
 import com.pixamob.pixacompose.theme.AppTheme
+import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils
 import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.contrastColor
 import com.pixamob.pixacompose.utils.toDp
 
+/*
+ * Card primitives. Two unrelated containers live here on purpose:
+ *  - PixaSurfaceCard: the Uber Base-aligned primitive (context/state model, spec-accurate
+ *    border/radius/elevation tokens). Build the rich anatomy/variant family on this — see
+ *    `PixaContentCard` in `components/display/ContentCard.kt`.
+ *  - PixaCard: legacy ConstraintLayout container, kept only because `BottomNavBar`, `Stepper`,
+ *    `Toast`, `Alert`, and `Chart` still build on it internally. Do not add new call sites.
+ */
+
 // ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
-/**
- * The two card contexts Uber Base's Card spec distinguishes structurally, not just visually.
- * Drives corner radius and the resting border weight — see [PixaSurfaceCard] docs.
- */
+/** Structural context driving [PixaSurfaceCard]'s corner radius and resting border weight. */
 enum class SurfaceCardContext {
-    /** "Inset with a corner radius, so they stand out from the rest of the content." Large radius, heavier separating border, elevated by default. */
+    /** Standalone card: large radius, heavier border, elevated by default. */
     Isolated,
 
-    /** "Full-width... with a module divider to separate individual cards." Small radius, thin internal divider border, flat by default. */
+    /** Full-width feed card: small radius, thin divider border, flat by default. */
     Feed
+}
+
+/** Visual style for the legacy [PixaCard]. */
+enum class BaseCardVariant {
+    Elevated,
+    Outlined,
+    Filled,
+    Tonal,
+    Ghost
+}
+
+/** Border stroke pattern for the legacy [PixaCard]. */
+enum class CardBorderStyle {
+    Solid,
+    Dashed,
+    Dotted,
+    None
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -77,23 +106,47 @@ private data class SurfaceCardColors(
     val dismissContent: Color
 )
 
+@Stable
+data class BaseCardColors(
+    val background: Color,
+    val border: Color = Color.Transparent,
+    val content: Color
+)
+
+/** Border override for the legacy [PixaCard]; `color = null` falls back to the variant's theme border. */
+@Stable
+data class CardBorderConfig(
+    val color: Color? = null,
+    val width: Dp = HierarchicalSize.Border.Medium,
+    val style: CardBorderStyle = CardBorderStyle.Solid
+)
+
+/** Shadow override for the legacy [PixaCard]. */
+@Stable
+data class CardShadowConfig(
+    val elevation: Dp = 0.dp,
+    val color: Color = Color.Black.copy(alpha = 0.1f),
+    val spreadRadius: Dp = 0.dp,
+    val blurRadius: Dp = 0.dp,
+    val offsetX: Dp = 0.dp,
+    val offsetY: Dp = 0.dp
+)
+
+@Stable
+data class BaseCardStateColors(
+    val default: BaseCardColors,
+    val hover: BaseCardColors = default,
+    val pressed: BaseCardColors = default,
+    val disabled: BaseCardColors
+)
+
 // ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER (state/context resolvers)
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Resolves colors from the Uber Base states table:
- * Enabled -> `backgroundPrimary` + 2dp opaque border; Focus/Selected -> 3dp accent border
- * (both approximated with `brandBorderFocus`, the closest existing token — the theme has no
- * separate "borderSelected" token, same substitution [com.pixamob.pixacompose.components.inputs.PixaCheckboxBox]
- * already makes); Disabled -> disabled surface/border tokens. Hover/pressed use the spec's literal
- * 4%/8% black overlay percentages rather than theme tokens, flipped to white on dark backgrounds so
- * a caller-supplied [backgroundColor] (see [PixaSurfaceCard.backgroundColor]) stays legible in
- * either mode — same technique [com.pixamob.pixacompose.components.display.PixaMessageCard] uses.
- *
- * Context only decides the resting (enabled, unfocused, unselected) border weight: 4dp for
- * [SurfaceCardContext.Isolated] ("4px outside weight") vs 1dp for [SurfaceCardContext.Feed]
- * ("1px inside weight" / module divider) — both exact spec matches via [HierarchicalSize.Border].
+ * Resolves card surface colors from enabled/disabled/focus/selected states.
+ * Hover/pressed overlays auto-contrast against [backgroundColor] for light/dark mode.
  */
 @Composable
 private fun resolveSurfaceCardColors(
@@ -140,20 +193,70 @@ private fun resolveSurfaceCardColors(
     )
 }
 
-/** Corner radius per context: 24dp isolated (closest `HierarchicalSize.Radius` tier to the spec's oversized 48px flagship radius), 12dp feed (exact spec match). */
+/** Corner radius per context: 24dp isolated, 12dp feed. */
 private fun SurfaceCardContext.cornerRadius(): Dp = when (this) {
     SurfaceCardContext.Isolated -> HierarchicalSize.Radius.Massive
     SurfaceCardContext.Feed -> HierarchicalSize.Radius.Large
 }
 
-/** Isolated cards float above content by default (drop shadow); feed cards rely on their divider border, matching the spec's flatter full-width treatment. */
+/** Isolated cards get drop shadow by default; feed cards rely on divider border (flat). */
 private fun SurfaceCardContext.defaultElevation(): ComponentElevation = when (this) {
     SurfaceCardContext.Isolated -> ComponentElevation.High
     SurfaceCardContext.Feed -> ComponentElevation.None
 }
 
+@Composable
+private fun getBaseCardTheme(variant: BaseCardVariant, colors: ColorPalette): BaseCardStateColors {
+    return when (variant) {
+        BaseCardVariant.Elevated -> BaseCardStateColors(
+            default = BaseCardColors(background = colors.baseSurfaceDefault, content = colors.baseContentBody),
+            hover = BaseCardColors(background = colors.baseSurfaceSubtle, content = colors.baseContentBody),
+            pressed = BaseCardColors(background = colors.baseSurfaceSubtle.copy(alpha = 0.8f), content = colors.baseContentBody),
+            disabled = BaseCardColors(background = colors.baseSurfaceDisabled, content = colors.baseContentDisabled)
+        )
+
+        BaseCardVariant.Outlined -> BaseCardStateColors(
+            default = BaseCardColors(background = colors.baseSurfaceDefault, border = colors.baseBorderDefault, content = colors.baseContentBody),
+            hover = BaseCardColors(background = colors.baseSurfaceSubtle, border = colors.baseBorderFocus, content = colors.baseContentBody),
+            pressed = BaseCardColors(background = colors.baseSurfaceSubtle.copy(alpha = 0.8f), border = colors.baseBorderFocus, content = colors.baseContentBody),
+            disabled = BaseCardColors(background = colors.baseSurfaceDisabled, border = colors.baseBorderDisabled, content = colors.baseContentDisabled)
+        )
+
+        BaseCardVariant.Filled -> BaseCardStateColors(
+            default = BaseCardColors(background = colors.baseSurfaceSubtle, content = colors.baseContentBody),
+            hover = BaseCardColors(background = colors.baseSurfaceDefault, content = colors.baseContentBody),
+            pressed = BaseCardColors(background = colors.baseSurfaceDefault.copy(alpha = 0.8f), content = colors.baseContentBody),
+            disabled = BaseCardColors(background = colors.baseSurfaceDisabled, content = colors.baseContentDisabled)
+        )
+
+        BaseCardVariant.Tonal -> BaseCardStateColors(
+            default = BaseCardColors(background = colors.brandSurfaceSubtle, content = colors.baseContentTitle),
+            hover = BaseCardColors(background = colors.brandSurfaceSubtle.copy(alpha = 0.85f), content = colors.baseContentTitle),
+            pressed = BaseCardColors(background = colors.brandSurfaceSubtle.copy(alpha = 0.7f), content = colors.baseContentTitle),
+            disabled = BaseCardColors(background = colors.brandSurfaceSubtle.copy(alpha = 0.4f), content = colors.baseContentDisabled)
+        )
+
+        BaseCardVariant.Ghost -> BaseCardStateColors(
+            default = BaseCardColors(background = Color.Transparent, border = colors.baseBorderSubtle, content = colors.baseContentBody),
+            hover = BaseCardColors(background = colors.baseSurfaceSubtle.copy(alpha = 0.5f), border = colors.baseBorderDefault, content = colors.baseContentBody),
+            pressed = BaseCardColors(background = colors.baseSurfaceSubtle.copy(alpha = 0.7f), border = colors.baseBorderDefault, content = colors.baseContentBody),
+            disabled = BaseCardColors(background = Color.Transparent, border = colors.baseBorderDisabled, content = colors.baseContentDisabled)
+        )
+    }
+}
+
+@Composable
+private fun SizeVariant.cardPadding(): Dp = when (this) {
+    SizeVariant.None -> HierarchicalSize.Spacing.None
+    SizeVariant.Compact -> HierarchicalSize.Spacing.Compact
+    SizeVariant.Small -> HierarchicalSize.Spacing.Small
+    SizeVariant.Medium -> HierarchicalSize.Spacing.Medium
+    SizeVariant.Large -> HierarchicalSize.Spacing.Large
+    else -> HierarchicalSize.Spacing.Medium
+}
+
 // ════════════════════════════════════════════════════════════════════════════
-// INTERNAL <NAME>
+// INTERNAL
 // ════════════════════════════════════════════════════════════════════════════
 
 @Composable
@@ -168,25 +271,105 @@ private fun BoxScope.SurfaceCardDismissButton(
             .size(HierarchicalSize.TouchTarget.Small)
             .clip(CircleShape)
             .background(colors.dismissBackground)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onDismiss
-            )
-            .semantics {
-                // Voice label intentionally omitted per spec ("Close icon: voice label
-                // excluded; implicit in actions menu"); Role.Button alone still exposes it
-                // as an actionable element to screen readers.
-                role = Role.Button
-            },
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onDismiss)
+            .semantics { role = Role.Button },
         contentAlignment = Alignment.Center
     ) {
-        // No dedicated close-icon asset exists in the library yet (same gap noted in
-        // PixaMessageCard's dismiss button) — a glyph avoids a new icon dependency for one glyph.
         BasicText(
             text = "×",
             style = AppTheme.typography.titleBold.copy(color = colors.dismissContent, textAlign = TextAlign.Center)
         )
+    }
+}
+
+@Composable
+private fun InternalCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    variant: BaseCardVariant = BaseCardVariant.Elevated,
+    elevation: ComponentElevation = ComponentElevation.Medium,
+    padding: SizeVariant = SizeVariant.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
+    colors: BaseCardStateColors,
+    borderConfig: CardBorderConfig? = null,
+    shadowConfig: CardShadowConfig? = null,
+    content: @Composable ConstraintLayoutScope.() -> Unit
+) {
+    val backgroundColor by animateColorAsState(
+        targetValue = if (!enabled) colors.disabled.background else colors.default.background,
+        animationSpec = AnimationUtils.colorSpring,
+        label = "card_background"
+    )
+
+    val themeBorderColor = if (!enabled) colors.disabled.border else colors.default.border
+    val finalBorderColor = borderConfig?.color ?: themeBorderColor
+
+    val borderColor by animateColorAsState(
+        targetValue = finalBorderColor,
+        animationSpec = AnimationUtils.colorSpring,
+        label = "card_border"
+    )
+
+    val elevationDp = when {
+        shadowConfig != null -> shadowConfig.elevation
+        variant == BaseCardVariant.Elevated && enabled -> elevation.toDp()
+        else -> 0.dp
+    }
+
+    val paddingDp = padding.cardPadding()
+    val shape = RoundedCornerShape(cornerRadius)
+
+    val borderModifier = when {
+        borderConfig?.style == CardBorderStyle.None -> Modifier
+        borderConfig?.style == CardBorderStyle.Dashed || borderConfig?.style == CardBorderStyle.Dotted -> {
+            Modifier.drawBehind {
+                val strokeWidth = (borderConfig.width).toPx()
+                val pathEffect = when (borderConfig.style) {
+                    CardBorderStyle.Dashed -> PathEffect.dashPathEffect(floatArrayOf(10f, 10f), 0f)
+                    CardBorderStyle.Dotted -> PathEffect.dashPathEffect(floatArrayOf(4f, 4f), 0f)
+                    else -> null
+                }
+                drawRoundRect(
+                    color = borderColor,
+                    style = Stroke(width = strokeWidth, pathEffect = pathEffect),
+                    cornerRadius = CornerRadius(cornerRadius.toPx())
+                )
+            }
+        }
+        borderColor != Color.Transparent -> {
+            Modifier.border(width = borderConfig?.width ?: HierarchicalSize.Border.Medium, color = borderColor, shape = shape)
+        }
+        else -> Modifier
+    }
+
+    val clickableModifier = if (onClick != null && enabled) {
+        Modifier.clickable(interactionSource = remember { MutableInteractionSource() }, indication = null, onClick = onClick)
+    } else {
+        Modifier
+    }
+
+    ConstraintLayout(
+        modifier = modifier
+            .semantics { if (onClick != null) role = Role.Button }
+            .shadow(
+                elevation = elevationDp,
+                shape = shape,
+                clip = false,
+                ambientColor = shadowConfig?.color ?: Color.Black.copy(alpha = 0.1f),
+                spotColor = shadowConfig?.color ?: Color.Black.copy(alpha = 0.1f)
+            )
+            .clip(shape)
+            .then(borderModifier)
+            .background(backgroundColor)
+            .then(clickableModifier)
+            .padding(paddingDp)
+    ) {
+        content()
+
+        if (!enabled) {
+            Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.1f)))
+        }
     }
 }
 
@@ -195,77 +378,22 @@ private fun BoxScope.SurfaceCardDismissButton(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaSurfaceCard - the foundational card surface.
+ * The Uber Base-aligned card container primitive: background + border + shape + elevation +
+ * optional whole-surface tap target + optional dismiss button + loading shimmer + a content slot.
+ * Not a finished card pattern — compose your own layout in [content], or reach for
+ * `PixaContentCard` (`components/display/ContentCard.kt`) for anatomy slots on top of this.
  *
- * This is a **primitive**, not a finished card pattern: it renders only the container
- * (surface, shape, border, elevation, states, tap target, optional dismiss button, loading
- * shimmer). It does not implement the spec's tiered anatomy (eyebrow/logo/headline/paragraph/
- * media/custom/button layer-cake) — per the spec's own "build-your-own" model ("individual card
- * elements stacked per layer-cake model"), those tiers are meant to be composed by callers using
- * existing Pixa primitives ([content]), or by dedicated future components (e.g. a media-forward
- * card, a list-item card) built on top of this primitive. [com.pixamob.pixacompose.components.display.PixaCard]
- * is the library's earlier, unrelated generic card system — kept for backward compatibility (see
- * its file header) but not the foundation new card-like components should build on; this is.
+ * [SurfaceCardContext.Isolated]: large radius, heavier border, elevated by default.
+ * [SurfaceCardContext.Feed]: small radius, thin divider border, flat by default.
  *
- * Purpose: "a contained unit of information related to a topic... communicate a state within a
- * feed of cards."
- *
- * Anatomy: this primitive owns the container only — background, border, shape, elevation, the
- * whole-surface tap target, an optional [onDismiss] close affordance, and a [content] slot for
- * whatever the caller stacks inside.
- *
- * Variants: [context] — [SurfaceCardContext.Isolated] ("stand out from the rest of the content",
- * large radius, heavier separating border, elevated) vs [SurfaceCardContext.Feed] ("full-width...
- * with a module divider", small radius, thin internal divider border, flat).
- *
- * States: enabled, disabled, hover (4% black / 10% white overlay), pressed (8% black / 20% white
- * overlay), focus (3dp accent border), [selected] (3dp accent border — approximated with the same
- * `brandBorderFocus` token as focus; the theme has no separate "borderSelected" token), and
- * [isLoading] (renders a [Skeleton] shimmer in place of [content], per "all elements in the card
- * become a Placeholder shimmer").
- *
- * Sizing: [cornerRadius] defaults from [context] (24dp isolated / 12dp feed, the latter an exact
- * spec match). [elevation] defaults from [context] too; the spec's literal "16px blur, 4px Y,
- * 12%-black" shadow isn't expressible through Compose's elevation-driven (not blur-driven) shadow
- * model, so the `ambientColor`/`spotColor` are pinned to the exact 12%-black while the elevation
- * `Dp` is the closest [ComponentElevation] stand-in for the Y-offset, mirroring how
- * [com.pixamob.pixacompose.components.display.PixaMessageCard] handles the same gap.
- *
- * Adaptive behavior: out of scope — the spec's breakpoint guidance (4-column narrow, gridded
- * medium, 3-column large) is about the surrounding grid/layout, not this card's own internal
- * sizing, so it doesn't map onto `WindowSizeClass`. Callers control column span in their own
- * layout; the card fills whatever width it's given.
- *
- * Customization: [backgroundColor] intentionally accepts any [Color] (not just semantic
- * `AppTheme.colors.*` tokens) — like [com.pixamob.pixacompose.components.display.PixaMessageCard],
- * this primitive must stay legible under arbitrary caller-chosen backgrounds, so state overlays
- * and the dismiss chip auto-contrast off the resolved background color.
- *
- * Usage notes: whole-card tap is the only supported interaction surface (single destination per
- * spec — "keep the card simple and focused on a single topic with a single destination when
- * possible"); [onDismiss], when set, remains independently tappable above the card's own tap
- * target. Per spec, prefer this primitive over a plain list row only when the content genuinely
- * needs a heading+paragraph card treatment — "lists... take up less space... ideal for search
- * results, settings" is still the better fit for those.
- *
- * @param modifier Modifier for the card
- * @param context [SurfaceCardContext.Isolated] or [SurfaceCardContext.Feed]; drives the default corner radius, resting border weight, and elevation
- * @param onClick Optional click handler for the whole card surface
- * @param enabled Disabled state (renders the disabled surface/border tokens, disables tap targets)
- * @param selected Renders the 3dp accent border used for both focus and selection per spec
- * @param isLoading Shows a [Skeleton] shimmer in place of [content]
- * @param onDismiss Optional dismiss handler; the close affordance is omitted entirely when null
- * @param backgroundColor Card background; accepts any [Color], see Customization above
- * @param cornerRadius Corner radius override; defaults to [context]'s spec radius
- * @param elevation Shadow elevation override; defaults to [context]'s spec treatment
- * @param borderColor Border color override; defaults to the resolved enabled/focus/selected/disabled
- * state color. Callers whose border decision depends on their own background (e.g. a card that only
- * shows a stroke on light backgrounds, per the spec's "card with white background artwork: add
- * stroke; with high-contrast background: optional stroke removal") should resolve that externally
- * and pass it here rather than duplicating this primitive's state-border logic.
- * @param borderWidth Border width override; only consulted when [borderColor] is non-null, defaults to the resolved state width
- * @param contentPadding Padding around [content]
- * @param content Card body content; compose your own eyebrow/heading/media/button layer-cake here
+ * @param onClick Optional whole-card tap target
+ * @param selected Accent border for selected state
+ * @param onDismiss Optional close button
+ * @param backgroundColor Accepts any [Color]; overlays auto-contrast
+ * @param cornerRadius / @param elevation Default from [context]; both overridable
+ * @param borderColor / @param borderWidth Stroke override
+ * @param semanticsRole Overrides the auto [Role.Button] applied when [onClick] is set — e.g.
+ * [Role.Checkbox]/[Role.RadioButton] for a selectable card
  */
 @Composable
 fun PixaSurfaceCard(
@@ -282,6 +410,7 @@ fun PixaSurfaceCard(
     borderColor: Color? = null,
     borderWidth: Dp? = null,
     contentPadding: Dp = HierarchicalSize.Spacing.Large,
+    semanticsRole: Role? = null,
     content: @Composable BoxScope.() -> Unit = {}
 ) {
     val shape = RoundedCornerShape(cornerRadius)
@@ -324,11 +453,7 @@ fun PixaSurfaceCard(
 
     val clickModifier = if (onClick != null && enabled) {
         Modifier
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null,
-                onClick = onClick
-            )
+            .clickable(interactionSource = interactionSource, indication = null, onClick = onClick)
             .focusable(enabled = enabled, interactionSource = interactionSource)
     } else {
         Modifier
@@ -347,7 +472,7 @@ fun PixaSurfaceCard(
             .background(animatedBackground)
             .border(width = resolvedBorderWidth, color = animatedBorder, shape = shape)
             .then(clickModifier)
-            .semantics { if (onClick != null) role = Role.Button }
+            .semantics { if (onClick != null) role = semanticsRole ?: Role.Button }
     ) {
         Box(modifier = Modifier.padding(contentPadding)) {
             content()
@@ -361,10 +486,194 @@ fun PixaSurfaceCard(
             SurfaceCardDismissButton(
                 onDismiss = onDismiss,
                 colors = colors,
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(HierarchicalSize.Spacing.Small)
+                modifier = Modifier.align(Alignment.TopEnd).padding(HierarchicalSize.Spacing.Small)
             )
         }
     }
 }
+
+/**
+ * Legacy `ConstraintLayout`-based card container. Not the base for new card-like components —
+ * see [PixaSurfaceCard] (or `PixaContentCard` in `components/display/ContentCard.kt`) instead.
+ * Kept only because `BottomNavBar`, `Stepper`, `Toast`, `Alert`, and `Chart` still build on it.
+ *
+ * @param variant Visual style
+ * @param elevation Shadow depth (Elevated variant only)
+ * @param borderConfig / @param shadowConfig Optional stroke/shadow overrides
+ * @param content `ConstraintLayoutScope` — use `createRefs()`/`constrainAs()` for positioning
+ */
+@Composable
+fun PixaCard(
+    modifier: Modifier = Modifier,
+    variant: BaseCardVariant = BaseCardVariant.Elevated,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    elevation: ComponentElevation = ComponentElevation.Medium,
+    padding: SizeVariant = SizeVariant.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
+    backgroundColor: Color? = null,
+    borderConfig: CardBorderConfig? = null,
+    shadowConfig: CardShadowConfig? = null,
+    skeletonShape: Shape? = null,
+    content: @Composable ConstraintLayoutScope.() -> Unit
+) {
+    if (isLoading) {
+        Skeleton(
+            modifier = modifier.fillMaxWidth(),
+            height = 120.dp,
+            shape = skeletonShape ?: RoundedCornerShape(cornerRadius),
+            shimmerEnabled = true
+        )
+        return
+    }
+
+    val themeColors = getBaseCardTheme(variant, AppTheme.colors)
+
+    val finalColors = if (backgroundColor != null) {
+        BaseCardStateColors(
+            default = themeColors.default.copy(background = backgroundColor),
+            hover = themeColors.hover.copy(background = backgroundColor),
+            pressed = themeColors.pressed.copy(background = backgroundColor),
+            disabled = themeColors.disabled.copy(background = backgroundColor)
+        )
+    } else {
+        themeColors
+    }
+
+    InternalCard(
+        modifier = modifier,
+        onClick = onClick,
+        enabled = enabled,
+        variant = variant,
+        elevation = elevation,
+        padding = padding,
+        cornerRadius = cornerRadius,
+        colors = finalColors,
+        borderConfig = borderConfig,
+        shadowConfig = shadowConfig,
+        content = content
+    )
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CONVENIENCE VARIANTS
+// ════════════════════════════════════════════════════════════════════════════
+
+/** [PixaCard] pinned to [BaseCardVariant.Elevated]. */
+@Composable
+fun ElevatedCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    elevation: ComponentElevation = ComponentElevation.Medium,
+    padding: SizeVariant = SizeVariant.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
+    content: @Composable ConstraintLayoutScope.() -> Unit
+) = PixaCard(
+    modifier = modifier,
+    variant = BaseCardVariant.Elevated,
+    onClick = onClick,
+    enabled = enabled,
+    isLoading = isLoading,
+    elevation = elevation,
+    padding = padding,
+    cornerRadius = cornerRadius,
+    content = content
+)
+
+/** [PixaCard] pinned to [BaseCardVariant.Outlined]. */
+@Composable
+fun OutlinedCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    padding: SizeVariant = SizeVariant.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
+    content: @Composable ConstraintLayoutScope.() -> Unit
+) = PixaCard(
+    modifier = modifier,
+    variant = BaseCardVariant.Outlined,
+    onClick = onClick,
+    enabled = enabled,
+    isLoading = isLoading,
+    padding = padding,
+    cornerRadius = cornerRadius,
+    content = content
+)
+
+/** [PixaCard] pinned to [BaseCardVariant.Filled]. */
+@Composable
+fun FilledCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    isLoading: Boolean = false,
+    padding: SizeVariant = SizeVariant.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
+    backgroundColor: Color? = null,
+    content: @Composable ConstraintLayoutScope.() -> Unit
+) = PixaCard(
+    modifier = modifier,
+    variant = BaseCardVariant.Filled,
+    onClick = onClick,
+    enabled = enabled,
+    isLoading = isLoading,
+    padding = padding,
+    cornerRadius = cornerRadius,
+    backgroundColor = backgroundColor,
+    content = content
+)
+
+/** [PixaCard] pinned to [BaseCardVariant.Ghost]. */
+@Composable
+fun GhostCard(
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null,
+    enabled: Boolean = true,
+    padding: SizeVariant = SizeVariant.Medium,
+    cornerRadius: Dp = HierarchicalSize.Radius.Medium,
+    content: @Composable ConstraintLayoutScope.() -> Unit
+) = PixaCard(
+    modifier = modifier,
+    variant = BaseCardVariant.Ghost,
+    onClick = onClick,
+    enabled = enabled,
+    padding = padding,
+    cornerRadius = cornerRadius,
+    content = content
+)
+
+/** Full-width [PixaCard], standard padding — list/feed items. */
+@Composable
+fun InteractiveCard(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    variant: BaseCardVariant = BaseCardVariant.Elevated,
+    enabled: Boolean = true,
+    content: @Composable ConstraintLayoutScope.() -> Unit
+) = PixaCard(
+    modifier = modifier.fillMaxWidth(),
+    variant = variant,
+    onClick = onClick,
+    enabled = enabled,
+    padding = SizeVariant.Medium,
+    content = content
+)
+
+/** [PixaCard] with compact padding — dense layouts, small info boxes. */
+@Composable
+fun CompactCard(
+    modifier: Modifier = Modifier,
+    variant: BaseCardVariant = BaseCardVariant.Outlined,
+    onClick: (() -> Unit)? = null,
+    content: @Composable ConstraintLayoutScope.() -> Unit
+) = PixaCard(
+    modifier = modifier,
+    variant = variant,
+    onClick = onClick,
+    padding = SizeVariant.Compact,
+    content = content
+)

@@ -147,22 +147,18 @@ private fun SizeVariant.toSizeConfig(): TopNavSizeConfig = when (this) {
     )
 }
 
-/** Spec: "Fixed Expanded"/"Fixed Collapsed" give pixel dimensions (460/356px height), but those read
- * as full-screen Figma mockup frame captures, not the header bar's own height — the same false lead
- * this codebase's Progress Circle token comment already flags for a different component. Absent a
- * usable literal, [CollapsedHeightRatio]/[CollapsedTitleScaleRatio] are documented, conservative shrink
- * ratios applied on top of whatever [SizeVariant] height/font-scale the caller already selected. */
+/** Collapsed height ratio relative to [SizeVariant] height. */
 private const val CollapsedHeightRatio = 0.78f
+/** Collapsed title scale multiplier. */
 private const val CollapsedTitleScaleRatio = 0.85f
 
-/** Spec: "Leading Button: Must have 8px left padding (per changelog bugfix, Nov 2023)" — matches
- * [HierarchicalSize.Spacing.Small] exactly. */
+/** Leading action start padding matches [HierarchicalSize.Spacing.Small]. */
 private val LeadingActionStartPadding = HierarchicalSize.Spacing.Small
 
-/** Uses [HierarchicalSize.Shadow.Massive] for drop shadow on both Fixed and Floating variants. */
+/** Drop shadow elevation for both Fixed and Floating variants. */
 val NavHeaderElevation = HierarchicalSize.Shadow.Massive
 
-/** Bottom border width using [HierarchicalSize.Border.Compact]. */
+/** Bottom border width. */
 private val NavHeaderBorderWidth = HierarchicalSize.Border.Compact
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -290,128 +286,39 @@ private fun TopNavTitleSection(
 // ═══════════════════════════════════════════════════════════════════════════════
 
 /**
- * BaseTopNavBar - Enhanced Dynamic Top Navigation Bar Component
+ * Top navigation bar with actions, title/subtitle, avatar, and badges.
  *
- * A fully-featured top app bar with support for dynamic actions, optional title/subtitle,
- * avatar integration, badges, elevation, and complete theme awareness. Designed for
- * multiplatform Compose with comprehensive accessibility support.
+ * ### Anatomy
+ * Status bar spacer → actions row (start actions → title/avatar → end actions) → optional bottom divider.
  *
- * ## Key Features
- * - Dynamic start and end actions with custom icons and badges
- * - Optional title with string or custom composable support
- * - Optional subtitle below title
- * - Optional profile avatar as end action
- * - Badge support on actions for notifications
- * - Status bar padding support for safe area
- * - Size variants (Small/Medium/Large) affecting height, icons, and fonts
- * - Animated action buttons with ripple feedback
- * - Elevation/shadow support
- * - Optional bottom divider
- * - Horizontal scrolling for overflow actions
- * - Theme-aware styling with AppTheme integration
- * - Accessibility semantics for screen readers
+ * ### Variants
+ * [NavHeaderVariant.Fixed]: opaque, carries title, collapsible.
+ * [NavHeaderVariant.Floating]: transparent, no title, background-protected icons.
  *
- * ## Size Variants Impact
- * - **Small (48dp)**: Compact, 20dp icons, 0.9x title scale - for space-constrained layouts
- * - **Medium (56dp)**: Standard, 24dp icons, 1.0x title scale - default app bar
- * - **Large (72dp)**: Prominent, 28dp icons, 1.15x title scale - for landing/feature pages
+ * ### States
+ * Expanded/collapsed (Fixed only, caller-driven), enabled/disabled per action.
  *
- * ## Usage Examples
+ * ### Sizing
+ * [SizeVariant] Small (48dp), Medium (56dp), Large (72dp+) — drives height, icon size, font scale.
  *
- * ### Basic back button with title:
- * ```kotlin
- * PixaTopNavBar(
- *     title = "Settings",
- *     startActions = listOf(
- *         TopNavAction(
- *             icon = backIcon,
- *             contentDescription = "Navigate back",
- *             onClick = { navController.popBackStack() }
- *         )
- *     )
- * )
- * ```
- *
- * ### Title with subtitle and profile avatar:
- * ```kotlin
- * PixaTopNavBar(
- *     title = "Dashboard",
- *     subtitle = "Welcome back, John",
- *     profileImageUrl = currentUser.avatar,
- *     onAvatarClick = { navigateToProfile() },
- *     elevation = 2.dp
- * )
- * ```
- *
- * ### Actions with badges:
- * ```kotlin
- * PixaTopNavBar(
- *     title = "Messages",
- *     startActions = listOf(
- *         TopNavAction(menuIcon, "Menu", onClick = { openDrawer() })
- *     ),
- *     endActions = listOf(
- *         TopNavAction(
- *             icon = notificationIcon,
- *             contentDescription = "Notifications",
- *             onClick = { openNotifications() },
- *             badge = 5
- *         ),
- *         TopNavAction(searchIcon, "Search", onClick = { search() })
- *     )
- * )
- * ```
- *
- * ### Large size with custom title composable:
- * ```kotlin
- * PixaTopNavBar(
- *     titleComposable = {
- *         Row(verticalAlignment = Alignment.CenterVertically) {
- *             Image(brandLogo, "Logo", modifier = Modifier.size(32.dp))
- *             Spacer(modifier = Modifier.width(8.dp))
- *             Text("MyApp", style = AppTheme.typography.headerBold)
- *         }
- *     },
- *     size = SizeVariant.Large,
- *     elevation = 4.dp,
- *     bottomDivider = true
- * )
- * ```
- *
- * ### Many actions with scrolling:
- * ```kotlin
- * PixaTopNavBar(
- *     title = "Tools",
- *     endActions = listOf(
- *         TopNavAction(icon1, "Action 1", onClick = {}),
- *         TopNavAction(icon2, "Action 2", onClick = {}),
- *         TopNavAction(icon3, "Action 3", onClick = {}),
- *         TopNavAction(icon4, "Action 4", onClick = {}),
- *         TopNavAction(icon5, "Action 5", onClick = {})
- *     ),
- *     enableScrolling = true
- * )
- * ```
- *
- * @param modifier Modifier for the top nav bar container
- * @param variant [NavHeaderVariant.Fixed] (opaque, carries [title]) or [NavHeaderVariant.Floating] (transparent, no title, background-protected icons)
- * @param collapsed [NavHeaderVariant.Fixed] only; animates between expanded/collapsed states. Caller-driven via scroll listener. No effect on [NavHeaderVariant.Floating].
- * @param title Optional title text; ignored when [variant] is [NavHeaderVariant.Floating]. Always single-line/truncating.
- * @param subtitle Optional subtitle text below title
- * @param titleComposable Optional custom title composable (overrides title/subtitle if provided); also ignored when [variant] is [NavHeaderVariant.Floating]
- * @param titleAlignment Title alignment (Start or Center); forced to Start when [collapsed] is true
- * @param startActions List of actions displayed at the start (leading)
- * @param endActions List of actions displayed at the end (trailing)
- * @param mirrorLeadingIconForRtl Whether leading icon flips for RTL (default true for back arrows)
- * @param profileImageUrl Optional profile image URL (creates avatar end action)
- * @param onAvatarClick Callback when avatar is clicked (required if profileImageUrl provided)
- * @param containerColor Background color override; defaults by variant (Fixed: surface, Floating: transparent)
- * @param contentColor Color for icons and text
- * @param size Size variant affecting height, icon sizes, and font scale
- * @param elevation Elevation for shadow effect (defaults to [NavHeaderElevation])
- * @param bottomDivider If true, shows a thin divider line at the bottom
- * @param includeSafeAreaPadding If true, adds status bar padding at top
- * @param enableScrolling If true and actions overflow, enables horizontal scrolling
+ * @param variant Fixed (opaque + title) or Floating (transparent, no title)
+ * @param collapsed Fixed only: animate between expanded/collapsed
+ * @param title Optional title text (ignored when Floating)
+ * @param subtitle Optional subtitle below title
+ * @param titleComposable Custom title composable (overrides title/subtitle)
+ * @param titleAlignment Start or Center; forced Start when collapsed
+ * @param startActions Leading action buttons
+ * @param endActions Trailing action buttons
+ * @param mirrorLeadingIconForRtl Flips first start icon for RTL (default true)
+ * @param profileImageUrl Avatar image URL as trailing action
+ * @param onAvatarClick Avatar click callback (required with profileImageUrl)
+ * @param containerColor Background override
+ * @param contentColor Icon/text color
+ * @param size Height/icon/font preset
+ * @param elevation Shadow elevation (defaults to [NavHeaderElevation])
+ * @param bottomDivider Show bottom divider line
+ * @param includeSafeAreaPadding Status bar inset
+ * @param enableScrolling Horizontal scroll for overflow actions
  */
 @Composable
 fun PixaTopNavBar(
@@ -460,7 +367,7 @@ fun PixaTopNavBar(
         0.dp
     }
 
-    // Determine title alignment — collapsed always left-aligns, per spec's Android guidance.
+    // Collapsed always left-aligns.
     val resolvedAlignment = when {
         isCollapsed -> TopNavTitleAlignment.Start
         titleAlignment != null -> titleAlignment
@@ -491,7 +398,7 @@ fun PixaTopNavBar(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Start actions section — spec: leading button gets an extra 8dp left inset.
+            // Leading button gets an extra left inset.
             if (startActions.isNotEmpty()) {
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(sizeConfig.actionSpacing),
@@ -520,7 +427,7 @@ fun PixaTopNavBar(
                 Spacer(modifier = Modifier.width(HierarchicalSize.Spacing.Small))
             }
 
-            // Title section (flexible weight) — spec: Floating headers carry no title at all.
+            // Flexible-weight title section (none for Floating variant).
             if (!isFloating) {
                 Box(
                     modifier = Modifier
@@ -592,7 +499,7 @@ fun PixaTopNavBar(
             }
         }
 
-        // Bottom divider — spec: "Border Weight: 1px inside."
+        // Bottom divider.
         if (bottomDivider) {
             Box(
                 modifier = Modifier

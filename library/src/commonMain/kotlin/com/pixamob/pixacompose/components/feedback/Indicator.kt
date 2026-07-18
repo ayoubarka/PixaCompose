@@ -73,12 +73,8 @@ enum class ProgressOrientation {
 }
 
 /**
- * Fill direction for determinate progress, mapped from Uber Base's Progress
- * Circle spec: "Clockwise: Forward progress communication" / "Counterclockwise:
- * Countdown timer context." [PixaProgressPill] has no literal rotation, so it
- * maps [CounterClockwise] onto the standard countdown-bar convention instead —
- * the fill depletes from the end (right) edge rather than growing from the
- * start (left) edge.
+ * Fill direction for determinate progress. [Clockwise] grows from the leading
+ * edge; [CounterClockwise] depletes (countdown convention).
  */
 enum class ProgressDirection {
     Clockwise,
@@ -106,21 +102,18 @@ enum class PagerIndicatorWidthMode {
 }
 
 /**
- * Uber Base's Page Controls color-scheme variants. [Default]/[Inverse] map onto this library's
- * theme-relative content/surface tokens directly. [AlwaysDark]/[AlwaysLight] are meant by spec to stay
- * a fixed color *regardless of app theme* (e.g. a light dot readable over a photo even in dark mode) —
- * Pixa's 79-token catalog has no theme-invariant "always light/dark" category (see [CLAUDE.md]'s
- * documented groups), so these two intentionally approximate with the closest theme-relative base
- * tokens instead of a hardcoded literal `Color(0x...)`, which the hard color rule forbids outright.
+ * Pager indicator color schemes. [Default] and [Inverse] map to theme-relative
+ * tokens. [AlwaysDark]/[AlwaysLight] approximate theme-invariant colors using
+ * the closest theme-relative base tokens.
  */
 enum class PageControlColorScheme {
     /** Selected: theme's primary content tone. Unselected: theme's neutral border/surface tone. */
     Default,
     /** For dark/colored backdrops: selected/unselected swap toward the theme's lighter tones. */
     Inverse,
-    /** Approximates Uber's theme-invariant "always dark backdrop" scheme with the theme's lightest surface tone. */
+    /** Approximates a theme-invariant "always dark backdrop" scheme. */
     AlwaysDark,
-    /** Approximates Uber's theme-invariant "always light backdrop" scheme with the theme's strongest content tone. */
+    /** Approximates a theme-invariant "always light backdrop" scheme. */
     AlwaysLight
 }
 
@@ -133,10 +126,7 @@ data class ProgressSegment(
     val progress: Float,
     val variant: ProgressVariant = ProgressVariant.Primary,
     val color: Color? = null,
-    // Spec: "the active step loops a fill from left to right and fades
-    // back" — marks the one currently-in-progress segment (as opposed to
-    // already-complete or not-yet-started ones) so it gets that loop
-    // animation instead of a static fill.
+    // Marks the currently-in-progress segment for loop animation.
     val isActive: Boolean = false
 )
 
@@ -165,9 +155,7 @@ data class ProgressConfig(
 )
 
 /**
- * Linear progress bar configuration — Uber Base's Progress Bar spec names 3
- * sizes (Small/Medium/Large), each pairing a track thickness with a label
- * text style (`LabelSmall`/`LabelMedium`/`LabelLarge`).
+ * Linear progress bar configuration — 3 sizes, each with track thickness and label style.
  */
 @Immutable
 @Stable
@@ -177,13 +165,8 @@ data class LinearProgressConfig(
 )
 
 /**
- * Pager indicator configuration. Spec: "Spacing between indicators: 8px" — [spacing] now matches
- * [HierarchicalSize.Spacing.Small] exactly (previously mismatched at [HierarchicalSize.Border.Nano],
- * 0.5dp — a leftover from before this component was audited against Uber Base's Page Controls spec).
- * The spec gives no exploitable literal dot diameter ("appear consistent... but scale with layout"),
- * so [indicatorSize] now reads from [HierarchicalSize.Badge] — the closest existing ladder for small
- * circular indicator dots — rather than [HierarchicalSize.Border], which is meant for stroke widths,
- * not dot diameters, and rendered as a near-invisible 0.5dp dot before this audit.
+ * Pager indicator configuration. [indicatorSize] reads from [HierarchicalSize.Badge].
+ * [spacing] defaults to [HierarchicalSize.Spacing.Small].
  */
 @Immutable
 @Stable
@@ -196,8 +179,7 @@ data class PagerIndicatorConfig(
     val cornerRadius: Dp = HierarchicalSize.Radius.Compact
 )
 
-/** Colors resolved for a [PageControlColorScheme], selected/unselected only — Page Controls have no
- * track/label roles, unlike [ProgressColors]. */
+/** Colors resolved for a [PageControlColorScheme]. */
 @Immutable
 @Stable
 data class PageControlColors(
@@ -205,9 +187,9 @@ data class PageControlColors(
     val unselected: Color
 )
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get progress colors based on variant
@@ -252,21 +234,9 @@ private fun getProgressColors(
 }
 
 /**
- * Get progress configuration based on size. Uber Base's Progress Circle spec
- * names 4 sizes (Small/Medium/Large/X Large) — the branches below already
- * bucket the 8-tier [SizeVariant] down to that same 4-tier ladder
- * (Nano/Compact/Small→Small, Medium→Medium, Large/Huge→Large, Massive→X Large),
- * so no separate spec-specific enum is needed here (unlike, say,
- * [com.pixamob.pixacompose.components.display.ListItemDensity], which needed
- * one because its own generic-vs-spec tiers didn't already line up this
- * cleanly). [ProgressConfig.strokeWidth] is [HierarchicalSize.Border.Compact]
- * (1dp) in every branch, an exact match to the spec's literal "Border Style
- * (all sizes): Weight 1px" — replacing the previous [HierarchicalSize.Border.Nano]
- * (0.5dp) default. The spec's own pixel-dimension table (e.g. "286×118") reads
- * as full Figma-frame sizes including the below-circle label region, not the
- * ring's own diameter, so it isn't a usable literal source for [ProgressConfig.size]
- * — this keeps the existing icon-scale diameters (14/18/24/28dp) rather than
- * inventing an unjustified circle-diameter figure from an ambiguous table.
+ * Resolves [ProgressConfig] from [SizeVariant]. Stroke width is always
+ * [HierarchicalSize.Border.Compact] (1dp). Circle diameters use icon-scale
+ * tokens (14/18/24/28dp).
  */
 @Composable
 private fun getProgressConfig(size: SizeVariant): ProgressConfig {
@@ -301,22 +271,13 @@ private fun getProgressConfig(size: SizeVariant): ProgressConfig {
 }
 
 /**
- * Resolves [PixaProgressPill]'s track height + shape — Uber Base's
- * Determinate Pill anatomy ("pill-shaped track... label placed inside").
- * Height comes from [HierarchicalSize.Chip], the existing token category
- * already built for "a rounded container sized to hold inline text," a much
- * closer fit than the hairline-thin [HierarchicalSize.SliderTrack]/[HierarchicalSize.Border]
- * categories other progress components use for tracks with no inside label.
+ * Resolves [PixaProgressPill] height via [HierarchicalSize.Chip].
  */
 @Composable
 private fun getProgressPillHeight(size: SizeVariant): Dp = HierarchicalSize.Chip.forVariant(size)
 
 /**
- * Resolves [LinearProgressConfig] for the bar's 3 spec sizes. Track thickness
- * comes from [HierarchicalSize.SliderTrack] — the existing token category
- * built for exactly this ("linear track thickness"), rather than the
- * previous default's border-width token ([HierarchicalSize.Border.Nano],
- * 0.5dp — an almost invisible hairline for a progress bar's own track).
+ * Resolves [LinearProgressConfig] — track thickness from [HierarchicalSize.SliderTrack].
  */
 @Composable
 private fun getLinearProgressConfig(size: SizeVariant): LinearProgressConfig {
@@ -338,11 +299,8 @@ private fun getLinearProgressConfig(size: SizeVariant): LinearProgressConfig {
 }
 
 /**
- * Resolves [PageControlColors] for a [PageControlColorScheme]. Spec: "Disabled: Grayed indicators —
- * Active: `contentStateDisabled`; Other: `backgroundStateDisabled`" overrides every scheme, since a
- * disabled control shouldn't carry scheme-specific brand/inverse color. See [PageControlColorScheme]'s
- * own doc for why [AlwaysDark]/[AlwaysLight] approximate rather than literally match Uber's
- * theme-invariant tokens.
+ * Resolves [PageControlColors] for a [PageControlColorScheme]. Disabled state
+ * overrides all schemes with neutral disabled tokens.
  */
 @Composable
 private fun getPageControlColors(scheme: PageControlColorScheme, enabled: Boolean): PageControlColors {
@@ -371,15 +329,12 @@ private fun getPageControlColors(scheme: PageControlColorScheme, enabled: Boolea
 }
 
 /**
- * Windows large page counts down to a visible dot list, per spec: "Clipping behavior when indicators
- * exceed screen capacity... When 6+ pages exist, outer dots shrink to suggest additional pages are
- * available... the middle indicator remains centered from page 3 through page n-2." Below the spec's
- * 6-page threshold, every dot renders at full scale (`center` is unconstrained, so no clipping happens).
- * At/above threshold, a [CoreWindowRadius]-dot full-scale core slides with [currentPage] but freezes at
- * `pageCount`'s edges — exactly reproducing the spec's "centered from page 3 through page n-2" — with
- * one [PeekScale]-scaled "peek" dot on each side of the core when a page exists beyond it.
+ * Windows large page counts down to a visible dot list. Below 6 pages, every
+ * dot renders full-scale. At/above 6, a [CoreWindowRadius]-dot core slides
+ * with [currentPage] and freezes at edges, with [PeekScale]-scaled peek dots
+ * on each side when additional pages exist beyond the core.
  *
- * @return list of (page index, render scale) pairs, in left-to-right render order.
+ * @return list of (page index, render scale) pairs in left-to-right order
  */
 private fun windowedPageControlDots(pageCount: Int, currentPage: Int): List<Pair<Int, Float>> {
     if (pageCount <= AdaptiveSizingThreshold) {
@@ -395,70 +350,61 @@ private fun windowedPageControlDots(pageCount: Int, currentPage: Int): List<Pair
     return dots
 }
 
-/** Spec: "When 6+ pages exist" — the exact page count at which adaptive shrinking/clipping engages. */
+/** Page count threshold at which adaptive shrinking/clipping engages. */
 private const val AdaptiveSizingThreshold = 6
 
-/** Full-scale dots on each side of the current page — matches spec's own "5 or fewer... easy to count
- * at a glance" recommendation as the always-fully-visible core width (2 either side + current = 5). */
+/** Full-scale dots on each side of the current page — 2 either side + current = 5. */
 private const val CoreWindowRadius = 2
 
-/** Render scale for the shrunk "peek" dots just outside the full-scale core, suggesting more pages exist. */
+/** Render scale for shrunk "peek" dots outside the core. */
 private const val PeekScale = 0.6f
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // CIRCULAR PROGRESS INDICATOR
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * PixaCircularIndicator — a circular loading/progress ring.
  *
  * ### Purpose
- * Indicates status or completion of a process — open-ended (indeterminate,
- * short waits) or precise (determinate, long waits with a known duration).
+ * Indicates status or completion of a process: indeterminate (open-ended,
+ * short waits) or determinate (precise, long waits with known duration).
  *
  * ### Anatomy
- * A circular track + a rotating (indeterminate) or filling (determinate)
- * ring, plus an optional label **below** the circle — Uber Base's literal
- * Circle Type anatomy, not a label overlaid inside the ring (the previous
- * implementation's placement, corrected here).
+ * Circular track + rotating (indeterminate) or filling (determinate) ring,
+ * plus an optional label **below** the circle.
  *
  * ### Variants
- * Indeterminate (continuous spin, [progress] = null) vs Determinate
- * ([direction] = [ProgressDirection.CounterClockwise] for countdown timers).
+ * Indeterminate ([progress] = null) vs Determinate ([ProgressDirection.CounterClockwise]
+ * for countdown timers).
  *
  * ### States
  * Active (animating) and Complete — pass [completedContent] to crossfade
- * into it once [completed] is true, using the spec's literal 500ms/0ms-delay/
- * Linear transition ([MotionDuration.Slow] + [LinearEasing]).
+ * once [completed] is true (500ms linear transition).
  *
  * ### Sizing
- * [sizePreset] buckets the 8-tier [SizeVariant] down to Uber Base's own
- * Small/Medium/Large/X Large ladder — see [getProgressConfig]. Stroke width
- * is a fixed 1dp ([HierarchicalSize.Border.Compact]) at every size, matching
- * the spec's literal "Border Style (all sizes): 1px."
+ * [sizePreset] → 4 tiers via [getProgressConfig]. Stroke width is fixed
+ * at 1dp ([HierarchicalSize.Border.Compact]) at every size.
  *
  * ### Customization
- * [variant] (color), [sizePreset], [direction], [showPercentage] (label
- * below the circle — no longer restricted to non-Small sizes now that it
- * lives below the ring instead of cramped inside it), [customColors],
+ * [variant], [sizePreset], [direction], [showPercentage], [customColors],
  * [completedContent].
  *
  * ### Usage notes
- * - Switch from indeterminate to determinate once a wait-time estimate
- *   becomes available (Uber Base's "progressive enhancement").
- * - Placement communicates scope: centered on a screen = whole page loading;
- *   inside a sheet/button = that surface's own content loading.
+ * - Switch from indeterminate to determinate once a wait-time estimate is known.
+ * - Placement communicates scope: centered = whole-page loading; inside a
+ *   sheet/button = that surface's own loading.
  *
- * @param progress Progress value from 0.0 to 1.0 (null for indeterminate)
- * @param modifier Modifier for the indicator (sizes/positions the ring + label stack)
- * @param variant Color variant (Primary, Success, Warning, Error, Info, Neutral)
+ * @param progress Progress value 0.0 to 1.0 (null for indeterminate)
+ * @param modifier Modifier for the indicator
+ * @param variant Color variant (Default: Primary)
  * @param sizePreset Size preset (Default: Medium)
  * @param direction Fill direction for determinate progress (Default: Clockwise)
  * @param showPercentage Show a percentage label below the circle (determinate only)
- * @param completed Whether the Complete state is active — crossfades to [completedContent]
- * @param completedContent Content shown once [completed] is true (success message, result, etc.)
+ * @param completed Whether the Complete state is active
+ * @param completedContent Content shown once [completed] is true
  * @param customColors Optional custom colors
- * @param contentDescription Accessibility description (defaults to Uber Base's literal VoiceOver wording, "Loading" / "Loading, N% complete")
+ * @param contentDescription Accessibility description (Default: "Loading" / "Loading, N% complete")
  */
 @Composable
 fun PixaCircularIndicator(
@@ -514,7 +460,7 @@ fun PixaCircularIndicator(
                 contentAlignment = Alignment.Center
             ) {
                 if (isIndeterminate) {
-                    // Indeterminate circular animation
+                    // Indeterminate spinning animation
                     val infiniteTransition = rememberInfiniteTransition(label = "circular_progress")
                     val rotation by infiniteTransition.animateFloat(
                         initialValue = 0f,
@@ -543,7 +489,7 @@ fun PixaCircularIndicator(
                             style = Stroke(width = strokeWidthPx, cap = StrokeCap.Round)
                         )
 
-                        // Progress arc (90 degrees)
+                        // Progress arc
                         drawArc(
                             color = colors.progress,
                             startAngle = rotation - 90f,
@@ -590,7 +536,7 @@ fun PixaCircularIndicator(
                 }
             }
 
-            // Optional label below the circle — Uber Base's literal Circle Type anatomy
+            // Optional label below the circle
             if (showPercentage && !isIndeterminate) {
                 val percentage = (progressValue * 100).toInt()
                 val percentageText = config.percentageFormat.replace("%d", percentage.toString())
@@ -619,55 +565,43 @@ fun PixaCircularIndicator(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PROGRESS PILL
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaProgressPill — a pill-shaped determinate progress indicator with its
- * label inside the pill — a known-duration alternative
- * to [PixaCircularIndicator] for the same "long wait, measurable progress"
- * use case.
+ * PixaProgressPill — a pill-shaped determinate progress indicator with
+ * its label inside the pill. Known-duration alternative to [PixaCircularIndicator].
  *
  * ### Anatomy
- * A pill-shaped track ([AppTheme.shapes.pill]) + a fill that grows from the
- * start edge, with an optional label **centered inside the pill** — distinct
- * from [PixaCircularIndicator]'s label-below-the-circle anatomy, per Uber
- * Base's own "Circle Type" vs "Pill Type" anatomy split.
+ * Pill-shaped track ([AppTheme.shapes.pill]) + fill growing from the start
+ * edge, with an optional label **centered inside** the pill.
  *
  * ### States
- * Active (filling) and Complete — pass [completedContent] to crossfade into
- * it once [completed] is true, using the same literal 500ms/Linear timing as
- * [PixaCircularIndicator].
+ * Active (filling) and Complete — pass [completedContent] to crossfade
+ * (500ms linear).
  *
  * ### Sizing
- * [sizePreset] resolves the pill's height via [HierarchicalSize.Chip] (a
- * rounded-container-sized-for-text token, not the hairline track thickness
- * [PixaLinearIndicator] uses — see [getProgressPillHeight]). Width fills the
- * available space by default; override via [modifier].
+ * [sizePreset] resolves height via [HierarchicalSize.Chip]. Width fills
+ * available space by default.
  *
  * ### Customization
- * [variant] (color), [sizePreset], [direction] (fill grows from the start
- * edge for [ProgressDirection.Clockwise], depletes from the end edge for
- * [ProgressDirection.CounterClockwise] — the standard countdown-bar
- * convention, since a pill has no literal rotation to reverse), [label]
- * override, [customColors], [completedContent].
+ * [variant], [sizePreset], [direction] ([CounterClockwise] depletes from the
+ * end edge for countdown convention), [label], [customColors], [completedContent].
  *
- * This is a determinate-only component — Uber Base defines no "Indeterminate
- * Pill" variant (only Indeterminate Circle, Determinate Circle, Determinate
- * Pill), so [progress] is non-nullable here, unlike [PixaCircularIndicator].
+ * Determinate-only — [progress] is non-nullable.
  *
- * @param progress Progress value from 0.0 to 1.0
- * @param modifier Modifier for the pill (defaults to filling available width)
- * @param variant Color variant (Primary, Success, Warning, Error, Info, Neutral)
+ * @param progress Progress value 0.0 to 1.0
+ * @param modifier Modifier for the pill
+ * @param variant Color variant (Default: Primary)
  * @param sizePreset Size preset (Default: Medium)
- * @param direction Fill direction (Default: Clockwise — grows from the start edge)
- * @param label Custom label shown inside the pill (defaults to a percentage, e.g. "70%")
- * @param showLabel Whether to render a label inside the pill (Default: true)
- * @param completed Whether the Complete state is active — crossfades to [completedContent]
+ * @param direction Fill direction (Default: Clockwise)
+ * @param label Custom label inside the pill (defaults to percentage)
+ * @param showLabel Whether to render label inside the pill (Default: true)
+ * @param completed Whether the Complete state is active
  * @param completedContent Content shown once [completed] is true
  * @param customColors Optional custom colors
- * @param contentDescription Accessibility description (defaults to Uber Base's literal VoiceOver wording, "Loading, N% complete")
+ * @param contentDescription Accessibility description (Default: "Loading, N% complete")
  */
 @Composable
 fun PixaProgressPill(
@@ -747,40 +681,34 @@ fun PixaProgressPill(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // LINEAR PROGRESS INDICATOR
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Linear Progress Indicator — a linear progress indicator for tracking completion.
+ * Linear Progress Indicator — a linear progress bar for tracking completion.
  *
  * ### Anatomy
- * A linear background track + a progress indicator fill, with an optional
- * label below (or beside, for [ProgressOrientation.Vertical]).
+ * Background track + progress fill, with optional label below (horizontal)
+ * or beside (vertical).
  *
  * ### Sizing
- * [size] resolves track thickness + label style via [getLinearProgressConfig]
- * (Small/Medium/Large, per spec). [height] remains available as an explicit
- * override for a one-off exact thickness; when null (default) it derives
- * from [size]. Previously this defaulted to [HierarchicalSize.Border.Nano]
- * (0.5dp) — a border-width token misapplied as a bar thickness, rendering an
- * almost invisible hairline; that default is fixed here.
+ * [size] resolves track thickness + label style via [getLinearProgressConfig].
+ * [height] overrides track thickness explicitly; null derives from [size].
  *
  * ### Behavior
  * Determinate: fills from the leading edge proportionally to [progress].
- * Indeterminate: per spec, "pulses back and forth... quintic ease-in-and-out,
- * with opaque color moving center to sides on enter" — implemented as a
- * center-anchored fill that grows outward and back, not a one-directional
- * sweep.
+ * Indeterminate: center-anchored pulse that grows outward and back
+ * (quintic ease-in-out).
  *
- * @param progress Progress value from 0.0 to 1.0 (null for indeterminate)
+ * @param progress Progress value 0.0 to 1.0 (null for indeterminate)
  * @param modifier Modifier for the indicator
- * @param variant Color variant
- * @param orientation Horizontal or Vertical
- * @param size Size tier (Default: Medium) — resolves track thickness + label style
- * @param height Optional exact track thickness override (width for vertical); null derives from [size]
- * @param showLabel Show text label
- * @param label Custom label text (shows percentage if not provided for determinate)
+ * @param variant Color variant (Default: Primary)
+ * @param orientation Horizontal or Vertical (Default: Horizontal)
+ * @param size Size tier — resolves track thickness + label style (Default: Medium)
+ * @param height Exact track thickness override; null derives from [size]
+ * @param showLabel Show text label (Default: false)
+ * @param label Custom label text (defaults to percentage for determinate)
  * @param customColors Optional custom colors
  * @param contentDescription Accessibility description
  */
@@ -811,9 +739,7 @@ fun PixaLinearIndicator(
         label = "linear_progress"
     )
 
-    // Indeterminate: center-anchored pulse, growing outward and back —
-    // spec's "opaque color moving center to sides," quintic ease-in-and-out,
-    // back-and-forth (RepeatMode.Reverse, not Restart).
+    // Indeterminate: center-anchored pulse, quintic ease-in-out, back-and-forth.
     val infiniteTransition = rememberInfiniteTransition(label = "indeterminate_linear_progress")
     val pulseFraction by infiniteTransition.animateFloat(
         initialValue = 0f,
@@ -957,9 +883,9 @@ fun PixaLinearIndicator(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // CONVENIENCE VARIANTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Loading Indicator - Indeterminate circular progress for loading states
@@ -979,14 +905,11 @@ fun LoadingIndicator(
 }
 
 /**
- * Progress Bar - Linear determinate progress with label.
+ * Progress Bar — linear determinate progress with label. Pass [content] to
+ * crossfade automatically once [progress] reaches 1f (500ms linear); omit
+ * to keep the bar visible indefinitely.
  *
- * Per the spec's 3rd named state — "progress bar disappears when complete,
- * replaced by content... 500ms, linear" — pass [content] to crossfade into
- * it automatically once [progress] reaches 1f; omit it to keep the bar
- * visible indefinitely (previous behavior, unchanged).
- *
- * @param content Shown in place of the bar once [progress] reaches 1f, via a 500ms linear crossfade (spec-exact)
+ * @param content Shown in place of the bar once [progress] reaches 1f
  */
 @Composable
 fun ProgressBar(
@@ -1026,14 +949,12 @@ fun ProgressBar(
 }
 
 /**
- * Segmented Progress Indicator - Multi-part progress bar with different colors per segment.
+ * Segmented Progress Indicator — multi-part progress bar with different colors per segment.
  *
- * The segment with [ProgressSegment.isActive] set loops a left-to-right fill
- * that fades back (spec: "quintic ease-out, 500ms"); other segments render
- * as a static fill, matching "each progress step is filled when the task is
- * complete."
+ * The segment with [ProgressSegment.isActive] loops a left-to-right fill
+ * that fades back (quintic ease-out, 500ms); others are static fills.
  *
- * @param segments List of progress segments with their own progress and color
+ * @param segments List of progress segments
  * @param modifier Modifier for the indicator
  * @param height Height of the progress bar
  * @param showLabel Show combined percentage label
@@ -1110,9 +1031,8 @@ fun SegmentedProgressIndicator(
 }
 
 /**
- * The active/in-progress segment's loop animation: a fill sweeps left to
- * right and fades back, repeating — spec: "loops a fill from left to right
- * and fades back... quintic ease-out, 500ms."
+ * Active segment loop animation: fill sweeps left to right and fades back
+ * (quintic ease-out, 500ms).
  */
 @Composable
 private fun ActiveSegmentFill(
@@ -1133,8 +1053,7 @@ private fun ActiveSegmentFill(
         ),
         label = "sweep"
     )
-    // Fades in at the start of the sweep, peaks mid-way, fades out at the
-    // end — "fades back" without a separate reverse-phase animation.
+    // Peaks mid-way, fades out at the end.
     val fadeAlpha = sin(kotlin.math.PI * sweep).toFloat().coerceIn(0f, 1f)
 
     Box(modifier = modifier.background(color.copy(alpha = 0.3f), shape)) {
@@ -1148,50 +1067,44 @@ private fun ActiveSegmentFill(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PAGER INDICATOR
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaPagerIndicator — a row of indicators, each representing a card, banner, page, or screen
- * in a list.
+ * PixaPagerIndicator — a row of indicators, each representing a page in a list.
  *
  * ### Anatomy
- * A row of small dots (or, via the Pixa-native [PagerIndicatorStyle.Dash] extension, dashes), one per
- * page, equidistantly spaced. Optionally wrapped in a pill container ([showContainer]) — spec: "Enabled:
- * White fill, 1px border inside, 16px blur drop shadow" — for use floating over photos/carousels.
+ * A row of dots (or dashes via [PagerIndicatorStyle.Dash]), one per page,
+ * equidistantly spaced. Optionally wrapped in a pill container ([showContainer]).
  *
  * ### Adaptive sizing / clipping
- * Below [AdaptiveSizingThreshold] (6) pages, every dot renders full-scale. At/above it, [windowedPageControlDots]
- * windows the row down to a [CoreWindowRadius]-dot full-scale core (matching spec's own "5 or fewer...
- * easy to count at a glance" guidance) plus one shrunk peek dot per side, with the core frozen at the
- * sequence's ends — spec: "the middle indicator remains centered from page 3 through page n-2."
+ * Below 6 pages, every dot renders full-scale. At/above 6, [windowedPageControlDots]
+ * windows the row to a 5-dot core plus one shrunk peek dot per side, with the
+ * core frozen at sequence edges.
  *
  * ### Variants
- * [colorScheme] maps Uber Base's four color schemes (Default/Inverse/AlwaysDark/AlwaysLight) — see
- * [PageControlColorScheme] for the AlwaysDark/AlwaysLight approximation note. [style]/[widthMode] are
- * pre-existing Pixa extensions beyond the spec's dots-only anatomy, kept for backward compatibility.
+ * [colorScheme] provides Default/Inverse/AlwaysDark/AlwaysLight.
+ * [style]/[widthMode] are Pixa extensions beyond dots-only anatomy.
  *
  * ### States
- * [enabled] false renders the spec's "Disabled: Grayed indicators" state. When [onPageSelected] is set,
- * each dot becomes tappable — spec: "Tapping indicators navigates to that page."
+ * [enabled] false renders the disabled state. When [onPageSelected] is set,
+ * each dot becomes tappable.
  *
  * ### Usage notes
- * Spec recommends 5 or fewer pages "easy to count at a glance," discourages 10+ without an alternative
- * navigation pattern, and requires bottom-only placement — none of these are enforced at runtime (a
- * component library shouldn't throw on caller content choices), just documented here.
+ * 5 or fewer pages recommended, 10+ discouraged without alternative navigation.
  *
  * @param pageCount Total number of pages
  * @param currentPage Current page index (0-based)
  * @param modifier Modifier for the indicator
- * @param style Visual style (Circle, spec-accurate, or the Pixa-native Dash extension)
- * @param widthMode Width mode (Uniform or ExpandSelected)
- * @param colorScheme Uber Base color-scheme variant (ignored if [config] is supplied)
- * @param enabled Whether the control is interactive/full-color; false renders the spec's Disabled state
- * @param showContainer Wraps the dots in a pill container (spec: white fill, 1px border, drop shadow)
- * @param onPageSelected Callback when a dot is tapped with its real (unwindowed) page index; dots are non-interactive when null
- * @param config Configuration for sizes and colors, overriding [colorScheme]/[enabled] entirely when supplied
- * @param contentDescription Accessibility label (spec: "Page"); the per-dot state ("X of Y") is announced separately via `stateDescription`
+ * @param style Visual style (Default: Circle)
+ * @param widthMode Width mode (Default: Uniform)
+ * @param colorScheme Color scheme variant (Default: Default)
+ * @param enabled Whether the control is interactive (Default: true)
+ * @param showContainer Wraps dots in a pill container (Default: false)
+ * @param onPageSelected Callback with real page index; null = non-interactive
+ * @param config Overrides colors/sizes entirely when supplied
+ * @param contentDescription Accessibility label (Default: "Page"); per-dot state announced via `stateDescription`
  */
 @Composable
 fun PixaPagerIndicator(
@@ -1334,9 +1247,9 @@ fun PagerIndicator(
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // USAGE EXAMPLES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * USAGE EXAMPLES:

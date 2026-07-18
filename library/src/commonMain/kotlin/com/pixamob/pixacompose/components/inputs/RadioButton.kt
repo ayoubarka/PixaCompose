@@ -96,16 +96,9 @@ data class RadioButtonStateColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Uber Base's Sizing section pins the radio border to a fixed "1 px weight,
- * inside alignment" regardless of size — mirroring [Checkbox.kt]'s identical
- * spec constraint — so every tier below resolves to the same
- * [HierarchicalSize.Border.Compact] rather than scaling with [size].
- * [innerCircleSize] is not spec-dictated (the spec only shows a filled
- * circle, no ratio) so it is derived as half the outer diameter, the
- * conventional radio-fill proportion, rather than hand-picked per tier.
- * [SizeVariant] itself is a Pixa extension beyond the spec (which shows a
- * single fixed-size control) kept for consistency with the rest of the
- * library and existing [RadioGroup]/[HorizontalRadioGroup] call sites.
+ * Border width is fixed at [HierarchicalSize.Border.Compact] (1px) across
+ * all size tiers. [innerCircleSize] is derived as half the outer diameter.
+ * [SizeVariant] scales outer circle size, corner radius, and typography.
  */
 @Composable
 private fun getRadioButtonSizeConfig(size: SizeVariant): RadioButtonSizeConfig {
@@ -136,13 +129,8 @@ private fun getRadioButtonSizeConfig(size: SizeVariant): RadioButtonSizeConfig {
 /**
  * Get radio button colors based on variant.
  *
- * Uber Base's states table names only content-role tokens
- * (`contentPrimary`/`contentTertiary`/`contentStateDisabled`/`contentNegative`)
- * plus a `borderSelected` focus outline — no filled-surface token for the
- * selected container beyond the indicator fill itself. [RadioButtonVariant.Outlined]
- * (transparent container, focus-colored border on selection) is the closest
- * match to that; [Filled]/[Ghost] remain pre-existing Pixa-native extensions
- * the spec doesn't define but doesn't forbid either.
+ * [RadioButtonVariant.Outlined] is the default; [Filled]/[Ghost] are
+ * alternative style extensions.
  */
 @Composable
 private fun getRadioButtonTheme(
@@ -220,15 +208,9 @@ private fun getRadioButtonTheme(
 /**
  * Base RadioButton circle implementation.
  *
- * Hover/pressed use fixed black/white alpha scrims per Uber Base's states
- * table (4%/8% black while unselected, 10%/20% white while selected — the
- * same literal-percentage treatment [Checkbox.kt]'s `PixaCheckboxBox` and
- * [com.pixamob.pixacompose.components.display.PixaTile]'s `TileOverlayScrim`
- * already use for their own hover/pressed states). Focus renders a fixed 3px
- * ([HierarchicalSize.Border.Large]) outline in `brandBorderFocus` (closest
- * existing token to the spec's "borderSelected") in place of the normal
- * state border, rather than as a separate offset ring, to avoid growing the
- * radio's fixed footprint.
+ * Hover/pressed use fixed black/white alpha scrims (4%/8% black unselected,
+ * 10%/20% white selected). Focus renders a 3px ([HierarchicalSize.Border.Large])
+ * outline in `brandBorderFocus` in place of the normal state border.
  */
 @Composable
 private fun PixaRadioButtonCircle(
@@ -316,15 +298,10 @@ private fun PixaRadioButtonCircle(
 /**
  * Base RadioButton implementation.
  *
- * Uses [Modifier.selectable] (role = [androidx.compose.ui.semantics.Role.RadioButton])
- * so the selected value is announced programmatically per spec's VoiceOver
- * ("Selected, [Label]" / "[Label], Button") and TalkBack ("Checked"/"Not
- * checked" + RadioButton role) accessibility requirements. The whole row
- * (circle + label) is the click target and carries a
- * [HierarchicalSize.TouchTarget.Small] (48px, WCAG 2.5.5) minimum height, per
- * spec's "increase interactive target area to include the label text" rule —
- * "small touch targets cause errors and frustration" — this holds even when
- * [RadioButtonSizeConfig.outerCircleSize] is visually smaller.
+ * Uses [Modifier.selectable] (role = [Role.RadioButton]) so the selected
+ * value is announced programmatically to assistive tech. The whole row
+ * (circle + label) is the click target with a 48px minimum height
+ * ([HierarchicalSize.TouchTarget.Small]).
  */
 @Composable
 private fun PixaRadioButton(
@@ -405,7 +382,7 @@ private fun PixaRadioButton(
             .sizeIn(minHeight = HierarchicalSize.TouchTarget.Small)
             .then(clickModifier)
             .focusable(enabled = enabled, interactionSource = interactionSource),
-        // Uber Base: "text wraps beneath the radio with control and first line top-aligned"
+        // Text wraps beneath the radio with control and first line top-aligned.
         horizontalArrangement = if (labelPosition == RadioButtonLabelPosition.End) {
             Arrangement.Start
         } else {
@@ -427,62 +404,36 @@ private fun PixaRadioButton(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * RadioButton — Single-selection input control that allows users to choose one option from a
- * set, enforcing mutually-exclusive selection from 2+ options.
- *
- * ### Purpose
- * Lets a user pick exactly one option from a predefined list. Never use it
- * to trigger navigation — per spec, "selecting a radio should never navigate
- * users somewhere new."
+ * RadioButton — Single-selection input control for choosing one option from a set.
  *
  * ### Anatomy
- * Circular container (1px inside-aligned border) + filled inner circle shown
- * on selection — see [PixaRadioButtonCircle]. The optional label/description
- * sits beside the circle and is itself part of the click target.
+ * Circular container (1px inside-aligned border) + filled inner circle on
+ * selection. Label/description sits beside the circle as part of the click target.
  *
  * ### Variants
- * [RadioButtonVariant.Outlined] (default) is the closest match to the spec's
- * content-role-only token set; `.Filled`/`.Ghost` are pre-existing Pixa
- * extensions.
+ * [RadioButtonVariant.Outlined] (default), [Filled], [Ghost].
  *
  * ### States
- * default/disabled at minimum, plus hover/pressed alpha scrims, a 3px focus
- * outline, and an `isError` state — all per the spec's states table.
+ * Default, disabled, hover/pressed scrims, 3px focus outline, error.
  *
  * ### Sizing
- * [SizeVariant] (Small/Medium/Large) — a Pixa extension; the spec itself
- * shows a single fixed-size control (see [getRadioButtonSizeConfig]). Border
- * width stays fixed at 1px ([HierarchicalSize.Border.Compact]) across all
- * tiers per spec.
+ * [size] scales outer circle, label style, and spacing. Border width is
+ * fixed at 1px.
  *
- * ### Adaptive behavior
- * Out of scope: the spec defines no responsive breakpoint behavior for the
- * control itself beyond "wrap long labels to a second line," which
- * [PixaRadioButton] already does via normal text layout.
- *
- * ### Customization
- * [variant], [size], [label]/[description], [labelPosition], [isError].
- * Selection state must be driven externally via [selected]/[onClick] — use
- * [RadioGroup] to manage a group's single-selection state.
- *
- * ### Usage notes
- * - Always pre-select exactly one option in a group (spec requirement).
- * - Prefer vertical stacking — see [RadioGroup] — over [HorizontalRadioGroup];
- *   the spec calls horizontal layout out as something to avoid because users
- *   struggle to tell which label belongs to which control.
- * - Keep groups to 5 or fewer options; beyond that, the spec recommends a
- *   dropdown/select control instead (no such control substitution is made
- *   automatically here — it's a caller-level content decision).
+ * ### Usage
+ * - Always pre-select one option in a group
+ * - Prefer vertical stacking ([RadioGroup]) over horizontal
+ * - Keep groups to ≤5 options; use a dropdown for larger sets
  *
  * @param selected Whether this radio button is selected
- * @param onClick Callback when radio button is clicked (null for read-only)
- * @param modifier Modifier for the radio button
- * @param enabled Whether the radio button is enabled
- * @param isError Whether to show the radio button in error state
+ * @param onClick Callback when clicked (null for read-only)
+ * @param modifier Modifier
+ * @param enabled Whether enabled
+ * @param isError Whether to show error state
  * @param label Optional text label
  * @param description Optional descriptive text below the label
  * @param labelPosition Position of the label (Start or End)
- * @param variant Visual style (Outlined, Filled, or Ghost)
+ * @param variant Visual style (Outlined, Filled, Ghost)
  * @param size Size variant (Small, Medium, Large)
  *
  * @sample
@@ -526,19 +477,16 @@ fun RadioButton(
 }
 
 /**
- * RadioGroup — Container for managing radio button selections.
+ * RadioGroup — Vertical container for managing radio button selections.
  *
- * Manages a group of radio buttons with a single selected value, stacked
- * vertically. Uber Base's spec recommends vertical stacking over horizontal
- * layout ("very easy for the user to see which label corresponds" to each
- * option) and caps the recommended option count at 5 — beyond that, prefer a
- * dropdown/select control instead.
+ * Stacks radio buttons vertically. Recommended over horizontal layout for
+ * clarity. Keep groups to ≤5 options; use a dropdown for larger sets.
  *
  * @param options List of option values
  * @param selectedOption Currently selected option
  * @param onOptionSelected Callback when an option is selected
- * @param modifier Modifier for the group
- * @param enabled Whether the radio group is enabled
+ * @param modifier Modifier
+ * @param enabled Whether enabled
  * @param optionLabel Function to get label for each option
  * @param variant Visual style for all buttons
  * @param size Size for all buttons
@@ -578,11 +526,9 @@ fun <T> RadioGroup(
 /**
  * Horizontal RadioGroup — Row layout for radio buttons.
  *
- * Uber Base's spec explicitly recommends against horizontal radio layout
- * ("users struggle determining if the label corresponds to the radio button
- * before or after"). This composable is kept as a pre-existing Pixa
- * extension for cases that intentionally accept that tradeoff (e.g. compact
- * rating scales) — prefer [RadioGroup] by default.
+ * Horizontal radio layout can make it harder to associate labels with controls.
+ * Prefer [RadioGroup] (vertical) by default. Kept for cases that accept this
+ * tradeoff (e.g. compact rating scales).
  */
 @Composable
 fun <T> HorizontalRadioGroup(
@@ -621,8 +567,7 @@ fun <T> HorizontalRadioGroup(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Filled RadioButton — solid-container radio style (Pixa extension beyond
- * the spec's content-role-only token set).
+ * Filled RadioButton — solid-container radio style (Pixa extension).
  */
 @Composable
 fun FilledRadioButton(

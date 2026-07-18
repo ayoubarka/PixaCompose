@@ -77,14 +77,11 @@ import kotlinx.coroutines.launch
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Uber Base's two Modal Full Screen presentation types.
+ * Full screen modal presentation types.
  *
- * [StackedSheet] — "recommended on iOS": shows a visible edge of the previous context
- * behind the modal (via [PixaFullScreenModal]'s optional `underlyingContent` slot, which
- * models the spec's "snapshot of the previous context that was suspended"), and supports
- * swipe-down-to-dismiss. [Immersive] hides the previous context entirely — "use for video
- * viewing, photo capture, barcode scanning, or complex multi-step tasks" — and only
- * dismisses via an explicit button tap, never a gesture.
+ * [StackedSheet]: shows a visible edge of the previous context via [underlyingContent],
+ * supports swipe-down-to-dismiss. [Immersive]: hides previous context entirely, dismissal
+ * via button tap only (video/photo/camera/barcode use cases).
  */
 enum class FullScreenModalPresentation {
     StackedSheet,
@@ -119,36 +116,26 @@ private fun getFullScreenModalTheme(): FullScreenModalColors {
     )
 }
 
-/**
- * Spec: "Border radius (48px)" is a fixed specification only on wide (windowed) viewports —
- * narrow viewports render genuinely edge-to-edge with square corners, so this constant is
- * never applied below [WindowSizeClass.Medium]. Not tokenized into [HierarchicalSize.Radius]
- * (whose ladder tops out at `Massive` = 24dp): the value is a one-off fixed constant pinned
- * by an external spec, not a Pixa-native rounding tier that other components should share.
- */
+/** Wide-viewport corner radius (48dp). Narrow viewports render edge-to-edge with square corners. */
 private val WideModalCornerRadius = 48.dp
 
-/** Spec: "Border weight: 4px (outside align)" — matches [HierarchicalSize.Border.Huge]. */
+/** Wide-viewport border width. */
 private val WideModalBorderWidth = HierarchicalSize.Border.Huge
 
-/** Spec: wide-viewport default panel size ("W: 816px; H: 445px"), read as a max-width/max-height
- * cap rather than a fixed box so real content can still determine actual height up to that cap. */
+/** Wide-viewport max panel size — caps width so content determines actual height. */
 private val WideModalMaxWidth = 816.dp
 
-/** Spec: wide viewports margin panels 40px from the screen edge — the same foundation value
- * [com.pixamob.pixacompose.components.overlay.DialogWidth]-based dialogs already use for their own wide-viewport edge inset. */
+/** Wide-viewport edge margin (40dp). */
 private val WideEdgeMargin = 40.dp
 
-/** Pixels of downward drag required before a Stacked Sheet's swipe-down gesture commits to
- * dismissal rather than springing back — mirrors [com.pixamob.pixacompose.components.overlay.PixaBottomSheet]'s drag-to-dismiss threshold. */
+/** Drag threshold for Stacked Sheet swipe-down dismissal. */
 private val SwipeDismissThreshold = 200.dp
 
 // ════════════════════════════════════════════════════════════════════════════
 // INTERNAL FULL SCREEN MODAL
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Enter: same "shift up + fade" motion language [com.pixamob.pixacompose.components.overlay.PixaDialog] uses for its own reveal —
- * a full screen modal is still a "surface entering," per [AnimationUtils]' motion taxonomy. */
+/** Enter: shift up + fade (same motion language as [com.pixamob.pixacompose.components.overlay.PixaDialog]). */
 @Composable
 private fun fullScreenModalEnterTransition() = with(LocalDensity.current) {
     slideInVertically(
@@ -213,67 +200,42 @@ private fun FullScreenModalHeader(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaFullScreenModal — a blocking experience that takes over the entire screen, delivering
- * a message or helping users complete a task, then returning to the previous context when
- * completed.
+ * Full-screen modal blocking experience for tasks or messages.
  *
  * ### Anatomy
- * Fixed header ([title] + required dismissal button) → scrollable [content] → optional fixed
- * button dock ([confirmText]/[dismissText]), matching spec: "image scrolls away; heading/buttons
- * remain fixed when content exceeds max height." The dismissal button is never optional — per
- * spec's content model ("Dismissal button — always required") and anti-pattern list ("No
- * explicit dismissal button").
+ * Fixed header ([title] + required dismissal) → scrollable [content] → optional button dock
+ * ([confirmText]/[dismissText]). Header/buttons stay fixed while body scrolls.
  *
  * ### Variants
- * [presentation] — [FullScreenModalPresentation.StackedSheet] (peeks the previous context via
- * [underlyingContent], swipe-down dismissible) or [FullScreenModalPresentation.Immersive]
- * (fully opaque, button-dismissal only).
+ * [FullScreenModalPresentation.StackedSheet]: peeks previous context via [underlyingContent],
+ * swipe-down-dismissible. [FullScreenModalPresentation.Immersive]: fully opaque, button-only dismiss.
  *
  * ### States & behavior
- * Stacked Sheet dismissal per spec: swiping down from the top of the screen (always available,
- * via an invisible top drag strip) or swiping down from anywhere once the content is scrolled
- * to its top (tracked via the body's scroll position), plus tapping the dismissal button.
- * Immersive dismissal per spec: tapping [onConfirm] or the dismissal button only — no swipe
- * gesture is attached.
+ * Stacked Sheet: swipe down from top strip or from scrolled-to-top body, plus dismissal button.
+ * Immersive: [onConfirm] or dismissal button only — no swipe gesture.
  *
  * ### Sizing / Adaptive behavior
- * Narrow viewports ([WindowSizeClass.Compact]) render genuinely edge-to-edge — no radius,
- * border, margin, or shadow — matching the spec's iPhone (375×812) full-bleed reference.
- * Wide viewports ([WindowSizeClass.Medium]/[WindowSizeClass.Expanded]) render as a centered,
- * chrome'd panel capped at the spec's exact iPad/Tablet box (816×445 max, 48px radius, 4px
- * border, 16px-blur shadow, 40px edge margin) — the same narrow/wide split [com.pixamob.pixacompose.components.overlay.PixaDialog] and
- * [com.pixamob.pixacompose.components.overlay.PixaBottomSheet] already use, reusing [WindowSizeClass] rather than inventing a second
- * responsive system. [AppTheme.colors.baseSurfaceDefault] stands in for the spec's literal
- * `#FFFFFF` fill so the panel still themes correctly in dark mode — an intentional approximation.
- *
- * ### Customization
- * [underlyingContent] is a free-form slot for the "snapshot of the previous context" a Stacked
- * Sheet peeks behind — the caller owns what that snapshot looks like, since this library has
- * no navigation/routing layer to source it from automatically.
+ * Narrow viewports (Compact): edge-to-edge, no radius/border/shadow.
+ * Wide viewports (Medium/Expanded): centered panel with 48dp radius, 4dp border, 40dp margin.
  *
  * ### Usage notes
- * Uber Base: "get confirmation before closing a modal when people could lose their work" — this
- * component does not build a second confirmation modal internally (would create a modal-in-modal
- * dependency this library's overlay family avoids); instead, gate the call to [onDismissRequest]
- * at the call site and show [com.pixamob.pixacompose.components.overlay.PixaConfirmDialog]/[com.pixamob.pixacompose.components.overlay.PixaDestructiveDialog] first when unsaved work
- * exists. Primary actions must stay in the docked button ([confirmText]) or inline within
- * [content] — per spec anti-pattern, this component deliberately has no header-trailing action
- * slot ("Top-right navigation bar placement" is explicitly a Don't).
+ * Gate [onDismissRequest] at call site for unsaved-work confirmation (component does not build
+ * a nested dialog). Primary actions go in docked [confirmText] or inline [content] — no header
+ * action slot.
  *
- * @param onDismissRequest Callback when the modal should close (dismiss button, swipe, or back/ESC)
- * @param title Heading — required by spec ("Always include descriptive title; avoid leaving off titles")
- * @param modifier Modifier for the modal panel
- * @param presentation [FullScreenModalPresentation.StackedSheet] (default) or [FullScreenModalPresentation.Immersive]
- * @param colors Custom colors overriding the default theme
- * @param headingMaxLines Heading truncation limit (spec default: 2 lines)
- * @param dismissIcon Optional custom painter for the dismissal icon; falls back to a text glyph when unset
- * @param underlyingContent Optional "previous context" snapshot peeked behind a [FullScreenModalPresentation.StackedSheet]
- * @param confirmText Docked primary action button text (spec: "docked floating placement at bottom")
- * @param dismissText Docked secondary/"Cancel"-style button text
- * @param onConfirm Primary action callback; also dismisses [FullScreenModalPresentation.Immersive] modals
- * @param onDismiss Secondary action callback (defaults to [onDismissRequest] when unset)
+ * @param onDismissRequest Close callback (dismiss button, swipe, ESC)
+ * @param title Required heading
+ * @param presentation StackedSheet or Immersive
+ * @param colors Custom color overrides
+ * @param headingMaxLines Heading truncation (default: 2)
+ * @param dismissIcon Custom dismiss icon painter (falls back to text glyph)
+ * @param underlyingContent Previous-context snapshot for StackedSheet
+ * @param confirmText Docked primary action text
+ * @param dismissText Docked secondary/cancel text
+ * @param onConfirm Primary action callback
+ * @param onDismiss Secondary action callback (defaults to onDismissRequest)
  * @param dismissOnBackClick ESC/back dismissal
- * @param content Scrollable body content — the modal's task or message
+ * @param content Scrollable body content
  */
 @Composable
 fun PixaFullScreenModal(
@@ -489,8 +451,7 @@ fun PixaFullScreenModal(
 // CONVENIENCE VARIANTS
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Preset for the spec's "video viewing, photo capture, barcode scanning, or complex
- * multi-step tasks" use case — [FullScreenModalPresentation.Immersive], no underlying-context peek. */
+/** Preset for immersive tasks (video, photo, barcode, multi-step) — no underlying-context peek. */
 @Composable
 fun ImmersiveFullScreenModal(
     onDismissRequest: () -> Unit,
@@ -509,8 +470,7 @@ fun ImmersiveFullScreenModal(
     )
 }
 
-/** Preset for the spec's "signup or onboarding, forms, terms and conditions" use case —
- * [FullScreenModalPresentation.StackedSheet] with a docked confirm/cancel action pair. */
+/** Preset for signup, forms, terms — [StackedSheet] with confirm/cancel action pair. */
 @Composable
 fun TaskFullScreenModal(
     onDismissRequest: () -> Unit,

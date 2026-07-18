@@ -58,9 +58,8 @@ import com.pixamob.pixacompose.utils.WindowSizeClass
 /**
  * Container style of the dropdown *field*.
  *
- * This is a PixaCompose axis shared with [PixaTextField], not eBay's Stacked/Floating axis — that one
- * is about label placement and is a separate concern (see [PixaDropdown]'s docs). [Ghost] is eBay's
- * "borderless" case, which the spec exempts from the minimum-width rule.
+ * Shared with [PixaTextField]'s Filled/Outlined/Ghost axis. [Ghost] is the
+ * borderless case, exempt from the minimum-width rule.
  */
 enum class DropdownVariant {
     Outlined,
@@ -71,14 +70,9 @@ enum class DropdownVariant {
 /**
  * How the option list is presented.
  *
- * [Adaptive] resolves per [AppTheme.windowSizeClass], following eBay's rule that small screens
- * "launch a sheet or a popover menu" while medium/large screens "disclose a list in a popover menu":
- * [WindowSizeClass.Compact] gets [Sheet], everything else gets [Popover]. [Sheet]/[Popover] force one
- * presentation — an explicit caller choice always wins over the adaptive default.
- *
- * eBay also mentions a fullscreen modal for native apps, but conditions it on "the size and
- * complexity of the list" — a property only the caller knows. It is therefore not offered here; see
- * [PixaDropdown]'s docs.
+ * [Adaptive] resolves per [AppTheme.windowSizeClass]:
+ * [WindowSizeClass.Compact] gets [Sheet], everything else gets [Popover].
+ * [Sheet]/[Popover] force one presentation.
  */
 enum class DropdownPresentation {
     Adaptive,
@@ -122,9 +116,8 @@ data class DropdownColors(
 /**
  * Per-size configuration for the field.
  *
- * Corner radius, border width, and horizontal padding are container-level constants rather than
- * per-size entries — eBay states one padding value (16px) for all dropdowns, and the field family
- * ([PixaTextField]/[PixaTextArea]) locks one radius so stacked form controls agree.
+ * Corner radius, border width, and horizontal padding are container-level constants
+ * shared with [PixaTextField]/[PixaTextArea] for stackable form controls.
  */
 @Immutable
 @Stable
@@ -138,23 +131,18 @@ private data class DropdownSizeConfig(
 // THEME PROVIDER
 // ════════════════════════════════════════════════════════════════════════════
 
-/** eBay: "Left/right content padding: 16px." One value for every dropdown, so not a per-size entry. */
+/** Horizontal padding is a container-level constant shared with [PixaTextField]. */
 private val FieldHorizontalPadding = HierarchicalSize.Spacing.Large
 
-/** eBay: "Label-to-dropdown padding: 4px." */
 private val LabelGap = HierarchicalSize.Spacing.Compact
 
-/** eBay: "Dropdown-to-helper-text padding: 8px" and "Placeholder-to-icon padding: 8px." */
 private val HelperGap = HierarchicalSize.Spacing.Small
 private val ValueToIconGap = HierarchicalSize.Spacing.Small
 
-/** Border weight is NOT COVERED by the eBay spec; matches [PixaTextField]'s resting field border. */
+/** Border weight matches [PixaTextField]'s resting field border. */
 private val FieldBorderWidth = HierarchicalSize.Border.Compact
 
-/**
- * eBay: "Minimum width: 2× height for bordered dropdowns." A spec-derived multiplier rather than a
- * magic number — kept as math against the resolved height so it holds across every size tier.
- */
+/** Minimum width: 2× height for bordered dropdowns. */
 private const val BorderedMinWidthMultiplier = 2
 
 @Composable
@@ -186,10 +174,7 @@ private fun getDropdownTheme(variant: DropdownVariant): DropdownColors {
 }
 
 /**
- * eBay: "There are two sizes available: 40px and 48px" — those land exactly on
- * [HierarchicalSize.Input]'s Small/Medium tiers, which [PixaTextField] already uses, so the dropdown
- * shares the field ladder instead of its own raw one. Large (56dp) extends the ladder for parity with
- * the rest of the input family.
+ * Sizes map to [HierarchicalSize.Input] tiers (shared with [PixaTextField]).
  */
 @Composable
 private fun getDropdownSizeConfig(size: SizeVariant): DropdownSizeConfig {
@@ -221,9 +206,8 @@ private fun getDropdownSizeConfig(size: SizeVariant): DropdownSizeConfig {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Projects the dropdown's options onto the menu surface's content model, so the presented list gets
- * Uber Base's item anatomy and its Active/Disabled states rather than a parallel implementation.
- * Identity travels as the option's index, which keeps `T` free of any `id`/equality requirement.
+ * Maps dropdown options to the menu surface's content model.
+ * Identity travels as the option's index.
  */
 private fun <T> List<DropdownItem<T>>.toMenuContent(selectedItem: T?): List<MenuContent> =
     mapIndexed { index, item ->
@@ -244,42 +228,22 @@ private fun <T> List<DropdownItem<T>>.toMenuContent(selectedItem: T?): List<Menu
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaDropdown — "allow for selection of a value within a predetermined dataset." The field follows
- * eBay Playbook's Dropdown spec; the presented option list is Uber Base's Menu surface, reused via
- * `PixaMenuContent`/`menuContentItems` rather than reimplemented here.
+ * PixaDropdown — selection of a value within a predetermined dataset.
  *
  * ### Anatomy
- * Two layers, deliberately kept separate. The **field**: [label] (+ [required] asterisk) → container
- * (optional [leadingIcon] → selected value or [placeholder] → trailing chevron) → [helperText] /
- * [errorText]. The **option surface**: a menu presented per [presentation], owning its own chrome,
- * sizing, and colors.
+ * Two layers: the **field** ([label] + container → value/[placeholder] → chevron → [helperText]/[errorText])
+ * and the **option surface** (menu presented per [presentation]).
  *
  * ### Adaptive behavior
- * [DropdownPresentation.Adaptive] (the default) reads [AppTheme.windowSizeClass]: compact screens get
- * a `PixaSheet`, larger screens an anchored popover menu — eBay's "sheet or popover on small screens,
- * popover menu on web". A caller may pin either presentation explicitly.
- *
- * eBay also allows a fullscreen modal on native "determined by size and complexity of the list".
- * That is deliberately not offered: the component cannot infer a list's complexity, and a modal is a
- * far heavier interruption than a form field warrants. A caller who genuinely needs one should drive
- * `PixaFullScreenModal` directly rather than have a dropdown silently escalate into it.
+ * [DropdownPresentation.Adaptive] reads [AppTheme.windowSizeClass]:
+ * compact → [Sheet], larger → popover menu. Explicit [presentation] always wins.
  *
  * ### States
- * Enabled/disabled ("users cannot focus on or change disabled fields"), [isError] (where [errorText]
- * replaces [helperText], per spec), and expanded. Selection is single — the spec does not cover
- * multi-select.
+ * Enabled/disabled, [isError] (error text replaces helper text), expanded.
  *
  * ### Sizing
- * [size] resolves the field height off the shared input ladder (eBay's 40px/48px are Small/Medium).
- * Bordered variants take the spec's "minimum width: 2× height"; [DropdownVariant.Ghost] is the
- * "borderless" case the spec exempts. An overlong value truncates before the icon, per spec.
- *
- * ### Usage notes
- * Content rules the spec states, left to the author: labels are sentence case, 1–3 words, no ending
- * punctuation; options are "short, distinct, and easy to scan"; error text is neutral and jargon-free.
- * eBay's Stacked/Floating label variants are not modelled — this renders the Stacked case only, and a
- * floating label is a cross-field concern that would belong to the whole input family at once, not to
- * the dropdown alone.
+ * [size] resolves via [HierarchicalSize.Input] (shared with [PixaTextField]).
+ * Bordered variants enforce minimum width: 2× height.
  *
  * @param items Options to choose from
  * @param selectedItem Currently selected value
@@ -287,18 +251,18 @@ private fun <T> List<DropdownItem<T>>.toMenuContent(selectedItem: T?): List<Menu
  * @param modifier Modifier for the field
  * @param placeholder Placeholder shown until a value is selected
  * @param variant Field container style
- * @param size Size preset (eBay's 40px/48px map to Small/Medium)
- * @param presentation How the option list is presented (Default: [DropdownPresentation.Adaptive])
- * @param colors Custom *field* colors; the option surface is themed by the menu layer
- * @param leadingIcon Optional leading icon in the field
+ * @param size Size preset
+ * @param presentation How the option list is presented (default: adaptive)
+ * @param colors Custom field colors; option surface is themed by the menu layer
+ * @param leadingIcon Optional leading icon
  * @param trailingIcon Trailing chevron; rotates 180° while expanded
  * @param enabled Whether the dropdown is interactive
- * @param label Field label — the spec treats this as required
+ * @param label Field label
  * @param isError Whether to show the error state
  * @param errorText Error message; replaces [helperText] when [isError] is true
  * @param helperText Helper text below the field
  * @param required Whether to show the required asterisk
- * @param sheetTitle Title for the compact-screen sheet (Default: [label], else [placeholder])
+ * @param sheetTitle Title for the compact-screen sheet
  */
 @Composable
 fun <T> PixaDropdown(
@@ -377,7 +341,7 @@ fun <T> PixaDropdown(
         expanded = false
     }
 
-    // eBay: bordered dropdowns take a minimum width of 2× their height; borderless ones don't.
+    // Bordered dropdowns take a minimum width of 2× their height; borderless ones don't.
     val minWidthModifier = if (variant == DropdownVariant.Ghost) {
         Modifier
     } else {

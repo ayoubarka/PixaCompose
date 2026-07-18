@@ -60,40 +60,30 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
- * PixaRangeSlider — the dual-knob variant of Uber Base's "Slider" component.
+ * PixaRangeSlider — Dual-knob range selection control.
  *
- * Source: https://base.uber.com/6d2425e9f/p/30cac1-slider.md
+ * ### Anatomy
+ * Track (inactive + active-between-thumbs fill) + two thumbs,
+ * plus optional lower/upper value readout.
  *
- * Purpose: lets a user select a range between a lower and upper bound with
- *   immediate visual feedback (the track fills between the two thumbs).
+ * ### States
+ * Enabled, disabled, per-thumb dragging/keyboard-focused (value bubble).
  *
- * Anatomy: track (inactive + active-between-thumbs fill) + two thumbs, plus
- *   an optional lower/upper value readout.
+ * ### Sizing
+ * [SizeVariant]-driven via [HierarchicalSize], matching [PixaSlider].
  *
- * States: enabled, disabled, and per-thumb dragging/keyboard-focused — each
- *   thumb independently shows its own floating value bubble while active,
- *   per spec's "Active + value label" state.
+ * ### Interaction
+ * Drag either thumb, tap the track to move the closest thumb, or use keyboard:
+ * Tab/Shift+Tab moves focus between thumbs, arrows step the focused thumb.
  *
- * Sizing: [SizeVariant]-driven via [HierarchicalSize], matching [PixaSlider].
- *
- * Interaction: drag either thumb, tap the track to move whichever thumb is
- *   closer to the tap point, or use the keyboard — per spec, Tab/Shift+Tab
- *   moves focus between the lower and upper thumb (they're two independent
- *   focus targets), then Left/Right/Up/Down/Page Up/Page Down/Home/End step
- *   the focused thumb exactly as in [PixaSlider], clamped against the other
- *   thumb's current value.
- *
- * Adaptive behavior: pointer math is mirrored under RTL the same way as
- *   [PixaSlider] — see that component's doc for why only the pointer
- *   coordinate conversion (not the thumb's `offset()`/`Alignment` placement)
- *   needs manual mirroring.
- *
- * Customization: size, custom [RangeSliderColors], discrete step count,
- *   value formatting. Not exposed: independent variants (Outlined/Ghost)
- *   the way [PixaSlider] has — the spec doesn't call out a distinct visual
- *   treatment for the range configuration beyond the second thumb, so this
- *   stays a single (brand-filled) look rather than triplicating the palette
- *   surface for a distinction the spec doesn't ask for.
+ * @param valueRange Range value (start to end)
+ * @param onValueChange Callback when range changes
+ * @param modifier Modifier
+ * @param size Size preset
+ * @param enabled Whether enabled
+ * @param steps Number of discrete steps (0 = continuous)
+ * @param valueFormat Format function for value readout
+ * @param colors Custom colors
  */
 
 @Immutable
@@ -389,7 +379,7 @@ fun PixaRangeSlider(
                 )
 
                 // Lower thumb — independent focus target so Tab/Shift+Tab can
-                // select it distinctly from the upper thumb, per spec.
+                // select it distinctly from the upper thumb.
                 Box(
                     modifier = Modifier
                         .offset(x = (maxWidthDp - thumbSize) * animatedLowerFraction)

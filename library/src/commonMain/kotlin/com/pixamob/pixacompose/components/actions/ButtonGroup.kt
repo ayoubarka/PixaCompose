@@ -21,14 +21,12 @@ import com.pixamob.pixacompose.theme.SizeVariant
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Selection behavior, mapped from Uber Base's Single Select (radio) / Multi-select
- * (checkbox) button group variants:
- * - [Single] = radio behavior — selecting one item deselects all others; tapping
- *   the already-selected item is a no-op (a radio group always has one selection).
- * - [Multi] = checkbox behavior — any number of items can be selected; tapping a
- *   selected item deselects it.
- * - [None] = plain action group — buttons independently trigger tasks, no
- *   selection state is tracked (Uber Base's "grouping related actions" use case).
+ * Selection behavior:
+ * - [Single] = radio — selecting one deselects all others; tapping the
+ *   already-selected item is a no-op.
+ * - [Multi] = checkbox — any number can be selected; tapping selected deselects.
+ * - [None] = plain action group — buttons trigger tasks independently,
+ *   no selection state is tracked.
  */
 enum class ButtonGroupSelectionMode {
     Single,
@@ -37,11 +35,9 @@ enum class ButtonGroupSelectionMode {
 }
 
 /**
- * Layout/overflow behavior, mapped from Uber Base's Clustered / Horizontal scroll
- * layout modes. Uber Base's third mode (vertical scroll, where surrounding page
- * content scrolls beneath a pinned button group) is a page-level layout concern,
- * not something the group container itself renders — out of scope here, same as
- * any other component that can simply be placed inside a scrollable column.
+ * Layout/overflow behavior:
+ * - [Clustered] — wraps buttons onto additional rows at the container edge.
+ * - [HorizontalScroll] — keeps buttons in a single scrollable row.
  */
 enum class ButtonGroupLayout {
     Clustered,
@@ -112,51 +108,42 @@ private fun ScrollingButtonGroup(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaButtonGroup — a collection of 2+ [PixaButton]s combined to let users filter
- * content, make selections, or trigger related actions in a compact space.
+ * PixaButtonGroup — a collection of 2+ [PixaButton]s for filtering content,
+ * making selections, or triggering related actions in a compact space.
  *
  * ### Anatomy
- * A container of individual [PixaButton]s ([items]). Each button keeps its own
- * enabled/selected state while participating in the group's shared selection
- * logic — the group itself renders no chrome of its own (no background/border),
- * matching Uber Base's "2 or more buttons inside a container" anatomy without
- * inventing a new visual surface.
+ * A container of individual [PixaButton]s ([items]) — each button keeps its own
+ * enabled/selected state while participating in the group's selection logic.
+ * The group renders no chrome of its own (no background/border).
  *
  * ### Variants
  * [selectionMode] drives interaction: [ButtonGroupSelectionMode.Single] (radio —
- * exactly one item selected, tapping the current selection is a no-op),
+ * exactly one selected, tapping the current selection is a no-op),
  * [ButtonGroupSelectionMode.Multi] (checkbox — any number selected, tap again to
- * deselect), [ButtonGroupSelectionMode.None] (plain action group, [onItemClick]
- * fires but no selection is tracked).
+ * deselect), [ButtonGroupSelectionMode.None] (plain action group, no selection
+ * tracking).
  *
  * ### Layout
- * [ButtonGroupLayout.Clustered] wraps buttons onto additional rows at the
- * container edge (Uber Base's Medium/Large breakpoint recommendation);
- * [ButtonGroupLayout.HorizontalScroll] keeps a single scrollable row (Uber
- * Base's Small/mobile breakpoint recommendation). Callers pick explicitly per
- * [AppTheme.windowSizeClass] rather than the group silently switching itself —
- * consistent with [PixaButton]'s own opt-in-only adaptive behavior.
+ * [ButtonGroupLayout.Clustered] wraps buttons onto additional rows;
+ * [ButtonGroupLayout.HorizontalScroll] keeps a single scrollable row.
+ * Callers pick explicitly rather than the group switching itself.
  *
  * ### Sizing
- * A single [size] and [shape] apply to every button in the group, satisfying
- * Uber Base's "buttons of the same size and the same corner radius work better
- * together" rule structurally rather than leaving it to caller discipline.
+ * A single [size] and [shape] apply to every button, keeping them visually
+ * consistent.
  *
  * ### States
- * [enabled] = false disables the whole group — every button renders disabled,
- * per Uber Base ("when the button group is disabled, all of the buttons in the
- * group are defaulted to disabled"). Per-item [ButtonGroupItem.enabled] can
- * additionally disable a single button within an otherwise enabled group.
+ * [enabled] = false disables the whole group. Per-item [ButtonGroupItem.enabled]
+ * can additionally disable a single button within an otherwise enabled group.
  *
  * ### Usage notes
  * - Use short, succinct labels; avoid long labels that hide the scroll
- *   affordance in [ButtonGroupLayout.HorizontalScroll] (Uber Base content rule,
- *   not runtime-enforced — same precedent as [PixaButton]'s label rules).
- * - Don't group [ButtonVariant.Ghost] (tertiary/transparent) buttons together —
- *   prefer [ButtonVariant.Tonal] (secondary) or [ButtonVariant.Outlined] (outline).
- * - Compare against [PixaTab]/segmented-control patterns for pure navigation or
- *   single-choice-only cases; button groups additionally support multi-select
- *   and independently-triggered actions.
+ *   affordance in [ButtonGroupLayout.HorizontalScroll] (not runtime-enforced).
+ * - Don't group [ButtonVariant.Ghost] buttons together — prefer [ButtonVariant.Tonal]
+ *   or [ButtonVariant.Outlined].
+ * - Use [PixaTab] or segmented-controls for navigation/single-choice-only cases;
+ *   button groups additionally support multi-select and independently-triggered
+ *   actions.
  *
  * @param items The buttons to render, in order (provide at least 2)
  * @param modifier Modifier for the group container

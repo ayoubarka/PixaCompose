@@ -27,14 +27,13 @@ enum class DividerOrientation {
 }
 
 /**
- * Uber Base defines exactly two divider archetypes, distinguished by weight *and*
- * alignment (not just thickness) — see [DividerVariant.defaultThickness]/[defaultInset].
+ * Two divider archetypes distinguished by thickness and alignment.
  */
 enum class DividerVariant {
-    /** 1dp line inset to a content's leading edge, ending flush with the far edge. Separates cells within a list/row group. */
+    /** 1dp line inset to leading edge. Separates items within a list/row group. */
     Cell,
 
-    /** 4dp line stretched full-bleed edge-to-edge. Separates larger content clusters/sections (e.g. card feed groups). */
+    /** 4dp line full-bleed edge-to-edge. Separates larger content clusters/sections. */
     Module
 }
 
@@ -52,17 +51,15 @@ data class DividerColors(
 // THEME PROVIDER (size/inset resolvers)
 // ════════════════════════════════════════════════════════════════════════════
 
-/** Border weight per Uber spec: Cell = 1dp, Module = 4dp. */
+/** Border weight: Cell = 1dp, Module = 4dp. */
 private fun DividerVariant.defaultThickness(): Dp = when (this) {
     DividerVariant.Cell -> HierarchicalSize.Divider.Compact
     DividerVariant.Module -> HierarchicalSize.Divider.Huge
 }
 
 /**
- * Leading inset per Uber spec: Cell dividers "begin with text labels" (inside alignment),
- * Module dividers are full-bleed ("outside alignment", edge-to-edge). [HierarchicalSize.Spacing.Small]
- * mirrors the only real list-row content inset in this library ([ListItemCard]'s padding);
- * callers with a different leading edge should override via [PixaDivider]'s `inset` param.
+ * Leading inset: Cell dividers align inside with text; Module dividers are full-bleed.
+ * Callers with a non-standard leading edge should override via `inset`.
  */
 private fun DividerVariant.defaultInset(): Dp = when (this) {
     DividerVariant.Cell -> HierarchicalSize.Spacing.Small
@@ -102,50 +99,49 @@ private fun PixaDividerImpl(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaDivider - Visual separator between content.
+ * PixaDivider — visual separator between sections of content.
  *
- * Purpose: a non-interactive line that separates sections of content; it carries no
- * text/icon/accessory content of its own.
+ * ### Anatomy
+ * A single filled line, [DividerOrientation.Horizontal] (default) or
+ * [DividerOrientation.Vertical], with an optional leading inset.
  *
- * Anatomy: a single filled line, [DividerOrientation.Horizontal] (default) or rotated
- * [DividerOrientation.Vertical], with an optional leading inset before the line begins.
+ * ### Variants
+ * [DividerVariant.Cell] (1dp, inset to leading edge) and
+ * [DividerVariant.Module] (4dp, full-bleed edge-to-edge).
  *
- * Variants: [DividerVariant.Cell] (1dp, inset to a leading edge, e.g. between list rows)
- * and [DividerVariant.Module] (4dp, full-bleed edge-to-edge, e.g. between card-feed sections).
+ * ### States
+ * None — dividers are decorative and non-interactive.
  *
- * States: none — dividers are decorative and non-interactive per spec.
+ * ### Sizing
+ * Driven by [variant] via [HierarchicalSize.Divider]; [thickness] overrides.
  *
- * Sizing: driven by [variant] via [HierarchicalSize.Divider]; [thickness] overrides it directly
- * when a design needs a weight outside the two spec'd values.
+ * ### Adaptive behavior
+ * Out of scope — divider weight/spacing stays constant across breakpoints.
  *
- * Adaptive behavior: out of scope. The Uber spec states divider spacing/weight stays constant
- * across breakpoints, so this does not read `AppTheme.windowSizeClass`.
- *
- * Usage notes: per spec, only place a divider *between* content — never after the last cell or
- * section on a page/list, since it visually implies more content follows.
- *
- * ## Usage Examples
- *
- * ```kotlin
- * // Cell divider between list rows (most common)
- * PixaDivider()
- *
- * // Module divider between card-feed sections
- * PixaDivider(variant = DividerVariant.Module)
- *
- * // Vertical divider in toolbar, no leading inset
- * PixaDivider(orientation = DividerOrientation.Vertical, inset = HierarchicalSize.Spacing.None)
- *
- * // Custom color divider
- * PixaDivider(color = Color.Red)
- * ```
+ * ### Usage notes
+ * Place a divider *between* content, never after the last cell or section.
  *
  * @param modifier Modifier for the divider
- * @param orientation Direction (Horizontal or Vertical)
- * @param variant Cell (inset, thin) or Module (full-bleed, thick); drives [thickness]/[inset] defaults
- * @param thickness Explicit line weight override; wins over [variant] when provided
- * @param inset Explicit leading-edge inset override (start for Horizontal, top for Vertical); wins over [variant] when provided
- * @param color Optional custom color; defaults to `AppTheme.colors.baseBorderDefault`
+ * @param orientation Horizontal or Vertical
+ * @param variant Cell (thin/inset) or Module (thick/full-bleed)
+ * @param thickness Overrides [variant]'s default thickness
+ * @param inset Overrides [variant]'s default leading-edge inset
+ * @param color Custom line color (default: `baseBorderDefault`)
+ *
+ * @sample
+ * ```kotlin
+ * // Cell divider (most common)
+ * PixaDivider()
+ *
+ * // Module divider between sections
+ * PixaDivider(variant = DividerVariant.Module)
+ *
+ * // Vertical toolbar divider
+ * PixaDivider(orientation = DividerOrientation.Vertical, inset = HierarchicalSize.Spacing.None)
+ *
+ * // Custom color
+ * PixaDivider(color = Color.Red)
+ * ```
  */
 @Composable
 fun PixaDivider(
@@ -218,64 +214,4 @@ fun VerticalDivider(
 }
 
 
-// ============================================================================
-// USAGE EXAMPLES
-// ============================================================================
 
-/**
- * USAGE EXAMPLES:
- *
- * 1. Basic horizontal divider:
- * ```
- * Column {
- *     Text("Section 1")
- *     PixaDivider()
- *     Text("Section 2")
- * }
- * ```
- *
- * 2. Horizontal divider in list:
- * ```
- * LazyColumn {
- *     items(items) { item ->
- *         ListItem(item)
- *         HorizontalDivider()
- *     }
- * }
- * ```
- *
- * 3. Thick section divider:
- * ```
- * Column {
- *     HeaderSection()
- *     PixaDivider(thickness = HierarchicalSize.Divider.Large)
- *     ContentSection()
- * }
- * ```
- *
- * 4. Vertical toolbar divider:
- * ```
- * Row {
- *     IconButton(onClick = {})
- *     VerticalDivider(modifier = Modifier.height(24.dp))
- *     IconButton(onClick = {})
- * }
- * ```
- *
- * 5. Custom colored divider:
- * ```
- * PixaDivider(
- *     color = Color.Red,
- *     thickness = HierarchicalSize.Divider.Huge
- * )
- * ```
- *
- * 6. Sidebar vertical divider:
- * ```
- * Row {
- *     Sidebar()
- *     VerticalDivider(modifier = Modifier.fillMaxHeight())
- *     MainContent()
- * }
- * ```
- */

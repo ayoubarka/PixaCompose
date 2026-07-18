@@ -50,10 +50,8 @@ import kotlin.math.sin
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Uber Base's top-level Star Rating axis. [Interactive] is "tap/click to select" (always 5 large
- * stars, spec's only supported interactive size — "change interactive star size below large variant"
- * is explicitly prohibited). [Descriptive] is purely visual, no interaction — see [StarRatingSize] for
- * its two supported sizes.
+ * Star Rating axis. [Interactive] is tap/click to select (5 large stars only).
+ * [Descriptive] is purely visual with no interaction.
  */
 enum class StarRatingVariant {
     Interactive,
@@ -61,11 +59,8 @@ enum class StarRatingVariant {
 }
 
 /**
- * Spec's 3 named sizes. [Large] is [StarRatingVariant.Interactive]-only. [Medium] (5 stars, "best
- * paired with accompanying headings") and [Small] (single star + required leading numeral) are
- * [StarRatingVariant.Descriptive]-only. Mixing size with the wrong variant isn't blocked at the type
- * level (would require two separate enums for two call sites each), but is documented as a spec
- * constraint on [PixaStarRating] itself.
+ * Three sizes. [Large] is [Interactive]-only. [Medium] (5 stars) and [Small]
+ * (single star + leading numeral) are [Descriptive]-only.
  */
 enum class StarRatingSize {
     Large,
@@ -180,8 +175,7 @@ private fun StarIcon(
     }
 }
 
-/** Spec: "Whole values: numeral only, omit decimal/trailing zeros... Fractional: 1-2 decimal places,
- * avoid trailing zeros" (e.g. 4f → "4", 4.2f → "4.2", 4.25f → "4.25", 4.20f → "4.2"). */
+/** Whole values → numeral only; fractional → 1-2 decimal places, no trailing zeros. */
 private fun formatRatingValue(rating: Float): String {
     val rounded = (rating * 100).roundToInt() / 100f
     return if (rounded == rounded.toInt().toFloat()) {
@@ -197,41 +191,28 @@ private fun formatRatingValue(rating: Float): String {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaStarRating — communicates feedback on a scale of 0-5, either collecting a rating
- * ([StarRatingVariant.Interactive]) or displaying one ([StarRatingVariant.Descriptive]).
+ * PixaStarRating — Rating feedback on a 0-5 scale, either collecting ([Interactive]) or displaying ([Descriptive]).
  *
  * ### Anatomy
- * [StarRatingVariant.Interactive]: 5 [StarRatingSize.Large] stars in a row, always all 5, tap-to-select.
- * [StarRatingVariant.Descriptive] + [StarRatingSize.Medium]: 5 stars, purely visual. [StarRatingVariant.Descriptive]
- * + [StarRatingSize.Small]: a single star preceded by the required numeric [rating] text — spec anti-pattern:
- * "rating values positioned after the star icon reduces scannability," so the numeral always renders first.
+ * Interactive: 5 large stars, tap-to-select. Descriptive Medium: 5 visual stars.
+ * Descriptive Small: single star preceded by numeric [rating].
  *
  * ### States
- * Interactive: Enabled (fill vs 3px outline, never color alone — WCAG 1.4.11), Hover (4% black overlay,
- * pointer input), Pressed (8% black overlay), Focus (3px accent border), and [loading] (a [Skeleton]
- * placeholder row, spec's "Preloading" state). Descriptive has no states — "purely visual; no
- * interaction or state changes."
+ * Interactive: Enabled, hover (4% overlay), pressed (8% overlay), focus (3px accent border),
+ * [loading] (skeleton placeholder). Descriptive: purely visual, no states.
  *
- * ### Customization
- * Spec explicitly prohibits changing interactive star colors, size (below Large), or the 0-5 scale —
- * so unlike other migrated components, [PixaStarRating] has no interactive color-override parameter;
- * [trailingText] is the only open content slot, and only for [StarRatingSize.Small].
+ * ### Usage
+ * Interactive colors, size (Large only), and the 0-5 scale are fixed.
+ * Descriptive Medium ratings require an explanatory heading (caller responsibility).
  *
- * ### Usage notes
- * Descriptive Medium ratings must be paired with an explanatory heading and shown "only when a rating
- * of 1-5 has been provided" — both are caller-side layout/data decisions this component can't enforce,
- * documented here per the migration's usage-rule-preservation requirement.
- *
- * @param variant [StarRatingVariant.Interactive] or [StarRatingVariant.Descriptive]
- * @param size [StarRatingSize.Large] for Interactive; [StarRatingSize.Medium]/[StarRatingSize.Small] for Descriptive
- * @param value Current rating, 0-5 (0 = unrated). For [StarRatingVariant.Interactive] this is the selected count;
- *   for [StarRatingVariant.Descriptive] this may be fractional (e.g. 4.2) — the star row rounds to the nearest
- *   whole star while [rating]'s displayed text keeps the exact fractional value, per spec's text formatting rules.
- * @param onValueChange Required for [StarRatingVariant.Interactive]; called with the tapped star's 1-based index
- * @param modifier Modifier for the row
- * @param trailingText Optional supplementary text (e.g. "(1,000 ratings)") — [StarRatingSize.Small] only
- * @param loading Spec's "Preloading" state — renders a [Skeleton] placeholder instead of stars
- * @param enabled Whether an [StarRatingVariant.Interactive] rating accepts input
+ * @param variant Interactive or Descriptive
+ * @param size Large for Interactive; Medium/Small for Descriptive
+ * @param value Current rating, 0-5
+ * @param onValueChange Callback with tapped star index (1-based); required for Interactive
+ * @param modifier Modifier
+ * @param trailingText Supplementary text — Small only
+ * @param loading Renders a [Skeleton] placeholder instead of stars
+ * @param enabled Whether Interactive rating accepts input
  */
 @Composable
 fun PixaStarRating(

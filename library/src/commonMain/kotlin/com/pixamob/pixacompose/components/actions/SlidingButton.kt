@@ -58,31 +58,26 @@ import kotlinx.coroutines.launch
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Completion threshold, mapped from Uber Base's Low (Easy)/High (Hard) drag
- * thresholds. [Low] is the recommended default — Uber Base itself flags
- * [High] as difficult for users with physical disabilities and seniors, so
- * this is left an explicit opt-in rather than the default.
+ * Drag-completion threshold. [Low] (recommended default) completes after 20%
+ * of the drag distance; [High] requires 80%. [High] is more difficult for
+ * users with physical disabilities — opt in explicitly, don't default to it.
  */
 enum class SlidingButtonThreshold {
     Low,
     High
 }
 
-/** Fraction of the track's drag distance required to auto-trigger [PixaSlidingButton.onSlideComplete]. */
+/** Fraction of the track's drag distance required to trigger completion. */
 internal val SlidingButtonThreshold.fraction: Float
     get() = when (this) {
-        SlidingButtonThreshold.Low -> 0.2f  // Uber Base: "Complete >20% of drag distance"
-        SlidingButtonThreshold.High -> 0.8f // Uber Base: "Complete >80% of drag distance"
+        SlidingButtonThreshold.Low -> 0.2f
+        SlidingButtonThreshold.High -> 0.8f
     }
 
 /**
- * Color variant, mapped from Uber Base's accessibility guidance restricting
- * Sliding Button to "primary, high-contrast colors like: InverseBackgroundPrimary,
- * backgroundAccent, backgroundNegative, backgroundPositive." Pixa's `brand`/`error`/
- * `success` color groups are the closest-named equivalents to Uber's
- * accent/negative/positive, each already paired as `<group>SurfaceDefault` +
- * `<group>ContentDefault` for guaranteed contrast — same convention
- * [ButtonVariant.Filled] uses.
+ * Color variant — restricted to high-contrast primary colors.
+ * Each variant uses its group's SurfaceDefault + ContentDefault pair
+ * for guaranteed contrast, same convention as [ButtonVariant.Filled].
  */
 enum class SlidingButtonVariant {
     Brand,
@@ -139,10 +134,8 @@ private fun getSlidingButtonTheme(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Corner radius is Uber Base's single fixed 8dp value ([HierarchicalSize.Radius.Medium])
- * rather than [PixaButton]'s own per-[SizeVariant] radius ladder — Sliding
- * Button's spec pins one literal radius regardless of size tier ("Corner
- * radius: 8px"), it doesn't scale like Button's does.
+ * Fixed 8dp corner radius ([HierarchicalSize.Radius.Medium]) — does not scale
+ * with [SizeVariant] unlike [PixaButton]'s per-tier radius ladder.
  */
 private val SlidingButtonShape: Shape
     @Composable get() = RoundedCornerShape(HierarchicalSize.Radius.Medium)
@@ -152,65 +145,41 @@ private val SlidingButtonShape: Shape
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaSlidingButton — a drag-to-confirm control that requires a deliberate
- * gesture before triggering a critical, hard-to-reverse action. Migrated
- * from Uber Base's Sliding Button spec.
+ * PixaSlidingButton — a drag-to-confirm control for critical, hard-to-reverse
+ * actions. The user must deliberately drag the thumb to complete the action.
  *
  * ### Anatomy
  * A full-width track (base label) plus a single draggable circular thumb
- * carrying one arrow icon — Uber Base is explicit that "the component does
- * not support any other icons" and no additional accessories, so unlike
- * [PixaButton] there are no leading/trailing icon slots on the label itself.
+ * carrying one arrow icon. No additional icons or accessories.
  *
  * ### Sizing
- * [size] resolves through [com.pixamob.pixacompose.components.actions.getButtonSizeConfig]
- * (made `internal`, not duplicated) — the same height/text-style ladder
- * [PixaButton] uses, satisfying Uber Base's "height consistency between
- * sliding button and base button is mandatory" and "avoid resizing elements
- * inside the button...try going up or down in size for the entire button
- * instead" rules structurally: there's no per-part size override in this API.
+ * [size] resolves through the same ladder as [PixaButton] — same height and
+ * text-style, no per-part size overrides.
  *
  * ### States
- * Enabled, focus (3dp [HierarchicalSize.Border.Large] `brandBorderFocus`
- * outline), on-drag (label dims to `baseContentDisabled`), [loading] (spinner
- * replaces track content), disabled (reduced-opacity, non-interactive),
- * preloading ([showSkeleton] → [Skeleton]). [completed] is caller-driven —
- * same stateless-terminal-state precedent as [PixaButton]'s `selected`/
- * `PixaLink`'s `visited` — Compose has no notion of "this drag already
- * happened," so the host tracks it: `true` snaps/holds the thumb at the
- * track end, `false` resets it to the start.
+ * Enabled, focus (3dp [HierarchicalSize.Border.Large] outline), on-drag
+ * (label dims to disabled color), [loading] (spinner replaces track content),
+ * disabled (reduced-opacity), preloading ([showSkeleton] → [Skeleton]).
+ * [completed] is caller-driven — `true` holds the thumb at the track end,
+ * `false` resets it to the start.
  *
  * ### Behavior
  * Drag the thumb horizontally; crossing [threshold]'s fraction of the track
  * width invokes [onSlideComplete] exactly once and snaps the thumb to the
- * end. Releasing before the threshold springs the thumb back to the start
- * via [AnimationUtils.thumbSpring]. No manual confirmation step exists after
- * the threshold is crossed, matching Uber Base's "action triggers
- * automatically."
+ * end. Releasing before the threshold springs the thumb back to the start.
  *
  * ### Adaptive behavior
- * None — Uber Base explicitly discourages Sliding Button on desktop
- * ("trying to complete the task with a mouse or trackpad feels unnatural").
- * This is a content/platform-usage rule the host app should apply at the
- * call site (e.g. only rendering this on touch targets); it doesn't map to
- * [AppTheme.windowSizeClass]/`WindowSizeClass` since the issue is input
- * modality, not screen width, so no adaptive branching is added here.
+ * None — designed for touch input. Render only on touch targets.
  *
  * ### Customization
  * [variant] is restricted to [SlidingButtonVariant.Brand]/`Success`/`Error` —
- * Uber Base's own customization boundary limits Sliding Button to
- * high-contrast primary colors, so there is intentionally no Tonal/Outlined/
- * Ghost axis like [PixaButton] has ("don't use secondary or inverted button
- * styling"). [arrowIcon] is required, not optional — the arrow is
- * "non-negotiable" per the spec.
+ * no Tonal/Outlined/Ghost axis. [arrowIcon] is required, not optional.
  *
  * ### Usage notes
  * - Reserve for the last step of critical/irreversible flows (trip
- *   completion, emergency calls, payments) — using it for non-critical
- *   actions adds friction without benefit (Uber Base's own caution).
- * - [threshold] defaults to [SlidingButtonThreshold.Low]; only reach for
- *   [SlidingButtonThreshold.High] when the extra precision is an intentional
- *   safeguard, given its accessibility cost.
+ *   completion, emergency calls, payments).
+ * - [threshold] defaults to [SlidingButtonThreshold.Low]; use [High] only
+ *   when extra precision is an intentional safeguard.
  *
  * @param label Base track label text
  * @param arrowIcon Required single arrow icon rendered inside the thumb
@@ -218,12 +187,12 @@ private val SlidingButtonShape: Shape
  * @param modifier Modifier for the track container
  * @param variant Color variant (Default: [SlidingButtonVariant.Brand])
  * @param threshold Drag-completion threshold (Default: [SlidingButtonThreshold.Low])
- * @param size Size variant, shared with [PixaButton]'s own ladder (Default: [SizeVariant.Medium])
+ * @param size Size variant, shared with [PixaButton]'s ladder (Default: [SizeVariant.Medium])
  * @param enabled Whether the control is interactive (Default: true)
- * @param loading Whether to show the loading spinner in place of track content (Default: false)
+ * @param loading Whether to show the loading spinner (Default: false)
  * @param completed Caller-driven terminal state — holds the thumb at the track end when true (Default: false)
  * @param showSkeleton Whether to render the preloading placeholder (Default: false)
- * @param description Accessibility description — VoiceOver/TalkBack should announce "{action}, Button" (Uber Base explicitly omits "Slide" terminology)
+ * @param description Accessibility description — VoiceOver/TalkBack should announce "{action}, Button"
  * @param customColors Optional [SlidingButtonColors] override
  *
  * @sample
@@ -304,7 +273,7 @@ fun PixaSlidingButton(
             .fillMaxWidth()
             .height(sizeConfig.height)
             .elevationShadow(
-                elevation = ComponentElevation.Highest.toDp(), // closest ladder tier to Uber's 16px-blur spec (no exact token)
+                elevation = ComponentElevation.Highest.toDp(), // closest ladder tier to the required 16px-blur
                 shape = shape,
                 clip = false,
                 enabled = enabled
@@ -320,10 +289,9 @@ fun PixaSlidingButton(
                     Modifier
                 }
             )
-            // Accessibility fallback: Uber Base recommends "standard button interaction"
-            // for screen readers since the drag gesture itself demands precision that's
-            // hard for VoiceOver/TalkBack users — a synthesized accessibility click lands
-            // here (not on the nested thumb) and completes the action immediately.
+            // Accessibility fallback: standard button interaction for screen readers since
+            // the drag gesture demands precision that's hard for VoiceOver/TalkBack users.
+            // A synthesized accessibility click lands here and completes the action immediately.
             .clickable(
                 interactionSource = interactionSource,
                 indication = null,

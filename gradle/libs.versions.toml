@@ -9,11 +9,11 @@ agp = "9.1.0"
 kotlin = "2.3.20"
 compose = "1.10.3"
 compose-material3 = "1.10.0-alpha05"
-kotlinx-datetime = "0.7.1"
+kotlinx-datetime = "0.8.0"
 androidx-activityCompose = "1.13.0"
-androidx-navigation = "2.9.7"
-coilVersion = "3.4.0"
-vicoVersion = "2.4.3"
+androidx-navigation = "2.9.8"
+coilVersion = "3.5.0"
+vicoVersion = "2.5.2"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -29,10 +29,10 @@ compose-components-uiToolingPreview = { module = "org.jetbrains.compose.componen
 compose-materialIconsExtended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
 
 # UI Components
-kizitonwose-calendar = { module = "com.kizitonwose.calendar:compose-multiplatform", version = "2.10.0" }
-cmp-datetime-picker = { module = "io.github.darkokoa:datetime-wheel-picker", version = "1.1.0" }
-cmp-constraintlayout = { module = "tech.annexflow.compose:constraintlayout-compose-multiplatform", version = "0.7.0" }
-cmp-shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version = "1.3.3" }
+kizitonwose-calendar = { module = "com.kizitonwose.calendar:compose-multiplatform", version = "2.10.1" }
+cmp-datetime-picker = { module = "io.github.darkokoa:datetime-wheel-picker", version = "1.3.3" }
+cmp-constraintlayout = { module = "tech.annexflow.compose:constraintlayout-compose-multiplatform", version = "0.8.0" }
+cmp-shimmer = { module = "com.valentinilk.shimmer:compose-shimmer", version = "1.5.0" }
 
 coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilVersion" }
 coil-network = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coilVersion" }
@@ -61,4 +61,4 @@ androidKmpLibrary = { id = "com.android.kotlin.multiplatform.library", version.r
 kotlinMultiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 jetbrainsCompose = { id = "org.jetbrains.compose", version.ref = "compose" }
 composeCompiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-vanniktechMavenPublish = { id = "com.vanniktech.maven.publish", version = "0.36.0" }
+vanniktechMavenPublish = { id = "com.vanniktech.maven.publish", version = "0.37.0" }

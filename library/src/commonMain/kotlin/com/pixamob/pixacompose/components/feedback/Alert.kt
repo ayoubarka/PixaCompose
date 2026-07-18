@@ -40,8 +40,8 @@ import com.pixamob.pixacompose.components.actions.ButtonWidthPolicy
 import com.pixamob.pixacompose.components.actions.IconButtonVariant
 import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.actions.PixaIconButton
-import com.pixamob.pixacompose.components.display.BaseCardVariant
-import com.pixamob.pixacompose.components.display.PixaCard
+import com.pixamob.pixacompose.components.surfaces.BaseCardVariant
+import com.pixamob.pixacompose.components.surfaces.PixaCard
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
@@ -55,11 +55,6 @@ import com.pixamob.pixacompose.utils.pixaRipple
 // ENUMS & TYPES
 // ════════════════════════════════════════════════════════════════════════════
 
-/**
- * Semantic variant, mapped 1:1 from Uber Base Banner's Info/Success/Warning/Failure
- * types (kept as [AlertVariant.Error] per Pixa's existing feedback-family naming
- * convention rather than renamed to "Failure").
- */
 enum class AlertVariant {
     Info,
     Success,
@@ -68,11 +63,8 @@ enum class AlertVariant {
 }
 
 /**
- * Visual contrast level. Uber Base ties contrast directly to variant severity
- * ("low-contrast for lower severity; high-contrast for higher severity") rather
- * than leaving it a free choice — see [defaultAlertStyle], which [PixaAlert]
- * uses whenever [PixaAlert]'s `style` argument is left `null`. An explicit
- * `style` is still accepted for the rare case a caller needs to deviate.
+ * Visual contrast level. Default is severity-derived via [defaultAlertStyle];
+ * an explicit [style] overrides it.
  */
 enum class AlertStyle {
     Filled,
@@ -80,74 +72,25 @@ enum class AlertStyle {
     Subtle
 }
 
-/**
- * Leading artwork slot, mapped from Uber Base Banner's two supported asset
- * kinds: a 24dp icon or a 40dp badge (both fixed sizes from Uber's icon/asset
- * libraries — not [SizeVariant]-driven, since the spec pins these as literal
- * asset dimensions, not a density scale). Illustrations/photos are an explicit
- * spec anti-pattern and have no representation here.
- */
 sealed class AlertArtwork {
-    /** No leading artwork. */
     data object None : AlertArtwork()
 
-    /**
-     * 24dp icon. Uber Base names specific per-variant icon assets
-     * (`circle_i`/`circle_check`/`alert`/`circle_exclamation_point`) that Pixa
-     * does not ship — pass [painter] to supply one, or omit it to fall back to
-     * a plain variant-colored dot (this is a known gap, not a design choice;
-     * see [PixaAlert]'s Customization docs).
-     */
     data class Icon(val painter: Painter? = null) : AlertArtwork()
 
-    /**
-     * 40dp badge. Uber Base names specific per-variant badge assets
-     * (`info`/`success`/`warning`/`circle_exclamation_mark`) that Pixa does
-     * not ship — same fallback behavior as [Icon].
-     */
     data class Badge(val painter: Painter? = null) : AlertArtwork()
 }
 
-/**
- * Trailing action slot. Uber Base caps Banner to "up to a single action in
- * the form of a secondary style pill button or tertiary icon button" — this
- * sealed type enforces exactly one control renders, matching that anatomy
- * constraint (the pre-spec API allowed an arbitrary multi-action row, which
- * this replaces).
- */
 sealed class AlertAction {
-    /** No trailing action. */
     data object None : AlertAction()
 
-    /**
-     * Secondary-style pill button ([ButtonVariant.Tonal] + [ButtonShape.Pill]
-     * per Uber Base's "secondary style pill button"). Renders below the
-     * message rather than inline with the title, since a caller-supplied
-     * label's intrinsic width can't be measured in advance — this is Uber
-     * Base's own documented alternative for "buttons with longer labels...
-     * the button drops to the next line below the message," applied
-     * unconditionally rather than as an opt-in layout mode.
-     */
     data class Button(val text: String, val onClick: () -> Unit) : AlertAction()
 
-    /**
-     * Tertiary icon button ([IconButtonVariant.Ghost] per Uber Base's
-     * "tertiary icon button"). Renders inline in the top-right corner next
-     * to the title — icon buttons have a fixed, small footprint per spec, so
-     * they never risk the label-overflow problem [Button] works around.
-     */
     data class IconButton(
         val icon: Painter,
         val onClick: () -> Unit,
         val contentDescription: String? = null
     ) : AlertAction()
 
-    /**
-     * Dismiss control — a tertiary icon button (an "×" glyph, since Pixa has
-     * no close-icon asset shipped) that hides the banner and invokes
-     * [onDismiss]. Occupies the same single trailing slot as [Button]/[IconButton]
-     * per spec; it is not an additional control layered on top of one of them.
-     */
     data class Dismiss(val onDismiss: () -> Unit) : AlertAction()
 }
 
@@ -181,11 +124,7 @@ private data class AlertConfig(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Uber Base ties visual contrast directly to variant severity rather than
- * leaving it caller-chosen: Info/Success are low severity → low contrast
- * ([AlertStyle.Subtle]), Warning is medium severity → medium contrast
- * ([AlertStyle.Outlined]), Error (Uber's "Failure", which "always persists
- * until resolved") is high severity → high contrast ([AlertStyle.Filled]).
+ * Severity-derived default: Info/Success → Subtle, Warning → Outlined, Error → Filled.
  */
 private fun defaultAlertStyle(variant: AlertVariant): AlertStyle = when (variant) {
     AlertVariant.Info, AlertVariant.Success -> AlertStyle.Subtle
@@ -320,21 +259,14 @@ private fun getAlertColors(
 }
 
 /**
- * Resolves spacing/inset/line-cap config. [size] drives density (spacing,
- * vertical inset) — Uber Base doesn't tie these to a size ladder itself, so
- * this follows Pixa's own [SizeVariant] convention (matching [CLAUDE.md]'s
- * guidance to prefer `HierarchicalSize.forVariant()` in new/touched code).
- * Horizontal inset is a separate fixed spec default (16dp mobile), exposed
- * directly on [PixaAlert] rather than folded into [size], since Uber Base
- * calls it out as independently responsive-grid-adjustable.
+ * Resolves spacing/inset/line-cap config. [size] drives density via [HierarchicalSize].
  */
 @Composable
 private fun getAlertConfig(size: SizeVariant, titleMaxLines: Int?, messageMaxLines: Int?): AlertConfig {
     return AlertConfig(
         spacing = HierarchicalSize.Spacing.forVariant(size),
         verticalInset = HierarchicalSize.Padding.forVariant(size),
-        // Uber Base: headline/paragraph wrap by default; truncation is opt-in
-        // only (text truncation is a named accessibility anti-pattern otherwise).
+        // Wrapping is the default; truncation is opt-in.
         maxTitleLines = titleMaxLines ?: Int.MAX_VALUE,
         maxMessageLines = messageMaxLines ?: Int.MAX_VALUE
     )
@@ -347,10 +279,7 @@ private fun getAlertConfig(size: SizeVariant, titleMaxLines: Int?, messageMaxLin
 @Composable
 private fun AlertArtworkContent(artwork: AlertArtwork, tint: Color) {
     val size = when (artwork) {
-        is AlertArtwork.Icon -> HierarchicalSize.Icon.Medium // 24dp, exact spec match
-        // No HierarchicalSize tier lands on Uber Base's 40dp asset-library badge
-        // size (Badge tops out at 32dp, Avatar jumps 36dp→48dp) — kept as a
-        // literal, spec-mandated fixed asset dimension rather than a new token.
+        is AlertArtwork.Icon -> HierarchicalSize.Icon.Medium
         is AlertArtwork.Badge -> 40.dp
         AlertArtwork.None -> return
     }
@@ -369,7 +298,6 @@ private fun AlertArtworkContent(artwork: AlertArtwork, tint: Color) {
                 modifier = Modifier.fillMaxSize()
             )
         } else {
-            // Fallback when no Uber-named asset (circle_i, alert, etc.) is supplied.
             Box(
                 modifier = Modifier
                     .size(HierarchicalSize.Border.Nano)
@@ -433,7 +361,7 @@ private fun BelowMessageAction(action: AlertAction.Button) {
 /**
  * PixaAlert — communicates a contextual, page-specific state until dismissed
  * or resolved. Use for inline callouts, form validation, and warning/success/failure
- * states that persist until the user dismisses them or the underlying condition resolves.
+ * states.
  *
  * ### Anatomy
  * Required: container + [title] (headline). Optional: [message] (paragraph),
@@ -441,74 +369,45 @@ private fun BelowMessageAction(action: AlertAction.Button) {
  * pill button, icon button, or dismiss).
  *
  * ### Variants
- * [AlertVariant.Info]/`.Success`/`.Warning`/`.Error` (Uber's Info/Success/Warning/Failure).
+ * [AlertVariant.Info]/`.Success`/`.Warning`/`.Error`
  *
  * ### States
  * Contrast is severity-driven via [defaultAlertStyle] unless [style] is
- * explicitly set. Persistence (stays until dismissed / disappears when the
- * underlying condition resolves) and session rate-limiting are caller-owned —
- * Uber Base itself leaves the exact rate-limiting logic implementation-defined,
- * and ties auto-dismiss to state resolution, not a fixed timer, so no
- * `autoDismissMillis`-style timer API is offered here (that belongs to
- * [Toast]/[Snackbar]'s ephemeral-feedback role, which Uber Base explicitly
- * excludes from Banner's scope).
+ * explicitly set. Persistence and session rate-limiting are caller-owned.
  *
  * ### Sizing
- * [size] drives spacing/vertical inset density (Uber Base doesn't define a
- * size ladder itself). [horizontalInset] defaults to the spec's 16dp mobile
- * value and is independently adjustable, per "customized to accommodate
- * responsive design grids." [insetTop]/[insetBottom] toggle vertical insets
- * off entirely, per "top and bottom insets can be turned off."
+ * [size] drives spacing/vertical inset density. [horizontalInset] defaults to
+ * 16dp. [insetTop]/[insetBottom] toggle vertical insets.
  *
  * ### Adaptive behavior
- * The container always fills its incoming width (matching "Banner width
- * matches main content width on narrow and wide viewports") — screen-level
- * layout controls the actual contained width via [AppTheme.pageMargin] or an
- * explicit container, per `CLAUDE.md`'s "explicit caller-provided sizes
- * remain authoritative" rule. The corner radius + insets are what keep the
- * banner visually inset even at full container width; per spec, do not strip
- * them to force an edge-to-edge look.
+ * Container always fills its incoming width. Use [AppTheme.pageMargin] or an
+ * explicit container for screen-level layout.
  *
  * ### Customization
- * [customColors] overrides the background/border/content ladder (background
- * customization is explicitly spec-approved, "provided text/button colors
- * pass contrast standards and are tokenized for dark mode" — enforcing
- * contrast/dark-mode-tokenization automatically isn't possible at this layer,
- * so it's the caller's responsibility when supplying [customColors]).
- * [nested] switches the corner radius from the spec's default 12dp to 8dp
- * for use inside another rounded container. Core anatomy (container +
- * headline/paragraph structure) is not overridable, per spec.
+ * [customColors] overrides background/border/content colors (caller must
+ * ensure contrast standards and dark mode mapping).
+ * [nested] switches corner radius to 8dp for use inside another rounded container.
  *
- * ### Usage notes
- * - Use for inline callouts, form validation, and warning/success/failure
- *   states; not for global system messaging (use a system-level banner) or
- *   ephemeral post-action feedback (use [Toast]/[Snackbar]).
- * - Avoid stacking multiple banners in proximity — combine multiple issues
- *   into one banner instead (not runtime-enforced, a caller-side layout rule).
- * - Keep messages short — under ~3 lines on mobile when possible (not
- *   runtime-enforced; [titleMaxLines]/[messageMaxLines] are available if a
- *   hard cap is actually desired, though wrapping is the spec default).
- *
- * @param title Required headline text (wraps by default; see [titleMaxLines])
- * @param message Optional paragraph text (wraps by default; see [messageMaxLines])
+ * @param title Required headline text (wraps by default)
+ * @param message Optional paragraph text
  * @param variant Semantic variant (Default: [AlertVariant.Info])
  * @param modifier Modifier for the alert
- * @param style Contrast level override (Default: `null` → severity-derived via [defaultAlertStyle])
+ * @param style Contrast level override (Default: `null` → severity-derived)
  * @param size Size variant driving spacing/vertical inset density (Default: [SizeVariant.Medium])
  * @param artwork Leading artwork slot (Default: [AlertArtwork.Icon] with no painter → dot fallback)
  * @param action Trailing action slot — at most one control renders (Default: [AlertAction.None])
  * @param nested Whether this banner sits inside another rounded container (12dp → 8dp corner radius, Default: false)
- * @param horizontalInset Left/right inset (Default: spec's 16dp mobile value)
+ * @param horizontalInset Left/right inset (Default: 16dp)
  * @param insetTop Whether to apply top inset (Default: true)
  * @param insetBottom Whether to apply bottom inset (Default: true)
  * @param titleMaxLines Optional line cap for [title] (Default: `null` → wraps unbounded)
  * @param messageMaxLines Optional line cap for [message] (Default: `null` → wraps unbounded)
  * @param customColors Optional [AlertColors] overriding the theme-derived ladder
  * @param contentDescription Accessibility description for the banner's message
- * @param dismissible Deprecated back-compat: equivalent to `action = AlertAction.Dismiss(onDismiss)`, ignored when [action] or [actionText] is set
- * @param onDismiss Deprecated back-compat, paired with [dismissible]
- * @param actionText Deprecated back-compat: equivalent to `action = AlertAction.Button(actionText, onAction)`, takes priority over [dismissible] when both are set (only one trailing control renders, per spec)
- * @param onAction Deprecated back-compat, paired with [actionText]
+ * @param dismissible Deprecated: maps to `action = AlertAction.Dismiss(onDismiss)`
+ * @param onDismiss Deprecated, paired with [dismissible]
+ * @param actionText Deprecated: maps to `action = AlertAction.Button(actionText, onAction)`
+ * @param onAction Deprecated, paired with [actionText]
  *
  * @sample
  * ```
@@ -549,8 +448,7 @@ fun PixaAlert(
 
     var visible by remember { mutableStateOf(true) }
 
-    // Legacy single-action back-compat: only one trailing control ever renders,
-    // per spec's "up to a single action" anatomy. actionText wins when both a
+    // Legacy single-action back-compat: actionText wins when both a
     // legacy action and dismissible are supplied together.
     val resolvedAction = when {
         action != AlertAction.None -> action

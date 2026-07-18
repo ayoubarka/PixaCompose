@@ -59,11 +59,9 @@ import com.pixamob.pixacompose.utils.windowSizeClassOf
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Pointer position, combining Uber Base's two axes: vertical side (Top/Bottom = Above/Below)
- * or horizontal side (Start/End = Leading/Trailing), each with a perpendicular alignment
- * (Start/Center/End for vertical sides; Top/Center/Bottom for horizontal sides, reusing the
- * same Start/Center/End suffix vocabulary). Horizontal values ([StartTop]..[EndBottom]) are
- * spec'd wide-viewport-only — see [PixaPopover]'s Adaptive behavior docs.
+ * Pointer position relative to anchor. Vertical (Top/Bottom) or horizontal (Start/End) side,
+ * each with perpendicular alignment (Start/Center/End for vertical; Top/Center/Bottom for horizontal).
+ * Horizontal positions are wide-viewport-only.
  */
 enum class PopoverPosition {
     TopStart,
@@ -91,13 +89,13 @@ enum class PopoverPresentation {
     NonModal
 }
 
-/** Single-step-only per spec; not runtime-enforced when paginated, see [PixaPopover] docs. */
+/** Single-step-only; not enforced when paginated. */
 enum class PopoverContentAlignment {
     Start,
     Center
 }
 
-/** Artwork frame size is spec-fixed and intentionally non-modifiable — no size override param. */
+/** Artwork frame size is fixed — no override param. */
 enum class PopoverArtworkStyle {
     Icon,
     Badge
@@ -112,10 +110,8 @@ data class PopoverArtwork(
 )
 
 /**
- * Spec: "Popover requires a dismiss action with a Close icon button or a text button like
- * 'Got it'. Exception: User-triggered Popovers (often informational)." [None] exists only for
- * that exception — [PixaPopover] defaults to [IconButton] and does not runtime-enforce this,
- * since only the caller knows whether their popover qualifies for the exception.
+ * Dismiss action style. [IconButton] (default), [TextButton] with a custom label, or [None]
+ * for informational popovers only.
  */
 sealed class PopoverDismissAction {
     data object IconButton : PopoverDismissAction()
@@ -166,25 +162,15 @@ private fun getPopoverTheme(): PopoverColors {
         heading = colors.baseContentTitle,
         content = colors.baseContentBody,
         dismissContent = colors.baseContentBody,
-        // Matches Dialog.kt/Drawer.kt's exact rgba(0,0,0,0.5) modal scrim literal — the spec's
-        // named value; no semantic AppTheme.colors scrim token exists yet in this codebase.
         scrim = Color.Black.copy(alpha = 0.5f)
     )
 }
 
-/**
- * Narrow-viewport width constraints per spec: minWidth = 320-48 = 272dp, maxWidth =
- * screenWidth - 32dp. Neither 272dp nor the 32dp margin land on an existing HierarchicalSize
- * tier (Spacing tops out at Huge=24dp/Massive=48dp, straddling 32dp), so both are kept as local
- * spec-derived constants rather than forcing a mismatched token. Wide viewports are left
- * unconstrained ("defaults to content") per spec.
- */
+/** Narrow-viewport width constraints. */
 private val PopoverNarrowMinWidth = 272.dp
 private val PopoverNarrowEdgeMargin = 32.dp
 
-// Spec: Badge artwork frame is a fixed 56dp, "sizes are non-modifiable." No HierarchicalSize
-// tier lands on 56dp (Badge tops at Huge=28dp) — kept local and intentionally not exposed as an
-// override param, matching the spec's own constraint.
+/** Badge artwork frame size (fixed, no override). */
 private val PopoverArtworkBadgeSize = 56.dp
 
 @Composable
@@ -203,10 +189,10 @@ private fun getPopoverSizeConfig(): PopoverSizeConfig {
     }
     return PopoverSizeConfig(
         padding = HierarchicalSize.Spacing.Medium,
-        cornerRadius = HierarchicalSize.Radius.Huge, // spec: "automatically applies large (16px) if unspecified"
+        cornerRadius = HierarchicalSize.Radius.Huge,
         elevation = HierarchicalSize.Shadow.Medium,
         offset = HierarchicalSize.Spacing.Small,
-        borderWidth = HierarchicalSize.Border.Compact, // spec: "Weight: 1px; Align: Inside"
+        borderWidth = HierarchicalSize.Border.Compact,
         pointerSize = HierarchicalSize.Spacing.Small,
         minWidth = minWidth,
         maxWidth = maxWidth,
@@ -453,61 +439,44 @@ private fun PopoverCardContent(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaPopover - contextual overlay anchored to a triggering element.
+ * Contextual overlay anchored to a triggering element.
  *
- * Purpose: instructional (teaching feature usage) or informational (explaining what a feature
- * does) contextual content, opened on interaction and left open until explicitly dismissed.
- * Distinct from a tooltip (smaller/lightweight, brief hints) by being larger, more interactive,
- * and supporting images/multi-step content; use a Dialog instead for long content or error
- * messaging; use a Toast/Snackbar for ephemeral feedback.
+ * ### Purpose
+ * Instructional or informational content, larger than a tooltip. Supports images and multi-step
+ * content. Use a Dialog for long content or error messaging; use Toast/Snackbar for ephemeral feedback.
  *
- * Anatomy: [heading] (required, max 2 lines), [body] text or custom [content] (one or the other),
- * a pointer triangle drawn toward the anchor, a required [dismissAction], optional [artwork]
- * (Icon 28dp or Badge 56dp, non-modifiable per spec), and optional pagination via
- * [pageCount]/[currentPage]/[onPageChange].
+ * ### Anatomy
+ * [heading] (required, max 2 lines) + [body] or custom [content] + pointer triangle +
+ * required [dismissAction] + optional [artwork] (Icon 28dp / Badge 56dp) + optional pagination.
  *
- * States: closed/open (via [visible]); enabled/disabled buttons within are the caller's concern
- * (this component doesn't model a disabled popover itself, matching spec's own decomposition).
+ * ### States
+ * Closed/open via [visible].
  *
- * Sizing: 16dp corner radius and 1dp inside border by default, both per spec's stated fallback
- * values, plus breakpoint-aware min/max width (see Adaptive behavior).
+ * ### Sizing
+ * 16dp corner radius, 1dp inside border. Narrow: min 272dp, max screen−32dp. Wide: content-sized.
  *
- * Adaptive behavior: the spec's own <600px breakpoint maps directly onto this library's existing
- * `WindowSizeClass.Compact` threshold (also 600dp) — narrow viewports get `minWidth=272dp`,
- * `maxWidth=screenWidth-32dp`. Wide viewports are left content-sized, matching "not specified;
- * defaults to content." [position]'s horizontal values ([PopoverPosition.StartTop]..[EndBottom])
- * are spec'd wide-viewport-only; the caller decides [position], so this isn't runtime-blocked.
+ * ### Usage notes
+ * - Do not substitute for a Dialog or Toast/Snackbar
+ * - One popover at a time; no links in heading
+ * - [fallbackPosition] is caller-driven (no auto-collision detection)
+ * - Esc/Tab: mobile uses [dismissOnOutsideClick] + back gesture instead
  *
- * Customization: [colors]/[artwork]/[dismissAction]/pagination are all opt-in; heading size/color
- * are intentionally not exposed as override params (spec: "heading size/color not customizable").
- *
- * Usage notes: don't substitute for a Dialog (data collection, multiple actions, long content) or
- * for ephemeral feedback (use a Toast/Snackbar instead). Show one popover at a time. No links in
- * [heading]. [fallbackPosition] is a caller-supplied approximation of the spec's automatic
- * collision-aware position fallback — this library has no anchor-bounds-tracking
- * `PopupPositionProvider` anywhere yet (neither `Tooltip.kt` nor `Menu.kt` implement one either),
- * so true automatic flip-on-collision is out of scope for this migration; pass an explicit
- * fallback if you need one. Likewise Esc/Tab dismissal is a desktop/web keyboard concept without
- * a target-platform equivalent here (Android/iOS only) — [dismissOnOutsideClick] plus the
- * platform back gesture cover the equivalent dismissal path instead.
- *
- * @param visible Whether the popover is shown
- * @param onDismiss Callback when the popover should close
- * @param heading Required heading text, max 2 lines
- * @param modifier Modifier for the popover surface
- * @param body Optional default body text; ignored when [content] is non-null
- * @param content Optional custom content, replacing [body]
- * @param artwork Optional artwork (Icon/Badge, see Anatomy)
- * @param position Preferred pointer position/alignment
- * @param fallbackPosition See Usage notes — caller-driven fallback, no automatic collision detection
- * @param presentation [PopoverPresentation.Modal] adds a scrim; [PopoverPresentation.NonModal] (default) does not
- * @param contentAlignment Left/center text alignment; spec restricts this to single-step popovers
- * @param dismissAction Required dismiss affordance; see [PopoverDismissAction]
- * @param pageCount Total pages; 1 (default) hides pagination chrome entirely
- * @param currentPage Zero-based current page index
- * @param onPageChange Invoked with the new page index when prev/next is tapped
- * @param dismissOnOutsideClick Tap-outside-to-dismiss; spec calls this "supplementary, not primary"
- * @param colors Custom colors; defaults to the theme resolver
+ * @param visible Popover visibility
+ * @param onDismiss Close callback
+ * @param heading Required heading (max 2 lines)
+ * @param body Optional body text (ignored if [content] is set)
+ * @param content Optional custom content replacing [body]
+ * @param artwork Optional Icon or Badge artwork
+ * @param position Preferred pointer position
+ * @param fallbackPosition Caller-driven fallback (no auto-collision)
+ * @param presentation Modal adds scrim
+ * @param contentAlignment Left or center text
+ * @param dismissAction IconButton, TextButton, or None
+ * @param pageCount Total pages (1 hides pagination)
+ * @param currentPage 0-based page index
+ * @param onPageChange Prev/next callback
+ * @param dismissOnOutsideClick Tap-outside dismissal
+ * @param colors Custom color overrides
  */
 @Composable
 fun PixaPopover(

@@ -44,12 +44,10 @@ import com.pixamob.pixacompose.utils.AnimationUtils
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Behavior axis, mapped from Uber Base's Selection Tiles / Action Tiles:
- * - [Selection] = styled like checkboxes/radio buttons for making choices.
- * - [Action] = styled like secondary buttons for triggering actions or
- *   navigation — "Active/Selected (not available for button-like tiles)" per
- *   the spec's states table, so [Action] tiles ignore `selected`/[TileTrailingControl.Check]/
- *   [TileTrailingControl.Radio]/[TileTrailingControl.Switch] styling.
+ * Behavior axis.
+ * - [Selection]: styled like checkboxes/radio buttons for making choices.
+ * - [Action]: styled like secondary buttons for triggering actions/navigation.
+ *   Action tiles ignore `selected` and trailing control styling.
  */
 enum class TileBehavior {
     Selection,
@@ -64,12 +62,9 @@ enum class TileContentAlignment {
 }
 
 /**
- * Leading (top-left) artwork slot sizing, mapped from Uber Base's Leading
- * Content options. [Off] and [LabelOnly] both render no artwork — kept as
- * two names because Uber Base lists them as distinct anatomy choices even
- * though they're visually identical (the difference is purely which content
- * *besides* artwork is present, which callers already control via [PixaTile]'s
- * `label`/`paragraphs` params).
+ * Leading (top-left) artwork slot sizing.
+ * [Off] and [LabelOnly] both render no artwork — they exist as distinct anatomy
+ * choices for documentation clarity; callers control content via `label`/`paragraphs`.
  */
 sealed class TileArtwork {
     data object Off : TileArtwork()
@@ -80,16 +75,9 @@ sealed class TileArtwork {
 }
 
 /**
- * Trailing (top-right) content slot, mapped from Uber Base's Trailing
- * Content options. [Check]/[Radio]/[Switch] render read-only *visual state*
- * driven by [PixaTile]'s own `selected` — Uber Base's interaction model is
- * "interacting with any part of the tile activates the control inside," i.e.
- * the tile itself is the tap target, not an independently-clickable nested
- * control. [Switch] is the one exception: [com.pixamob.pixacompose.components.inputs.PixaSwitch]
- * has no read-only mode (`onCheckedChange` isn't nullable, unlike
- * Checkbox/RadioButton), so it stays genuinely interactive — which also
- * matches Uber Base's own guidance to "use a switch if it takes immediate
- * effect" rather than waiting for the tile-level selection to commit.
+ * Trailing (top-right) content slot.
+ * [Check]/[Radio] render read-only visual state driven by `selected` — the tile itself
+ * is the tap target. [Switch] stays genuinely interactive (no read-only mode in PixaSwitch).
  */
 sealed class TileTrailingControl {
     data object Off : TileTrailingControl()
@@ -128,14 +116,8 @@ data class TileStateColors(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Resolves Tile's fixed color/border ladder. Border widths land exactly on
- * existing [HierarchicalSize.Border] tiers — enabled's 2px ("borderOpaque")
- * is [HierarchicalSize.Border.Medium], selected's 3px ("borderSelected") is
- * [HierarchicalSize.Border.Large] — so no new border-width token is needed.
- * Hover/pressed are Uber Base's literal 4%/8% black state-layer overlays
- * (a scrim technique, not a themed color token — see [TileOverlayScrim]),
- * kept as raw alpha values since Uber Base specifies them as fixed
- * percentages rather than theme-driven tokens.
+ * Resolves Tile's fixed color/border ladder. Hover/pressed use 4%/8% black
+ * state-layer overlays (scrim technique, not themed color tokens).
  */
 @Composable
 private fun getTileTheme(colors: ColorPalette): TileStateColors {
@@ -204,7 +186,7 @@ private fun TileTrailingContent(
     size: SizeVariant
 ) {
     if (behavior != TileBehavior.Selection && trailing != TileTrailingControl.Off && trailing !is TileTrailingControl.Badge) {
-        // Action tiles have no selected/control state per Uber Base's states table.
+        // Action tiles have no selected/control state.
         return
     }
 
@@ -229,7 +211,7 @@ private fun TileTrailingContent(
 
         TileTrailingControl.Switch -> PixaSwitch(
             checked = selected,
-            onCheckedChange = onSwitchToggle, // genuinely interactive — "immediate effect" per spec
+            onCheckedChange = onSwitchToggle, // genuinely interactive
             enabled = enabled,
             size = size
         )
@@ -241,74 +223,51 @@ private fun TileTrailingContent(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaTile — a button-like, bordered container for grid-style selection or
- * action patterns.
+ * PixaTile — a button-like, bordered container for grid-style selection or action patterns.
  *
  * ### Anatomy
- * Top row: leading [artwork]/[leadingContent] slot, trailing [trailing]
- * control slot. Bottom: a required [label] plus up to 2 [paragraphs]
- * (defensively capped — this is an anatomy limit, not a soft content rule).
- * Per Uber Base, a single tile is not a supported use case — "if you desire
- * a single tile, consider using a [PixaCard] instead" — so this component is
- * always meant to be composed 2+ at a call site (in a `Row`/`FlowRow`/`LazyGrid`
- * the caller owns; no dedicated group/grid wrapper ships here, matching how
- * [PixaCheckbox]/`RadioButton` don't ship one either).
+ * Top row: leading [artwork]/[leadingContent] slot, trailing [trailing] control slot.
+ * Bottom: required [label] plus up to 2 [paragraphs]. Always compose 2+ tiles
+ * (a single tile should use [PixaCard] instead).
  *
  * ### Variants
  * [TileBehavior.Selection] (checkbox/radio-styled) vs [TileBehavior.Action]
- * (button-styled, no selected/control visuals — Uber Base explicitly
- * excludes Active/Selected states from action-style tiles).
+ * (button-styled, no selected/control visuals).
  *
  * ### States
- * default (2px [com.pixamob.pixacompose.theme.HierarchicalSize.Border.Medium]
- * border), hover/pressed (4%/8% black overlay — see [TileOverlayScrim]),
- * selected (3px [com.pixamob.pixacompose.theme.HierarchicalSize.Border.Large]
- * border, brand-tinted surface — same token pairing [com.pixamob.pixacompose.components.display.SelectCard]
- * uses), disabled (dimmed border/content), preloading ([loading] → [Skeleton]).
+ * Default (2px border), hover/pressed (4%/8% overlay), selected (3px border,
+ * brand-tinted), disabled (dimmed), preloading ([Skeleton]).
  *
  * ### Sizing
- * [size] drives padding/spacing/artwork sizing/border-radius through
- * [HierarchicalSize]/[AppTheme.shapes]; Uber Base doesn't define discrete
- * Tile height tiers itself (its "sizing" section only covers grid spacing
- * and artwork dimensions), so this follows Pixa's own size-system convention
- * rather than an Uber-specified ladder.
+ * [size] drives padding/spacing/artwork/radius through [HierarchicalSize]/[AppTheme.shapes].
  *
  * ### Customization
- * Background/border/content colors ([customColors]), alignment
- * ([contentAlignment]), artwork size/content ([artwork]/[leadingContent]),
- * trailing control ([trailing]) — matching Uber Base's stated customization
- * boundaries. Minimum anatomy (container + label) and the 2-paragraph cap
- * are not overridable, per the spec's "constrained" list.
+ * Colors ([customColors]), alignment ([contentAlignment]), artwork
+ * ([artwork]/[leadingContent]), trailing control ([trailing]).
+ * Minimum anatomy (container + label) and 2-paragraph cap are not overridable.
  *
  * ### Usage notes
- * - Grid 2-3 tiles across on mobile ([HierarchicalSize.Spacing.Small], 8dp,
- *   between tiles) and up to 3+ on wide/web layouts
- *   ([HierarchicalSize.Spacing.Large], 16dp between tiles) — layout/grid
- *   composition is caller-owned, these are the token values to reach for.
- * - In horizontally-scrolling tile rows, peek the next tile by at least 24dp
- *   from the container edge (not runtime-enforced here — a caller-side
- *   scroll-container layout concern).
- * - Communicate multi-select limits explicitly in the surrounding UI when a
- *   cap exists and no visible counter/control communicates it.
+ * - Grid 2-3 tiles across on mobile (8dp spacing), 3+ on wide layouts (16dp).
+ * - Peek next tile by at least 24dp in horizontally-scrolling rows.
+ * - Communicate multi-select limits in the surrounding UI.
  *
  * @param label Required bottom-content label
- * @param onClick Called when any part of the tile is tapped (also drives [trailing]'s Check/Radio visual)
+ * @param onClick Tap handler for the tile (also drives Check/Radio visuals)
  * @param modifier Modifier for the tile container
- * @param behavior [TileBehavior.Selection] or [TileBehavior.Action] (Default: Action)
- * @param selected Whether the tile is in the selected state (Default: false, caller-tracked like [com.pixamob.pixacompose.components.actions.PixaButton]'s `selected`)
- * @param enabled Whether the tile is interactive (Default: true)
- * @param loading Whether to render the preloading [Skeleton] placeholder (Default: false)
- * @param artwork Leading artwork size preset (Default: [TileArtwork.Off])
- * @param leadingContent Composable rendered at [artwork]'s resolved size (an icon/image/avatar)
- * @param trailing Trailing content slot (Default: [TileTrailingControl.Off])
- * @param paragraphs Up to 2 supporting paragraphs beneath [label]
- * @param contentAlignment Horizontal alignment of the bottom content (Default: Start)
- * @param size Size variant driving padding/spacing/artwork/radius (Default: [SizeVariant.Medium])
+ * @param behavior Selection or Action (Default: Action)
+ * @param selected Selected state (Default: false)
+ * @param enabled Interactive state (Default: true)
+ * @param loading Shows [Skeleton] (Default: false)
+ * @param artwork Leading artwork size (Default: Off)
+ * @param leadingContent Composable at [artwork]'s resolved size
+ * @param trailing Trailing content slot (Default: Off)
+ * @param paragraphs Up to 2 supporting paragraphs
+ * @param contentAlignment Bottom content alignment (Default: Start)
+ * @param size Size variant (Default: Medium)
  * @param description Accessibility description
  * @param customColors Optional [TileStateColors] override
  *
  * @sample
- * ```
  * PixaTile(
  *     label = "Airport",
  *     behavior = TileBehavior.Selection,
@@ -316,7 +275,6 @@ private fun TileTrailingContent(
  *     selected = isSelected,
  *     onClick = { isSelected = !isSelected }
  * )
- * ```
  */
 @Composable
 fun PixaTile(

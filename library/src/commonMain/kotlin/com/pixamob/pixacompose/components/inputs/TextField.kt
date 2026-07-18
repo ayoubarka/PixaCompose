@@ -38,9 +38,9 @@ import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 import kotlin.math.roundToInt
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Configuration
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * TextField variant enum
@@ -52,24 +52,23 @@ enum class TextFieldVariant {
 }
 
 /**
- * Trailing status indicator — Uber Base's "Complete"/"Incomplete" (fill-status, independent of
- * [PixaTextField]'s isError/isSuccess validation axis) and "Loading" states. Occupies the trailing
- * slot with priority over [PixaTextField]'s `trailingIcon`/`onClear` when not [None].
+ * Trailing status indicator — Complete/Incomplete (fill-status, independent of
+ * [PixaTextField]'s isError/isSuccess validation axis) and Loading. Occupies the trailing
+ * slot with priority over `trailingIcon`/`onClear` when not [None].
  */
 enum class TextFieldStatus {
     None,
-    /** Green circle_check, per spec — "contentPositive" trailing icon. */
+    /** Green circle_check — contentPositive trailing icon. */
     Complete,
-    /** Red circle_x, per spec — "contentNegative" trailing icon. */
+    /** Red circle_x — contentNegative trailing icon. */
     Incomplete,
     /** Progress spinner at trailing position — reuses [PixaCircularIndicator]. */
     Loading
 }
 
 /**
- * Uber Base's two primary content types (Secure/Masked is already covered by [PixaTextField]'s
- * existing `visualTransformation` param, e.g. [PasswordTextField]). [Tags] renders committed values
- * as removable [PixaChip]s ahead of the text input — see [PixaTextField]'s `tags`/`onTagsChange`.
+ * Content type — Plaintext or Tags (committed values rendered as removable [PixaChip]s
+ * ahead of the text input). Secure/Masked is handled via [visualTransformation].
  */
 enum class TextFieldContentType {
     Plaintext,
@@ -79,11 +78,9 @@ enum class TextFieldContentType {
 /**
  * Configuration for TextField appearance.
  *
- * Uber Base locks several of these ratios at the container level (not per-size): corner radius
- * (minimum 8px — [cornerRadius] is therefore constant, not scaled), horizontal padding (16px,
- * constant), and border width (1px default / 3px active-error-success-readonly — see
- * [DefaultBorderWidth]/[ActiveBorderWidth], no longer part of this per-size config). Only vertical
- * padding and the height/type-scale genuinely vary per size, per spec's own table.
+ * Container-level constants (not per-size): corner radius (8px min), horizontal padding (16px),
+ * and border width (1px default / 3px active-error-success-readonly). Only vertical
+ * padding and height/type-scale vary per size.
  */
 @Stable
 private data class TextFieldConfig(
@@ -97,18 +94,15 @@ private data class TextFieldConfig(
     val cornerRadius: Dp
 )
 
-/** Uber Base: "Border styling... 1px weight, inside alignment for standard." Constant across size/variant. */
+/** 1px border weight, inside alignment. Constant across size/variant. */
 private val DefaultBorderWidth = HierarchicalSize.Border.Compact
 
-/** Uber Base: "3px for active/error/success/read-only." Constant across size/variant. */
+/** 3px for active/error/success/read-only. Constant across size/variant. */
 private val ActiveBorderWidth = HierarchicalSize.Border.Large
 
 /**
- * Get configuration for given size. Heights/vertical padding follow Uber Base's exact table
- * (Small 36/8px, Medium 48/12px, Large 56/16px) via [HierarchicalSize.Input]/[HierarchicalSize.Spacing]
- * — [HierarchicalSize.Input.Small] (40dp) is 4dp off the spec's literal 36px since the shared token
- * ladder is reused rather than introducing a stray one-off literal; Medium (48dp) and Large (56dp)
- * match the spec exactly.
+ * Get configuration for given size. Heights/vertical padding follow
+ * [HierarchicalSize.Input]/[HierarchicalSize.Spacing].
  */
 @Composable
 private fun SizeVariant.config(): TextFieldConfig {
@@ -160,22 +154,17 @@ private fun SizeVariant.config(): TextFieldConfig {
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Theme
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Colors for TextField states.
  *
- * Uber Base's Error and Success are a real/independent axis, not two ends of one flag — a field can
- * validate positively (borderPositive/contentPositive) as distinctly as it can fail (borderNegative/
- * contentNegative). [successBorder]/[successText] round that out. [focusedBackground] backs the
- * spec's "Enabled: tertiary background; Active: primary background" — the Filled variant is the only
- * one with a background to shift (Outlined/Ghost stay transparent per their own container model).
- * [readOnlyBorder] approximates Uber's "3px borderOpaque" — this token system has no literal
- * "opaque" border role, so it maps to the neutral `baseBorderDefault` (closest available role).
- * [hoverOverlay]/[pressedOverlay] are the spec's literal "4% / 8% black overlay," matching the same
- * convention already established on this library's other Uber Base migrations (Avatar/Tile/Tag).
+ * Error and Success are independent validation axes — a field can validate positively as distinctly
+ * as it can fail. [focusedBackground] backs the Filled variant's background shift
+ * (Outlined/Ghost stay transparent). [readOnlyBorder] maps to `baseBorderDefault`.
+ * [hoverOverlay]/[pressedOverlay] are 4% / 8% black overlay.
  */
 @Stable
 private data class TextFieldColors(
@@ -293,68 +282,55 @@ private fun TextFieldVariant.colors(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Base Component
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaTextField — a foundational input component that gathers text-based keyboard input and allows
- * users to enter and edit text.
+ * PixaTextField — a foundational input component for text-based keyboard input.
  *
  * ### Anatomy
- * Form [label] (optional) → input control (leading enhancer → text/[placeholder] → trailing
- * enhancer/[TextFieldStatus]) → form [helperText]/[errorText]. Enhancers accept either artwork
- * ([leadingIcon]/[trailingIcon]) or a text label ([leadingLabel]/[trailingLabel], e.g. a currency
- * symbol) per slot — spec: "either artwork or labels."
+ * [label] → input control (leading enhancer → text/[placeholder] → trailing
+ * enhancer/[TextFieldStatus]) → [helperText]/[errorText]. Enhancers accept either artwork
+ * ([leadingIcon]/[trailingIcon]) or a text label ([leadingLabel]/[trailingLabel]).
  *
  * ### Content model
- * [contentType] selects [TextFieldContentType.Plaintext] (default) or [TextFieldContentType.Tags]
- * (committed [tags] render as removable [PixaChip]s ahead of the input). Secure/Masked input is
- * already covered by [visualTransformation] (see [PasswordTextField]) rather than a third content type.
+ * [contentType] selects Plaintext (default) or Tags (committed [tags] render as removable
+ * [PixaChip]s). Secure/Masked input is handled via [visualTransformation].
  *
  * ### States
- * Enabled/disabled, focused ("Active" — 3px `brandBorderDefault` outline + background shifts from
- * `baseSurfaceSubtle` to `baseSurfaceFocus` on [TextFieldVariant.Filled]), [isError]/[isSuccess]
- * (independent validation axes, each with their own 3px outline + hint color — never combined),
- * [readOnly] (3px outline, focusable/tab-navigable/value-submitted, distinct from disabled per spec's
- * "use read-only instead" guidance), hover/pressed (4%/8% black overlay), and trailing [status]
- * (Complete/Incomplete/Loading — independent of isError/isSuccess; see [TextFieldStatus]).
- * [isPreloading] swaps the whole field for a [Skeleton] placeholder.
+ * Enabled/disabled, focused (3px `brandBorderDefault` outline), [isError]/[isSuccess]
+ * (independent validation axes), [readOnly] (3px outline, focusable/tab-navigable),
+ * hover/pressed (4%/8% black overlay), trailing [status] (Complete/Incomplete/Loading),
+ * and [isPreloading] (skeleton placeholder).
  *
  * ### Sizing
- * [size] resolves height/vertical padding to Uber Base's exact table (Small 36/8px, Medium 48/12px,
- * Large 56/16px — see [SizeVariant.config]). Corner radius (8px min) and horizontal padding (16px)
- * are spec-locked constants, not scaled per size.
- *
- * ### Customization
- * [maxLength] restricts character count — spec: don't apply this to address/name fields, reserve for
- * item names/descriptions. Required/optional marking is a content decision, not a boolean flag here —
- * spec: "spell out '(required)' in label" (or a legendized asterisk), not a hint-text indicator; bake
- * that into [label] directly rather than a dedicated param, per spec's "do not mix both styles."
+ * [size] resolves height/vertical padding via [HierarchicalSize.Input].
+ * Corner radius (8px min) and horizontal padding (16px) are container-level constants.
  *
  * @param value Current text value
  * @param onValueChange Callback when text changes
  * @param modifier Modifier for the text field
  * @param variant Visual style variant (Filled, Outlined, Ghost)
  * @param size Size preset (Small, Medium, Large)
- * @param enabled Whether the field is enabled (not focusable/tab-navigable — use [readOnly] instead if the value must still submit)
- * @param readOnly Whether the field is read-only (focusable, tab-navigable, value submitted — 3px outline)
- * @param isError Whether to show the error validation state (3px `errorBorderDefault`, independent of [isSuccess])
- * @param isSuccess Whether to show the success validation state (3px `successBorderDefault`, independent of [isError])
- * @param status Trailing fill-status indicator (Complete/Incomplete/Loading) — see [TextFieldStatus]
- * @param isPreloading Whether to render a [Skeleton] placeholder instead of the live field
+ * @param enabled Whether the field is enabled
+ * @param readOnly Whether the field is read-only (focusable, tab-navigable, value submitted)
+ * @param isError Whether to show the error validation state (independent of [isSuccess])
+ * @param isSuccess Whether to show the success validation state (independent of [isError])
+ * @param status Trailing fill-status indicator (Complete/Incomplete/Loading)
+ * @param isPreloading Whether to render a [Skeleton] placeholder
  * @param label Optional label text
- * @param placeholder Optional placeholder text (never critical info — it disappears on typing, per spec)
+ * @param placeholder Optional placeholder text (disappears on typing)
  * @param helperText Optional helper text below field
  * @param errorText Optional error text (shown when isError=true)
  * @param leadingIcon Optional leading artwork enhancer
- * @param trailingIcon Optional trailing artwork enhancer (superseded by [status] when not [TextFieldStatus.None])
- * @param leadingLabel Optional leading text enhancer (e.g. a currency symbol) — mutually exclusive with [leadingIcon]
- * @param trailingLabel Optional trailing text enhancer — mutually exclusive with [trailingIcon]/[status]
- * @param onClear Optional clear callback — when set, shows a clear icon when text is non-empty
- * @param contentType [TextFieldContentType.Plaintext] (default) or [TextFieldContentType.Tags]
- * @param tags Committed tag values, rendered as removable chips — only used when [contentType] is [TextFieldContentType.Tags]
- * @param onTagsChange Callback when a tag is removed or a new one is committed (Enter/comma) — required for [TextFieldContentType.Tags]
+ * @param trailingIcon Optional trailing artwork enhancer
+ * @param leadingLabel Optional leading text enhancer (mutually exclusive with [leadingIcon])
+ * @param trailingLabel Optional trailing text enhancer (mutually exclusive with [trailingIcon]/[status])
+ * @param onClear Optional clear callback — shows a clear icon when text is non-empty
+ * @param contentType Plaintext or Tags
+ * @param tags Committed tag values rendered as removable chips
+ * @param onTagsChange Callback when tags change
  * @param visualTransformation Visual transformation (e.g., password)
  * @param keyboardOptions Keyboard configuration
  * @param keyboardActions Keyboard actions
@@ -428,8 +404,7 @@ fun PixaTextField(
         else -> colors.text  // Use variant color which already considers all states
     }
 
-    // Animated colors. Border: 1px default, 3px active/error/success/read-only — Uber Base's locked
-    // ratio, not a per-size or *1.2f fudge.
+    // Border: 1px default, 3px active/error/success/read-only.
     val animatedBorderColor by animateColorAsState(
         targetValue = when {
             !enabled -> colors.disabledBorder
@@ -678,9 +653,9 @@ fun PixaTextField(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Convenience Variants
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * FilledTextField - Filled background variant
@@ -823,9 +798,9 @@ fun GhostTextField(
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // Specialized Convenience Functions
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * EmailTextField - Pre-configured for email input

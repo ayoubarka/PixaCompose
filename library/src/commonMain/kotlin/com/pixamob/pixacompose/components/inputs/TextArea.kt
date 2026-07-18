@@ -25,15 +25,12 @@ import androidx.compose.ui.text.input.KeyboardType
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // ENUMS & TYPES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * TextArea visual style variant.
- *
- * The eBay Playbook Text Area spec defines no variant axis, so this stays the pre-existing
- * PixaCompose container vocabulary shared with [PixaTextField].
+ * TextArea visual style variant, sharing the container vocabulary with [PixaTextField].
  */
 enum class TextAreaVariant {
     Filled,    // Filled background
@@ -41,20 +38,13 @@ enum class TextAreaVariant {
     Ghost      // Transparent, minimal
 }
 
-/**
- * Spec: "The default number of rows can be customized to increase or decrease the height of the
- * field." Default is 4 rows — expressed through Compose's native `minLines` rather than an eBay-style
- * `rows` param.
- */
+/** Default is 4 rows, expressed through Compose's native `minLines`. */
 private const val DefaultRows = 4
 
-/**
- * Spec: "Padding left/right of content: 16px." Locked at the container level (like [PixaTextField]'s
- * horizontal padding), not scaled per [SizeVariant] — the spec states one value for all text areas.
- */
+/** Horizontal padding locked at the container level, matching [PixaTextField]. */
 private val ContentHorizontalPadding = HierarchicalSize.Spacing.Large
 
-/** Spec: "Padding top/bottom of content: 8px." Container-level constant, same reasoning as above. */
+/** Vertical padding, container-level constant. */
 private val ContentVerticalPadding = HierarchicalSize.Spacing.Small
 
 /** Spec: "Space between label and text area: 4px." */
@@ -64,23 +54,21 @@ private val LabelGap = HierarchicalSize.Spacing.Compact
 private val HelperGap = HierarchicalSize.Spacing.Small
 
 /**
- * Border weight is NOT COVERED by the eBay Text Area spec. Rather than inventing a per-size ladder,
- * the text area inherits its sibling [PixaTextField]'s container model (1px default / 3px active) so
- * that a text field and a text area stacked in the same form read as one family.
+ * Inherited from sibling [PixaTextField]'s container model (1px default / 3px active) so that
+ * a text field and a text area stacked in the same form read as one family.
  */
 private val DefaultBorderWidth = HierarchicalSize.Border.Compact
 private val ActiveBorderWidth = HierarchicalSize.Border.Large
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // DATA CLASSES
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Per-size configuration for TextArea.
  *
- * Only the type scale varies by [SizeVariant]. Every spatial value the eBay spec pins down
- * (padding, gaps) is a container-level constant above, and the container radius/border are locked to
- * match [PixaTextField] — so nothing dimensional belongs in here.
+ * Only the type scale varies by [SizeVariant]. Padding, gaps, radius, and border are
+ * container-level constants matched to [PixaTextField], so no spatial values are size-dependent.
  */
 @Stable
 private data class TextAreaConfig(
@@ -92,9 +80,8 @@ private data class TextAreaConfig(
 /**
  * Colors for TextArea states.
  *
- * Mirrors the four states the eBay spec actually defines — default, focus, disabled, error — plus
- * [readOnlyBorder] for PixaCompose's retained read-only affordance. There is deliberately no hover,
- * pressed, or success entry here: the Text Area spec defines none.
+ * Four states: default, focus, disabled, error — plus [readOnlyBorder] for the read-only affordance.
+ * No hover, pressed, or success entries: these are not applicable to this input type.
  */
 @Stable
 private data class TextAreaColors(
@@ -113,9 +100,9 @@ private data class TextAreaColors(
     val disabledText: Color
 )
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // THEME PROVIDER
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * Get configuration for a given size. Type scale only — see [TextAreaConfig].
@@ -218,75 +205,46 @@ private fun TextAreaVariant.colors(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaTextArea — multi-line text input.
- *
- * ### Purpose
- * Spec: use "when longer values and sentences are encouraged." Do **not** use it when the expected
- * value is short — reach for [PixaTextField] instead.
+ * PixaTextArea — Multi-line text input for longer-form content.
  *
  * ### Anatomy
- * [label] → container (input area, holding the value or [placeholder]) → [helperText]/[errorText] and
- * the character counter. The spec defines no leading/trailing icons or accessories for a text area,
- * so this component intentionally exposes none.
- *
- * ### Variants
- * [TextAreaVariant] is a PixaCompose axis; the spec defines no variants.
+ * [label] → input (text entry with [placeholder]) → [helperText]/[errorText].
  *
  * ### States
- * Default, focus, [enabled]`= false`, and [isError] — the four the spec defines. [readOnly] is
- * retained from the previous PixaCompose API (a focusable, submittable, non-editable field, which
- * the spec's disabled state explicitly is not). Focus/error/read-only widen the border to 3px.
+ * Default, focus, enabled/disabled, [isError], [readOnly]. Focus/error/read-only widen the border to 3px.
  *
  * ### Sizing
- * Height is expressed in rows, per spec: [minLines] defaults to 4 and drives the container height via
- * the type scale, so the field is exactly N rows tall rather than a hardcoded dp. [maxLines] defaults
- * to [minLines], matching the spec's fixed-height/overflow model; raise it to opt into auto-grow.
- * [size] only shifts the type scale — the spec defines no size axis for text areas.
- *
- * ### Adaptive behavior
- * Spec: text areas "expand the full width of the screen up to the page margins" on small screens and
- * "expand up to their full width" on larger ones. The component always fills the width it is given;
- * the page margin is the caller's screen-level concern (`AppTheme.pageMargin`), not a second
- * responsive system inside the component.
+ * Height is expressed in rows via [minLines] (default 4). [maxLines] defaults to [minLines] (fixed);
+ * raise it for auto-grow. [size] shifts the type scale only.
  *
  * ### Customization
- * [maxLength] enables the counter. Content rules from the spec, enforced by writers rather than code:
- * labels are sentence case, no ending punctuation, a 1–3 word noun phrase; placeholders are realistic
- * examples ending in an ellipsis, never instructions or required information; helper text does not
- * repeat the label and stays to one line; error messages are neutral sentence case with no
- * "please"/"sorry"/"oops".
- *
- * ### Usage notes
- * Overflow follows the spec's "content shifts to keep the cursor in view" while focused, which is
- * Compose's native behavior for a row-bounded field. The spec's blur-time "scroll to the beginning"
- * and the browser's native resize indicator are **not** reproduced — both are web-platform
- * affordances, and this is an Android/iOS library with no browser chrome to inherit them from.
+ * [maxLength] enables the character counter.
  *
  * @param value Current text value
  * @param onValueChange Callback when text changes
- * @param modifier Modifier for the text area
+ * @param modifier Modifier
  * @param variant Visual style variant
- * @param size Size preset — type scale only
- * @param enabled Whether the field is enabled (not focusable; no value submitted — use [readOnly] if the value must still submit)
- * @param readOnly Whether the field is read-only (focusable and submittable, but not editable)
- * @param isError Whether to show the error state — [errorText] then replaces [helperText], per spec
+ * @param size Size preset (type scale only)
+ * @param enabled Whether the field is enabled
+ * @param readOnly Whether the field is read-only
+ * @param isError Whether to show the error state — [errorText] replaces [helperText]
  * @param label Optional label text
- * @param placeholder Optional placeholder text, replaced by [value] after the first character
+ * @param placeholder Optional placeholder text
  * @param helperText Optional helper text below the field
  * @param errorText Optional error text (shown when [isError] is true)
  * @param keyboardOptions Keyboard configuration
  * @param keyboardActions Keyboard actions
- * @param minLines The spec's "rows" — the field's height in lines
- * @param maxLines Maximum lines before the content scrolls; defaults to [minLines] (fixed height)
- * @param maxLength Optional maximum character length — showing the counter, per spec
+ * @param minLines The field's height in lines (default 4)
+ * @param maxLines Maximum lines before scrolling; defaults to [minLines] (fixed)
+ * @param maxLength Optional maximum character length — shows a counter
  * @param interactionSource Interaction source for state
  * @param contentDescription Accessibility description
- * @param customTextColor Optional custom text color (defaults to theme color)
+ * @param customTextColor Optional custom text color
  * @param customFocusedTextColor Optional custom text color when focused
  */
 @Composable
@@ -362,7 +320,7 @@ fun PixaTextArea(
             )
         }
 
-        // Container — height comes from minLines/maxLines (the spec's "rows"), not a fixed dp.
+        // Container height comes from minLines/maxLines, not a fixed dp.
         BasicTextField(
             value = value,
             onValueChange = { newValue ->
@@ -458,9 +416,9 @@ fun PixaTextArea(
     }
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // CONVENIENCE VARIANTS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /**
  * FilledTextArea - Filled background variant
@@ -591,9 +549,9 @@ fun GhostTextArea(
     )
 }
 
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 // SPECIALIZED CONVENIENCE FUNCTIONS
-// ============================================================================
+// ════════════════════════════════════════════════════════════════════════════
 
 /** Sentence-cased free text is what every preset below collects. */
 private val ProseKeyboardOptions = KeyboardOptions(

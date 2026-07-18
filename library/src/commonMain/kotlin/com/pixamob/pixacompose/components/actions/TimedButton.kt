@@ -68,11 +68,8 @@ import kotlinx.coroutines.launch
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Uber Base's timing presets for [PixaTimedButton.durationSeconds], plus the
- * absolute floor the spec calls out: "Never use a timer of under 10sec...
- * keep the button and its container for at least 15-20sec." [Minimum] is
- * enforced at runtime (see [PixaTimedButton]) regardless of what a caller
- * passes in.
+ * Timing presets for [PixaTimedButton.durationSeconds], plus the absolute
+ * minimum floor (15s). Anything below [Minimum] is coerced up at runtime.
  */
 object TimedButtonDuration {
     /** Enough time to read short content and make a quick call. */
@@ -98,9 +95,7 @@ data class TimedButtonColors(
     val background: Color,
     val content: Color,
     val border: Color = Color.Transparent,
-    // Drawn on top of [background] to represent the elapsed portion of the
-    // countdown — the closest Compose primitive equivalent to the Figma
-    // `Inner Shadow` progress technique the spec describes.
+    // Drawn on top of [background] to represent the elapsed portion of the countdown.
     val progressOverlay: Color = content.copy(alpha = 0.14f),
     val ripple: Color = content.copy(alpha = 0.12f)
 )
@@ -257,10 +252,9 @@ private fun InternalTimedButton(
             .semantics {
                 role = Role.Button
                 contentDescription = description ?: "$text, $remainingSecondsLabel"
-                // "Updates frequently" (VoiceOver) / a polite live region (TalkBack)
-                // so the countdown is announced without the user re-focusing the
-                // control — the spec's required screen-reader fallback for users
-                // who can't perceive the visual progress overlay.
+                // Polite live region (TalkBack) / "Updates frequently" (VoiceOver)
+                // so the countdown is announced without re-focusing the control —
+                // required for users who can't perceive the visual progress overlay.
                 stateDescription = remainingSecondsLabel
                 liveRegion = LiveRegionMode.Polite
             }
@@ -270,9 +264,7 @@ private fun InternalTimedButton(
                 .widthIn(min = sizeConfig.minWidth)
                 .height(sizeConfig.height)
         ) {
-            // Progress overlay: fills from the start edge and shrinks as time
-            // elapses, standing in for Figma's `Inner Shadow` progress technique
-            // (there is no Compose primitive for an animated inner shadow).
+            // Progress overlay: fills from the start edge and shrinks as time elapses.
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -303,11 +295,8 @@ private fun InternalTimedButton(
 }
 
 /**
- * Renders the two required text slots side by side: the primary label, then
- * the numerical countdown as a distinct, smaller secondary label. Per the
- * spec, "two line layouts are strictly reserved for localization & dynamic
- * type" — so the countdown sits inline as a second run of text rather than
- * wrapping the primary label onto its own second line.
+ * Renders the primary label and numerical countdown side by side. The countdown
+ * is inline as a distinct secondary label, not wrapped onto a second line.
  */
 @Composable
 private fun RowScope.TimedButtonContent(
@@ -356,73 +345,46 @@ private fun RowScope.TimedButtonContent(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaTimedButton — a rectangle button that auto-advances the user after a
- * finite countdown.
- *
- * ### Purpose
- * Notifies the user that the current screen requires timely attention, and
- * commits to [onTimeout] automatically if they don't act first. Per the spec:
- * "if misused, timed buttons can cause more harm than good — ensure usage is
- * tied only to optional flows and actions," never a required step.
+ * PixaTimedButton — a button that auto-advances after a finite countdown.
+ * Use for optional flows requiring timely attention; commits to [onTimeout]
+ * automatically if the user does not act first.
  *
  * ### Anatomy
- * Follows the same rectangle-button anatomy as [PixaButton], plus two
- * required additions: a secondary numerical countdown label, and a progress
- * overlay that visually depletes as time elapses. Leading/trailing icons are
- * optional, matching standard button icon sizing.
+ * Follows the same rectangle-button anatomy as [PixaButton], plus a secondary
+ * numerical countdown label and a progress overlay that depletes as time
+ * elapses. Leading/trailing icons are optional.
  *
  * ### Variants
  * Reuses [ButtonVariant]/[ButtonShape] from `Button.kt` for visual hierarchy
- * and shape — a timed button is a rectangle-button behavior overlay, not a
- * new visual family. [isDestructive] swaps brand tokens for error tokens.
+ * and shape. [isDestructive] swaps brand tokens for error tokens.
  *
  * ### States
- * Enabled (counting down immediately, before any interaction), pressed/focus
- * (handled by the shared interaction/ripple/focus-border treatment used by
- * [PixaButton]), and disabled (freezes the countdown — see Usage notes).
+ * Enabled (counting down immediately), pressed/focus (shared interaction/ripple/
+ * focus-border treatment from [PixaButton]), disabled (freezes the countdown).
  *
  * ### Sizing
- * [SizeVariant] resolves through the same [HierarchicalSize.Button] ladder as
- * [PixaButton] via [getButtonSizeConfig].
+ * [SizeVariant] resolves through [HierarchicalSize.Button] via [getButtonSizeConfig].
  *
  * ### Behavior
- * Counts down immediately in the enabled state. Either the user clicks
- * proactively (invokes [onClick], defaulting to [onTimeout] if not supplied)
- * or the timer reaches zero and [onTimeout] fires automatically. [resetKey]
- * restarts the countdown when changed (e.g. re-showing the same button after
- * navigating back to it).
+ * Counts down immediately when enabled. Either the user clicks (invokes [onClick],
+ * defaulting to [onTimeout] if not supplied) or the timer reaches zero and
+ * [onTimeout] fires. [resetKey] restarts the countdown when changed.
  *
- * ### Sizing/timing presets
- * [durationSeconds] accepts any of [TimedButtonDuration]'s presets or a
- * custom value; anything under [TimedButtonDuration.Minimum] (15s) is coerced
- * up to it — the spec calls a sub-10s timer "way too short" and a likely
- * cause of user errors.
- *
- * ### Adaptive behavior
- * Out of scope for this migration: the spec defers to "the same Button
- * breakpoints rules defined in [Uber's] documentation" without giving timed
- * button-specific breakpoint values, and `Button.kt`'s own `adaptiveWidth`
- * plumbing is a `ButtonWidthPolicy.Flexible`-only concern this component
- * doesn't currently expose a width policy for.
+ * ### Timing presets
+ * [durationSeconds] accepts [TimedButtonDuration] presets or a custom value;
+ * anything under [TimedButtonDuration.Minimum] (15s) is coerced up.
  *
  * ### Accessibility
- * The numerical countdown is a required element, never a decoration — the
- * spec is explicit that a purely visual progress indicator excludes users
- * with cognitive or visual disabilities. This implementation mirrors that:
- * [remainingSecondsLabel] is always rendered as text (never hidden), and the
- * control's `stateDescription` + a polite live region keep screen readers
- * announcing the remaining time as it changes, increasing in perceived
- * urgency as the countdown nears zero — matching the spec's requested
- * VoiceOver "Updates frequently" trait / TalkBack live-region behavior.
+ * The numerical countdown is rendered as text (never hidden), with a polite
+ * live region so screen readers announce the remaining time as it changes.
  *
  * ### Customization
  * Allowed: leading/trailing icons, custom [durationSeconds] (floor enforced),
- * [resetKey] as an explicit "extend/restart" trigger, [customColors]. Not
- * allowed by this API: removing the numerical countdown, or a duration below
- * the 15s floor — both are spec anti-patterns, not just style preferences.
+ * [resetKey], [customColors]. Not allowed: removing the numerical countdown,
+ * or a duration below the 15s floor.
  *
  * @param text Primary action label (required, single line)
- * @param onTimeout Invoked once when the countdown reaches zero, or immediately on a proactive click if [onClick] is not supplied
+ * @param onTimeout Invoked when the countdown reaches zero, or on proactive click if [onClick] is not supplied
  * @param modifier Modifier for styling
  * @param onClick Optional proactive-click handler; defaults to [onTimeout] when null
  * @param variant Visual hierarchy (Default: [ButtonVariant.Filled])
@@ -432,7 +394,7 @@ private fun RowScope.TimedButtonContent(
  * @param shape Shape variant (Default: Default)
  * @param leadingIcon Optional icon before the text
  * @param trailingIcon Optional icon after the text
- * @param durationSeconds Countdown length in seconds (Default: [TimedButtonDuration.Short] = 30s); coerced up to [TimedButtonDuration.Minimum] (15s)
+ * @param durationSeconds Countdown length in seconds (Default: 30s); coerced up to 15s minimum
  * @param resetKey Changing this value restarts the countdown from [durationSeconds]
  * @param customColors Optional custom [TimedButtonStateColors] to override theme defaults
  * @param description Accessibility description; defaults to "{text}, {N} seconds remaining"
@@ -440,20 +402,10 @@ private fun RowScope.TimedButtonContent(
  * @sample
  * ```
  * // A time-boxed offer that auto-confirms
- * PixaTimedButton(
- *     text = "Confirm ride",
- *     durationSeconds = TimedButtonDuration.Short,
- *     onTimeout = { confirmRide() }
- * )
+ * PixaTimedButton(text = "Confirm ride", durationSeconds = TimedButtonDuration.Short, onTimeout = { confirmRide() })
  *
  * // Reversible action with an explicit cancel window
- * PixaTimedButton(
- *     text = "Undo",
- *     variant = ButtonVariant.Tonal,
- *     durationSeconds = TimedButtonDuration.Medium,
- *     onTimeout = { commitDelete() },
- *     onClick = { commitDelete() }
- * )
+ * PixaTimedButton(text = "Undo", variant = ButtonVariant.Tonal, durationSeconds = TimedButtonDuration.Medium, onTimeout = { commitDelete() })
  * ```
  */
 @Composable

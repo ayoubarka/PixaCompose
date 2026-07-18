@@ -35,14 +35,12 @@ import com.pixamob.pixacompose.utils.toDp
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Button arrangement inside the dock, mapped from Uber Base's Narrow/Wide
- * button-dock layouts:
- * - [Vertical] = Narrow (≤600dp) — buttons stack full-width, one per row.
- * - [Horizontal] = Wide (>600dp) — buttons sit side by side in a single row.
+ * Button arrangement inside the dock:
+ * - [Vertical] (≤600dp) — buttons stack full-width, one per row.
+ * - [Horizontal] (>600dp) — buttons sit side by side in a single row.
  * - [Auto] (default) — resolves to [Vertical] below the 600dp breakpoint and
  *   [Horizontal] at/above it, via [AppTheme.windowSizeClass]/[WindowSizeClass.Compact].
- *   An explicit [Vertical]/[Horizontal] always wins over the breakpoint, same
- *   opt-in-only precedent as [PixaButton]'s `adaptiveWidth`.
+ *   An explicit [Vertical]/[Horizontal] always wins.
  */
 enum class DockLayout {
     Auto,
@@ -55,9 +53,8 @@ enum class DockLayout {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * A single dock button. Uber Base requires every dock button to stay
- * rectangular (large size) — this type deliberately has no `shape` field,
- * it always renders through [PixaButton] with [ButtonShape.Default].
+ * A single dock button. Rendered as rectangular [PixaButton] with
+ * [ButtonShape.Default] — this type deliberately has no `shape` field.
  */
 @Immutable
 @Stable
@@ -94,10 +91,9 @@ private fun resolveDockLayout(layout: DockLayout): DockLayout = when (layout) {
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * Overflow hint above the dock — Uber Base's "shadow to hint at more content
- * below the fold," faded in/out with [hasOverflowContent] rather than a
- * static always-on shadow, so the dock also honors the spec's paired "no
- * overflow" state where the hint disappears at the end of the content.
+ * Overflow hint above the dock — a shadow hinting at more content below the
+ * fold, faded in/out with [hasOverflowContent]. Removed when there is no
+ * overflow.
  */
 @Composable
 private fun DockOverflowShadow(visible: Boolean, modifier: Modifier = Modifier) {
@@ -183,50 +179,37 @@ private fun DockButtons(
 // ════════════════════════════════════════════════════════════════════════════
 
 /**
- * PixaButtonDock — a container pinned to the bottom of the screen that keeps
- * up to 4 primary actions visible while the page content scrolls behind it.
+ * PixaButtonDock — a container pinned to the bottom of the screen for keeping
+ * up to 4 primary actions visible while page content scrolls behind it.
  *
  * ### Anatomy
- * An optional top [accessory] slot (any composable — a summary price, a
- * progress line, disabled by leaving it null), followed by 1-4 [items]
- * rendered as large, rectangular [PixaButton]s (`shape = ButtonShape.Default`
- * always — Uber Base requires dock buttons to stay rectangular). At least one
- * button is recommended by the spec, though every item is independently
+ * An optional top [accessory] slot (any composable — summary price, progress
+ * line, etc.), followed by 1-4 [items] rendered as large, rectangular
+ * [PixaButton]s (shape = [ButtonShape.Default]). Each item is independently
  * enable/disable-able via [ButtonDockItem.enabled]. This composable does not
- * apply its own fixed/sticky positioning modifier — callers place it at the
- * bottom of their own `Box`/`Scaffold`-style root, matching how [PixaTopNavBar]/
- * [PixaBottomNavBar] leave outer placement to the caller rather than baking in
- * a specific navigation-host API.
+ * apply its own sticky positioning — callers place it at the bottom of their
+ * own `Box`/`Scaffold`-style root.
  *
  * ### Layout
- * [DockLayout.Vertical] (Narrow, ≤600dp) stacks full-width buttons — caller-supplied
- * [items] order is preserved, so pass destructive actions first/top (farthest
- * from the thumb) and dismissive "Cancel"-style actions last/bottom (closest
- * to the thumb), per Uber Base's ergonomic ordering rule. [DockLayout.Horizontal]
- * (Wide, >600dp) lays buttons out side by side, equally weighted.
- * [DockLayout.Auto] (default) resolves via [AppTheme.windowSizeClass] at the
- * same 600dp breakpoint Uber Base specifies — an explicit [layout] always wins.
+ * [DockLayout.Vertical] (≤600dp) stacks full-width buttons — pass destructive
+ * actions first (farthest from the thumb) and dismissive actions last (closest
+ * to the thumb). [DockLayout.Horizontal] (>600dp) lays buttons side by side,
+ * equally weighted. [DockLayout.Auto] (default) resolves via [AppTheme.windowSizeClass].
  *
  * ### Sizing
- * A single [size] (default [SizeVariant.Large], matching Uber Base's "large
- * rectangular buttons") applies to every item, satisfying "use the same
- * button size for all dock buttons."
+ * A single [size] (default [SizeVariant.Large]) applies to every item.
  *
  * ### States
- * [hasOverflowContent] drives the top overflow hint — pass whether the
- * caller's own scrollable content still has more to reveal below the fold;
- * the hint fades in/out rather than needing a separate no-overflow variant.
+ * [hasOverflowContent] drives the top overflow shadow hint — pass whether
+ * scrollable content has more to reveal below the fold; the hint fades in/out.
  *
  * ### Customization
- * [topSpacing] toggles the gap above [accessory]/[items] (Uber Base's
- * "top spacing can be toggled off" rule); background/shadow/border follow
- * Uber Base's fixed visual tokens (surface color, [ComponentElevation.High]
- * shadow, hairline top border) rather than being exposed as free-form knobs,
- * consistent with the spec's "visual styling fixed to design tokens" boundary.
+ * [topSpacing] toggles the gap above [accessory]/[items]; background, shadow,
+ * and border use fixed design tokens (surface color, [ComponentElevation.High]
+ * shadow, hairline top border).
  *
  * ### Usage notes
- * - Up to 4 buttons; most experiences need only 1-2 (not runtime-enforced,
- *   same content-rule precedent as [PixaButton]/[PixaButtonGroup]).
+ * - Up to 4 buttons; most experiences need only 1-2 (not runtime-enforced).
  * - Prefer short labels — side-by-side [DockLayout.Horizontal] labels don't
  *   localize well; vertical stacking accommodates longer translations better.
  *
@@ -271,9 +254,8 @@ fun PixaButtonDock(
                 .fillMaxWidth()
                 .elevationShadow(
                     elevation = ComponentElevation.High.toDp(),
-                    // The dock spans full container width edge-to-edge (Uber Base's
-                    // "X: 0px" fixed-bottom anatomy) — a flat RectangleShape, not one
-                    // of the AppTheme.shapes corner families, matches that intent.
+                    // The dock spans full container width edge-to-edge — a flat RectangleShape
+                    // matches that intent, not a cornered AppTheme.shapes family.
                     shape = RectangleShape,
                     clip = false
                 )
