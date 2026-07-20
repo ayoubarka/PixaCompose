@@ -1,27 +1,47 @@
 package com.pixamob.pixacompose.demo
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.DarkMode
 import androidx.compose.material.icons.filled.LightMode
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.unit.dp
+import com.pixamob.pixacompose.components.actions.IconButtonVariant
+import com.pixamob.pixacompose.components.actions.PixaIconButton
+import com.pixamob.pixacompose.components.actions.TabContent
+import com.pixamob.pixacompose.components.actions.TabItem
+import com.pixamob.pixacompose.components.actions.Tabs
+import com.pixamob.pixacompose.components.display.IconTone
+import com.pixamob.pixacompose.components.display.PixaActionCard
+import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.AppTheme
-import kotlinx.coroutines.launch
+import com.pixamob.pixacompose.theme.SizeVariant
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(onComponentClick: (ComponentEntry) -> Unit) {
     val categories = ComponentCategory.entries
-    val pagerState = rememberPagerState(pageCount = { categories.size })
-    val coroutineScope = rememberCoroutineScope()
+    var selectedCategoryIndex by remember { mutableStateOf(0) }
     val toggleTheme = LocalThemeToggle.current
 
     Column(
@@ -30,102 +50,69 @@ fun MainScreen(onComponentClick: (ComponentEntry) -> Unit) {
             .statusBarsPadding()
             .background(AppTheme.colors.baseSurfaceDefault)
     ) {
-        Surface(
-            modifier = Modifier.fillMaxWidth(),
-            color = AppTheme.colors.baseSurfaceDefault,
-            shadowElevation = 2.dp
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(AppTheme.colors.baseSurfaceDefault)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "PixaCompose",
-                    style = AppTheme.typography.titleBold,
-                    color = AppTheme.colors.baseContentTitle,
-                    modifier = Modifier.weight(1f)
-                )
-                IconButton(onClick = toggleTheme) {
-                    Icon(
-                        imageVector = if (AppTheme.isDarkTheme) Icons.Default.LightMode else Icons.Default.DarkMode,
-                        contentDescription = if (AppTheme.isDarkTheme) "Switch to light" else "Switch to dark",
-                        tint = AppTheme.colors.baseContentTitle
-                    )
-                }
+            BasicText(
+                text = "PixaCompose",
+                style = AppTheme.typography.titleBold.copy(
+                    color = AppTheme.colors.baseContentTitle
+                ),
+                modifier = Modifier.weight(1f)
+            )
+
+            val themeIconPainter = if (AppTheme.isDarkTheme) {
+                rememberVectorPainter(Icons.Default.LightMode)
+            } else {
+                rememberVectorPainter(Icons.Default.DarkMode)
             }
+            PixaIconButton(
+                icon = themeIconPainter,
+                onClick = toggleTheme,
+                variant = IconButtonVariant.Ghost,
+                contentDescription = if (AppTheme.isDarkTheme) "Switch to light" else "Switch to dark"
+            )
         }
 
-        ScrollableTabRow(
-            selectedTabIndex = pagerState.currentPage,
-            edgePadding = 0.dp,
-            containerColor = AppTheme.colors.baseSurfaceDefault,
-            contentColor = AppTheme.colors.baseContentTitle,
-            divider = {}
+        Tabs(
+            selectedTabIndex = selectedCategoryIndex,
+            tabs = categories.map { category ->
+                TabItem(content = TabContent.Text(category.displayName))
+            },
+            onTabSelected = { selectedCategoryIndex = it },
+            size = SizeVariant.Compact,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        val currentCategory = categories[selectedCategoryIndex]
+        val components = ComponentEntry.byCategory(currentCategory)
+
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            categories.forEachIndexed { index, category ->
-                Tab(
-                    selected = pagerState.currentPage == index,
-                    onClick = {
-                        coroutineScope.launch { pagerState.animateScrollToPage(index) }
-                    },
-                    text = {
-                        Text(
-                            text = category.displayName,
-                            style = AppTheme.typography.bodyBold,
-                            maxLines = 1
+            items(components, key = { it.name }) { entry ->
+                PixaActionCard(
+                    title = entry.name,
+                    subtitle = entry.description,
+                    trailing = {
+                        PixaIcon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tone = IconTone.Subtle
                         )
-                    }
+                    },
+                    onClick = { onComponentClick(entry) },
+                    modifier = Modifier.fillMaxWidth()
                 )
             }
-        }
-
-        HorizontalPager(
-            state = pagerState,
-            modifier = Modifier.fillMaxSize()
-        ) { page ->
-            val category = categories[page]
-            val components = ComponentEntry.byCategory(category)
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                components.forEach { entry ->
-                    ComponentCard(entry = entry, onClick = { onComponentClick(entry) })
-                }
-            }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun ComponentCard(entry: ComponentEntry, onClick: () -> Unit) {
-    Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = AppTheme.colors.baseSurfaceSubtle
-        ),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(
-                text = entry.name,
-                style = AppTheme.typography.titleBold,
-                color = AppTheme.colors.baseContentTitle
-            )
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = entry.description,
-                style = AppTheme.typography.captionRegular,
-                color = AppTheme.colors.baseContentBody
-            )
         }
     }
 }

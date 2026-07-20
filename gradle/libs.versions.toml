@@ -1,13 +1,13 @@
 [versions]
 android-minSdk = "24"
-android-compileSdk = "36"
+android-compileSdk = "37"
 android-targetSdk = "36"
 appVersionCode = "12"
 appVersionName = "1.1.1"
 
-agp = "9.1.0"
-kotlin = "2.3.20"
-compose = "1.10.3"
+agp = "9.2.1"
+kotlin = "2.4.10"
+compose = "1.11.1"
 compose-material3 = "1.10.0-alpha05"
 kotlinx-datetime = "0.8.0"
 androidx-activityCompose = "1.13.0"
@@ -47,11 +47,7 @@ androidx-navigation-compose = { module = "androidx.navigation:navigation-compose
 
 
 [bundles]
-coil = [
-    "coil-compose",
-    "coil-network",
-    "coil-svg"
-]
+coil = ["coil-compose", "coil-network", "coil-svg"]
 
 
 [plugins]
