@@ -20,10 +20,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.LocalContentColor
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -457,70 +455,69 @@ fun PixaChip(
             .padding(horizontal = config.horizontalPadding),
         contentAlignment = Alignment.Center
     ) {
-        CompositionLocalProvider(LocalContentColor provides animatedContentColor) {
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Leading icon
-                if (leadingIcon != null) {
-                    PixaIcon(
-                        painter = leadingIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(config.iconSize),
-                        tint = animatedContentColor
-                    )
-                    Spacer(modifier = Modifier.width(config.iconSpacing))
-                }
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Leading icon
+            if (leadingIcon != null) {
+                PixaIcon(
+                    painter = leadingIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(config.iconSize),
+                    tint = animatedContentColor
+                )
+                Spacer(modifier = Modifier.width(config.iconSpacing))
+            }
 
-                // Text (only if provided)
-                if (!text.isNullOrBlank()) {
-                    Text(
-                        text = text,
-                        style = config.textStyle(),
+            // Text (only if provided)
+            if (!text.isNullOrBlank()) {
+                BasicText(
+                    text = text,
+                    style = config.textStyle().copy(
                         color = animatedContentColor,
-                        textAlign = TextAlign.Center,
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1,
-                        modifier = Modifier.widthIn(max = HierarchicalSize.Image.Medium + HierarchicalSize.Spacing.Massive)
-                    )
-                }
+                        textAlign = TextAlign.Center
+                    ),
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1,
+                    modifier = Modifier.widthIn(max = HierarchicalSize.Image.Medium + HierarchicalSize.Spacing.Massive)
+                )
+            }
 
-                // Trailing icon
-                if (trailingIcon != null && type != ChipType.Dismissible) {
-                    Spacer(modifier = Modifier.width(config.iconSpacing))
-                    PixaIcon(
-                        painter = trailingIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(config.iconSize),
-                        tint = animatedContentColor
-                    )
-                }
+            // Trailing icon
+            if (trailingIcon != null && type != ChipType.Dismissible) {
+                Spacer(modifier = Modifier.width(config.iconSpacing))
+                PixaIcon(
+                    painter = trailingIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(config.iconSize),
+                    tint = animatedContentColor
+                )
+            }
 
-                // Dismiss icon for dismissible chips
-                if (type == ChipType.Dismissible && onDismiss != null && enabled) {
-                    Spacer(modifier = Modifier.width(config.iconSpacing))
-                    Box(
-                        modifier = Modifier
-                            .size(config.iconSize)
-                            .clip(AppTheme.shapes.pill)
-                            .clickable(
-                                onClick = onDismiss,
-                                indication = pixaRipple(bounded = true, color = animatedContentColor.copy(alpha = 0.2f)),
-                                interactionSource = remember { MutableInteractionSource() }
-                            ),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = "×",
-                            modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true),
-                            style = androidx.compose.ui.text.TextStyle(
-                                fontSize = (config.iconSize.value * 0.7f).sp,
-                                color = animatedContentColor,
-                                textAlign = TextAlign.Center
-                            )
+            // Dismiss icon for dismissible chips
+            if (type == ChipType.Dismissible && onDismiss != null && enabled) {
+                Spacer(modifier = Modifier.width(config.iconSpacing))
+                Box(
+                    modifier = Modifier
+                        .size(config.iconSize)
+                        .clip(AppTheme.shapes.pill)
+                        .clickable(
+                            onClick = onDismiss,
+                            indication = pixaRipple(bounded = true, color = animatedContentColor.copy(alpha = 0.2f)),
+                            interactionSource = remember { MutableInteractionSource() }
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    BasicText(
+                        text = "×",
+                        modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true),
+                        style = androidx.compose.ui.text.TextStyle(
+                            fontSize = (config.iconSize.value * 0.7f).sp,
+                            color = animatedContentColor,
+                            textAlign = TextAlign.Center
                         )
-                    }
+                    )
                 }
             }
         }

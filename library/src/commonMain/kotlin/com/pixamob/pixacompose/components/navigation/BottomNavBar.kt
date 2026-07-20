@@ -22,8 +22,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.material3.Text
-import androidx.compose.material3.ripple
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -51,6 +50,7 @@ import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.components.display.PixaIcon
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.pixaRipple
 
 // ════════════════════════════════════════════════════════════════════════════
 // DATA CLASSES
@@ -192,7 +192,7 @@ private fun AnimatedNavItem(
             .scale(scale)
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = true),
+                indication = pixaRipple(bounded = true),
                 enabled = item.enabled,
                 role = Role.Tab,
                 onClick = onClick
@@ -213,10 +213,11 @@ private fun AnimatedNavItem(
                 )
             }
             TabDisplayStyle.TextOnly -> {
-                Text(
+                BasicText(
                     text = item.title,
-                    style = AppTheme.typography.labelMedium,
-                    color = contentColor.copy(alpha = labelAlpha),
+                    style = AppTheme.typography.labelMedium.copy(
+                        color = contentColor.copy(alpha = labelAlpha)
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -233,10 +234,11 @@ private fun AnimatedNavItem(
                     tint = contentColor
                 )
                 Spacer(modifier = Modifier.height(2.dp))
-                Text(
+                BasicText(
                     text = item.title,
-                    style = AppTheme.typography.labelMedium,
-                    color = contentColor.copy(alpha = labelAlpha),
+                    style = AppTheme.typography.labelMedium.copy(
+                        color = contentColor.copy(alpha = labelAlpha)
+                    ),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )

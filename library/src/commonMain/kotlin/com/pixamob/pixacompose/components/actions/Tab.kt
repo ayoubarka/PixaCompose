@@ -27,7 +27,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -918,12 +918,13 @@ private fun RowScope.RenderTabContentRow(
 
     when (content) {
         is TabContent.Text -> {
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -951,12 +952,13 @@ private fun RowScope.RenderTabContentRow(
                 tint = iconTint,
                 modifier = Modifier.size(iconSize)
             )
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -968,12 +970,13 @@ private fun RowScope.RenderTabContentRow(
                 tint = iconTint,
                 modifier = Modifier.size(iconSize)
             )
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -989,12 +992,13 @@ private fun RowScope.RenderTabContentRow(
                     )
                 }
             }
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1020,12 +1024,13 @@ private fun RowScope.RenderTabContentRow(
                     )
                 }
             }
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1076,12 +1081,13 @@ private fun ColumnScope.RenderTabContentColumn(
 
     when (content) {
         is TabContent.Text -> {
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1148,12 +1154,13 @@ private fun ColumnScope.RenderTabContentColumn(
                     )
                 }
             }
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1178,12 +1185,13 @@ private fun ColumnScope.RenderTabContentColumn(
                     )
                 }
             }
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1199,12 +1207,13 @@ private fun ColumnScope.RenderTabContentColumn(
                     )
                 }
             }
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1230,12 +1239,13 @@ private fun ColumnScope.RenderTabContentColumn(
                     )
                 }
             }
-            Text(
+            BasicText(
                 text = content.text,
-                style = textStyle,
-                color = textColor,
-                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                textAlign = textAlign,
+                style = textStyle.copy(
+                    color = textColor,
+                    fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                    textAlign = textAlign
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

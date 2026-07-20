@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -259,11 +259,12 @@ fun PixaIconButton(
         }
 
         if (label != null) {
-            Text(
+            BasicText(
                 text = label,
-                style = sizeConfig.labelStyle(),
-                color = AppTheme.colors.baseContentCaption,
-                textAlign = TextAlign.Center,
+                style = sizeConfig.labelStyle().copy(
+                    color = AppTheme.colors.baseContentCaption,
+                    textAlign = TextAlign.Center
+                ),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis
             )

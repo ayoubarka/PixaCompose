@@ -23,7 +23,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Text
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -225,10 +225,11 @@ fun PixaDrawer(
                         sections.forEach { section ->
                             if (section.title != null) {
                                 item {
-                                    Text(
+                                    BasicText(
                                         text = section.title,
-                                        style = sizeConfig.sectionTitleStyle,
-                                        color = themeColors.sectionTitle,
+                                        style = sizeConfig.sectionTitleStyle.copy(
+                                            color = themeColors.sectionTitle
+                                        ),
                                         modifier = Modifier.padding(
                                             horizontal = sizeConfig.itemPadding,
                                             vertical = sizeConfig.spacing
@@ -304,18 +305,18 @@ private fun DrawerItemRow(
             )
         }
 
-        Text(
+        BasicText(
             text = item.title,
-            style = sizeConfig.titleStyle,
-            color = textColor,
+            style = sizeConfig.titleStyle.copy(color = textColor),
             modifier = Modifier.weight(1f)
         )
 
         if (item.badge != null) {
-            Text(
+            BasicText(
                 text = item.badge,
-                style = AppTheme.typography.captionBold,
-                color = colors.selectedItemText,
+                style = AppTheme.typography.captionBold.copy(
+                    color = colors.selectedItemText
+                ),
                 modifier = Modifier
                     .clip(AppTheme.shapes.pill)
                     .background(colors.selectedItemBackground)

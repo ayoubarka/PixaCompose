@@ -19,9 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.text.BasicText
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
@@ -354,59 +352,57 @@ fun PixaTag(
             .padding(horizontal = config.horizontalPadding),
         contentAlignment = Alignment.Center
     ) {
-        CompositionLocalProvider(LocalContentColor provides finalColors.content) {
-            Row(
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                if (leadingIcon != null) {
-                    PixaIcon(
-                        painter = leadingIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(config.iconSize),
-                        tint = finalColors.content
-                    )
-                    Spacer(modifier = Modifier.width(config.iconSpacing))
-                }
+        Row(
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            if (leadingIcon != null) {
+                PixaIcon(
+                    painter = leadingIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(config.iconSize),
+                    tint = finalColors.content
+                )
+                Spacer(modifier = Modifier.width(config.iconSpacing))
+            }
 
-                if (!text.isNullOrBlank()) {
-                    BasicText(
-                        text = text,
-                        style = config.textStyle().copy(color = finalColors.content, textAlign = TextAlign.Center),
-                        overflow = TextOverflow.Ellipsis,
-                        maxLines = 1
-                    )
-                }
+            if (!text.isNullOrBlank()) {
+                BasicText(
+                    text = text,
+                    style = config.textStyle().copy(color = finalColors.content, textAlign = TextAlign.Center),
+                    overflow = TextOverflow.Ellipsis,
+                    maxLines = 1
+                )
+            }
 
-                if (onDismiss != null && type == TagType.Selection && enabled) {
-                    Spacer(modifier = Modifier.width(config.iconSpacing))
-                    Box(
-                        modifier = Modifier
-                            .size(config.iconSize)
-                            .clip(AppTheme.shapes.pill)
-                            .clickable(
-                                onClick = onDismiss,
-                                indication = pixaRipple(bounded = true, color = finalColors.content.copy(alpha = 0.2f)),
-                                interactionSource = remember { MutableInteractionSource() }
-                            )
-                            .semantics { this.contentDescription = text?.let { "Remove $it" } ?: "Remove tag" },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        BasicText(
-                            text = "×",
-                            modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true),
-                            style = config.textStyle().copy(color = finalColors.content, textAlign = TextAlign.Center)
+            if (onDismiss != null && type == TagType.Selection && enabled) {
+                Spacer(modifier = Modifier.width(config.iconSpacing))
+                Box(
+                    modifier = Modifier
+                        .size(config.iconSize)
+                        .clip(AppTheme.shapes.pill)
+                        .clickable(
+                            onClick = onDismiss,
+                            indication = pixaRipple(bounded = true, color = finalColors.content.copy(alpha = 0.2f)),
+                            interactionSource = remember { MutableInteractionSource() }
                         )
-                    }
-                } else if (trailingIcon != null) {
-                    Spacer(modifier = Modifier.width(config.iconSpacing))
-                    PixaIcon(
-                        painter = trailingIcon,
-                        contentDescription = null,
-                        modifier = Modifier.size(config.iconSize),
-                        tint = finalColors.content
+                        .semantics { this.contentDescription = text?.let { "Remove $it" } ?: "Remove tag" },
+                    contentAlignment = Alignment.Center
+                ) {
+                    BasicText(
+                        text = "×",
+                        modifier = Modifier.wrapContentSize(Alignment.Center, unbounded = true),
+                        style = config.textStyle().copy(color = finalColors.content, textAlign = TextAlign.Center)
                     )
                 }
+            } else if (trailingIcon != null) {
+                Spacer(modifier = Modifier.width(config.iconSpacing))
+                PixaIcon(
+                    painter = trailingIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(config.iconSize),
+                    tint = finalColors.content
+                )
             }
         }
 
