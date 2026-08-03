@@ -168,6 +168,10 @@ private val NavHeaderBorderWidth = HierarchicalSize.Border.Compact
 /**
  * Internal action button using PixaButton for consistent styling.
  * [protectionColor], when non-null, paints a solid chip behind the icon for visibility on complex backgrounds.
+ *
+ * [variant]/[shape] pick the underlying [PixaButton] structure. For [ButtonVariant.Ghost]
+ * (the default) the icon tint and optional protection chip are applied via [customColors];
+ * other variants keep their native fill/border styling and only honor an explicit [TopNavAction.tint].
  */
 @Composable
 private fun ActionButton(
@@ -175,6 +179,8 @@ private fun ActionButton(
     iconSize: Dp,
     contentColor: Color,
     protectionColor: Color?,
+    variant: ButtonVariant,
+    shape: ButtonShape,
     mirrorForRtl: Boolean,
     modifier: Modifier = Modifier
 ) {
@@ -188,21 +194,11 @@ private fun ActionButton(
         val iconColor = action.tint ?: contentColor
         val chipColor = protectionColor ?: Color.Transparent
 
-        PixaButton(
-            onClick = action.onClick,
-            leadingIcon = action.icon,
-            size = when (iconSize) {
-                HierarchicalSize.Icon.Small -> SizeVariant.Small
-                HierarchicalSize.Icon.Medium -> SizeVariant.Medium
-                HierarchicalSize.Icon.Large -> SizeVariant.Large
-                else -> SizeVariant.Medium
-            },
-            variant = ButtonVariant.Ghost,
-            shape = ButtonShape.Circle,
-            enabled = action.enabled,
-            description = action.description,
-            modifier = Modifier.size(iconSize + 20.dp), // Touch target 44dp minimum
-            customColors = ButtonStateColors(
+        // Ghost keeps the transparent-with-protection look and honors the action tint.
+        // Other variants (Filled/Tonal/Outlined/OnBrand) render their native fill/border,
+        // since customColors would fully replace the variant's own color set.
+        val resolvedColors: ButtonStateColors? = if (variant == ButtonVariant.Ghost) {
+            ButtonStateColors(
                 default = ButtonColors(
                     background = chipColor,
                     content = iconColor,
@@ -214,6 +210,25 @@ private fun ActionButton(
                     border = Color.Transparent
                 )
             )
+        } else {
+            null
+        }
+
+        PixaButton(
+            onClick = action.onClick,
+            leadingIcon = action.icon,
+            size = when (iconSize) {
+                HierarchicalSize.Icon.Small -> SizeVariant.Small
+                HierarchicalSize.Icon.Medium -> SizeVariant.Medium
+                HierarchicalSize.Icon.Large -> SizeVariant.Large
+                else -> SizeVariant.Medium
+            },
+            variant = variant,
+            shape = shape,
+            enabled = action.enabled,
+            description = action.description,
+            modifier = Modifier.size(iconSize + 20.dp), // Touch target 44dp minimum
+            customColors = resolvedColors
         )
 
         // Badge overlay
@@ -294,6 +309,7 @@ private fun TopNavTitleSection(
  * ### Variants
  * [NavHeaderVariant.Fixed]: opaque, carries title, collapsible.
  * [NavHeaderVariant.Floating]: transparent, no title, background-protected icons.
+ * Action buttons: [ButtonShape] (Circle/Pill/Default) × [ButtonVariant] (Ghost/Filled/Tonal/Outlined/OnBrand).
  *
  * ### States
  * Expanded/collapsed (Fixed only, caller-driven), enabled/disabled per action.
@@ -309,6 +325,8 @@ private fun TopNavTitleSection(
  * @param titleAlignment Start or Center; forced Start when collapsed
  * @param startActions Leading action buttons
  * @param endActions Trailing action buttons
+ * @param actionShape Shape of action buttons ([ButtonShape.Circle] default, Pill, Default)
+ * @param actionVariant Structural variant of action buttons — Ghost (default), Filled, Tonal, Outlined, OnBrand
  * @param mirrorLeadingIconForRtl Flips first start icon for RTL (default true)
  * @param profileImageUrl Avatar image URL as trailing action
  * @param onAvatarClick Avatar click callback (required with profileImageUrl)
@@ -331,6 +349,8 @@ fun PixaTopNavBar(
     titleAlignment: TopNavTitleAlignment? = null,
     startActions: List<TopNavAction> = emptyList(),
     endActions: List<TopNavAction> = emptyList(),
+    actionShape: ButtonShape = ButtonShape.Circle,
+    actionVariant: ButtonVariant = ButtonVariant.Ghost,
     mirrorLeadingIconForRtl: Boolean = true,
     profileImageUrl: String? = null,
     containerColor: Color? = null,
@@ -419,6 +439,8 @@ fun PixaTopNavBar(
                             iconSize = sizeConfig.iconSize,
                             contentColor = contentColor,
                             protectionColor = protectionColor,
+                            variant = actionVariant,
+                            shape = actionShape,
                             mirrorForRtl = index == 0 && mirrorLeadingIconForRtl
                         )
                     }
@@ -477,6 +499,8 @@ fun PixaTopNavBar(
                             iconSize = sizeConfig.iconSize,
                             contentColor = contentColor,
                             protectionColor = protectionColor,
+                            variant = actionVariant,
+                            shape = actionShape,
                             mirrorForRtl = false
                         )
                     }

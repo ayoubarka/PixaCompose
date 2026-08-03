@@ -8,7 +8,8 @@ enum class ComponentCategory(val displayName: String) {
     Display("Display"),
     Feedback("Feedback"),
     Navigation("Navigation"),
-    Overlay("Overlay")
+    Overlay("Overlay"),
+    Surfaces("Surfaces")
 }
 
 sealed class ComponentEntry(
@@ -324,6 +325,12 @@ sealed class ComponentEntry(
         description = "Tooltips with position variants and auto-dismiss"
     ) { override val showcase: @Composable () -> Unit get() = { com.pixamob.pixacompose.demo.overlay.TooltipShowcase() } }
 
+    // ── Surfaces ─────────────────────────────────────────
+    data object Scaffold : ComponentEntry(
+        name = "Scaffold", category = ComponentCategory.Surfaces,
+        description = "Screen-level layout container: bars, rail, side pane, floating content"
+    ) { override val showcase: @Composable () -> Unit get() = { com.pixamob.pixacompose.demo.surfaces.ScaffoldShowcase() } }
+
     // ── Theme ────────────────────────────────────────────
     data object Theme : ComponentEntry(
         name = "Theme", category = ComponentCategory.Display,
@@ -348,6 +355,8 @@ sealed class ComponentEntry(
             TopNavBar, BottomNavBar, Drawer, Stepper, TabBar,
             // Overlay (6)
             Dialog, BottomSheet, FullScreenModal, Menu, Popover, Tooltip,
+            // Surfaces (1)
+            Scaffold,
             // Theme (1)
             Theme
         )

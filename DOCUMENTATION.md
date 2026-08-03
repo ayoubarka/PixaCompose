@@ -2684,6 +2684,58 @@ PixaCard(
 }
 ```
 
+#### PixaScaffold
+
+**Import**: `com.pixamob.pixacompose.components.surfaces.PixaScaffold`
+**File**: `components/surfaces/Scaffold.kt`
+
+Screen-level layout container — frames a primary content area with optional top bar, bottom bar,
+leading navigation rail, trailing side pane, and floating content (e.g. `PixaFab`). Built from
+`Box`/`Row`/`Column` only; the PixaCompose adaptation of the Material scaffold role, not a wrapper
+around it. Bars sit in normal flow (opaque, no measured-inset pass) — components that need
+system-bar insets (`PixaTopNavBar`) already apply them internally. `content` receives a
+`PaddingValues` contract (adaptive `AppTheme.pageMargin` horizontally by default) to apply or
+offset, matching Compose's own scaffold convention.
+
+```kotlin
+PixaScaffold(
+    topBar = { PixaTopNavBar(title = "Home") },
+    bottomBar = { PixaBottomNavBar(items = navItems, selectedIndex = selected) },
+    floatingContent = { PixaFab(onClick = { create() }) },
+    fabPosition = ScaffoldFabPosition.End
+) { contentPadding ->
+    LazyColumn(contentPadding = contentPadding) {
+        items(feedItems) { FeedRow(it) }
+    }
+}
+```
+
+**`PixaAdaptiveScaffold`** — takes a single `navigation` slot and switches it between a bottom bar
+(`WindowSizeClass.Compact`) and a leading rail (wider viewports) via `ScaffoldNavigationMode`
+(`Auto`/`BottomBar`/`Rail`):
+
+```kotlin
+PixaAdaptiveScaffold(
+    navigation = { PixaBottomNavBar(items = navItems, selectedIndex = selected) },
+    topBar = { PixaTopNavBar(title = "Home") }
+) { contentPadding ->
+    ScreenContent(contentPadding)
+}
+```
+
+**`PixaSimpleScaffold`** — top bar + bottom bar + padded `BoxScope` content, for screens that don't
+need a rail/pane/floating slot and want the padding applied for them:
+
+```kotlin
+PixaSimpleScaffold(
+    topBar = { PixaTopNavBar(title = "Settings") }
+) {
+    Column(modifier = Modifier.fillMaxSize()) {
+        SettingsList()
+    }
+}
+```
+
 ---
 
 ## Global Feedback System
