@@ -404,6 +404,7 @@ private fun getDefaultDescription(type: EmptyStateType): String {
  * @param icon Optional badge/spot illustration painter (null to omit the illustration slot entirely)
  * @param showIcon Whether to show the illustration
  * @param illustrationContentDescription Accessibility label for the illustration; null (default) hides it from accessibility as decorative
+ * @param iconContainer Optional custom illustration slot. When supplied it replaces the default [icon] and respects [showIcon].
  * @param size Size variant for the empty state (ignored when [adaptiveSize] is true)
  * @param adaptiveSize Derive size from [AppTheme.adaptiveSizeVariant] instead of [size]
  * @param titleMaxLines Line cap for the headline (Default: unlimited/wrap)
@@ -424,6 +425,7 @@ fun PixaEmptyState(
     icon: Painter? = null,
     showIcon: Boolean = true,
     illustrationContentDescription: String? = null,
+    iconContainer: (@Composable () -> Unit)? = null,
     size: SizeVariant = SizeVariant.Medium,
     adaptiveSize: Boolean = false,
     titleMaxLines: Int = Int.MAX_VALUE,
@@ -465,19 +467,23 @@ fun PixaEmptyState(
             verticalArrangement = Arrangement.spacedBy(config.spacing)
         ) {
             // Illustration — badge/spot artwork. Hidden from a11y by default.
-            if (showIcon && icon != null) {
-                PixaIcon(
-                    painter = icon,
-                    contentDescription = illustrationContentDescription,
-                    tint = colors.icon,
-                    modifier = Modifier
-                        .size(config.iconSize)
-                        .then(
-                            if (illustrationContentDescription == null) {
-                                Modifier.semantics { hideFromAccessibility() }
-                            } else Modifier
-                        )
-                )
+            if (showIcon) {
+                if (iconContainer != null) {
+                    iconContainer()
+                } else if (icon != null) {
+                    PixaIcon(
+                        painter = icon,
+                        contentDescription = illustrationContentDescription,
+                        tint = colors.icon,
+                        modifier = Modifier
+                            .size(config.iconSize)
+                            .then(
+                                if (illustrationContentDescription == null) {
+                                    Modifier.semantics { hideFromAccessibility() }
+                                } else Modifier
+                            )
+                    )
+                }
             }
 
             // Content

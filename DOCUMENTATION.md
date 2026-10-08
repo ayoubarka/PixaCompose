@@ -1,6 +1,6 @@
 # PixaCompose
 
-**A comprehensive Compose Multiplatform UI library** with 46+ production-ready components for Android and iOS applications.
+**A comprehensive Compose Multiplatform UI library** with 52+ production-ready components for Android and iOS applications.
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.pixamob/pixacompose)](https://central.sonatype.com/artifact/com.pixamob/pixacompose)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
@@ -42,7 +42,7 @@
 
 ## Features
 
-- **48+ Components** — Buttons, Cards, TextFields, DatePicker, Slider, Charts, and more
+- **52+ Components** — Buttons, Cards, TextFields, DatePicker, Slider, Charts, and more
 - **Multiplatform** — Android (24+) and iOS (13+) via Compose Multiplatform
 - **Theme System** — Centralized colors (71 semantic color properties), typography (27 text styles), shapes, and dimensions
 - **Light/Dark Mode** — Automatic theme switching via `PixaTheme(useDarkTheme = isSystemInDarkTheme())`
@@ -986,6 +986,7 @@ PixaTimedButton(
 | `size` | `SizeVariant` | `Medium` | Height preset |
 | `enabled` | `Boolean` | `true` | Enabled state |
 | `readOnly` | `Boolean` | `false` | Read-only mode |
+| `onTap` | `(() -> Unit)?` | `null` | Tap handler for read-only picker fields |
 | `isError` | `Boolean` | `false` | Error state |
 | `label` | `String?` | `null` | Label above field |
 | `placeholder` | `String?` | `null` | Hint when empty |
@@ -1026,6 +1027,18 @@ PasswordTextField(value = password, onValueChange = { password = it })
 SearchTextField(value = query, onValueChange = { query = it }, onSearch = { search() })
 ```
 
+**Read-only picker fields**: use `PixaPickerField` to present a field that opens a sheet or picker on tap.
+
+```kotlin
+PixaPickerField(
+    value = selectedDateFormatted,
+    onClick = { showDatePicker = true },
+    label = "Date",
+    placeholder = "Select a date",
+    trailingIcon = painterResource(Res.drawable.ic_chevron_down)
+)
+```
+
 #### PixaTextArea
 
 **Import**: `com.pixamob.pixacompose.components.inputs.PixaTextArea`
@@ -1060,6 +1073,28 @@ PixaTextArea(
 > There is no `leadingIcon`: the external spec defines no accessory for a text area.
 
 **Convenience Variants**: `CommentTextArea`, `BioTextArea`, `NoteTextArea`
+
+#### PixaFormField
+
+**Import**: `com.pixamob.pixacompose.components.inputs.PixaFormField`
+**File**: `components/inputs/FormField.kt`
+
+Stacked label + content + helper/error text primitive for non-text-field form controls (pickers,
+swatch selectors, sliders, chip lists). Mirrors `PixaTextField`'s label/hint/error scaffolding.
+
+```kotlin
+PixaFormField(
+    label = "Urine colour",
+    hint = "Select the swatch that matches the sample",
+    error = if (selectedColor == null) "Required" else null
+) {
+    PixaSwatchSelector(
+        colors = urineColors,
+        selected = selectedColor,
+        onSelected = { selectedColor = it }
+    )
+}
+```
 
 #### PixaSearchBar
 
@@ -1570,6 +1605,23 @@ ColorPickerSheet(
 `eyedropperIcon`/`onEyedropperClick` to surface a dropper action — the caller owns the actual
 sampling implementation.
 
+#### PixaSwatchSelector
+
+**Import**: `com.pixamob.pixacompose.components.inputs.PixaSwatchSelector`
+**File**: `components/inputs/SwatchSelector.kt`
+
+Horizontally scrollable row of selectable color circles. Use for preset palettes (pet sample colours,
+category colours); for arbitrary color selection use [PixaColorPicker](#pixacolorpicker).
+
+```kotlin
+PixaSwatchSelector(
+    colors = listOf(Color.Yellow, Color.Amber, Color.Orange, Color.Red, Color.Brown),
+    selected = selectedColor,
+    onSelected = { selectedColor = it },
+    size = SizeVariant.Medium
+)
+```
+
 #### PixaToggleButtonGroup
 
 **Import**: `com.pixamob.pixacompose.components.inputs.PixaToggleButtonGroup`
@@ -1642,6 +1694,18 @@ QuantityStepper(
 // Convenience wrappers
 WideQuantityStepper(value = qty, onValueChange = { qty = it }, min = 0, max = 99)
 TimeQuantityStepper(minutes = mins, onMinutesChange = { mins = it }, minMinutes = 0, maxMinutes = 60)
+
+// Card-contained stepper with a unit label
+QuantityStepper(
+    value = grams,
+    onValueChange = { grams = it },
+    min = 0,
+    max = 500,
+    step = 10,
+    variant = QuantityStepperVariant.Card,
+    unit = "g",
+    contentDescription = "Portion in grams"
+)
 ```
 
 #### PixaStarRating
@@ -1814,6 +1878,31 @@ PixaIcon(
     source = IconSource.Url("https://example.com/icon.png"),
     contentDescription = "Logo",
     size = 48.dp
+)
+```
+
+#### PixaIconTile
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaIconTile`
+**File**: `components/display/IconTile.kt`
+
+Tinted, rounded-square (or circular) icon container. Use for category/status icons in lists, empty
+states, and tracker rows. `IconTone` selects the semantic color pair; `IconTileShape` selects
+`Rounded`, `Circle`, or `Squircle`.
+
+```kotlin
+PixaIconTile(
+    icon = IconSource.Vector(Res.drawable.ic_weight),
+    tone = IconTone.Brand,
+    size = SizeVariant.Medium,
+    shape = IconTileShape.Rounded
+)
+
+// Circular variant
+PixaIconCircle(
+    icon = IconSource.Vector(Res.drawable.ic_check),
+    tone = IconTone.Success,
+    size = SizeVariant.Small
 )
 ```
 
@@ -2009,6 +2098,18 @@ PixaListItem(
 
 // Selection row
 SelectionListItem(title = "Dark theme", selected = isDark, onClick = { toggle() })
+
+// Tracker history row with icon tile + value
+PixaListItem(
+    title = "Weight",
+    caption = "Today, 08:30",
+    leading = ListItemLeading.IconTile(
+        icon = IconSource.Vector(Res.drawable.ic_weight),
+        tone = IconTone.Brand
+    ),
+    trailing = ListItemTrailing.Value(text = "4.2 kg"),
+    onClick = { openDetails() }
+)
 ```
 
 #### PixaTile
@@ -2115,6 +2216,23 @@ PixaCarousel(
 > `infiniteScroll`, `adaptiveHeight`, and `transitionEffect = Fade` are confirmed Ant Design
 > features implemented as approximations — see the KDoc on `PixaCarousel` for the exact caveats.
 
+#### PixaRatingSummary
+
+**Import**: `com.pixamob.pixacompose.components.display.PixaRatingSummary`
+**File**: `components/display/RatingDisplay.kt`
+
+Read-only rating block: average score, star visual, review count, and an optional per-star
+histogram. Use on product review screens.
+
+```kotlin
+PixaRatingSummary(
+    average = 4.3f,
+    totalCount = 128,
+    distribution = mapOf(5 to 0.6f, 4 to 0.25f, 3 to 0.1f, 2 to 0.03f, 1 to 0.02f),
+    showDistribution = true
+)
+```
+
 ---
 
 ### Feedback
@@ -2155,6 +2273,16 @@ PixaAlert(
 ```
 
 **Convenience**: `InfoAlert()`, `SuccessAlert()`, `WarningAlert()`, `ErrorAlert()`
+
+**Compact inline banner** — use `InlineAlert` for one-line status feedback where a full title/message block is too heavy.
+
+```kotlin
+InlineAlert(
+    text = "Pale yellow is well-hydrated & normal",
+    variant = AlertVariant.Info,
+    icon = painterResource(Res.drawable.ic_info)
+)
+```
 
 #### Badges
 
@@ -2251,7 +2379,8 @@ PixaProgressPill(progress = 0.4f)
 **File**: `components/feedback/EmptyState.kt`
 
 Supports up to two actions (`primaryActionText`/`onPrimaryAction` and the secondary pair). The body
-text is `description`, not `message`.
+text is `description`, not `message`. Use `iconContainer` to replace the default illustration with a
+custom component such as `PixaIconTile`.
 
 ```kotlin
 PixaEmptyState(
@@ -2261,6 +2390,22 @@ PixaEmptyState(
     icon = painterResource(Res.drawable.ic_inbox_empty),
     primaryActionText = "Compose message",
     onPrimaryAction = { navigateToCompose() }
+)
+
+// Custom icon container — e.g. a branded icon tile
+PixaEmptyState(
+    type = EmptyStateType.Empty.EmptyList,
+    title = "No entries yet",
+    description = "Tap + to log your first tracker entry",
+    iconContainer = {
+        PixaIconTile(
+            icon = IconSource.Vector(Res.drawable.ic_paw),
+            tone = IconTone.Brand,
+            size = SizeVariant.Large
+        )
+    },
+    primaryActionText = "Add entry",
+    onPrimaryAction = { addEntry() }
 )
 
 // Specialized variants
@@ -2312,7 +2457,8 @@ PixaSystemBanner(
 | `size` | `SizeVariant` | `Medium` | Size preset |
 
 There is no `navigationIcon`/`onNavigationClick` — the leading icon is just the first `startActions`
-entry. `TopNavAction` fields are `icon`, `description`, `onClick`, `enabled`, `badge`, `tint`.
+entry. `TopNavAction` fields are `icon`, `description`, `onClick`, `enabled`, `badge`, `tint`, `variant`,
+and `shape`. Per-action `variant`/`shape` override the bar-level defaults.
 
 ```kotlin
 PixaTopNavBar(
@@ -2337,6 +2483,18 @@ PixaTopNavBar(
             badge = 3
         )
     )
+)
+```
+
+**Convenience**: `PixaScreenHeader` wraps the common back + centered title + optional trailing action pattern.
+
+```kotlin
+PixaScreenHeader(
+    title = "Weight",
+    onBack = { navigateBack() },
+    backIcon = painterResource(Res.drawable.ic_arrow_back),
+    trailingIcon = painterResource(Res.drawable.ic_more),
+    onTrailingClick = { showMenu() }
 )
 ```
 
@@ -2611,6 +2769,15 @@ if (showSheet) {
 // Convenience wrappers
 FixedDetailSheet(onDismissRequest = { close() }, title = "Details") { DetailBody() }
 FilterSheet(onDismissRequest = { close() }, title = "Filters") { Filters() }
+
+// Picker/action sheet with a pinned primary action
+PixaActionSheet(
+    onDismissRequest = { close() },
+    title = "Select portion",
+    primaryAction = PixaCardAction(label = "Done", onClick = { close() })
+) {
+    PortionSelector()
+}
 ```
 
 #### PixaFullScreenModal
@@ -3548,6 +3715,13 @@ fun ComponentVariantOne(...) = Component(...)
 ## Changelog
 
 ### 1.1.1 (Current)
+- New components: `PixaIconTile`, `PixaIconCircle`, `PixaFormField`, `PixaSwatchSelector`, `PixaRatingSummary`
+- `PixaScreenHeader`, `PixaActionSheet`, and `InlineAlert` convenience variants
+- `PixaEmptyState` now accepts a custom `iconContainer` slot
+- `PixaListItem` adds `ListItemLeading.IconTile`, `ListItemTrailing.Value`, and text-style overrides
+- `PixaTextField` adds `onTap` and the `PixaPickerField` read-only picker convenience
+- `QuantityStepper` adds `QuantityStepperVariant.Card` and an optional `unit` label
+- `TopNavAction` now supports per-action `variant` and `shape` overrides
 - SchedulePicker variant for DatePicker
 - Nullable labels on text fields
 - Bug fixes and performance improvements

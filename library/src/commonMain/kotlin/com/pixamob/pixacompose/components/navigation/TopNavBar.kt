@@ -64,7 +64,9 @@ data class TopNavAction(
     val onClick: () -> Unit,
     val enabled: Boolean = true,
     val badge: Int? = null,
-    val tint: Color? = null
+    val tint: Color? = null,
+    val variant: ButtonVariant? = null,
+    val shape: ButtonShape? = null
 )
 
 /**
@@ -184,6 +186,8 @@ private fun ActionButton(
     mirrorForRtl: Boolean,
     modifier: Modifier = Modifier
 ) {
+    val resolvedVariant = action.variant ?: variant
+    val resolvedShape = action.shape ?: shape
     val isRtl = LocalLayoutDirection.current == LayoutDirection.Rtl
     Box(
         modifier = modifier
@@ -197,7 +201,7 @@ private fun ActionButton(
         // Ghost keeps the transparent-with-protection look and honors the action tint.
         // Other variants (Filled/Tonal/Outlined/OnBrand) render their native fill/border,
         // since customColors would fully replace the variant's own color set.
-        val resolvedColors: ButtonStateColors? = if (variant == ButtonVariant.Ghost) {
+        val resolvedColors: ButtonStateColors? = if (resolvedVariant == ButtonVariant.Ghost) {
             ButtonStateColors(
                 default = ButtonColors(
                     background = chipColor,
@@ -223,8 +227,8 @@ private fun ActionButton(
                 HierarchicalSize.Icon.Large -> SizeVariant.Large
                 else -> SizeVariant.Medium
             },
-            variant = variant,
-            shape = shape,
+            variant = resolvedVariant,
+            shape = resolvedShape,
             enabled = action.enabled,
             description = action.description,
             modifier = Modifier.size(iconSize + 20.dp), // Touch target 44dp minimum
@@ -533,4 +537,67 @@ fun PixaTopNavBar(
             )
         }
     }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CONVENIENCE VARIANTS
+// ═══════════════════════════════════════════════════════════════════════════════
+
+/**
+ * PixaScreenHeader — the common "back + centered title + optional trailing action" header.
+ *
+ * This is a thin wrapper over [PixaTopNavBar] that pins the title to the center and
+ * uses tonal back / filled trailing buttons by default, matching the Petrilo tracker screens.
+ *
+ * @param title Screen title
+ * @param onBack Back navigation callback
+ * @param backIcon Back arrow icon
+ * @param modifier Modifier for the header
+ * @param subtitle Optional subtitle below the title
+ * @param trailingIcon Optional trailing action icon
+ * @param onTrailingClick Trailing action callback (required when [trailingIcon] is supplied)
+ * @param size Height/icon/font preset
+ * @param backVariant Structural variant for the back button (Default: [ButtonVariant.Tonal])
+ * @param trailingVariant Structural variant for the trailing button (Default: [ButtonVariant.Filled])
+ */
+@Composable
+fun PixaScreenHeader(
+    title: String,
+    onBack: () -> Unit,
+    backIcon: Painter,
+    modifier: Modifier = Modifier,
+    subtitle: String? = null,
+    trailingIcon: Painter? = null,
+    onTrailingClick: (() -> Unit)? = null,
+    size: SizeVariant = SizeVariant.Medium,
+    backVariant: ButtonVariant = ButtonVariant.Tonal,
+    trailingVariant: ButtonVariant = ButtonVariant.Filled
+) {
+    PixaTopNavBar(
+        modifier = modifier,
+        title = title,
+        subtitle = subtitle,
+        titleAlignment = TopNavTitleAlignment.Center,
+        size = size,
+        startActions = listOf(
+            TopNavAction(
+                icon = backIcon,
+                onClick = onBack,
+                variant = backVariant,
+                shape = ButtonShape.Circle
+            )
+        ),
+        endActions = if (trailingIcon != null && onTrailingClick != null) {
+            listOf(
+                TopNavAction(
+                    icon = trailingIcon,
+                    onClick = onTrailingClick,
+                    variant = trailingVariant,
+                    shape = ButtonShape.Circle
+                )
+            )
+        } else {
+            emptyList()
+        }
+    )
 }

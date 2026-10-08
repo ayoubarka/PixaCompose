@@ -36,6 +36,7 @@ import com.pixamob.pixacompose.components.feedback.PixaCircularIndicator
 import com.pixamob.pixacompose.components.feedback.Skeleton
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.pixaRipple
 import kotlin.math.roundToInt
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -315,6 +316,7 @@ private fun TextFieldVariant.colors(
  * @param size Size preset (Small, Medium, Large)
  * @param enabled Whether the field is enabled
  * @param readOnly Whether the field is read-only (focusable, tab-navigable, value submitted)
+ * @param onTap Click handler for read-only picker-style fields. Only invoked when [readOnly] is true.
  * @param isError Whether to show the error validation state (independent of [isSuccess])
  * @param isSuccess Whether to show the success validation state (independent of [isError])
  * @param status Trailing fill-status indicator (Complete/Incomplete/Loading)
@@ -350,6 +352,7 @@ fun PixaTextField(
     size: SizeVariant = SizeVariant.Medium,
     enabled: Boolean = true,
     readOnly: Boolean = false,
+    onTap: (() -> Unit)? = null,
     isError: Boolean = false,
     isSuccess: Boolean = false,
     status: TextFieldStatus = TextFieldStatus.None,
@@ -609,6 +612,21 @@ fun PixaTextField(
                                 }
                             }
                         }
+                    }
+
+                    // Read-only picker tap target — covers the entire container without
+                    // interfering with the trailing icon's own semantics.
+                    if (readOnly && onTap != null && enabled) {
+                        Box(
+                            modifier = Modifier
+                                .matchParentSize()
+                                .clip(RoundedCornerShape(config.cornerRadius))
+                                .clickable(
+                                    interactionSource = remember { MutableInteractionSource() },
+                                    indication = pixaRipple(bounded = true),
+                                    onClick = onTap
+                                )
+                        )
                     }
                 }
             }
@@ -907,6 +925,59 @@ fun SearchTextField(
         keyboardActions = KeyboardActions(
             onSearch = { onSearch?.invoke() }
         ),
+        singleLine = true
+    )
+}
+
+/**
+ * PixaPickerField — a read-only text field that opens a picker/sheet on tap.
+ *
+ * Use this for fields that are presented as text inputs but whose value is set
+ * by another surface (date picker, species list, free-text sheet, etc.).
+ *
+ * @param value Current displayed value
+ * @param onClick Callback that opens the picker
+ * @param modifier Modifier for the field
+ * @param placeholder Placeholder shown when [value] is empty
+ * @param label Optional label text
+ * @param trailingIcon Dropdown/expand icon (Default: none — caller usually supplies one)
+ * @param enabled Whether the field is interactive
+ * @param isError Whether to show the error state
+ * @param helperText Optional helper text below the field
+ * @param errorText Optional error text (shown when [isError])
+ * @param variant Visual style variant
+ * @param size Size preset
+ */
+@Composable
+fun PixaPickerField(
+    value: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    placeholder: String = "",
+    label: String? = null,
+    trailingIcon: Painter? = null,
+    enabled: Boolean = true,
+    isError: Boolean = false,
+    helperText: String? = null,
+    errorText: String? = null,
+    variant: TextFieldVariant = TextFieldVariant.Filled,
+    size: SizeVariant = SizeVariant.Medium
+) {
+    PixaTextField(
+        value = value,
+        onValueChange = {},
+        modifier = modifier,
+        variant = variant,
+        size = size,
+        enabled = enabled,
+        readOnly = true,
+        onTap = onClick,
+        isError = isError,
+        label = label,
+        placeholder = placeholder,
+        helperText = helperText,
+        errorText = errorText,
+        trailingIcon = trailingIcon,
         singleLine = true
     )
 }

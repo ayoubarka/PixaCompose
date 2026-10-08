@@ -45,9 +45,11 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.CircleShape
@@ -76,8 +78,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import com.pixamob.pixacompose.components.feedback.Skeleton
+import com.pixamob.pixacompose.components.surfaces.PixaSurfaceCard
 import com.pixamob.pixacompose.theme.*
 import com.pixamob.pixacompose.utils.AnimationUtils
+import com.pixamob.pixacompose.utils.ComponentElevation
 import com.pixamob.pixacompose.utils.pixaRipple
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -89,7 +93,10 @@ enum class QuantityStepperVariant {
     Narrow,
 
     /** Buttons pin to the row's edges, value centered — spec: "for expansive layouts." */
-    Wide
+    Wide,
+
+    /** Card-contained stepper with tonal/filled icon buttons — spec: "for form pickers." */
+    Card
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -347,6 +354,110 @@ private fun PixaQuantityStepper(
     }
 }
 
+/**
+ * Card-contained stepper used by [QuantityStepperVariant.Card].
+ * Buttons are rendered as tonal (decrement) / filled brand (increment) glyphs inside
+ * a [PixaSurfaceCard].
+ */
+@Composable
+private fun CardQuantityStepper(
+    value: Int,
+    onValueChange: (Int) -> Unit,
+    min: Int,
+    max: Int,
+    step: Int,
+    enabled: Boolean,
+    unit: String?,
+    size: SizeVariant,
+    colors: QuantityStepperStateColors
+) {
+    val sizeConfig = getCardStepperSizeConfig(size)
+    val currentColors = if (enabled) colors.enabled else colors.disabled
+
+    val canDecrement = enabled && value > min
+    val canIncrement = enabled && value < max
+
+    val decrement: () -> Unit = { if (canDecrement) onValueChange((value - step).coerceAtLeast(min)) }
+    val increment: () -> Unit = { if (canIncrement) onValueChange((value + step).coerceAtMost(max)) }
+
+    val decrementBackground = currentColors.buttonBackground
+    val decrementContent = currentColors.buttonContent
+    val incrementBackground = if (canIncrement) AppTheme.colors.brandContentDefault else currentColors.buttonBackground
+    val incrementContent = if (canIncrement) AppTheme.colors.baseContentNegative else currentColors.buttonContent
+
+    PixaSurfaceCard(
+        modifier = Modifier.fillMaxWidth(),
+        backgroundColor = AppTheme.colors.baseSurfaceElevated,
+        elevation = ComponentElevation.None,
+        cornerRadius = HierarchicalSize.Radius.Large,
+        contentPadding = HierarchicalSize.Spacing.Large
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            StepperGlyphButton(
+                isIncrement = false,
+                enabled = canDecrement,
+                onClick = decrement,
+                sizeConfig = sizeConfig,
+                background = decrementBackground,
+                content = decrementContent
+            )
+
+            Row(verticalAlignment = Alignment.Bottom) {
+                BasicText(
+                    text = value.toString(),
+                    style = AppTheme.typography.displayMedium.copy(color = currentColors.valueContent)
+                )
+                unit?.let {
+                    Spacer(modifier = Modifier.width(HierarchicalSize.Spacing.Compact))
+                    BasicText(
+                        text = it,
+                        style = AppTheme.typography.titleRegular.copy(
+                            color = currentColors.valueContent.copy(alpha = 0.6f)
+                        )
+                    )
+                }
+            }
+
+            StepperGlyphButton(
+                isIncrement = true,
+                enabled = canIncrement,
+                onClick = increment,
+                sizeConfig = sizeConfig,
+                background = incrementBackground,
+                content = incrementContent
+            )
+        }
+    }
+}
+
+private fun getCardStepperSizeConfig(size: SizeVariant): QuantityStepperSizeConfig = when (size) {
+    SizeVariant.Small -> QuantityStepperSizeConfig(
+        buttonSize = HierarchicalSize.Button.Medium,
+        glyphSize = HierarchicalSize.Button.Medium * GlyphSizeRatio,
+        glyphStroke = HierarchicalSize.Stroke.Small,
+        elementSpacing = HierarchicalSize.Spacing.Large,
+        valueMinWidth = HierarchicalSize.Container.Compact
+    )
+    SizeVariant.Large -> QuantityStepperSizeConfig(
+        buttonSize = HierarchicalSize.Button.Huge,
+        glyphSize = HierarchicalSize.Button.Huge * GlyphSizeRatio,
+        glyphStroke = HierarchicalSize.Stroke.Small,
+        elementSpacing = HierarchicalSize.Spacing.Large,
+        valueMinWidth = HierarchicalSize.Container.Medium
+    )
+    else -> QuantityStepperSizeConfig(
+        buttonSize = HierarchicalSize.Button.Large,
+        glyphSize = HierarchicalSize.Button.Large * GlyphSizeRatio,
+        glyphStroke = HierarchicalSize.Stroke.Small,
+        elementSpacing = HierarchicalSize.Spacing.Large,
+        valueMinWidth = HierarchicalSize.Container.Compact
+    )
+}
+
 // ════════════════════════════════════════════════════════════════════════════
 // PUBLIC API
 // ════════════════════════════════════════════════════════════════════════════
@@ -363,9 +474,10 @@ private fun PixaQuantityStepper(
  * @param enabled Whether the stepper is interactive
  * @param isError Whether to show error state
  * @param isLoading Preloading state — renders a [Skeleton] placeholder
- * @param variant [QuantityStepperVariant.Narrow] (default) or `.Wide`
+ * @param variant [QuantityStepperVariant.Narrow] (default), `.Wide`, or `.Card`
  * @param size Size variant (Small, Medium, Large)
  * @param valueLabel Formats the displayed value; defaults to plain digits
+ * @param unit Optional unit label rendered next to the value (e.g. "g", "min")
  * @param contentDescription Accessibility label for the value being adjusted
  *
  * @sample
@@ -394,6 +506,7 @@ fun QuantityStepper(
     variant: QuantityStepperVariant = QuantityStepperVariant.Narrow,
     size: SizeVariant = SizeVariant.Medium,
     valueLabel: (Int) -> String = { it.toString() },
+    unit: String? = null,
     contentDescription: String = "Quantity"
 ) {
     require(min <= max) { "QuantityStepper requires min ($min) <= max ($max)." }
@@ -402,10 +515,16 @@ fun QuantityStepper(
     val sizeConfig = getQuantityStepperSizeConfig(size)
 
     if (isLoading) {
+        val skeletonWidth = when (variant) {
+            QuantityStepperVariant.Wide -> null
+            QuantityStepperVariant.Card -> sizeConfig.buttonSize * 5
+            QuantityStepperVariant.Narrow -> sizeConfig.buttonSize * 3 + sizeConfig.elementSpacing * 2
+        }
+        val skeletonHeight = if (variant == QuantityStepperVariant.Card) sizeConfig.buttonSize * 3 / 2 else sizeConfig.buttonSize
         Skeleton(
             modifier = modifier,
-            width = if (variant == QuantityStepperVariant.Wide) null else sizeConfig.buttonSize * 3 + sizeConfig.elementSpacing * 2,
-            height = sizeConfig.buttonSize,
+            width = skeletonWidth,
+            height = skeletonHeight,
             shape = RoundedCornerShape(HierarchicalSize.Radius.Medium),
             contentDescription = "$contentDescription loading"
         )
@@ -413,6 +532,21 @@ fun QuantityStepper(
     }
 
     val themeColors = getQuantityStepperTheme(AppTheme.colors)
+
+    if (variant == QuantityStepperVariant.Card) {
+        CardQuantityStepper(
+            value = value.coerceIn(min, max),
+            onValueChange = onValueChange,
+            min = min,
+            max = max,
+            step = step,
+            enabled = enabled,
+            unit = unit,
+            size = size,
+            colors = themeColors
+        )
+        return
+    }
 
     PixaQuantityStepper(
         value = value.coerceIn(min, max),

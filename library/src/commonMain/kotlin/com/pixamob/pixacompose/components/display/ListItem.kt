@@ -37,12 +37,14 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import com.pixamob.pixacompose.components.feedback.SkeletonListItem
 import com.pixamob.pixacompose.theme.AppTheme
 import com.pixamob.pixacompose.theme.ColorPalette
 import com.pixamob.pixacompose.theme.HierarchicalSize
+import com.pixamob.pixacompose.theme.SizeVariant
 import com.pixamob.pixacompose.utils.AnimationUtils
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -95,6 +97,16 @@ sealed class ListItemLeading {
      * Artwork larger than 36dp at its natural size — avatars, badges, illustrations.
      */
     data class Artwork(val content: @Composable () -> Unit) : ListItemLeading()
+
+    /**
+     * A centered [PixaIconTile] — tinted rounded-square icon container.
+     * Best for category/status icons in tracker history rows.
+     */
+    data class IconTile(
+        val icon: IconSource,
+        val tone: IconTone = IconTone.Brand,
+        val size: SizeVariant = SizeVariant.Medium
+    ) : ListItemLeading()
 }
 
 /**
@@ -115,8 +127,18 @@ sealed class ListItemTrailing {
      */
     data class Control(val content: @Composable () -> Unit) : ListItemTrailing()
 
-    /** Right-aligned trailing text. */
+    /** Right-aligned trailing text using the row's caption style. */
     data class Caption(val text: String) : ListItemTrailing()
+
+    /**
+     * Right-aligned trailing value with an optional explicit style and color.
+     * Use this when the trailing text should match the title weight (e.g. a tracker reading).
+     */
+    data class Value(
+        val text: String,
+        val style: TextStyle? = null,
+        val color: Color? = null
+    ) : ListItemTrailing()
 
     /** Flush-right button/pill — zero inset. */
     data class Flush(val content: @Composable () -> Unit) : ListItemTrailing()
@@ -293,6 +315,15 @@ private fun RowScope.ListItemLeadingSlot(leading: ListItemLeading, layout: ListI
             Box { leading.content() }
             Spacer(modifier = Modifier.width(layout.horizontalPadding))
         }
+
+        is ListItemLeading.IconTile -> {
+            PixaIconTile(
+                icon = leading.icon,
+                tone = leading.tone,
+                size = leading.size
+            )
+            Spacer(modifier = Modifier.width(layout.horizontalPadding))
+        }
     }
 }
 
@@ -321,6 +352,14 @@ private fun RowScope.ListItemTrailingSlot(
             overflow = TextOverflow.Ellipsis
         )
 
+        is ListItemTrailing.Value -> BasicText(
+            text = trailing.text,
+            style = trailing.style?.copy(color = trailing.color ?: colors.titleContent)
+                ?: AppTheme.typography.bodyBold.copy(color = trailing.color ?: colors.titleContent),
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
+
         is ListItemTrailing.Flush -> trailing.content()
     }
 }
@@ -332,7 +371,10 @@ private fun RowScope.ListItemTextColumn(
     caption: String?,
     singleLine: Boolean,
     colors: ListItemColors,
-    labelSpacing: Dp
+    labelSpacing: Dp,
+    titleStyle: TextStyle? = null,
+    subtitleStyle: TextStyle? = null,
+    captionStyle: TextStyle? = null
 ) {
     val maxLines = if (singleLine) 1 else Int.MAX_VALUE
     val overflow = if (singleLine) TextOverflow.Ellipsis else TextOverflow.Clip
@@ -343,14 +385,16 @@ private fun RowScope.ListItemTextColumn(
     ) {
         BasicText(
             text = title,
-            style = AppTheme.typography.bodyBold.copy(color = colors.titleContent),
+            style = titleStyle?.copy(color = colors.titleContent)
+                ?: AppTheme.typography.bodyBold.copy(color = colors.titleContent),
             maxLines = maxLines,
             overflow = overflow
         )
         subtitle?.let {
             BasicText(
                 text = it,
-                style = AppTheme.typography.bodyRegular.copy(color = colors.bodyContent),
+                style = subtitleStyle?.copy(color = colors.bodyContent)
+                    ?: AppTheme.typography.bodyRegular.copy(color = colors.bodyContent),
                 maxLines = maxLines,
                 overflow = overflow
             )
@@ -358,7 +402,8 @@ private fun RowScope.ListItemTextColumn(
         caption?.let {
             BasicText(
                 text = it,
-                style = AppTheme.typography.captionRegular.copy(color = colors.captionContent),
+                style = captionStyle?.copy(color = colors.captionContent)
+                    ?: AppTheme.typography.captionRegular.copy(color = colors.captionContent),
                 maxLines = maxLines,
                 overflow = overflow
             )
@@ -410,6 +455,9 @@ private fun RowScope.ListItemTextColumn(
  * @param singleLine Truncate text to one line (Default: false)
  * @param verticalAlignment Row children alignment (Default: CenterVertically)
  * @param customColors Optional [ListItemStateColors] override
+ * @param titleStyle Optional text style override for the title
+ * @param subtitleStyle Optional text style override for the subtitle
+ * @param captionStyle Optional text style override for the caption
  * @param contentDescription Accessibility description (defaults to title/subtitle/caption combined)
  *
  * @sample
@@ -438,6 +486,9 @@ fun PixaListItem(
     singleLine: Boolean = false,
     verticalAlignment: Alignment.Vertical = Alignment.CenterVertically,
     customColors: ListItemStateColors? = null,
+    titleStyle: TextStyle? = null,
+    subtitleStyle: TextStyle? = null,
+    captionStyle: TextStyle? = null,
     contentDescription: String? = null
 ) {
     val layout = listItemLayoutFor(density)
@@ -566,7 +617,17 @@ fun PixaListItem(
             verticalAlignment = verticalAlignment
         ) {
             ListItemLeadingSlot(leading, layout)
-            ListItemTextColumn(title, subtitle, caption, singleLine, currentColors, layout.labelSpacing)
+            ListItemTextColumn(
+                title = title,
+                subtitle = subtitle,
+                caption = caption,
+                singleLine = singleLine,
+                colors = currentColors,
+                labelSpacing = layout.labelSpacing,
+                titleStyle = titleStyle,
+                subtitleStyle = subtitleStyle,
+                captionStyle = captionStyle
+            )
             ListItemTrailingSlot(trailing, layout, currentColors)
         }
     }

@@ -633,3 +633,40 @@ fun ErrorAlert(
         onAction = onAction
     )
 }
+
+/**
+ * InlineAlert — a compact one-line banner with an icon and message.
+ *
+ * Use this for inline status feedback (e.g. "Pale yellow is well-hydrated & normal")
+ * where a full [PixaAlert] title + message block would be too heavy.
+ *
+ * @param text Banner message
+ * @param variant Semantic color variant
+ * @param modifier Modifier for the banner
+ * @param icon Optional leading icon (null = no artwork)
+ * @param style Filled/Outlined/Subtle (Default: [AlertStyle.Subtle])
+ * @param size Size preset (Default: [SizeVariant.Small])
+ */
+@Composable
+fun InlineAlert(
+    text: String,
+    variant: AlertVariant,
+    modifier: Modifier = Modifier,
+    icon: Painter? = null,
+    style: AlertStyle = AlertStyle.Subtle,
+    size: SizeVariant = SizeVariant.Small
+) {
+    PixaAlert(
+        title = text,
+        message = null,
+        variant = variant,
+        modifier = modifier,
+        style = style,
+        size = size,
+        artwork = if (icon != null) AlertArtwork.Icon(icon) else AlertArtwork.None,
+        action = AlertAction.None,
+        insetTop = false,
+        insetBottom = false,
+        horizontalInset = 0.dp
+    )
+}

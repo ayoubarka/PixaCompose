@@ -58,9 +58,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
+import com.pixamob.pixacompose.components.actions.ButtonWidthPolicy
 import com.pixamob.pixacompose.components.actions.IconButtonColors
 import com.pixamob.pixacompose.components.actions.IconButtonVariant
+import com.pixamob.pixacompose.components.actions.PixaButton
 import com.pixamob.pixacompose.components.actions.PixaIconButton
+import com.pixamob.pixacompose.components.display.PixaCardAction
 import com.pixamob.pixacompose.components.feedback.PixaLinearIndicator
 import com.pixamob.pixacompose.components.feedback.ProgressVariant
 import com.pixamob.pixacompose.theme.AppTheme
@@ -600,4 +603,56 @@ fun FilterSheet(
         initialSnapPoint = SheetSnapPoint.Middle,
         content = content
     )
+}
+
+/**
+ * PixaActionSheet — a [PixaSheet] with a pinned primary action button at the bottom.
+ *
+ * Use this for picker-style sheets (date, time, text entry, etc.) where the content
+ * is a choice and the action commits or dismisses the sheet.
+ *
+ * @param onDismissRequest Close callback (background tap, back gesture, close icon)
+ * @param title Sheet heading
+ * @param primaryAction Primary button rendered at the bottom of the sheet
+ * @param modifier Modifier for the sheet surface
+ * @param description Optional text below the title
+ * @param presentation Modal (scrim) or NonModal
+ * @param expandability Expandable (grabber + snap points) or Fixed (hug content)
+ * @param initialSnapPoint Starting snap point for Expandable sheets
+ * @param content Scrollable body content
+ */
+@Composable
+fun PixaActionSheet(
+    onDismissRequest: () -> Unit,
+    title: String,
+    primaryAction: PixaCardAction,
+    modifier: Modifier = Modifier,
+    description: String? = null,
+    presentation: SheetPresentation = SheetPresentation.Modal,
+    expandability: SheetExpandability = SheetExpandability.Expandable,
+    initialSnapPoint: SheetSnapPoint = SheetSnapPoint.Middle,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    PixaSheet(
+        onDismissRequest = onDismissRequest,
+        title = title,
+        modifier = modifier,
+        presentation = presentation,
+        expandability = expandability,
+        initialSnapPoint = initialSnapPoint,
+        description = description
+    ) {
+        content()
+
+        Spacer(modifier = Modifier.height(HierarchicalSize.Spacing.Medium))
+        PixaButton(
+            text = primaryAction.label,
+            onClick = primaryAction.onClick,
+            variant = primaryAction.variant,
+            enabled = primaryAction.enabled,
+            size = SizeVariant.Large,
+            widthPolicy = ButtonWidthPolicy.FullBleed,
+            modifier = Modifier.fillMaxWidth()
+        )
+    }
 }
