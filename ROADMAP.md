@@ -22,7 +22,8 @@ The test for every change: a new style must never require editing a component.
 - [ ] **0b. Loose ends** - `iosApp` Xcode project (needs Xcode installed), CI workflow, `legacy` branch on GitHub.
 - [x] **1. Foundation** - `Surface`, `Text`, `Icon` plus the built-in `PixaIcons`, `Button`, `Card`, three styles, keyboard focus ring, motion and spacing tokens, separate control and container shadows, `withFontFamily`.
 - [ ] **1b. Open questions from phase 1** - icon stroke weight as a style knob (Cartoon wants thicker icons), bundling a default font per style, how the focus ring should sit over a hard shadow.
-- [ ] **2. Core controls** - Input, Textarea, Checkbox, Switch, Radio, Badge, Separator, Avatar, Skeleton, Progress.
+- [x] **2. Core controls** - Input, Textarea, Checkbox, Switch, RadioButton, Badge, Separator, Avatar, Skeleton, Progress. `Surface` gained toggleable and selectable variants.
+- [ ] **2b. Open questions from phase 2** - minimum touch target for the 20dp checkbox and radio, a labelled row (`Field`/`Label`) so the text is tappable too, error state for inputs, whether small toggles should take the control shadow.
 - [ ] **3. Overlays** - Dialog, Sheet, Popover, Menu, Tooltip, Toast.
 - [ ] **4. Navigation and composites** - Tabs, top bar, bottom bar, Accordion, Slider, Select, Stepper.
 - [ ] **5. Optional modules** - `pixacompose-datetime`, `pixacompose-charts`, `pixacompose-image`, `pixacompose-shapes` (the 1.x custom shape geometry).

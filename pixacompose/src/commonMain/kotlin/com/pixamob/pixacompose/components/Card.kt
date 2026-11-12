@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import com.pixamob.pixacompose.primitives.PixaBorder
 import com.pixamob.pixacompose.primitives.Surface
 import com.pixamob.pixacompose.theme.PixaTheme
 
@@ -20,7 +19,7 @@ public fun Card(
     val decoration = PixaTheme.decoration
     Surface(
         modifier = modifier,
-        border = PixaBorder(decoration.borderWidth, PixaTheme.colors.border),
+        border = outlinedBorder(),
         shadow = decoration.containerShadow,
     ) {
         Column(

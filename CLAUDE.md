@@ -21,7 +21,7 @@ androidApp/       thin Android wrapper
 - **A new style must never require editing a component.** If it does, the missing knob belongs in `PixaStyle` or `Surface`, not in the component.
 - **Foundation only** in `:pixacompose`: no Material, no third-party UI libraries. Heavy features go in separate optional modules.
 - **No raw colors outside `styles/`.** Components read `PixaTheme.colors.*`; `Color.Transparent` is the only literal allowed.
-- **Anything with a background is built on `Surface`.** Do not draw borders, shadows or press feedback anywhere else.
+- **Anything with a background is built on `Surface`.** It has four forms: static, clickable (`onClick`), two-state (`checked`/`onCheckedChange`) and one-of-many (`selected`/`onClick`). Borders come from `outlinedBorder()` and `filledBorder()` in `components/Borders.kt`. Do not draw borders, shadows or press feedback anywhere else.
 - **Slots over parameters.** A component takes `variant`, `size`, `enabled`, `modifier` and content lambdas. No `leadingIcon`, `customColors`, `customTextStyle` style parameters, and no preset variants of a component inside the library.
 - **Gaps and paddings** come from `PixaTheme.spacing`; **animations** from `PixaTheme.motion.<role>.spec()`. No inline `spring()`/`tween()` in components.
 - **Shadows**: controls use `decoration.controlShadow`, containers use `decoration.containerShadow`.
@@ -33,7 +33,7 @@ androidApp/       thin Android wrapper
 ## Verify
 
 ```bash
-./gradlew :showcase:jvmTest            # renders every style to showcase/build/snapshots/*.png
+./gradlew :showcase:jvmTest            # renders every style to showcase/build/snapshots/<style>-<theme>-<page>.png
 ./gradlew :androidApp:assembleDebug
 ```
 

@@ -118,6 +118,8 @@ fun ShowcaseApp(
                 )
                 Button(onClick = { count++ }, modifier = Modifier.focusRequester(focusDemo)) { Text("Press me") }
             }
+
+            ControlsSection()
         }
     }
 }

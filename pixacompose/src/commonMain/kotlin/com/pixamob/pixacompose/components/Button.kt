@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.primitives.PixaBorder
 import com.pixamob.pixacompose.primitives.ProvideContentStyle
 import com.pixamob.pixacompose.primitives.Surface
 import com.pixamob.pixacompose.theme.PixaShadow
@@ -58,10 +57,10 @@ public fun Button(
         ButtonVariant.Outline -> { container = colors.background; contentColor = colors.foreground }
         ButtonVariant.Ghost -> { container = Color.Transparent; contentColor = colors.foreground }
     }
-    val borderWidth = when (variant) {
-        ButtonVariant.Ghost -> 0.dp
-        ButtonVariant.Outline -> decoration.borderWidth
-        else -> decoration.filledBorderWidth
+    val border = when (variant) {
+        ButtonVariant.Ghost -> null
+        ButtonVariant.Outline -> outlinedBorder()
+        else -> filledBorder()
     }
 
     Surface(
@@ -72,7 +71,7 @@ public fun Button(
         color = container,
         contentColor = contentColor,
         shape = PixaTheme.shapes.md,
-        border = if (borderWidth > 0.dp) PixaBorder(borderWidth, colors.border) else null,
+        border = border,
         shadow = if (variant == ButtonVariant.Ghost) PixaShadow.None else decoration.controlShadow,
         contentAlignment = Alignment.Center,
     ) {

@@ -96,6 +96,8 @@ public data class PixaMotion(
     val state: PixaSpring = PixaSpring(dampingRatio = 1f, stiffness = 600f),
     /** Things entering or leaving the screen: dialogs, sheets, toasts. */
     val overlay: PixaSpring = PixaSpring(dampingRatio = 1f, stiffness = 380f),
+    /** Length of one half-cycle of looping placeholders such as [Skeleton][com.pixamob.pixacompose.components.Skeleton]. */
+    val pulseMillis: Int = 900,
 )
 
 @Immutable

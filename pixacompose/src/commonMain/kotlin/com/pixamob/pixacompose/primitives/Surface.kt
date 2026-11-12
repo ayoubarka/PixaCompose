@@ -9,6 +9,8 @@ import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
@@ -39,7 +41,7 @@ import com.pixamob.pixacompose.theme.PressEffect
 @Immutable
 public data class PixaBorder(val width: Dp, val color: Color)
 
-private const val DisabledAlpha = 0.5f
+internal const val DisabledAlpha: Float = 0.5f
 
 /**
  * The one place where fill, outline, shadow and press feedback are drawn. Every component that
@@ -53,11 +55,13 @@ public fun Surface(
     shape: Shape = PixaTheme.shapes.lg,
     border: PixaBorder? = null,
     shadow: PixaShadow = PixaShadow.None,
+    /** Draws the focus ring; for components that track focus themselves, such as text fields. */
+    focused: Boolean = false,
     contentAlignment: Alignment = Alignment.TopStart,
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
-        modifier = modifier.surface(color, shape, border, shadow, PressEffect.None, focused = false) { 0f },
+        modifier = modifier.surface(color, shape, border, shadow, PressEffect.None, focused) { 0f },
         contentAlignment = contentAlignment,
     ) {
         ProvideContentStyle(contentColor) { content() }
@@ -82,6 +86,80 @@ public fun Surface(
     content: @Composable BoxScope.() -> Unit,
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
+    InteractiveSurface(
+        modifier, enabled, source,
+        Modifier.clickable(source, indication = null, enabled = enabled, role = role, onClick = onClick),
+        color, contentColor, shape, border, shadow, press, contentAlignment, content,
+    )
+}
+
+/** Two-state [Surface] for checkboxes and switches. */
+@Composable
+public fun Surface(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    role: Role? = null,
+    color: Color = PixaTheme.colors.card,
+    contentColor: Color = PixaTheme.colors.cardForeground,
+    shape: Shape = PixaTheme.shapes.lg,
+    border: PixaBorder? = null,
+    shadow: PixaShadow = PixaShadow.None,
+    press: PressEffect = PixaTheme.decoration.press,
+    interactionSource: MutableInteractionSource? = null,
+    contentAlignment: Alignment = Alignment.TopStart,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    InteractiveSurface(
+        modifier, enabled, source,
+        Modifier.toggleable(checked, source, indication = null, enabled = enabled, role = role, onValueChange = onCheckedChange),
+        color, contentColor, shape, border, shadow, press, contentAlignment, content,
+    )
+}
+
+/** One-of-many [Surface] for radio buttons, tabs and other single-selection items. */
+@Composable
+public fun Surface(
+    selected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    role: Role? = null,
+    color: Color = PixaTheme.colors.card,
+    contentColor: Color = PixaTheme.colors.cardForeground,
+    shape: Shape = PixaTheme.shapes.lg,
+    border: PixaBorder? = null,
+    shadow: PixaShadow = PixaShadow.None,
+    press: PressEffect = PixaTheme.decoration.press,
+    interactionSource: MutableInteractionSource? = null,
+    contentAlignment: Alignment = Alignment.TopStart,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val source = interactionSource ?: remember { MutableInteractionSource() }
+    InteractiveSurface(
+        modifier, enabled, source,
+        Modifier.selectable(selected, source, indication = null, enabled = enabled, role = role, onClick = onClick),
+        color, contentColor, shape, border, shadow, press, contentAlignment, content,
+    )
+}
+
+@Composable
+private fun InteractiveSurface(
+    modifier: Modifier,
+    enabled: Boolean,
+    source: MutableInteractionSource,
+    interaction: Modifier,
+    color: Color,
+    contentColor: Color,
+    shape: Shape,
+    border: PixaBorder?,
+    shadow: PixaShadow,
+    press: PressEffect,
+    contentAlignment: Alignment,
+    content: @Composable BoxScope.() -> Unit,
+) {
     val pressed by source.collectIsPressedAsState()
     val focused by source.collectIsFocusedAsState()
     val pressFraction by animateFloatAsState(
@@ -93,13 +171,7 @@ public fun Surface(
             // Disabled surfaces are flat: the alpha layer clips to bounds, which would cut a shadow.
             .graphicsLayer { alpha = if (enabled) 1f else DisabledAlpha }
             .surface(color, shape, border, if (enabled) shadow else PixaShadow.None, press, focused) { pressFraction }
-            .clickable(
-                interactionSource = source,
-                indication = null,
-                enabled = enabled,
-                role = role,
-                onClick = onClick,
-            ),
+            .then(interaction),
         contentAlignment = contentAlignment,
     ) {
         ProvideContentStyle(contentColor) { content() }
