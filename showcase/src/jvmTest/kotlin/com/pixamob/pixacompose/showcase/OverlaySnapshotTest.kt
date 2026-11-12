@@ -67,6 +67,20 @@ class OverlaySnapshotTest {
     }
 
     @Test
+    fun rendersDatePickerOpen() {
+        for (style in PixaStyles.all) {
+            ImageComposeScene(Width, 1500, Density(2f)) {
+                PixaTheme(style, darkTheme = false) {
+                    Column(
+                        Modifier.fillMaxSize().background(PixaTheme.colors.background).padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                    ) { DateSection(pickerInitiallyOpen = true) }
+                }
+            }.use { save(it, "${style.name.lowercase()}-datepicker") }
+        }
+    }
+
+    @Test
     fun rendersTooltipOnHover() {
         for (style in PixaStyles.all) {
             ImageComposeScene(Width, 400, Density(2f)) {

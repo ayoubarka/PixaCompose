@@ -144,6 +144,8 @@ fun ShowcaseApp(
 
             ChartsSection()
 
+            DateSection()
+
             NavigationSection()
         }
         PixaToastHost(toasts, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())

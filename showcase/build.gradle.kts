@@ -34,6 +34,7 @@ kotlin {
             implementation(project(":pixacompose"))
             implementation(project(":pixacompose-image"))
             implementation(project(":pixacompose-charts"))
+            implementation(project(":pixacompose-datetime"))
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)
