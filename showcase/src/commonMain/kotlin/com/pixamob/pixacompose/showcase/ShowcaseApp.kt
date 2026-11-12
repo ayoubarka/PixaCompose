@@ -17,18 +17,27 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.Button
 import com.pixamob.pixacompose.components.ButtonSize
 import com.pixamob.pixacompose.components.ButtonVariant
 import com.pixamob.pixacompose.components.Card
+import com.pixamob.pixacompose.primitives.Icon
+import com.pixamob.pixacompose.primitives.PixaIcons
 import com.pixamob.pixacompose.primitives.Text
 import com.pixamob.pixacompose.styles.PixaStyles
 import com.pixamob.pixacompose.theme.PixaStyle
 import com.pixamob.pixacompose.theme.PixaTheme
 
 @Composable
-fun ShowcaseApp(initialStyle: PixaStyle = PixaStyles.Minimal, initialDark: Boolean = false) {
+fun ShowcaseApp(
+    initialStyle: PixaStyle = PixaStyles.Minimal,
+    initialDark: Boolean = false,
+    /** Lets a snapshot test put keyboard focus on the card's button to show the focus ring. */
+    focusDemo: FocusRequester = remember { FocusRequester() },
+) {
     var style by remember { mutableStateOf(initialStyle) }
     var dark by remember { mutableStateOf(initialDark) }
 
@@ -75,6 +84,29 @@ fun ShowcaseApp(initialStyle: PixaStyle = PixaStyles.Minimal, initialDark: Boole
                 }
             }
 
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(onClick = {}) {
+                    Icon(PixaIcons.Plus, contentDescription = null)
+                    Text("Add item")
+                }
+                Button(onClick = {}, variant = ButtonVariant.Outline) {
+                    Text("Next")
+                    Icon(PixaIcons.ChevronRight, contentDescription = null)
+                }
+                Button(onClick = {}, variant = ButtonVariant.Secondary) {
+                    Icon(PixaIcons.Close, contentDescription = "Close")
+                }
+            }
+
+            Text("Icon", style = PixaTheme.typography.h3)
+            Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
+                listOf(
+                    PixaIcons.Check, PixaIcons.Close, PixaIcons.Plus, PixaIcons.Minus,
+                    PixaIcons.ChevronLeft, PixaIcons.ChevronDown, PixaIcons.ChevronRight,
+                ).forEach { Icon(it, contentDescription = null, size = 24.dp) }
+                Icon(PixaIcons.Check, contentDescription = null, size = 24.dp, tint = PixaTheme.colors.destructive)
+            }
+
             Text("Card", style = PixaTheme.typography.h3)
             var count by remember { mutableIntStateOf(0) }
             Card(modifier = Modifier.fillMaxWidth()) {
@@ -84,7 +116,7 @@ fun ShowcaseApp(initialStyle: PixaStyle = PixaStyles.Minimal, initialDark: Boole
                     style = PixaTheme.typography.bodySmall,
                     color = PixaTheme.colors.mutedForeground,
                 )
-                Button(onClick = { count++ }) { Text("Press me") }
+                Button(onClick = { count++ }, modifier = Modifier.focusRequester(focusDemo)) { Text("Press me") }
             }
         }
     }

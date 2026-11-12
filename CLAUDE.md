@@ -8,8 +8,8 @@ a `PixaStyle` passed to `PixaTheme`; component code is style-neutral. Plan and d
 
 ```
 pixacompose/src/commonMain/kotlin/com/pixamob/pixacompose/
-├── theme/        PixaColors, PixaStyle (shapes, typography, decoration), PixaTheme
-├── primitives/   Surface (fill, border, shadow, press), Text, content locals
+├── theme/        PixaColors, PixaStyle (shapes, typography, decoration, spacing, motion), PixaTheme, Fonts
+├── primitives/   Surface (fill, border, shadow, press, focus ring), Text, Icon, PixaIcons
 ├── components/   one small file per component
 └── styles/       built-in styles; the only place raw colors are allowed
 showcase/         shared showcase UI, desktop main, snapshot test
@@ -23,6 +23,9 @@ androidApp/       thin Android wrapper
 - **No raw colors outside `styles/`.** Components read `PixaTheme.colors.*`; `Color.Transparent` is the only literal allowed.
 - **Anything with a background is built on `Surface`.** Do not draw borders, shadows or press feedback anywhere else.
 - **Slots over parameters.** A component takes `variant`, `size`, `enabled`, `modifier` and content lambdas. No `leadingIcon`, `customColors`, `customTextStyle` style parameters, and no preset variants of a component inside the library.
+- **Gaps and paddings** come from `PixaTheme.spacing`; **animations** from `PixaTheme.motion.<role>.spec()`. No inline `spring()`/`tween()` in components.
+- **Shadows**: controls use `decoration.controlShadow`, containers use `decoration.containerShadow`.
+- **Icons**: `PixaIcons` holds only what the library's own components need. It is not an icon pack; do not grow it for app use.
 - **Sizes live with the component** as a small enum (see `ButtonSize`). There is no global size system.
 - **Keep files small.** A component file over about 200 lines is a sign it is doing a style's job or needs splitting.
 - `explicitApi()` is on: every public declaration is deliberate.

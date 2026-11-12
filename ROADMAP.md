@@ -9,8 +9,8 @@ Decisions taken on 2026-11-12:
 
 ## Architecture
 
-1. **Tokens** (`theme/`): about 17 semantic colors, 4 shapes, 7 text styles.
-2. **Decoration** (`theme/PixaStyle.kt`): border widths, shadow kind (soft, hard, glow), press effect. Drawn in one place, `primitives/Surface.kt`.
+1. **Tokens** (`theme/`): 17 semantic colors, 4 shapes, 7 text styles, 6 spacing steps, 3 motion roles.
+2. **Decoration** (`theme/PixaStyle.kt`): border widths, control and container shadows (soft, hard, glow), press effect, focus ring. Drawn in one place, `primitives/Surface.kt`.
 3. **Components** (`components/`): small, slot-based, at most a `variant` and a `size`.
 4. **Styles** (`styles/`): the only place raw color values are allowed.
 
@@ -20,7 +20,8 @@ The test for every change: a new style must never require editing a component.
 
 - [x] **0. Scaffold** - modules, version catalog, showcase on Android and desktop, snapshot test.
 - [ ] **0b. Loose ends** - `iosApp` Xcode project (needs Xcode installed), CI workflow, `legacy` branch on GitHub.
-- [ ] **1. Foundation** - seed exists (`Surface`, `Text`, `Button`, `Card`, three styles). Remaining: `Icon`, focus ring, motion tokens, spacing scale, separate shadow tokens for controls and containers, custom fonts.
+- [x] **1. Foundation** - `Surface`, `Text`, `Icon` plus the built-in `PixaIcons`, `Button`, `Card`, three styles, keyboard focus ring, motion and spacing tokens, separate control and container shadows, `withFontFamily`.
+- [ ] **1b. Open questions from phase 1** - icon stroke weight as a style knob (Cartoon wants thicker icons), bundling a default font per style, how the focus ring should sit over a hard shadow.
 - [ ] **2. Core controls** - Input, Textarea, Checkbox, Switch, Radio, Badge, Separator, Avatar, Skeleton, Progress.
 - [ ] **3. Overlays** - Dialog, Sheet, Popover, Menu, Tooltip, Toast.
 - [ ] **4. Navigation and composites** - Tabs, top bar, bottom bar, Accordion, Slider, Select, Stepper.

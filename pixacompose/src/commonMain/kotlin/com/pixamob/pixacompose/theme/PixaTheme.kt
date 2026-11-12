@@ -48,4 +48,10 @@ public object PixaTheme {
 
     public val decoration: PixaDecoration
         @Composable @ReadOnlyComposable get() = LocalPixaStyle.current.decoration
+
+    public val spacing: PixaSpacing
+        @Composable @ReadOnlyComposable get() = LocalPixaStyle.current.spacing
+
+    public val motion: PixaMotion
+        @Composable @ReadOnlyComposable get() = LocalPixaStyle.current.motion
 }

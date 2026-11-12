@@ -1,11 +1,11 @@
 package com.pixamob.pixacompose.primitives
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -19,15 +19,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.util.lerp
 import com.pixamob.pixacompose.theme.PixaShadow
 import com.pixamob.pixacompose.theme.PixaTheme
@@ -54,7 +57,7 @@ public fun Surface(
     content: @Composable BoxScope.() -> Unit,
 ) {
     Box(
-        modifier = modifier.surface(color, shape, border, shadow, PressEffect.None) { 0f },
+        modifier = modifier.surface(color, shape, border, shadow, PressEffect.None, focused = false) { 0f },
         contentAlignment = contentAlignment,
     ) {
         ProvideContentStyle(contentColor) { content() }
@@ -80,15 +83,16 @@ public fun Surface(
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
     val pressed by source.collectIsPressedAsState()
+    val focused by source.collectIsFocusedAsState()
     val pressFraction by animateFloatAsState(
         targetValue = if (pressed && enabled) 1f else 0f,
-        animationSpec = spring(dampingRatio = 0.7f, stiffness = 900f),
+        animationSpec = PixaTheme.motion.press.spec(),
     )
     Box(
         modifier = modifier
             // Disabled surfaces are flat: the alpha layer clips to bounds, which would cut a shadow.
             .graphicsLayer { alpha = if (enabled) 1f else DisabledAlpha }
-            .surface(color, shape, border, if (enabled) shadow else PixaShadow.None, press) { pressFraction }
+            .surface(color, shape, border, if (enabled) shadow else PixaShadow.None, press, focused) { pressFraction }
             .clickable(
                 interactionSource = source,
                 indication = null,
@@ -109,8 +113,28 @@ private fun Modifier.surface(
     border: PixaBorder?,
     shadow: PixaShadow,
     press: PressEffect,
+    focused: Boolean,
     pressFraction: () -> Float,
 ): Modifier {
+    val focusRing = PixaTheme.decoration.focusRing
+    val ringColor = PixaTheme.colors.ring
+    val ring = if (focused && focusRing.width > 0.dp) {
+        Modifier.drawBehind {
+            // The ring is the surface's own shape, grown outward by the offset.
+            val inset = focusRing.offset.toPx() + focusRing.width.toPx() / 2
+            val outline = shape.createOutline(
+                Size(size.width + inset * 2, size.height + inset * 2),
+                layoutDirection,
+                this,
+            )
+            translate(-inset, -inset) {
+                drawOutline(outline, ringColor, style = Stroke(focusRing.width.toPx()))
+            }
+        }
+    } else {
+        Modifier
+    }
+
     val fallbackShadowColor = border?.color ?: PixaTheme.colors.border
     val sinks = press is PressEffect.Sink && shadow is PixaShadow.Hard
 
@@ -155,6 +179,7 @@ private fun Modifier.surface(
     return this
         .then(pressed)
         .then(shadowed)
+        .then(ring)
         .background(color, shape)
         .then(if (border != null && border.width.value > 0f) Modifier.border(border.width, border.color, shape) else Modifier)
         .clip(shape)

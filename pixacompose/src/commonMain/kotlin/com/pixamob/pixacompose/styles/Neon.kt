@@ -7,6 +7,7 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.PixaColors
 import com.pixamob.pixacompose.theme.PixaDecoration
+import com.pixamob.pixacompose.theme.PixaFocusRing
 import com.pixamob.pixacompose.theme.PixaShadow
 import com.pixamob.pixacompose.theme.PixaShapes
 import com.pixamob.pixacompose.theme.PixaStyle
@@ -33,7 +34,7 @@ private val neonColors = PixaColors(
     destructiveForeground = Void,
     border = Cyan,
     input = Color(0xFF2E2E5C),
-    ring = Cyan,
+    ring = Color(0xFFFFFFFF),
 )
 
 internal fun neonStyle() = PixaStyle(
@@ -50,7 +51,9 @@ internal fun neonStyle() = PixaStyle(
     decoration = PixaDecoration(
         borderWidth = 1.dp,
         filledBorderWidth = 0.dp,
-        shadow = PixaShadow.Glow(radius = 14.dp),
+        controlShadow = PixaShadow.Glow(radius = 14.dp),
+        containerShadow = PixaShadow.Glow(radius = 20.dp),
         press = PressEffect.Scale(0.96f),
+        focusRing = PixaFocusRing(width = 1.dp, offset = 3.dp),
     ),
 )

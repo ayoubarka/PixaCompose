@@ -31,7 +31,10 @@ public enum class ButtonSize(internal val minHeight: Dp, internal val padding: P
  * Content is a slot: put any mix of text and icons inside, spaced automatically.
  *
  * ```
- * Button(onClick = { }) { Text("Save") }
+ * Button(onClick = { }) {
+ *     Icon(PixaIcons.Plus, contentDescription = null)
+ *     Text("Add")
+ * }
  * ```
  */
 @Composable
@@ -70,13 +73,13 @@ public fun Button(
         contentColor = contentColor,
         shape = PixaTheme.shapes.md,
         border = if (borderWidth > 0.dp) PixaBorder(borderWidth, colors.border) else null,
-        shadow = if (variant == ButtonVariant.Ghost) PixaShadow.None else decoration.shadow,
+        shadow = if (variant == ButtonVariant.Ghost) PixaShadow.None else decoration.controlShadow,
         contentAlignment = Alignment.Center,
     ) {
         ProvideContentStyle(contentColor, PixaTheme.typography.label) {
             Row(
                 modifier = Modifier.padding(size.padding),
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(PixaTheme.spacing.sm, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
                 content = content,
             )

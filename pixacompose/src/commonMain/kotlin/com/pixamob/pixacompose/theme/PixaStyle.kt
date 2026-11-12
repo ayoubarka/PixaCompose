@@ -1,5 +1,7 @@
 package com.pixamob.pixacompose.theme
 
+import androidx.compose.animation.core.SpringSpec
+import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -20,6 +22,8 @@ public data class PixaStyle(
     val shapes: PixaShapes,
     val typography: PixaTypography,
     val decoration: PixaDecoration,
+    val spacing: PixaSpacing = PixaSpacing(),
+    val motion: PixaMotion = PixaMotion(),
 )
 
 /** Corner treatment scale. Any [Shape] is allowed, not only rounded rectangles. */
@@ -54,11 +58,55 @@ public data class PixaDecoration(
     val borderWidth: Dp,
     /** Outline width of filled surfaces such as a primary button. 0 disables it. */
     val filledBorderWidth: Dp,
-    /** Shadow of raised surfaces: buttons and cards. */
-    val shadow: PixaShadow,
+    /** Shadow of interactive controls: buttons, toggles. */
+    val controlShadow: PixaShadow,
+    /** Shadow of containers: cards, dialogs, sheets. */
+    val containerShadow: PixaShadow,
     /** How clickable surfaces react while pressed. */
     val press: PressEffect,
+    /** Outline shown around a control that has keyboard focus, in the `ring` color. */
+    val focusRing: PixaFocusRing = PixaFocusRing(),
 )
+
+@Immutable
+public data class PixaFocusRing(
+    /** 0 disables the ring. */
+    val width: Dp = 2.dp,
+    /** Gap between the control's edge and the ring. */
+    val offset: Dp = 2.dp,
+)
+
+/** Gaps and paddings. A style can make the whole library denser or roomier here. */
+@Immutable
+public data class PixaSpacing(
+    val xs: Dp = 4.dp,
+    val sm: Dp = 8.dp,
+    val md: Dp = 12.dp,
+    val lg: Dp = 16.dp,
+    val xl: Dp = 24.dp,
+    val xxl: Dp = 32.dp,
+)
+
+/** How things move. Components pick a role; the style decides how it feels. */
+@Immutable
+public data class PixaMotion(
+    /** Press feedback and other immediate reactions to touch. */
+    val press: PixaSpring = PixaSpring(dampingRatio = 1f, stiffness = 1200f),
+    /** State changes inside a control: a switch thumb, a selection indicator. */
+    val state: PixaSpring = PixaSpring(dampingRatio = 1f, stiffness = 600f),
+    /** Things entering or leaving the screen: dialogs, sheets, toasts. */
+    val overlay: PixaSpring = PixaSpring(dampingRatio = 1f, stiffness = 380f),
+)
+
+@Immutable
+public data class PixaSpring(
+    /** 1 has no bounce; lower values overshoot more. */
+    val dampingRatio: Float,
+    val stiffness: Float,
+) {
+    public fun <T> spec(visibilityThreshold: T? = null): SpringSpec<T> =
+        spring(dampingRatio, stiffness, visibilityThreshold)
+}
 
 public sealed interface PixaShadow {
     public data object None : PixaShadow

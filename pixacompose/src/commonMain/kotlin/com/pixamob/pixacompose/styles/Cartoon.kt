@@ -8,8 +8,11 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.theme.PixaColors
 import com.pixamob.pixacompose.theme.PixaDecoration
+import com.pixamob.pixacompose.theme.PixaFocusRing
+import com.pixamob.pixacompose.theme.PixaMotion
 import com.pixamob.pixacompose.theme.PixaShadow
 import com.pixamob.pixacompose.theme.PixaShapes
+import com.pixamob.pixacompose.theme.PixaSpring
 import com.pixamob.pixacompose.theme.PixaStyle
 import com.pixamob.pixacompose.theme.PressEffect
 
@@ -35,7 +38,7 @@ internal fun cartoonStyle() = PixaStyle(
         destructiveForeground = Ink,
         border = Ink,
         input = Ink,
-        ring = Ink,
+        ring = Color(0xFF3A86FF),
     ),
     darkColors = PixaColors(
         background = Color(0xFF1F1B2E),
@@ -54,7 +57,7 @@ internal fun cartoonStyle() = PixaStyle(
         destructiveForeground = Ink,
         border = Cream,
         input = Cream,
-        ring = Cream,
+        ring = Color(0xFF7BDFF2),
     ),
     shapes = PixaShapes(
         sm = RoundedCornerShape(8.dp),
@@ -66,7 +69,15 @@ internal fun cartoonStyle() = PixaStyle(
     decoration = PixaDecoration(
         borderWidth = 2.dp,
         filledBorderWidth = 2.dp,
-        shadow = PixaShadow.Hard(offset = DpOffset(3.dp, 4.dp)),
+        controlShadow = PixaShadow.Hard(offset = DpOffset(3.dp, 4.dp)),
+        containerShadow = PixaShadow.Hard(offset = DpOffset(5.dp, 6.dp)),
         press = PressEffect.Sink,
+        focusRing = PixaFocusRing(width = 3.dp, offset = 3.dp),
+    ),
+    // Bouncy everywhere: the overshoot is part of the cartoon feel.
+    motion = PixaMotion(
+        press = PixaSpring(dampingRatio = 0.45f, stiffness = 900f),
+        state = PixaSpring(dampingRatio = 0.5f, stiffness = 500f),
+        overlay = PixaSpring(dampingRatio = 0.6f, stiffness = 350f),
     ),
 )

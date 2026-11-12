@@ -61,7 +61,8 @@ internal fun minimalStyle() = PixaStyle(
     decoration = PixaDecoration(
         borderWidth = 1.dp,
         filledBorderWidth = 0.dp,
-        shadow = PixaShadow.None,
+        controlShadow = PixaShadow.None,
+        containerShadow = PixaShadow.Soft(2.dp),
         press = PressEffect.Dim(0.85f),
     ),
 )
