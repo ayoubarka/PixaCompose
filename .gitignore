@@ -1,0 +1,36 @@
+# Gradle / Kotlin
+.gradle/
+build/
+.kotlin/
+*.hprof
+!gradle/wrapper/gradle-wrapper.jar
+
+# IDE
+.idea/
+*.iml
+out/
+
+# Android
+local.properties
+*.apk
+*.aab
+.cxx
+.externalNativeBuild
+/captures
+
+# iOS
+xcuserdata/
+DerivedData/
+*.xcuserstate
+
+# macOS
+.DS_Store
+
+# Signing and publishing secrets - never commit
+*.gpg
+*.key
+*.asc
+*.jks
+*.keystore
+signing.properties
+keystore.properties
