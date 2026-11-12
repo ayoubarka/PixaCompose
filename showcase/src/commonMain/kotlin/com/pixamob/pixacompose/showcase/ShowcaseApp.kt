@@ -2,6 +2,7 @@ package com.pixamob.pixacompose.showcase
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,6 +17,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
@@ -24,6 +26,8 @@ import com.pixamob.pixacompose.components.Button
 import com.pixamob.pixacompose.components.ButtonSize
 import com.pixamob.pixacompose.components.ButtonVariant
 import com.pixamob.pixacompose.components.Card
+import com.pixamob.pixacompose.components.ToastHost
+import com.pixamob.pixacompose.components.rememberToastState
 import com.pixamob.pixacompose.primitives.Icon
 import com.pixamob.pixacompose.primitives.PixaIcons
 import com.pixamob.pixacompose.primitives.Text
@@ -41,11 +45,12 @@ fun ShowcaseApp(
     var style by remember { mutableStateOf(initialStyle) }
     var dark by remember { mutableStateOf(initialDark) }
 
+    val toasts = rememberToastState()
     PixaTheme(style = style, darkTheme = dark) {
+        Box(Modifier.fillMaxSize().background(PixaTheme.colors.background)) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(PixaTheme.colors.background)
                 .safeDrawingPadding()
                 .verticalScroll(rememberScrollState())
                 .padding(20.dp),
@@ -119,7 +124,11 @@ fun ShowcaseApp(
                 Button(onClick = { count++ }, modifier = Modifier.focusRequester(focusDemo)) { Text("Press me") }
             }
 
+            OverlaysSection(toasts)
+
             ControlsSection()
+        }
+        ToastHost(toasts, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
         }
     }
 }

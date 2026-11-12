@@ -16,14 +16,14 @@ private const val PageHeight = 1500
 private const val Pages = 3
 
 /**
- * Renders the showcase once per built-in style and theme into `showcase/build/snapshots/`,
+ * Renders the showcase once per built-in style and theme into `showcase/build/snapshots/pages/`,
  * cut into pages so each image stays readable. Not a pixel comparison yet: it proves every
  * style renders headlessly and gives images to review.
  */
 class StyleSnapshotTest {
     @Test
     fun rendersEveryStyle() {
-        val outDir = File("build/snapshots").apply { deleteRecursively(); mkdirs() }
+        val outDir = File("build/snapshots/pages").apply { deleteRecursively(); mkdirs() }
         for (style in PixaStyles.all) {
             for (dark in listOf(false, true)) {
                 val name = "${style.name.lowercase()}-${if (dark) "dark" else "light"}"

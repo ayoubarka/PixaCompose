@@ -24,7 +24,8 @@ The test for every change: a new style must never require editing a component.
 - [ ] **1b. Open questions from phase 1** - icon stroke weight as a style knob (Cartoon wants thicker icons), bundling a default font per style, how the focus ring should sit over a hard shadow.
 - [x] **2. Core controls** - Input, Textarea, Checkbox, Switch, RadioButton, Badge, Separator, Avatar, Skeleton, Progress. `Surface` gained toggleable and selectable variants.
 - [ ] **2b. Open questions from phase 2** - minimum touch target for the 20dp checkbox and radio, a labelled row (`Field`/`Label`) so the text is tappable too, error state for inputs, whether small toggles should take the control shadow.
-- [ ] **3. Overlays** - Dialog, Sheet, Popover, Menu, Tooltip, Toast.
+- [x] **3. Overlays** - Dialog, Sheet, Popover, Menu with MenuItem, Tooltip, Toast (state plus host). Built on two internal primitives: `Modal` (platform dialog window) and `AnchoredPopup` (platform popup with flip and edge clamping).
+- [ ] **3b. Open questions from phase 3** - check every overlay on a real Android device and on iOS (scrim, insets, keyboard, shadow margin of popups), drag-to-dismiss for Sheet, style-controlled scrim color, swipe-to-dismiss and an action slot for Toast, keyboard arrow navigation in Menu.
 - [ ] **4. Navigation and composites** - Tabs, top bar, bottom bar, Accordion, Slider, Select, Stepper.
 - [ ] **5. Optional modules** - `pixacompose-datetime`, `pixacompose-charts`, `pixacompose-image`, `pixacompose-shapes` (the 1.x custom shape geometry).
 - [ ] **6. Polish** - Bento style, pixel-diff snapshot tests, docs site, 2.0.0 release.

@@ -9,7 +9,8 @@ a `PixaStyle` passed to `PixaTheme`; component code is style-neutral. Plan and d
 ```
 pixacompose/src/commonMain/kotlin/com/pixamob/pixacompose/
 ├── theme/        PixaColors, PixaStyle (shapes, typography, decoration, spacing, motion), PixaTheme, Fonts
-├── primitives/   Surface (fill, border, shadow, press, focus ring), Text, Icon, PixaIcons
+├── primitives/   Surface (fill, border, shadow, press, focus ring), Text, Icon, PixaIcons,
+│                 Modal and AnchoredPopup (internal bases for overlays)
 ├── components/   one small file per component
 └── styles/       built-in styles; the only place raw colors are allowed
 showcase/         shared showcase UI, desktop main, snapshot test
@@ -26,6 +27,7 @@ androidApp/       thin Android wrapper
 - **Gaps and paddings** come from `PixaTheme.spacing`; **animations** from `PixaTheme.motion.<role>.spec()`. No inline `spring()`/`tween()` in components.
 - **Shadows**: controls use `decoration.controlShadow`, containers use `decoration.containerShadow`.
 - **Icons**: `PixaIcons` holds only what the library's own components need. It is not an icon pack; do not grow it for app use.
+- **Overlays** take `visible` and `onDismissRequest` and stay in the composition so they can animate out. Modal ones build on `Modal`, anchored ones on `AnchoredPopup`; do not call the platform `Dialog`/`Popup` from a component.
 - **Sizes live with the component** as a small enum (see `ButtonSize`). There is no global size system.
 - **Keep files small.** A component file over about 200 lines is a sign it is doing a style's job or needs splitting.
 - `explicitApi()` is on: every public declaration is deliberate.
@@ -33,12 +35,13 @@ androidApp/       thin Android wrapper
 ## Verify
 
 ```bash
-./gradlew :showcase:jvmTest            # renders every style to showcase/build/snapshots/<style>-<theme>-<page>.png
+./gradlew :showcase:jvmTest            # renders to showcase/build/snapshots/pages/ and /overlays/
 ./gradlew :androidApp:assembleDebug
 ```
 
 Look at the snapshots after any visual change, in at least Minimal and Cartoon. Every new
-component gets a section in `showcase/.../ShowcaseApp.kt`.
+component gets a section in the showcase, and every overlay an entry in `OverlayDemo` so it is
+rendered open. Delays (`delay()`) run on real time in the headless scene, not the frame clock.
 
 iOS targets are declared but cannot be compiled on a machine without full Xcode.
 
