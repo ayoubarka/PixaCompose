@@ -6,7 +6,6 @@ import com.pixamob.pixacompose.theme.PixaStyle
 public object PixaStyles {
     public val Minimal: PixaStyle = minimalStyle()
     public val Cartoon: PixaStyle = cartoonStyle()
-    public val Neon: PixaStyle = neonStyle()
 
-    public val all: List<PixaStyle> = listOf(Minimal, Cartoon, Neon)
+    public val all: List<PixaStyle> = listOf(Minimal, Cartoon)
 }

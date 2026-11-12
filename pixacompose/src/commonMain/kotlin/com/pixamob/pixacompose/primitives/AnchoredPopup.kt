@@ -29,7 +29,7 @@ internal enum class PopupSide { Top, Bottom }
 internal enum class PopupAlign { Start, Center }
 
 /**
- * Transparent margin inside the popup window so shadows and glows are not cut at its edge.
+ * Transparent margin inside the popup window so shadows are not cut at its edge.
  * The margin is part of the popup, so taps on it are forwarded to the dismiss handler, and
  * passive popups (tooltips) get none: it would sit over the anchor and steal its hover.
  */

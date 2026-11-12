@@ -19,7 +19,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -28,7 +27,6 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
@@ -241,10 +239,6 @@ private fun Modifier.surface(
                     drawOutline(outline, shadowColor)
                 }
             }
-        }
-        is PixaShadow.Glow -> {
-            val glowColor = shadow.color.takeOrElse { border?.color ?: color }
-            Modifier.dropShadow(shape, Shadow(radius = shadow.radius, color = glowColor, spread = shadow.spread))
         }
     }
 

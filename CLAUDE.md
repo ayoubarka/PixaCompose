@@ -23,7 +23,8 @@ androidApp/       thin Android wrapper
 - **Foundation only** in `:pixacompose`: no Material, no third-party UI libraries. Heavy features go in separate optional modules.
 - **No raw colors outside `styles/`.** Components read `PixaTheme.colors.*`; `Color.Transparent` is the only literal allowed.
 - **Anything with a background is built on `Surface`.** It has four forms: static, clickable (`onClick`), two-state (`checked`/`onCheckedChange`) and one-of-many (`selected`/`onClick`). Borders come from `outlinedBorder()` and `filledBorder()` in `components/Borders.kt`. Do not draw borders, shadows or press feedback anywhere else.
-- **Slots over parameters.** A component takes `variant`, `size`, `enabled`, `modifier` and content lambdas. No `leadingIcon`, `customColors`, `customTextStyle` style parameters, and no preset variants of a component inside the library.
+- **Add nothing until a real app needs it.** Two built-in styles only (Minimal, Cartoon); other looks are an app's own `PixaStyle`. Bento is a layout made of `Card`s, not a style or a component.
+- **Slots over parameters.** A component takes `variant`, `size`, `enabled`, `modifier` and content lambdas. No `leadingIcon`, `customColors`, `customTextStyle` style parameters, and no preset variants of a component inside the library. The one exception is `Card`, which takes `color` and `contentColor` so apps can make colored tiles.
 - **Gaps and paddings** come from `PixaTheme.spacing`; **animations** from `PixaTheme.motion.<role>.spec()`. No inline `spring()`/`tween()` in components.
 - **Shadows**: controls use `decoration.controlShadow`, containers use `decoration.containerShadow`.
 - **Icons**: `PixaIcons` holds only what the library's own components need. It is not an icon pack; do not grow it for app use.

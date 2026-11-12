@@ -5,7 +5,7 @@ Style-agnostic UI components for Compose Multiplatform (Android, iOS, desktop), 
 `PixaStyle` object, not from the component code.
 
 ```kotlin
-PixaTheme(style = PixaStyles.Cartoon) {   // Minimal, Cartoon, Neon, or your own PixaStyle
+PixaTheme(style = PixaStyles.Cartoon) {   // Minimal, Cartoon, or your own PixaStyle
     Button(onClick = { }) { Text("Save") }
 }
 ```

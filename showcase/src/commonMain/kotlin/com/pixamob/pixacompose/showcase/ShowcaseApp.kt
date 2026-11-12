@@ -124,6 +124,18 @@ fun ShowcaseApp(
                 Button(onClick = { count++ }, modifier = Modifier.focusRequester(focusDemo)) { Text("Press me") }
             }
 
+            // Colored tiles: the colors are the app's choice, here taken from the theme.
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Card(Modifier.weight(1f), color = PixaTheme.colors.primary, contentColor = PixaTheme.colors.primaryForeground) {
+                    Text("Steps", style = PixaTheme.typography.caption)
+                    Text("8,752", style = PixaTheme.typography.h2)
+                }
+                Card(Modifier.weight(1f), color = PixaTheme.colors.secondary, contentColor = PixaTheme.colors.secondaryForeground) {
+                    Text("Sleep", style = PixaTheme.typography.caption)
+                    Text("7h 20m", style = PixaTheme.typography.h2)
+                }
+            }
+
             OverlaysSection(toasts)
 
             ControlsSection()

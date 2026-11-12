@@ -123,14 +123,6 @@ public sealed interface PixaShadow {
         val offset: DpOffset = DpOffset(3.dp, 4.dp),
         val color: Color = Color.Unspecified,
     ) : PixaShadow
-
-    /** Blurred halo around the surface. Defaults to the surface's border color, else its fill. */
-    @Immutable
-    public data class Glow(
-        val radius: Dp,
-        val spread: Dp = 0.dp,
-        val color: Color = Color.Unspecified,
-    ) : PixaShadow
 }
 
 public sealed interface PressEffect {

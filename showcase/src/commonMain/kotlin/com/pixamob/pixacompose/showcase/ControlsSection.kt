@@ -21,6 +21,8 @@ import com.pixamob.pixacompose.components.AvatarSize
 import com.pixamob.pixacompose.components.Badge
 import com.pixamob.pixacompose.components.BadgeVariant
 import com.pixamob.pixacompose.components.Checkbox
+import com.pixamob.pixacompose.components.Chip
+import com.pixamob.pixacompose.components.CircularProgress
 import com.pixamob.pixacompose.components.Input
 import com.pixamob.pixacompose.components.Progress
 import com.pixamob.pixacompose.components.RadioButton
@@ -94,6 +96,20 @@ fun ControlsSection() {
     Text("Progress", style = PixaTheme.typography.h3)
     Progress(0.15f)
     Progress(0.65f)
+    Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
+        CircularProgress(0.75f) { Text("75%") }
+        CircularProgress(0.3f, size = 40.dp, strokeWidth = 4.dp)
+        CircularProgress(1f) { Icon(PixaIcons.Check, contentDescription = null, size = 16.dp) }
+    }
+
+    Text("Chip", style = PixaTheme.typography.h3)
+    var filter by remember { mutableIntStateOf(0) }
+    Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+        listOf("All", "Strength", "Cardio").forEachIndexed { index, label ->
+            Chip(selected = filter == index, onClick = { filter = index }) { Text(label) }
+        }
+        Chip(selected = false, onClick = {}, enabled = false) { Text("Yoga") }
+    }
 
     Text("Skeleton", style = PixaTheme.typography.h3)
     Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
