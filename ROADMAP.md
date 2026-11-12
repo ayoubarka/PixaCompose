@@ -26,7 +26,8 @@ The test for every change: a new style must never require editing a component.
 - [ ] **2b. Open questions from phase 2** - minimum touch target for the 20dp checkbox and radio, a labelled row (`Field`/`Label`) so the text is tappable too, error state for inputs, whether small toggles should take the control shadow.
 - [x] **3. Overlays** - Dialog, Sheet, Popover, Menu with MenuItem, Tooltip, Toast (state plus host). Built on two internal primitives: `Modal` (platform dialog window) and `AnchoredPopup` (platform popup with flip and edge clamping).
 - [ ] **3b. Open questions from phase 3** - check every overlay on a real Android device and on iOS (scrim, insets, keyboard, shadow margin of popups), drag-to-dismiss for Sheet, style-controlled scrim color, swipe-to-dismiss and an action slot for Toast, keyboard arrow navigation in Menu.
-- [ ] **4. Navigation and composites** - Tabs, top bar, bottom bar, Accordion, Slider, Select, Stepper.
+- [x] **4. Navigation and composites** - Tabs with Tab, TopBar, BottomBar with BottomBarItem, AccordionItem, Slider, Select (a field that opens a Menu), Stepper.
+- [ ] **4b. Open questions from phase 4** - sliding selection indicator for Tabs, keyboard and right-to-left support for Slider, step labels for Stepper, Select menu as wide as its field, Neon glow shows a faint cut-off edge at large radii.
 - [ ] **5. Optional modules** - `pixacompose-datetime`, `pixacompose-charts`, `pixacompose-image`, `pixacompose-shapes` (the 1.x custom shape geometry).
 - [ ] **6. Polish** - Bento style, pixel-diff snapshot tests, docs site, 2.0.0 release.
 

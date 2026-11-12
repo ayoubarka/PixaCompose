@@ -127,6 +127,8 @@ fun ShowcaseApp(
             OverlaysSection(toasts)
 
             ControlsSection()
+
+            NavigationSection()
         }
         ToastHost(toasts, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
         }

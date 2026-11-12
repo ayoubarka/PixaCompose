@@ -53,6 +53,20 @@ class OverlaySnapshotTest {
     }
 
     @Test
+    fun rendersSelectOpen() {
+        for (style in PixaStyles.all) {
+            ImageComposeScene(Width, 1900, Density(2f)) {
+                PixaTheme(style, darkTheme = false) {
+                    Column(
+                        Modifier.fillMaxSize().background(PixaTheme.colors.background).padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                    ) { NavigationSection(selectInitiallyOpen = true) }
+                }
+            }.use { save(it, "${style.name.lowercase()}-navigation") }
+        }
+    }
+
+    @Test
     fun rendersTooltipOnHover() {
         for (style in PixaStyles.all) {
             ImageComposeScene(Width, 400, Density(2f)) {
