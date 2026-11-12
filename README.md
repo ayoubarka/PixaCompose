@@ -12,6 +12,25 @@ PixaTheme(style = PixaStyles.Cartoon) {   // Minimal, Cartoon, Neon, or your own
 
 Version 2 is a ground-up rewrite. The 1.x code lives on the `legacy` branch.
 
+## Your own colors and fonts
+
+A style is a plain data class. Start from a built-in one and change what your brand needs:
+
+```kotlin
+val base = PixaStyles.Minimal
+val appStyle = base.copy(
+    lightColors = base.lightColors.copy(primary = Color(0xFF1F9D7A), primaryForeground = Color.White),
+    darkColors = base.darkColors.copy(primary = Color(0xFF4FD1AE), primaryForeground = Color(0xFF05241C)),
+    shapes = base.shapes.copy(md = RoundedCornerShape(16.dp)),
+).withFontFamily(body = Nunito, heading = Baloo)
+
+PixaTheme(style = appStyle) { App() }
+```
+
+Fonts loaded from Compose resources (`Font(Res.font.nunito_regular)`) are composable, so build
+the `FontFamily` inside the composition and `remember` the style. Sizes and weights can be changed
+through `typography.copy(...)`.
+
 ## Modules
 
 | Module | Purpose |
