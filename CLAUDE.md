@@ -13,30 +13,34 @@ pixacompose/src/commonMain/kotlin/com/pixamob/pixacompose/
 │                 Modal and AnchoredPopup (internal bases for overlays)
 ├── components/   one small file per component
 └── styles/       built-in styles; the only place raw colors are allowed
+pixacompose-image/  optional module: PixaImage on Coil
+pixacompose-charts/ optional module: PixaLineChart, PixaBarChart on Vico
 showcase/         shared showcase UI, desktop main, snapshot test
 androidApp/       thin Android wrapper
 ```
 
 ## Hard rules
 
-- **A new style must never require editing a component.** If it does, the missing knob belongs in `PixaStyle` or `Surface`, not in the component.
-- **Foundation only** in `:pixacompose`: no Material, no third-party UI libraries. Heavy features go in separate optional modules.
+- **A new style must never require editing a component.** If it does, the missing knob belongs in `PixaStyle` or `PixaSurface`, not in the component.
+- **Foundation only** in `:pixacompose`: no Material, no third-party UI libraries. Heavy features go in separate optional modules (`pixacompose-image`, ...), which may use a third-party library only if it has no Material dependency and no look of its own; check with `./gradlew :<module>:dependencies`.
 - **No raw colors outside `styles/`.** Components read `PixaTheme.colors.*`; `Color.Transparent` is the only literal allowed.
-- **Anything with a background is built on `Surface`.** It has four forms: static, clickable (`onClick`), two-state (`checked`/`onCheckedChange`) and one-of-many (`selected`/`onClick`). Borders come from `outlinedBorder()` and `filledBorder()` in `components/Borders.kt`. Do not draw borders, shadows or press feedback anywhere else.
-- **Add nothing until a real app needs it.** Two built-in styles only (Minimal, Cartoon); other looks are an app's own `PixaStyle`. Bento is a layout made of `Card`s, not a style or a component.
-- **Slots over parameters.** A component takes `variant`, `size`, `enabled`, `modifier` and content lambdas. No `leadingIcon`, `customColors`, `customTextStyle` style parameters, and no preset variants of a component inside the library. The one exception is `Card`, which takes `color` and `contentColor` so apps can make colored tiles.
+- **Anything with a background is built on `PixaSurface`.** It has four forms: static, clickable (`onClick`), two-state (`checked`/`onCheckedChange`) and one-of-many (`selected`/`onClick`). Borders come from `outlinedBorder()` and `filledBorder()` in `components/Borders.kt`. Do not draw borders, shadows or press feedback anywhere else.
+- **Add nothing until a real app needs it.** Two built-in styles only (Minimal, Cartoon); other looks are an app's own `PixaStyle`. Bento is a layout made of `PixaCard`s, not a style or a component.
+- **Every public component, type and composition local is prefixed `Pixa`** (`PixaButton`, `PixaButtonVariant`, `LocalPixaContentColor`), and its file is named after it. This keeps them from clashing with Material or app components of the same name.
+- **Components nest through slots**, e.g. `PixaAvatar { PixaImage(...) }`. The core module cannot depend on an optional module, so core components never call `PixaImage` or a chart directly.
+- **Slots over parameters.** A component takes `variant`, `size`, `enabled`, `modifier` and content lambdas. No `leadingIcon`, `customColors`, `customTextStyle` style parameters, and no preset variants of a component inside the library. The one exception is `PixaCard`, which takes `color` and `contentColor` so apps can make colored tiles.
 - **Gaps and paddings** come from `PixaTheme.spacing`; **animations** from `PixaTheme.motion.<role>.spec()`. No inline `spring()`/`tween()` in components.
 - **Shadows**: controls use `decoration.controlShadow`, containers use `decoration.containerShadow`.
 - **Icons**: `PixaIcons` holds only what the library's own components need. It is not an icon pack; do not grow it for app use.
 - **Overlays** take `visible` and `onDismissRequest` and stay in the composition so they can animate out. Modal ones build on `Modal`, anchored ones on `AnchoredPopup`; do not call the platform `Dialog`/`Popup` from a component.
-- **Sizes live with the component** as a small enum (see `ButtonSize`). There is no global size system.
+- **Sizes live with the component** as a small enum (see `PixaButtonSize`). There is no global size system.
 - **Keep files small.** A component file over about 200 lines is a sign it is doing a style's job or needs splitting.
 - `explicitApi()` is on: every public declaration is deliberate.
 
 ## Verify
 
 ```bash
-./gradlew :showcase:jvmTest            # renders to showcase/build/snapshots/pages/ and /overlays/
+./gradlew :showcase:jvmTest            # renders to showcase/build/snapshots/ (pages, overlays, image, brand)
 ./gradlew :androidApp:assembleDebug
 ```
 

@@ -5,8 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.runtime.staticCompositionLocalOf
-import com.pixamob.pixacompose.primitives.LocalContentColor
-import com.pixamob.pixacompose.primitives.LocalTextStyle
+import com.pixamob.pixacompose.primitives.LocalPixaContentColor
+import com.pixamob.pixacompose.primitives.LocalPixaTextStyle
 import com.pixamob.pixacompose.styles.PixaStyles
 
 private val LocalPixaStyle = staticCompositionLocalOf { PixaStyles.Minimal }
@@ -22,8 +22,8 @@ public fun PixaTheme(
     CompositionLocalProvider(
         LocalPixaStyle provides style,
         LocalIsDark provides darkTheme,
-        LocalContentColor provides colors.foreground,
-        LocalTextStyle provides style.typography.body,
+        LocalPixaContentColor provides colors.foreground,
+        LocalPixaTextStyle provides style.typography.body,
         content = content,
     )
 }

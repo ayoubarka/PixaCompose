@@ -22,15 +22,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.Button
-import com.pixamob.pixacompose.components.ButtonSize
-import com.pixamob.pixacompose.components.ButtonVariant
-import com.pixamob.pixacompose.components.Card
-import com.pixamob.pixacompose.components.ToastHost
-import com.pixamob.pixacompose.components.rememberToastState
-import com.pixamob.pixacompose.primitives.Icon
+import com.pixamob.pixacompose.components.PixaButton
+import com.pixamob.pixacompose.components.PixaButtonSize
+import com.pixamob.pixacompose.components.PixaButtonVariant
+import com.pixamob.pixacompose.components.PixaCard
+import com.pixamob.pixacompose.components.PixaToastHost
+import com.pixamob.pixacompose.components.rememberPixaToastState
+import com.pixamob.pixacompose.primitives.PixaIcon
 import com.pixamob.pixacompose.primitives.PixaIcons
-import com.pixamob.pixacompose.primitives.Text
+import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.styles.PixaStyles
 import com.pixamob.pixacompose.theme.PixaStyle
 import com.pixamob.pixacompose.theme.PixaTheme
@@ -45,7 +45,7 @@ fun ShowcaseApp(
     var style by remember { mutableStateOf(initialStyle) }
     var dark by remember { mutableStateOf(initialDark) }
 
-    val toasts = rememberToastState()
+    val toasts = rememberPixaToastState()
     PixaTheme(style = style, darkTheme = dark) {
         Box(Modifier.fillMaxSize().background(PixaTheme.colors.background)) {
         Column(
@@ -56,8 +56,8 @@ fun ShowcaseApp(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(20.dp),
         ) {
-            Text("PixaCompose", style = PixaTheme.typography.h1)
-            Text(
+            PixaText("PixaCompose", style = PixaTheme.typography.h1)
+            PixaText(
                 "Same components, different style object.",
                 style = PixaTheme.typography.bodySmall,
                 color = PixaTheme.colors.mutedForeground,
@@ -65,74 +65,74 @@ fun ShowcaseApp(
 
             Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
                 PixaStyles.all.forEach { candidate ->
-                    Button(
+                    PixaButton(
                         onClick = { style = candidate },
-                        variant = if (candidate == style) ButtonVariant.Primary else ButtonVariant.Outline,
-                        size = ButtonSize.Sm,
-                    ) { Text(candidate.name) }
+                        variant = if (candidate == style) PixaButtonVariant.Primary else PixaButtonVariant.Outline,
+                        size = PixaButtonSize.Sm,
+                    ) { PixaText(candidate.name) }
                 }
             }
-            Button(onClick = { dark = !dark }, variant = ButtonVariant.Ghost, size = ButtonSize.Sm) {
-                Text(if (dark) "Switch to light" else "Switch to dark")
+            PixaButton(onClick = { dark = !dark }, variant = PixaButtonVariant.Ghost, size = PixaButtonSize.Sm) {
+                PixaText(if (dark) "Switch to light" else "Switch to dark")
             }
 
-            Text("Button", style = PixaTheme.typography.h3)
-            ButtonVariant.entries.forEach { variant ->
+            PixaText("Button", style = PixaTheme.typography.h3)
+            PixaButtonVariant.entries.forEach { variant ->
                 Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    Button(onClick = {}, variant = variant) { Text(variant.name) }
-                    Button(onClick = {}, variant = variant, enabled = false) { Text("Disabled") }
+                    PixaButton(onClick = {}, variant = variant) { PixaText(variant.name) }
+                    PixaButton(onClick = {}, variant = variant, enabled = false) { PixaText("Disabled") }
                 }
             }
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                ButtonSize.entries.forEach { size ->
-                    Button(onClick = {}, size = size) { Text(size.name) }
+                PixaButtonSize.entries.forEach { size ->
+                    PixaButton(onClick = {}, size = size) { PixaText(size.name) }
                 }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Button(onClick = {}) {
-                    Icon(PixaIcons.Plus, contentDescription = null)
-                    Text("Add item")
+                PixaButton(onClick = {}) {
+                    PixaIcon(PixaIcons.Plus, contentDescription = null)
+                    PixaText("Add item")
                 }
-                Button(onClick = {}, variant = ButtonVariant.Outline) {
-                    Text("Next")
-                    Icon(PixaIcons.ChevronRight, contentDescription = null)
+                PixaButton(onClick = {}, variant = PixaButtonVariant.Outline) {
+                    PixaText("Next")
+                    PixaIcon(PixaIcons.ChevronRight, contentDescription = null)
                 }
-                Button(onClick = {}, variant = ButtonVariant.Secondary) {
-                    Icon(PixaIcons.Close, contentDescription = "Close")
+                PixaButton(onClick = {}, variant = PixaButtonVariant.Secondary) {
+                    PixaIcon(PixaIcons.Close, contentDescription = "Close")
                 }
             }
 
-            Text("Icon", style = PixaTheme.typography.h3)
+            PixaText("Icon", style = PixaTheme.typography.h3)
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 listOf(
                     PixaIcons.Check, PixaIcons.Close, PixaIcons.Plus, PixaIcons.Minus,
                     PixaIcons.ChevronLeft, PixaIcons.ChevronDown, PixaIcons.ChevronRight,
-                ).forEach { Icon(it, contentDescription = null, size = 24.dp) }
-                Icon(PixaIcons.Check, contentDescription = null, size = 24.dp, tint = PixaTheme.colors.destructive)
+                ).forEach { PixaIcon(it, contentDescription = null, size = 24.dp) }
+                PixaIcon(PixaIcons.Check, contentDescription = null, size = 24.dp, tint = PixaTheme.colors.destructive)
             }
 
-            Text("Card", style = PixaTheme.typography.h3)
+            PixaText("Card", style = PixaTheme.typography.h3)
             var count by remember { mutableIntStateOf(0) }
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Text("Counter", style = PixaTheme.typography.h3)
-                Text(
+            PixaCard(modifier = Modifier.fillMaxWidth()) {
+                PixaText("Counter", style = PixaTheme.typography.h3)
+                PixaText(
                     "Pressed $count times.",
                     style = PixaTheme.typography.bodySmall,
                     color = PixaTheme.colors.mutedForeground,
                 )
-                Button(onClick = { count++ }, modifier = Modifier.focusRequester(focusDemo)) { Text("Press me") }
+                PixaButton(onClick = { count++ }, modifier = Modifier.focusRequester(focusDemo)) { PixaText("Press me") }
             }
 
             // Colored tiles: the colors are the app's choice, here taken from the theme.
             Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Card(Modifier.weight(1f), color = PixaTheme.colors.primary, contentColor = PixaTheme.colors.primaryForeground) {
-                    Text("Steps", style = PixaTheme.typography.caption)
-                    Text("8,752", style = PixaTheme.typography.h2)
+                PixaCard(Modifier.weight(1f), color = PixaTheme.colors.primary, contentColor = PixaTheme.colors.primaryForeground) {
+                    PixaText("Steps", style = PixaTheme.typography.caption)
+                    PixaText("8,752", style = PixaTheme.typography.h2)
                 }
-                Card(Modifier.weight(1f), color = PixaTheme.colors.secondary, contentColor = PixaTheme.colors.secondaryForeground) {
-                    Text("Sleep", style = PixaTheme.typography.caption)
-                    Text("7h 20m", style = PixaTheme.typography.h2)
+                PixaCard(Modifier.weight(1f), color = PixaTheme.colors.secondary, contentColor = PixaTheme.colors.secondaryForeground) {
+                    PixaText("Sleep", style = PixaTheme.typography.caption)
+                    PixaText("7h 20m", style = PixaTheme.typography.h2)
                 }
             }
 
@@ -140,9 +140,13 @@ fun ShowcaseApp(
 
             ControlsSection()
 
+            ImageSection()
+
+            ChartsSection()
+
             NavigationSection()
         }
-        ToastHost(toasts, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
+        PixaToastHost(toasts, Modifier.align(Alignment.BottomCenter).safeDrawingPadding())
         }
     }
 }

@@ -46,7 +46,7 @@ public data class PixaTypography(
     val h3: TextStyle,
     val body: TextStyle,
     val bodySmall: TextStyle,
-    /** Text inside controls: buttons, tabs, form labels. */
+    /** PixaText inside controls: buttons, tabs, form labels. */
     val label: TextStyle,
     val caption: TextStyle,
 )
@@ -96,7 +96,7 @@ public data class PixaMotion(
     val state: PixaSpring = PixaSpring(dampingRatio = 1f, stiffness = 600f),
     /** Things entering or leaving the screen: dialogs, sheets, toasts. */
     val overlay: PixaSpring = PixaSpring(dampingRatio = 1f, stiffness = 380f),
-    /** Length of one half-cycle of looping placeholders such as [Skeleton][com.pixamob.pixacompose.components.Skeleton]. */
+    /** Length of one half-cycle of looping placeholders such as [PixaSkeleton][com.pixamob.pixacompose.components.Skeleton]. */
     val pulseMillis: Int = 900,
 )
 

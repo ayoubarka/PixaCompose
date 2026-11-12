@@ -16,112 +16,112 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.Avatar
-import com.pixamob.pixacompose.components.AvatarSize
-import com.pixamob.pixacompose.components.Badge
-import com.pixamob.pixacompose.components.BadgeVariant
-import com.pixamob.pixacompose.components.Checkbox
-import com.pixamob.pixacompose.components.Chip
-import com.pixamob.pixacompose.components.CircularProgress
-import com.pixamob.pixacompose.components.Input
-import com.pixamob.pixacompose.components.Progress
-import com.pixamob.pixacompose.components.RadioButton
-import com.pixamob.pixacompose.components.Separator
-import com.pixamob.pixacompose.components.Skeleton
-import com.pixamob.pixacompose.components.Switch
-import com.pixamob.pixacompose.components.Textarea
-import com.pixamob.pixacompose.primitives.Icon
+import com.pixamob.pixacompose.components.PixaAvatar
+import com.pixamob.pixacompose.components.PixaAvatarSize
+import com.pixamob.pixacompose.components.PixaBadge
+import com.pixamob.pixacompose.components.PixaBadgeVariant
+import com.pixamob.pixacompose.components.PixaCheckbox
+import com.pixamob.pixacompose.components.PixaChip
+import com.pixamob.pixacompose.components.PixaCircularProgress
+import com.pixamob.pixacompose.components.PixaInput
+import com.pixamob.pixacompose.components.PixaProgress
+import com.pixamob.pixacompose.components.PixaRadioButton
+import com.pixamob.pixacompose.components.PixaSeparator
+import com.pixamob.pixacompose.components.PixaSkeleton
+import com.pixamob.pixacompose.components.PixaSwitch
+import com.pixamob.pixacompose.components.PixaTextarea
+import com.pixamob.pixacompose.primitives.PixaIcon
 import com.pixamob.pixacompose.primitives.PixaIcons
-import com.pixamob.pixacompose.primitives.Text
+import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.theme.PixaTheme
 
 @Composable
 fun ControlsSection() {
     val gap = Arrangement.spacedBy(12.dp)
 
-    Text("Input", style = PixaTheme.typography.h3)
+    PixaText("Input", style = PixaTheme.typography.h3)
     var name by remember { mutableStateOf("") }
     var search by remember { mutableStateOf("Compose") }
     var notes by remember { mutableStateOf("") }
-    Input(name, { name = it }, Modifier.fillMaxWidth(), placeholder = "Your name")
-    Input(
+    PixaInput(name, { name = it }, Modifier.fillMaxWidth(), placeholder = "Your name")
+    PixaInput(
         search, { search = it }, Modifier.fillMaxWidth(),
-        leading = { Icon(PixaIcons.Plus, contentDescription = null, size = 16.dp) },
-        trailing = { Icon(PixaIcons.Close, contentDescription = "Clear", size = 16.dp) },
+        leading = { PixaIcon(PixaIcons.Plus, contentDescription = null, size = 16.dp) },
+        trailing = { PixaIcon(PixaIcons.Close, contentDescription = "Clear", size = 16.dp) },
     )
-    Input("Disabled", {}, Modifier.fillMaxWidth(), enabled = false)
-    Textarea(notes, { notes = it }, Modifier.fillMaxWidth(), placeholder = "Notes")
+    PixaInput("Disabled", {}, Modifier.fillMaxWidth(), enabled = false)
+    PixaTextarea(notes, { notes = it }, Modifier.fillMaxWidth(), placeholder = "Notes")
 
-    Text("Checkbox, radio, switch", style = PixaTheme.typography.h3)
+    PixaText("Checkbox, radio, switch", style = PixaTheme.typography.h3)
     var agree by remember { mutableStateOf(true) }
     var plan by remember { mutableIntStateOf(0) }
     var wifi by remember { mutableStateOf(true) }
     Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
-        Checkbox(agree, { agree = it })
-        Checkbox(!agree, { agree = !it })
-        Checkbox(true, {}, enabled = false)
-        Text("Accept terms", style = PixaTheme.typography.bodySmall)
+        PixaCheckbox(agree, { agree = it })
+        PixaCheckbox(!agree, { agree = !it })
+        PixaCheckbox(true, {}, enabled = false)
+        PixaText("Accept terms", style = PixaTheme.typography.bodySmall)
     }
     Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
         listOf("Free", "Pro").forEachIndexed { index, label ->
-            RadioButton(selected = plan == index, onClick = { plan = index })
-            Text(label, style = PixaTheme.typography.bodySmall)
+            PixaRadioButton(selected = plan == index, onClick = { plan = index })
+            PixaText(label, style = PixaTheme.typography.bodySmall)
         }
-        RadioButton(selected = true, onClick = {}, enabled = false)
+        PixaRadioButton(selected = true, onClick = {}, enabled = false)
     }
     Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
-        Switch(wifi, { wifi = it })
-        Switch(!wifi, { wifi = !it })
-        Switch(true, {}, enabled = false)
-        Text("Wi-Fi", style = PixaTheme.typography.bodySmall)
+        PixaSwitch(wifi, { wifi = it })
+        PixaSwitch(!wifi, { wifi = !it })
+        PixaSwitch(true, {}, enabled = false)
+        PixaText("Wi-Fi", style = PixaTheme.typography.bodySmall)
     }
 
-    Text("Badge", style = PixaTheme.typography.h3)
+    PixaText("Badge", style = PixaTheme.typography.h3)
     Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
-        BadgeVariant.entries.forEach { variant -> Badge(variant = variant) { Text(variant.name) } }
+        PixaBadgeVariant.entries.forEach { variant -> PixaBadge(variant = variant) { PixaText(variant.name) } }
     }
     Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
-        Badge { Icon(PixaIcons.Check, contentDescription = null, size = 12.dp); Text("Done") }
-        Badge(variant = BadgeVariant.Destructive) { Text("3") }
-    }
-
-    Text("Avatar", style = PixaTheme.typography.h3)
-    Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
-        Avatar(size = AvatarSize.Sm) { Text("A") }
-        Avatar { Text("AO") }
-        Avatar(size = AvatarSize.Lg) { Text("PX") }
-        Avatar { Icon(PixaIcons.Plus, contentDescription = "Add person") }
+        PixaBadge { PixaIcon(PixaIcons.Check, contentDescription = null, size = 12.dp); PixaText("Done") }
+        PixaBadge(variant = PixaBadgeVariant.Destructive) { PixaText("3") }
     }
 
-    Text("Progress", style = PixaTheme.typography.h3)
-    Progress(0.15f)
-    Progress(0.65f)
+    PixaText("Avatar", style = PixaTheme.typography.h3)
     Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
-        CircularProgress(0.75f) { Text("75%") }
-        CircularProgress(0.3f, size = 40.dp, strokeWidth = 4.dp)
-        CircularProgress(1f) { Icon(PixaIcons.Check, contentDescription = null, size = 16.dp) }
+        PixaAvatar(size = PixaAvatarSize.Sm) { PixaText("A") }
+        PixaAvatar { PixaText("AO") }
+        PixaAvatar(size = PixaAvatarSize.Lg) { PixaText("PX") }
+        PixaAvatar { PixaIcon(PixaIcons.Plus, contentDescription = "Add person") }
     }
 
-    Text("Chip", style = PixaTheme.typography.h3)
+    PixaText("Progress", style = PixaTheme.typography.h3)
+    PixaProgress(0.15f)
+    PixaProgress(0.65f)
+    Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
+        PixaCircularProgress(0.75f) { PixaText("75%") }
+        PixaCircularProgress(0.3f, size = 40.dp, strokeWidth = 4.dp)
+        PixaCircularProgress(1f) { PixaIcon(PixaIcons.Check, contentDescription = null, size = 16.dp) }
+    }
+
+    PixaText("Chip", style = PixaTheme.typography.h3)
     var filter by remember { mutableIntStateOf(0) }
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         listOf("All", "Strength", "Cardio").forEachIndexed { index, label ->
-            Chip(selected = filter == index, onClick = { filter = index }) { Text(label) }
+            PixaChip(selected = filter == index, onClick = { filter = index }) { PixaText(label) }
         }
-        Chip(selected = false, onClick = {}, enabled = false) { Text("Yoga") }
+        PixaChip(selected = false, onClick = {}, enabled = false) { PixaText("Yoga") }
     }
 
-    Text("Skeleton", style = PixaTheme.typography.h3)
+    PixaText("Skeleton", style = PixaTheme.typography.h3)
     Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {
-        Skeleton(Modifier.size(40.dp), shape = PixaTheme.shapes.full)
+        PixaSkeleton(Modifier.size(40.dp), shape = PixaTheme.shapes.full)
         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Skeleton(Modifier.width(200.dp).height(14.dp))
-            Skeleton(Modifier.width(140.dp).height(14.dp))
+            PixaSkeleton(Modifier.width(200.dp).height(14.dp))
+            PixaSkeleton(Modifier.width(140.dp).height(14.dp))
         }
     }
 
-    Text("Separator", style = PixaTheme.typography.h3)
-    Text("Above", style = PixaTheme.typography.bodySmall)
-    Separator()
-    Text("Below", style = PixaTheme.typography.bodySmall)
+    PixaText("Separator", style = PixaTheme.typography.h3)
+    PixaText("Above", style = PixaTheme.typography.bodySmall)
+    PixaSeparator()
+    PixaText("Below", style = PixaTheme.typography.bodySmall)
 }

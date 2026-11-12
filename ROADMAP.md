@@ -23,20 +23,25 @@ The test for every change: a new style must never require editing a component.
 
 - [x] **0. Scaffold** - modules, version catalog, showcase on Android and desktop, snapshot test.
 - [ ] **0b. Loose ends** - `iosApp` Xcode project (needs Xcode installed), CI workflow, `legacy` branch on GitHub.
-- [x] **1. Foundation** - `Surface`, `Text`, `Icon` plus the built-in `PixaIcons`, `Button`, `Card`, the built-in styles, keyboard focus ring, motion and spacing tokens, separate control and container shadows, `withFontFamily`.
+- [x] **1. Foundation** - `PixaSurface`, `PixaText`, `PixaIcon` plus the built-in `PixaIcons`, `PixaButton`, `PixaCard`, the built-in styles, keyboard focus ring, motion and spacing tokens, separate control and container shadows, `withFontFamily`.
 - [ ] **1b. Open questions from phase 1** - icon stroke weight as a style knob (Cartoon wants thicker icons), bundling a default font per style, how the focus ring should sit over a hard shadow.
-- [x] **2. Core controls** - Input, Textarea, Checkbox, Switch, RadioButton, Badge, Separator, Avatar, Skeleton, Progress. `Surface` gained toggleable and selectable variants.
+- [x] **2. Core controls** - Input, Textarea, Checkbox, Switch, RadioButton, Badge, Separator, Avatar, Skeleton, Progress. `PixaSurface` gained toggleable and selectable variants.
 - [ ] **2b. Open questions from phase 2** - minimum touch target for the 20dp checkbox and radio, a labelled row (`Field`/`Label`) so the text is tappable too, error state for inputs, whether small toggles should take the control shadow.
 - [x] **3. Overlays** - Dialog, Sheet, Popover, Menu with MenuItem, Tooltip, Toast (state plus host). Built on two internal primitives: `Modal` (platform dialog window) and `AnchoredPopup` (platform popup with flip and edge clamping).
 - [ ] **3b. Open questions from phase 3** - check every overlay on a real Android device and on iOS (scrim, insets, keyboard, shadow margin of popups), drag-to-dismiss for Sheet, style-controlled scrim color, swipe-to-dismiss and an action slot for Toast, keyboard arrow navigation in Menu.
 - [x] **4. Navigation and composites** - Tabs with Tab, TopBar, BottomBar with BottomBarItem, AccordionItem, Slider, Select (a field that opens a Menu), Stepper.
 - [ ] **4b. Open questions from phase 4** - sliding selection indicator for Tabs, keyboard and right-to-left support for Slider, step labels for Stepper, Select menu as wide as its field.
-- [x] **4c. App basics** - `Card` takes a `color` and `contentColor` for colored tiles, `Chip`, `CircularProgress`. Neon and the glow shadow removed.
-- [ ] **4d. Open questions from 4c** - `CircularProgress` has no outline in Cartoon (it is drawn as arcs, not a `Surface`).
-- [ ] **5. Optional modules** - each one built only when an app needs it: `pixacompose-datetime`, `pixacompose-charts`, `pixacompose-image`, `pixacompose-shapes` (the 1.x custom shape geometry).
+- [x] **4c. App basics** - `PixaCard` takes a `color` and `contentColor` for colored tiles, `PixaChip`, `PixaCircularProgress`. Neon and the glow shadow removed.
+- [ ] **4d. Open questions from 4c** - `PixaCircularProgress` has no outline in Cartoon (it is drawn as arcs, not a `PixaSurface`).
+- [ ] **5. Optional modules** - each one its own module, built one at a time and only when an app needs it. Third-party libraries are allowed here if they have no Material dependency and no look of their own.
+  - [x] `pixacompose-image`: `PixaImage` on Coil 3.4.0, with placeholder and error slots. Coil is pinned there because newer releases need Compose 1.11+ and Kotlin 2.4. Not checked: Android and iOS network loading on a device, SVG and GIF (need extra Coil artifacts).
+  - [x] `pixacompose-charts`: `PixaLineChart` and `PixaBarChart`, one series each, on Vico 2.4.3 (`com.patrykandpatrick.vico:multiplatform`, no Material). The wrapper is one file that only passes theme colors, fonts and shapes to Vico; the 1.x wrapper was 983 lines, do not repeat that. Not done: several series, markers on touch, scroll and zoom, pie or donut. In Cartoon the guidelines take the ink border color and look heavy.
+  - `pixacompose-datetime`: `kotlinx-datetime` for the date maths; calendar and pickers on our own components.
+  - `pixacompose-shapes`: the 1.x custom shape geometry.
+- [x] **5b. Naming** - every public component, type and composition local is prefixed `Pixa`, files included.
 - [ ] **6. Polish** - pixel-diff snapshot tests, docs site, 2.0.0 release.
 
-Waiting for an app to ask: gradient and translucent fills on `Surface`, a floating bottom bar,
+Waiting for an app to ask: gradient and translucent fills on `PixaSurface`, a floating bottom bar,
 a tile color palette in `PixaColors`.
 
 ## Carried over from 1.x

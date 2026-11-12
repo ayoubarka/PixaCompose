@@ -32,6 +32,8 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(project(":pixacompose"))
+            implementation(project(":pixacompose-image"))
+            implementation(project(":pixacompose-charts"))
         }
         jvmMain.dependencies {
             implementation(compose.desktop.currentOs)

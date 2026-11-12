@@ -16,7 +16,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 /**
- * Full-screen modal layer shared by Dialog and Sheet. The platform supplies the scrim, focus
+ * Full-screen modal layer shared by Dialog and PixaSheet. The platform supplies the scrim, focus
  * trapping and back/escape handling; this adds placement, tap-outside dismissal and enter/exit
  * animation. It stays composed after [visible] turns false until the exit animation ends.
  */

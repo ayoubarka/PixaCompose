@@ -36,8 +36,8 @@ internal enum class PopupAlign { Start, Center }
 private val ShadowRoom = 32.dp
 
 /**
- * A popup attached to the layout it is declared in (its anchor). Shared by Popover, Menu and
- * Tooltip. Flips to the other side when there is no room and stays inside the window.
+ * A popup attached to the layout it is declared in (its anchor). Shared by PixaPopover, PixaMenu and
+ * PixaTooltip. Flips to the other side when there is no room and stays inside the window.
  *
  * @param onDismissRequest null makes the popup passive: it takes no focus and no outside taps.
  */

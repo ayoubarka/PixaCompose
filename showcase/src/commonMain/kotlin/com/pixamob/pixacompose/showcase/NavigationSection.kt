@@ -13,64 +13,64 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.components.AccordionItem
-import com.pixamob.pixacompose.components.BottomBar
-import com.pixamob.pixacompose.components.BottomBarItem
-import com.pixamob.pixacompose.components.Button
-import com.pixamob.pixacompose.components.ButtonSize
-import com.pixamob.pixacompose.components.ButtonVariant
-import com.pixamob.pixacompose.components.MenuItem
-import com.pixamob.pixacompose.components.Select
-import com.pixamob.pixacompose.components.Slider
-import com.pixamob.pixacompose.components.Stepper
-import com.pixamob.pixacompose.components.Tab
-import com.pixamob.pixacompose.components.Tabs
-import com.pixamob.pixacompose.components.TopBar
-import com.pixamob.pixacompose.primitives.Icon
+import com.pixamob.pixacompose.components.PixaAccordionItem
+import com.pixamob.pixacompose.components.PixaBottomBar
+import com.pixamob.pixacompose.components.PixaBottomBarItem
+import com.pixamob.pixacompose.components.PixaButton
+import com.pixamob.pixacompose.components.PixaButtonSize
+import com.pixamob.pixacompose.components.PixaButtonVariant
+import com.pixamob.pixacompose.components.PixaMenuItem
+import com.pixamob.pixacompose.components.PixaSelect
+import com.pixamob.pixacompose.components.PixaSlider
+import com.pixamob.pixacompose.components.PixaStepper
+import com.pixamob.pixacompose.components.PixaTab
+import com.pixamob.pixacompose.components.PixaTabs
+import com.pixamob.pixacompose.components.PixaTopBar
+import com.pixamob.pixacompose.primitives.PixaIcon
 import com.pixamob.pixacompose.primitives.PixaIcons
-import com.pixamob.pixacompose.primitives.Text
+import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.theme.PixaTheme
 
-/** @param selectInitiallyOpen lets a snapshot test start with the Select's menu showing. */
+/** @param selectInitiallyOpen lets a snapshot test start with the PixaSelect's menu showing. */
 @Composable
 fun NavigationSection(selectInitiallyOpen: Boolean = false) {
-    Text("Tabs", style = PixaTheme.typography.h3)
+    PixaText("Tabs", style = PixaTheme.typography.h3)
     var tab by remember { mutableIntStateOf(0) }
-    Tabs(Modifier.fillMaxWidth()) {
+    PixaTabs(Modifier.fillMaxWidth()) {
         listOf("Account", "Password", "Team").forEachIndexed { index, label ->
-            Tab(selected = tab == index, onClick = { tab = index }, modifier = Modifier.weight(1f)) { Text(label) }
+            PixaTab(selected = tab == index, onClick = { tab = index }, modifier = Modifier.weight(1f)) { PixaText(label) }
         }
     }
 
-    Text("Select", style = PixaTheme.typography.h3)
+    PixaText("Select", style = PixaTheme.typography.h3)
     val fruits = listOf("Apple", "Banana", "Cherry")
     var fruit by remember { mutableStateOf<String?>(null) }
     var selectOpen by remember { mutableStateOf(selectInitiallyOpen) }
-    Select(
+    PixaSelect(
         expanded = selectOpen,
         onExpandedChange = { selectOpen = it },
         modifier = Modifier.fillMaxWidth(),
-        value = { Text(fruit ?: "Pick a fruit", color = if (fruit == null) PixaTheme.colors.mutedForeground else PixaTheme.colors.foreground) },
+        value = { PixaText(fruit ?: "Pick a fruit", color = if (fruit == null) PixaTheme.colors.mutedForeground else PixaTheme.colors.foreground) },
     ) {
         fruits.forEach { option ->
-            MenuItem(onClick = { fruit = option; selectOpen = false }) { Text(option) }
+            PixaMenuItem(onClick = { fruit = option; selectOpen = false }) { PixaText(option) }
         }
     }
 
-    Text("Slider", style = PixaTheme.typography.h3)
+    PixaText("Slider", style = PixaTheme.typography.h3)
     var volume by remember { mutableFloatStateOf(0.4f) }
-    Slider(volume, { volume = it })
-    Slider(0.7f, {}, enabled = false)
+    PixaSlider(volume, { volume = it })
+    PixaSlider(0.7f, {}, enabled = false)
 
-    Text("Stepper", style = PixaTheme.typography.h3)
+    PixaText("Stepper", style = PixaTheme.typography.h3)
     var step by remember { mutableIntStateOf(1) }
-    Stepper(steps = 4, current = step)
+    PixaStepper(steps = 4, current = step)
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        Button(onClick = { if (step > 0) step-- }, variant = ButtonVariant.Outline, size = ButtonSize.Sm) { Text("Back") }
-        Button(onClick = { if (step < 4) step++ }, size = ButtonSize.Sm) { Text("Next") }
+        PixaButton(onClick = { if (step > 0) step-- }, variant = PixaButtonVariant.Outline, size = PixaButtonSize.Sm) { PixaText("Back") }
+        PixaButton(onClick = { if (step < 4) step++ }, size = PixaButtonSize.Sm) { PixaText("Next") }
     }
 
-    Text("Accordion", style = PixaTheme.typography.h3)
+    PixaText("Accordion", style = PixaTheme.typography.h3)
     var openItem by remember { mutableIntStateOf(0) }
     Column {
         listOf(
@@ -78,38 +78,38 @@ fun NavigationSection(selectInitiallyOpen: Boolean = false) {
             "Is it animated?" to "Yes, with the springs the style defines.",
             "Is it accessible?" to "Roles and states are set; touch targets are still open.",
         ).forEachIndexed { index, (question, answer) ->
-            AccordionItem(
+            PixaAccordionItem(
                 expanded = openItem == index,
                 onExpandedChange = { openItem = if (it) index else -1 },
-                title = { Text(question) },
-            ) { Text(answer) }
+                title = { PixaText(question) },
+            ) { PixaText(answer) }
         }
     }
 
-    Text("Top bar", style = PixaTheme.typography.h3)
-    TopBar(
+    PixaText("Top bar", style = PixaTheme.typography.h3)
+    PixaTopBar(
         navigation = {
-            Button(onClick = {}, variant = ButtonVariant.Ghost, size = ButtonSize.Sm) {
-                Icon(PixaIcons.ChevronLeft, contentDescription = "Back")
+            PixaButton(onClick = {}, variant = PixaButtonVariant.Ghost, size = PixaButtonSize.Sm) {
+                PixaIcon(PixaIcons.ChevronLeft, contentDescription = "Back")
             }
         },
         actions = {
-            Button(onClick = {}, variant = ButtonVariant.Ghost, size = ButtonSize.Sm) {
-                Icon(PixaIcons.Plus, contentDescription = "Add")
+            PixaButton(onClick = {}, variant = PixaButtonVariant.Ghost, size = PixaButtonSize.Sm) {
+                PixaIcon(PixaIcons.Plus, contentDescription = "Add")
             }
         },
-    ) { Text("Projects") }
+    ) { PixaText("Projects") }
 
-    Text("Bottom bar", style = PixaTheme.typography.h3)
+    PixaText("Bottom bar", style = PixaTheme.typography.h3)
     var destination by remember { mutableIntStateOf(0) }
-    BottomBar {
+    PixaBottomBar {
         listOf("Home" to PixaIcons.Check, "Add" to PixaIcons.Plus, "More" to PixaIcons.ChevronDown)
             .forEachIndexed { index, (label, icon) ->
-                BottomBarItem(
+                PixaBottomBarItem(
                     selected = destination == index,
                     onClick = { destination = index },
-                    label = { Text(label) },
-                ) { Icon(icon, contentDescription = null) }
+                    label = { PixaText(label) },
+                ) { PixaIcon(icon, contentDescription = null) }
             }
     }
 }

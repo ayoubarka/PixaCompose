@@ -49,7 +49,7 @@ private fun strokeIcon(name: String, block: PathBuilder.() -> Unit): ImageVector
         viewportHeight = 24f,
     ).path(
         fill = null,
-        // The color is a placeholder: Icon replaces it with the tint.
+        // The color is a placeholder: PixaIcon replaces it with the tint.
         stroke = SolidColor(Color.Black),
         strokeLineWidth = 2f,
         strokeLineCap = StrokeCap.Round,

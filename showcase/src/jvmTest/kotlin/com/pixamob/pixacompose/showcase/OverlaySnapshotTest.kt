@@ -14,11 +14,11 @@ import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.use
-import com.pixamob.pixacompose.components.Button
-import com.pixamob.pixacompose.components.ToastHost
-import com.pixamob.pixacompose.components.Tooltip
-import com.pixamob.pixacompose.components.rememberToastState
-import com.pixamob.pixacompose.primitives.Text
+import com.pixamob.pixacompose.components.PixaButton
+import com.pixamob.pixacompose.components.PixaToastHost
+import com.pixamob.pixacompose.components.PixaTooltip
+import com.pixamob.pixacompose.components.rememberPixaToastState
+import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.styles.PixaStyles
 import com.pixamob.pixacompose.theme.PixaTheme
 import org.jetbrains.skia.EncodedImageFormat
@@ -39,12 +39,12 @@ class OverlaySnapshotTest {
             for (demo in OverlayDemo.entries) {
                 ImageComposeScene(Width, Height, Density(2f)) {
                     PixaTheme(style, darkTheme = false) {
-                        val toasts = rememberToastState()
+                        val toasts = rememberPixaToastState()
                         Box(Modifier.fillMaxSize().background(PixaTheme.colors.background)) {
                             Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
                                 OverlaysSection(toasts, initiallyOpen = demo)
                             }
-                            ToastHost(toasts, Modifier.align(Alignment.BottomCenter))
+                            PixaToastHost(toasts, Modifier.align(Alignment.BottomCenter))
                         }
                     }
                 }.use { save(it, "${style.name.lowercase()}-${demo.name.lowercase()}") }
@@ -72,8 +72,8 @@ class OverlaySnapshotTest {
             ImageComposeScene(Width, 400, Density(2f)) {
                 PixaTheme(style, darkTheme = false) {
                     Box(Modifier.fillMaxSize().background(PixaTheme.colors.background), Alignment.Center) {
-                        Tooltip(tooltip = { Text("Add a new item") }) {
-                            Button(onClick = {}) { Text("Hover me") }
+                        PixaTooltip(tooltip = { PixaText("Add a new item") }) {
+                            PixaButton(onClick = {}) { PixaText("Hover me") }
                         }
                     }
                 }

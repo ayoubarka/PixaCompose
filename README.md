@@ -6,7 +6,7 @@ Style-agnostic UI components for Compose Multiplatform (Android, iOS, desktop), 
 
 ```kotlin
 PixaTheme(style = PixaStyles.Cartoon) {   // Minimal, Cartoon, or your own PixaStyle
-    Button(onClick = { }) { Text("Save") }
+    PixaButton(onClick = { }) { PixaText("Save") }
 }
 ```
 
@@ -36,6 +36,8 @@ through `typography.copy(...)`.
 | Module | Purpose |
 |---|---|
 | `:pixacompose` | The published library (`com.pixamob:pixacompose`) |
+| `:pixacompose-image` | Optional. `PixaImage`, loaded with Coil (`com.pixamob:pixacompose-image`) |
+| `:pixacompose-charts` | Optional. `PixaLineChart` and `PixaBarChart`, drawn with Vico (`com.pixamob:pixacompose-charts`) |
 | `:showcase` | Shared showcase UI, desktop entry point, snapshot test |
 | `:androidApp` | Thin Android wrapper around `:showcase` |
 
