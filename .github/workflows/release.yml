@@ -17,9 +17,31 @@ jobs:
           java-version: 17
       - uses: gradle/actions/setup-gradle@v4
       - name: Publish and release to Maven Central
-        run: ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey: ${{ secrets.GPG_PRIVATE_KEY }}
           ORG_GRADLE_PROJECT_signingInMemoryKeyPassword: ${{ secrets.GPG_PASSPHRASE }}
+          GPG_PRIVATE_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+        run: |
+          # The stored key may be armored text, armored text with literal \n, or base64.
+          # Import whichever it is and hand Gradle a clean armored export. The key only ever
+          # lives in this step's shell, never in the job environment or the log.
+          set -euo pipefail
+          key_file="$(mktemp)"
+          if printf '%s' "$GPG_PRIVATE_KEY" | grep -q 'BEGIN PGP PRIVATE KEY BLOCK'; then
+            if [ "$(printf '%s' "$GPG_PRIVATE_KEY" | wc -l)" -lt 3 ]; then
+              echo "Key format: armored, single line"; printf '%b\n' "$GPG_PRIVATE_KEY" > "$key_file"
+            else
+              echo "Key format: armored"; printf '%s\n' "$GPG_PRIVATE_KEY" > "$key_file"
+            fi
+          else
+            echo "Key format: base64"; printf '%s' "$GPG_PRIVATE_KEY" | tr -d ' \n\r' | base64 --decode > "$key_file"
+          fi
+          gpg --batch --quiet --import "$key_file"
+          rm -f "$key_file"
+          echo "Secret keys imported: $(gpg --batch --list-secret-keys --with-colons | grep -c '^sec')"
+          echo "Signing-capable entries: $(gpg --batch --list-secret-keys --with-colons | grep -E '^(sec|ssb)' | cut -d: -f12 | grep -c s || true)"
+          ORG_GRADLE_PROJECT_signingInMemoryKey="$(gpg --batch --pinentry-mode loopback --passphrase "$GPG_PASSPHRASE" --armor --export-secret-keys)"
+          export ORG_GRADLE_PROJECT_signingInMemoryKey
+          ./gradlew publishAndReleaseToMavenCentral --no-configuration-cache
