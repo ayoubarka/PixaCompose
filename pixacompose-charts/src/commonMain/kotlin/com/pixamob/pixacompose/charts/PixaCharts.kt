@@ -2,6 +2,7 @@ package com.pixamob.pixacompose.charts
 
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
@@ -25,11 +26,18 @@ import com.patrykandpatrick.vico.multiplatform.cartesian.layer.LineCartesianLaye
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberColumnCartesianLayer
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberLine
 import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.multiplatform.cartesian.marker.CartesianMarkerController
+import com.patrykandpatrick.vico.multiplatform.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.multiplatform.cartesian.marker.rememberDefaultCartesianMarker
 import com.patrykandpatrick.vico.multiplatform.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.multiplatform.cartesian.rememberVicoScrollState
 import com.patrykandpatrick.vico.multiplatform.cartesian.rememberVicoZoomState
 import com.patrykandpatrick.vico.multiplatform.common.Fill
+import com.patrykandpatrick.vico.multiplatform.common.Insets
+import com.patrykandpatrick.vico.multiplatform.common.component.ShapeComponent
 import com.patrykandpatrick.vico.multiplatform.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.multiplatform.common.component.rememberShapeComponent
+import com.patrykandpatrick.vico.multiplatform.common.component.rememberTextComponent
 import com.pixamob.pixacompose.theme.PixaTheme
 
 private val DefaultChartHeight = 180.dp
@@ -94,8 +102,34 @@ private fun Chart(
     val bottomFormatter = remember(labels) {
         CartesianValueFormatter { _, value, _ -> labels.getOrNull(value.toInt()) ?: value.toInt().toString() }
     }
+    val colors = PixaTheme.colors
+    // Tap a point to show its value; tap again to hide it.
+    val marker = rememberDefaultCartesianMarker(
+        label = rememberTextComponent(
+            style = PixaTheme.typography.caption.copy(color = colors.background),
+            // Lifts the label clear of the point's dot.
+            margins = Insets(bottom = PixaTheme.spacing.sm),
+            padding = Insets(PixaTheme.spacing.sm, PixaTheme.spacing.xs),
+            background = rememberShapeComponent(fill = Fill(colors.foreground), shape = PixaTheme.shapes.sm),
+        ),
+        // Plain text: by default Vico tints the value with the series color.
+        valueFormatter = remember { DefaultCartesianMarker.ValueFormatter.default(colorCode = false) },
+        labelPosition = DefaultCartesianMarker.LabelPosition.AbovePoint,
+        indicator = { _ ->
+            ShapeComponent(
+                fill = Fill(colors.background),
+                shape = CircleShape,
+                strokeFill = Fill(colors.primary),
+                strokeThickness = 2.dp,
+            )
+        },
+        indicatorSize = 10.dp,
+        guideline = rememberAxisGuidelineComponent(fill = Fill(colors.mutedForeground)),
+    )
     val chart = rememberCartesianChart(
         layer,
+        marker = marker,
+        markerController = CartesianMarkerController.rememberToggleOnTap(),
         startAxis = VerticalAxis.rememberStart(line = null, label = label, tick = null, guideline = guideline),
         bottomAxis = HorizontalAxis.rememberBottom(
             line = null, label = label, tick = null, guideline = null, valueFormatter = bottomFormatter,

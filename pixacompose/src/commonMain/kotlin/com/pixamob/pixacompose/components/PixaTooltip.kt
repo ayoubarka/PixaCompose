@@ -76,17 +76,24 @@ public fun PixaTooltip(
     ) {
         content()
         AnchoredPopup(hoverShown || touchShown, onDismissRequest = null, PopupSide.Top, PopupAlign.Center) {
-            val colors = PixaTheme.colors
-            PixaSurface(
-                color = colors.foreground,
-                contentColor = colors.background,
-                shape = PixaTheme.shapes.sm,
-            ) {
-                ProvideContentStyle(colors.background, PixaTheme.typography.caption) {
-                    Box(Modifier.padding(horizontal = PixaTheme.spacing.sm, vertical = PixaTheme.spacing.xs)) {
-                        tooltip()
-                    }
-                }
+            TooltipBubble(content = tooltip)
+        }
+    }
+}
+
+/** The small inverted label used by [PixaTooltip] and by the value bubble of [PixaSlider]. */
+@Composable
+internal fun TooltipBubble(modifier: Modifier = Modifier, content: @Composable () -> Unit) {
+    val colors = PixaTheme.colors
+    PixaSurface(
+        modifier = modifier,
+        color = colors.foreground,
+        contentColor = colors.background,
+        shape = PixaTheme.shapes.sm,
+    ) {
+        ProvideContentStyle(colors.background, PixaTheme.typography.caption) {
+            Box(Modifier.padding(horizontal = PixaTheme.spacing.sm, vertical = PixaTheme.spacing.xs)) {
+                content()
             }
         }
     }

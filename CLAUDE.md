@@ -41,7 +41,7 @@ androidApp/       thin Android wrapper
 ## Verify
 
 ```bash
-./gradlew :showcase:jvmTest            # renders to showcase/build/snapshots/ (pages, overlays, image, brand)
+./gradlew :showcase:jvmTest            # renders to showcase/build/snapshots/ (pages, overlays, interaction, image, brand)
 ./gradlew :androidApp:assembleDebug
 ```
 

@@ -44,10 +44,12 @@ public fun PixaInput(
     visualTransformation: VisualTransformation = VisualTransformation.None,
     leading: (@Composable () -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
+    /** Draws the outline in the destructive color. Defaults to true inside a [PixaField] with an error. */
+    isError: Boolean = LocalFieldInvalid.current,
 ) {
     TextFieldImpl(
         value, onValueChange, modifier, enabled, readOnly, placeholder, keyboardOptions, keyboardActions,
-        visualTransformation, singleLine = true, minLines = 1, maxLines = 1, leading, trailing,
+        visualTransformation, singleLine = true, minLines = 1, maxLines = 1, leading, trailing, isError,
     )
 }
 
@@ -64,10 +66,11 @@ public fun PixaTextarea(
     maxLines: Int = 8,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     keyboardActions: KeyboardActions = KeyboardActions.Default,
+    isError: Boolean = LocalFieldInvalid.current,
 ) {
     TextFieldImpl(
         value, onValueChange, modifier, enabled, readOnly, placeholder, keyboardOptions, keyboardActions,
-        VisualTransformation.None, singleLine = false, minLines = minLines, maxLines = maxLines, null, null,
+        VisualTransformation.None, singleLine = false, minLines = minLines, maxLines = maxLines, null, null, isError,
     )
 }
 
@@ -87,6 +90,7 @@ private fun TextFieldImpl(
     maxLines: Int,
     leading: (@Composable () -> Unit)?,
     trailing: (@Composable () -> Unit)?,
+    isError: Boolean,
 ) {
     val colors = PixaTheme.colors
     val source = remember { MutableInteractionSource() }
@@ -116,7 +120,7 @@ private fun TextFieldImpl(
                 color = colors.background,
                 contentColor = colors.mutedForeground,
                 shape = PixaTheme.shapes.md,
-                border = outlinedBorder(colors.input),
+                border = outlinedBorder(if (isError) colors.destructive else colors.input),
                 shadow = if (enabled) PixaTheme.decoration.controlShadow else PixaShadow.None,
                 focused = focused,
                 contentAlignment = if (singleLine) Alignment.CenterStart else Alignment.TopStart,

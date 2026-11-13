@@ -59,7 +59,7 @@ fun NavigationSection(selectInitiallyOpen: Boolean = false) {
 
     PixaText("Slider", style = PixaTheme.typography.h3)
     var volume by remember { mutableFloatStateOf(0.4f) }
-    PixaSlider(volume, { volume = it })
+    PixaSlider(volume, { volume = it }, valueLabel = { PixaText("${(it * 100).toInt()}%") })
     PixaSlider(0.7f, {}, enabled = false)
 
     PixaText("Stepper", style = PixaTheme.typography.h3)

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -41,9 +42,13 @@ fun ShowcaseApp(
     initialDark: Boolean = false,
     /** Lets a snapshot test put keyboard focus on the card's button to show the focus ring. */
     focusDemo: FocusRequester = remember { FocusRequester() },
+    /** Tells the host app which theme is showing, so it can match the system bar icons. */
+    onDarkChange: (Boolean) -> Unit = {},
 ) {
     var style by remember { mutableStateOf(initialStyle) }
     var dark by remember { mutableStateOf(initialDark) }
+
+    LaunchedEffect(dark) { onDarkChange(dark) }
 
     val toasts = rememberPixaToastState()
     PixaTheme(style = style, darkTheme = dark) {
@@ -139,6 +144,8 @@ fun ShowcaseApp(
             OverlaysSection(toasts)
 
             ControlsSection()
+
+            FormsSection()
 
             ImageSection()
 
