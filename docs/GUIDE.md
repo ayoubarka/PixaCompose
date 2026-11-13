@@ -7,7 +7,8 @@ its look comes from one `PixaStyle` object given to `PixaTheme`.
 ## Add it
 
 Versions the library is built with: Kotlin 2.3.20, Compose Multiplatform 1.10.3, AGP 9.1.0,
-Gradle 9.4.1, JDK 17, minSdk 24. Use the same Kotlin and Compose versions in the app.
+Gradle 9.4.1, JDK 17, minSdk 24. An app may use newer Kotlin and Compose versions than these,
+not older ones.
 
 ```kotlin
 // shared/build.gradle.kts
@@ -20,7 +21,9 @@ commonMain.dependencies {
 ```
 
 To work against the library source instead of a released version, add this to the app's
-`settings.gradle.kts`; Gradle then swaps the coordinates above for the local modules:
+`settings.gradle.kts`; Gradle then swaps the coordinates above for the local modules. This
+only works when the app uses the same Kotlin, Compose and Android Gradle plugin versions as the
+library, so prefer the released version:
 
 ```kotlin
 includeBuild("../PixaCompose")
