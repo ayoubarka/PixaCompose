@@ -50,4 +50,6 @@ through `typography.copy(...)`.
 ./gradlew :showcase:jvmTest             # renders every style to showcase/build/snapshots/
 ```
 
+App developers: start with [docs/GUIDE.md](docs/GUIDE.md), the component list and rules for using the library.
+
 See [ROADMAP.md](ROADMAP.md) for what is planned and [CLAUDE.md](CLAUDE.md) for the rules.
