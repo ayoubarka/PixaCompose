@@ -13,10 +13,10 @@ not older ones.
 ```kotlin
 // shared/build.gradle.kts
 commonMain.dependencies {
-    implementation("com.pixamob:pixacompose:2.0.0-alpha01")           // core, always
-    implementation("com.pixamob:pixacompose-image:2.0.0-alpha01")     // PixaImage (Coil 3.4.0)
-    implementation("com.pixamob:pixacompose-charts:2.0.0-alpha01")    // charts (Vico 2.4.3)
-    implementation("com.pixamob:pixacompose-datetime:2.0.0-alpha01")  // calendar, date picker
+    implementation("com.pixamob:pixacompose:2.0.0-alpha02")           // core, always
+    implementation("com.pixamob:pixacompose-image:2.0.0-alpha02")     // PixaImage (Coil 3.4.0)
+    implementation("com.pixamob:pixacompose-charts:2.0.0-alpha02")    // charts (Vico 2.4.3)
+    implementation("com.pixamob:pixacompose-datetime:2.0.0-alpha02")  // calendar, date picker, time input
 }
 ```
 
@@ -50,7 +50,9 @@ Read tokens through `PixaTheme`: `colors`, `typography`, `shapes`, `spacing`, `d
 
 - Colors: `background`, `foreground`, `card`, `cardForeground`, `primary`, `primaryForeground`,
   `secondary`, `secondaryForeground`, `muted`, `mutedForeground`, `accent`, `accentForeground`,
-  `destructive`, `destructiveForeground`, `border`, `input`, `ring`.
+  `destructive`, `destructiveForeground`, `success`, `successForeground`, `border`, `input`, `ring`.
+  An app that builds its own `PixaColors` (not with `copy`) must set `success` and
+  `successForeground` too.
 - Typography: `h1`, `h2`, `h3`, `body`, `bodySmall`, `label`, `caption`.
 - Shapes: `sm`, `md`, `lg`, `full`.
 - Spacing: `xs` 4, `sm` 8, `md` 12, `lg` 16, `xl` 24, `xxl` 32.
@@ -69,18 +71,22 @@ Trailing lambdas are content slots.
 |---|---|
 | `PixaText(text, style, color, textAlign, maxLines, overflow)` | All text. Takes the surrounding content color by default. |
 | `PixaIcon(imageVector or painter, contentDescription, tint, size)` | Icons. `PixaIcons` has only Check, Close, Plus, Minus and three chevrons; bring the app's own icon set. |
-| `PixaSurface(...)` | Fill, border, shadow, press feedback. Four forms: static, `onClick`, `checked`/`onCheckedChange`, `selected`/`onClick`. Build custom tappable things on this. |
+| `PixaSurface(...)` | Fill, border, shadow, press feedback. Four forms: static, `onClick`, `checked`/`onCheckedChange`, `selected`/`onClick`. Build custom tappable things on this. The `onClick` form takes `loadingColor` to run a busy light around its edge. |
 
 ### Actions and display (`components`)
 
 | Component | Use |
 |---|---|
-| `PixaButton(onClick, variant, size) { }` | Variants: Primary, Secondary, Outline, Ghost, Destructive. Sizes: Sm, Md, Lg. Put an icon in the content for an icon button. |
+| `PixaButton(onClick, variant, size, loading) { }` | Variants: Primary, Secondary, Outline, Ghost, Destructive. Sizes: Sm, Md, Lg. Put an icon in the content for an icon button. `loading = true` runs a light around the edge and ignores taps; the label stays. |
 | `PixaCard(color, contentColor, contentPadding) { }` | Container. Pass a color for colored tiles; a bento layout is cards in rows and columns. |
 | `PixaListItem(onClick, leading, trailing, supporting) { headline }` | One row of a list or settings screen. |
 | `PixaBadge(variant) { }` | Small status label. |
 | `PixaChip(selected, onClick) { }` | Filter or date-strip pill. |
-| `PixaAvatar(size) { }` | Round frame for initials, an icon or `PixaImage`. Sizes: Sm, Md, Lg. |
+| `PixaAvatar(size, color, contentColor, ringColor, ringWidth, selected) { }` | Round frame for initials, an icon or `PixaImage`. Sizes: Sm, Md, Lg, Xl; `Modifier.size` overrides the edge. `ringColor` draws a ring with a gap; `selected = false` thins it to a hairline. |
+| `PixaIconTile(color, size) { icon }` | Icon on a soft square of its own color, for categories and list rows. Sizes: Sm, Md, Lg, Xl. |
+| `PixaActionTile(onClick, color, selected, label = { }) { icon }` | Tappable icon tile with a label under it: quick actions, or a type picker with `selected`. |
+| `PixaFab(onClick, size) { icon }` | Round floating button for the screen's main action; place it with `Modifier.align`. Sizes: Md, Lg. |
+| `PixaEmptyState(picture, message, action) { title }` | Picture, title, message and one action, centered. No background; wrap it in a `PixaCard` to frame it. |
 | `PixaAlert(variant, icon, title) { }` | Inline message. Variants: Default, Destructive. |
 | `PixaSeparator(orientation)` | Divider line. |
 | `PixaSkeleton(shape)` | Loading placeholder; size it with the modifier. |
@@ -100,13 +106,15 @@ Trailing lambdas are content slots.
 | `PixaCodeInput(value, onValueChange, length)` | Verification code boxes, digits only. |
 | `PixaCheckbox(checked, onCheckedChange)` / `PixaSwitch(checked, onCheckedChange)` / `PixaRadioButton(selected, onClick)` | Toggles. They have no label; put a `PixaText` next to them. |
 | `PixaSlider(value, onValueChange, valueRange, valueLabel)` | `valueLabel` shows a bubble above the thumb while touched. |
+| `PixaRatingPicker(value, onValueChange, max, color) { value -> }` | Row of square buttons for 1..`max`. Numbers by default; pass `{ PixaRatingFace(it) }` for faces. |
 | `PixaSelect(expanded, onExpandedChange, value = { }) { PixaMenuItem... }` | Field that opens a menu. |
 
 ### Navigation
 
 | Component | Use |
 |---|---|
-| `PixaTopBar(navigation, actions) { title }` | Screen header. |
+| `PixaTopBar(navigation, actions, size, showDivider) { title }` | Screen header. Sizes: Md (56dp), Lg (72dp). `showDivider = false` drops the line under it. |
+| `PixaAvatarSwitcher(items, selected, onSelect, expanded, onExpandedChange, showLabel, onAdd, addLabel, label = { }) { item, current -> avatar }` | Pill with the current avatar, its label and a chevron; opens a menu with a check on the current item and an optional "add" row. Wraps its content unless the modifier gives a width (`fillMaxWidth()`, `width(240.dp)`); `showLabel = false` keeps only avatar and chevron. |
 | `PixaBottomBar { PixaBottomBarItem(selected, onClick, label) { icon } }` | Bottom tabs. |
 | `PixaTabs { PixaTab(selected, onClick) { } }` | Segmented switch inside a screen. |
 
@@ -119,20 +127,21 @@ All take `visible` and `onDismissRequest` and stay composed so they can animate 
 | Component | Use |
 |---|---|
 | `PixaDialog(visible, onDismissRequest) { }` | Centered modal. |
-| `PixaSheet(visible, onDismissRequest) { }` | Bottom sheet; drag down to dismiss. A scrolling list inside conflicts with the drag. |
+| `PixaSheet(visible, onDismissRequest) { }` | Bottom sheet; drag down to dismiss. Rides up with the keyboard and keeps its content above the gesture bar, so forms work inside it; do not add `imePadding()`. A scrolling list inside conflicts with the drag. |
 | `PixaPopover(visible, onDismissRequest, side) { }` | Panel anchored to the layout it is declared in. |
 | `PixaMenu(visible, onDismissRequest) { PixaMenuItem(onClick) { } }` | Anchored action list. |
 | `PixaTooltip(tooltip = { }) { content }` | Hover on desktop, long press on touch. |
-| `rememberPixaToastState()`, `state.show(title, description, variant)`, `PixaToastHost(state)` | Toasts. Put one host at the root of the app, above the content. |
+| `rememberPixaToastState()`, `state.show(title, description, variant)`, `PixaToastHost(state, position, offset)` | Toasts. Variants: Default, Success, Destructive. Put one host at the root of the app, above the content, aligned to match `position` (Top or Bottom); `offset` keeps them clear of a top bar. |
 
 ### Optional modules
 
 | Component | Module | Use |
 |---|---|---|
 | `PixaImage(model, contentDescription, shape, contentScale, placeholder, error)` | `pixacompose-image` | URL, file or bytes. It has no size of its own; give it one. |
-| `PixaLineChart(values, labels, smooth)` / `PixaBarChart(values, labels, barWidth)` | `pixacompose-charts` | One series. Tap a point to show its value. |
+| `PixaLineChart(values, labels, smooth, fittedYAxis, drawIn)` / `PixaBarChart(values, labels, barWidth)` | `pixacompose-charts` | One series. Touch or slide a finger across to show the value nearest it; the value stays after release, and a tap on the same point hides it. A sideways slide, or a slide after a long press, keeps a scrolling screen still; a drag that starts vertically scrolls it. `fittedYAxis` fits the axis to the values instead of starting at 0; `drawIn` draws the line in from the left. |
 | `PixaCalendar(selected, onSelect, today, firstDayOfWeek, isEnabled, labels)` | `pixacompose-datetime` | One month, single date. Uses `kotlinx.datetime.LocalDate`. |
 | `PixaDatePicker(value, onValueChange, expanded, onExpandedChange, placeholder, format, ...)` | `pixacompose-datetime` | Field that opens the calendar. |
+| `PixaTimeInput(value, onValueChange, use24Hour, isError, labels)` | `pixacompose-datetime` | Hour and minute segments, plus AM/PM when `use24Hour = false`. Uses `kotlinx.datetime.LocalTime`; gives null while a segment is empty. Typing moves to the next segment; arrow keys step a segment. |
 
 ## Rules for app code
 
@@ -156,5 +165,5 @@ That list is what decides which components are added to the library next.
 ## Known limits
 
 - Verified on desktop and one Android phone. iOS is compiled in CI but has not been run on a device.
-- Not in the library: range dates, time picker, multi-series or pie charts, pull to refresh,
+- Not in the library: range dates, category color tokens, a time picker with a dial or wheel, multi-series or pie charts, pull to refresh,
   pager, drawer, search bar, snackbar actions, right-to-left checks.

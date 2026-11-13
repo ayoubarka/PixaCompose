@@ -1,6 +1,12 @@
 package com.pixamob.pixacompose.showcase
 
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import com.pixamob.pixacompose.datetime.PixaTimeInput
+import kotlinx.datetime.LocalTime
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -26,6 +32,20 @@ fun DateSection(pickerInitiallyOpen: Boolean = false) {
     var open by remember { mutableStateOf(pickerInitiallyOpen) }
     PixaDatePicker(due, { due = it }, open, { open = it }, Modifier.fillMaxWidth(), today = Today)
     PixaDatePicker(Today, {}, false, {}, Modifier.fillMaxWidth(), enabled = false)
+
+    PixaText("Time input", style = PixaTheme.typography.h3)
+    var time by remember { mutableStateOf<LocalTime?>(LocalTime(9, 30)) }
+    Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) {
+        PixaTimeInput(time, { time = it })
+        PixaTimeInput(time, { time = it }, use24Hour = false)
+        var empty by remember { mutableStateOf<LocalTime?>(null) }
+        PixaTimeInput(empty, { empty = it })
+    }
+    PixaText(
+        time?.let { "Picked ${it.hour}:${it.minute.toString().padStart(2, '0')}" } ?: "No time",
+        style = PixaTheme.typography.bodySmall,
+        color = PixaTheme.colors.mutedForeground,
+    )
 
     PixaText("Calendar", style = PixaTheme.typography.h3)
     var day by remember { mutableStateOf<LocalDate?>(LocalDate(2026, 11, 18)) }

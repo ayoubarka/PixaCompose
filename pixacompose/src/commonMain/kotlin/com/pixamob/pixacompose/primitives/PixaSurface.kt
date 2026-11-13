@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.drawOutline
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
@@ -66,7 +67,12 @@ public fun PixaSurface(
     }
 }
 
-/** Clickable [PixaSurface]. Press feedback comes from the style's [PressEffect], not a ripple. */
+/**
+ * Clickable [PixaSurface]. Press feedback comes from the style's [PressEffect], not a ripple.
+ *
+ * @param loadingColor when specified, a light in this color runs around the edge, over the
+ * border, to show the control is busy. Pick a color that stands out from the border.
+ */
 @Composable
 public fun PixaSurface(
     onClick: () -> Unit,
@@ -81,6 +87,7 @@ public fun PixaSurface(
     press: PressEffect = PixaTheme.decoration.press,
     interactionSource: MutableInteractionSource? = null,
     contentAlignment: Alignment = Alignment.TopStart,
+    loadingColor: Color = Color.Unspecified,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val source = interactionSource ?: remember { MutableInteractionSource() }
@@ -88,6 +95,7 @@ public fun PixaSurface(
         modifier, enabled, source,
         Modifier.clickable(source, indication = null, enabled = enabled, role = role, onClick = onClick),
         color, contentColor, shape, border, shadow, press, contentAlignment, content,
+        overlay = if (loadingColor.isSpecified) Modifier.loadingBorder(shape, loadingColor) else Modifier,
     )
 }
 
@@ -157,6 +165,7 @@ private fun InteractiveSurface(
     press: PressEffect,
     contentAlignment: Alignment,
     content: @Composable BoxScope.() -> Unit,
+    overlay: Modifier = Modifier,
 ) {
     val pressed by source.collectIsPressedAsState()
     val focused by source.collectIsFocusedAsState()
@@ -168,7 +177,7 @@ private fun InteractiveSurface(
         modifier = modifier
             // Disabled surfaces are flat: the alpha layer clips to bounds, which would cut a shadow.
             .graphicsLayer { alpha = if (enabled) 1f else DisabledAlpha }
-            .surface(color, shape, border, if (enabled) shadow else PixaShadow.None, press, focused) { pressFraction }
+            .surface(color, shape, border, if (enabled) shadow else PixaShadow.None, press, focused, overlay) { pressFraction }
             .then(interaction),
         contentAlignment = contentAlignment,
     ) {
@@ -184,6 +193,8 @@ private fun Modifier.surface(
     shadow: PixaShadow,
     press: PressEffect,
     focused: Boolean,
+    /** Drawn over the fill and the border, and moved by the press effect with them. */
+    overlay: Modifier = Modifier,
     pressFraction: () -> Float,
 ): Modifier {
     val focusRing = PixaTheme.decoration.focusRing
@@ -246,6 +257,7 @@ private fun Modifier.surface(
         .then(pressed)
         .then(shadowed)
         .then(ring)
+        .then(overlay)
         .background(color, shape)
         .then(if (border != null && border.width.value > 0f) Modifier.border(border.width, border.color, shape) else Modifier)
         .clip(shape)

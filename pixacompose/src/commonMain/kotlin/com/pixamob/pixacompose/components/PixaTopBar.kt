@@ -17,10 +17,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.primitives.ProvideContentStyle
 import com.pixamob.pixacompose.primitives.PixaSurface
 import com.pixamob.pixacompose.theme.PixaTheme
+
+/** Height of the bar's content row, below the status bar. Lg suits a larger title. */
+public enum class PixaTopBarSize(internal val height: Dp) { Md(56.dp), Lg(72.dp) }
 
 /**
  * The bar at the top of a screen. Its background extends under the status bar while its
@@ -28,12 +32,16 @@ import com.pixamob.pixacompose.theme.PixaTheme
  *
  * @param navigation leading control, usually a ghost [PixaButton] holding a back icon.
  * @param actions trailing controls.
+ * @param showDivider draws a separator under the bar. Turn it off for a bar that reads as part
+ * of the screen.
  */
 @Composable
 public fun PixaTopBar(
     modifier: Modifier = Modifier,
     navigation: (@Composable () -> Unit)? = null,
     actions: (@Composable RowScope.() -> Unit)? = null,
+    size: PixaTopBarSize = PixaTopBarSize.Md,
+    showDivider: Boolean = true,
     title: @Composable () -> Unit,
 ) {
     val colors = PixaTheme.colors
@@ -50,7 +58,7 @@ public fun PixaTopBar(
             ),
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth().height(56.dp).padding(horizontal = spacing.sm),
+                modifier = Modifier.fillMaxWidth().height(size.height).padding(horizontal = spacing.sm),
                 horizontalArrangement = Arrangement.spacedBy(spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -60,7 +68,7 @@ public fun PixaTopBar(
                 }
                 actions?.invoke(this)
             }
-            PixaSeparator()
+            if (showDivider) PixaSeparator()
         }
     }
 }

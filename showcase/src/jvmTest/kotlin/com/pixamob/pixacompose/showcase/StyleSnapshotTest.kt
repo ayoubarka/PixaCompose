@@ -13,7 +13,7 @@ import kotlin.test.assertTrue
 
 private const val Width = 840
 private const val PageHeight = 1600
-private const val Pages = 8
+private const val Pages = 10
 
 /**
  * Renders the showcase once per built-in style and theme into `showcase/build/snapshots/pages/`,

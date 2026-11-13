@@ -26,6 +26,7 @@ import com.pixamob.pixacompose.components.PixaStepper
 import com.pixamob.pixacompose.components.PixaTab
 import com.pixamob.pixacompose.components.PixaTabs
 import com.pixamob.pixacompose.components.PixaTopBar
+import com.pixamob.pixacompose.components.PixaTopBarSize
 import com.pixamob.pixacompose.primitives.PixaIcon
 import com.pixamob.pixacompose.primitives.PixaIcons
 import com.pixamob.pixacompose.primitives.PixaText
@@ -99,6 +100,15 @@ fun NavigationSection(selectInitiallyOpen: Boolean = false) {
             }
         },
     ) { PixaText("Projects") }
+    PixaTopBar(
+        size = PixaTopBarSize.Lg,
+        showDivider = false,
+        actions = {
+            PixaButton(onClick = {}, variant = PixaButtonVariant.Ghost, size = PixaButtonSize.Sm) {
+                PixaIcon(PixaIcons.Plus, contentDescription = "Add")
+            }
+        },
+    ) { PixaText("Health", style = PixaTheme.typography.h2) }
 
     PixaText("Bottom bar", style = PixaTheme.typography.h3)
     var destination by remember { mutableIntStateOf(0) }

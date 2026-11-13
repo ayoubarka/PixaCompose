@@ -50,3 +50,8 @@ compose.desktop {
         mainClass = "com.pixamob.pixacompose.showcase.MainKt"
     }
 }
+
+// Full-page snapshots are tall images; the default 512 MB test heap is too small for them.
+tasks.withType<Test>().configureEach {
+    maxHeapSize = "2g"
+}

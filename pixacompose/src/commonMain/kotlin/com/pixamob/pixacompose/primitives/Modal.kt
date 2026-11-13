@@ -27,6 +27,8 @@ internal fun Modal(
     contentAlignment: Alignment,
     enter: EnterTransition,
     exit: ExitTransition,
+    /** The window spans the system bars and the keyboard; the content pads itself for them. */
+    edgeToEdge: Boolean = false,
     content: @Composable () -> Unit,
 ) {
     val state = remember { MutableTransitionState(false) }
@@ -35,7 +37,7 @@ internal fun Modal(
 
     Dialog(
         onDismissRequest = onDismissRequest,
-        properties = DialogProperties(usePlatformDefaultWidth = false),
+        properties = if (edgeToEdge) edgeToEdgeDialogProperties() else DialogProperties(usePlatformDefaultWidth = false),
     ) {
         Box(
             modifier = Modifier

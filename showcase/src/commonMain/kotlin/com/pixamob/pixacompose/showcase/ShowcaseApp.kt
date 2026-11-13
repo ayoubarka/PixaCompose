@@ -108,6 +108,16 @@ fun ShowcaseApp(
                 }
             }
 
+            // Loading: a light runs around the edge; tap Save to start and stop it.
+            var saving by remember { mutableStateOf(true) }
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                PixaButton(onClick = {}, loading = saving) { PixaText("Saving") }
+                PixaButton(onClick = {}, variant = PixaButtonVariant.Outline, loading = saving) { PixaText("Uploading") }
+                PixaButton(onClick = { saving = !saving }, variant = PixaButtonVariant.Secondary) {
+                    PixaText(if (saving) "Stop" else "Save")
+                }
+            }
+
             PixaText("Icon", style = PixaTheme.typography.h3)
             Row(horizontalArrangement = Arrangement.spacedBy(16.dp)) {
                 listOf(
@@ -144,6 +154,8 @@ fun ShowcaseApp(
             OverlaysSection(toasts)
 
             ControlsSection()
+
+            TilesSection()
 
             FormsSection()
 

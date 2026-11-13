@@ -23,6 +23,9 @@ public data class PixaColors(
     val accentForeground: Color,
     val destructive: Color,
     val destructiveForeground: Color,
+    /** Confirmation: a saved change, a finished task. */
+    val success: Color,
+    val successForeground: Color,
     /** Outline of surfaces: cards, outlined buttons, separators. */
     val border: Color,
     /** Outline of form controls. */

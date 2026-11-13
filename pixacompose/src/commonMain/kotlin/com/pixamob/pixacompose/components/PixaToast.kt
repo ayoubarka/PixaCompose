@@ -8,6 +8,8 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -20,13 +22,19 @@ import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.pixamob.pixacompose.primitives.PixaIcon
+import com.pixamob.pixacompose.primitives.PixaIcons
 import com.pixamob.pixacompose.primitives.PixaSurface
 import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.theme.PixaTheme
 import kotlinx.coroutines.delay
 
-public enum class PixaToastVariant { Default, Destructive }
+public enum class PixaToastVariant { Default, Success, Destructive }
+
+/** Screen edge the toasts come from. The newest toast is the one nearest that edge. */
+public enum class PixaToastPosition { Top, Bottom }
 
 @Immutable
 public class PixaToastData internal constructor(
@@ -67,27 +75,36 @@ public class PixaToastState {
 public fun rememberPixaToastState(): PixaToastState = remember { PixaToastState() }
 
 /**
- * Draws the toasts of [state], newest at the bottom. Align it yourself in the root layout,
- * for example `Modifier.align(Alignment.BottomCenter)` inside a `Box`.
+ * Draws the toasts of [state]. Align it yourself in the root layout to match [position], for
+ * example `Modifier.align(Alignment.TopCenter)` inside a `Box` for [PixaToastPosition.Top].
+ *
+ * @param offset extra distance from that edge, for example the height of a top bar the toasts
+ * should not cover.
  */
 @Composable
 public fun PixaToastHost(
     state: PixaToastState,
     modifier: Modifier = Modifier,
+    position: PixaToastPosition = PixaToastPosition.Bottom,
+    offset: Dp = 0.dp,
 ) {
+    val top = position == PixaToastPosition.Top
     Column(
-        modifier = modifier.padding(PixaTheme.spacing.lg),
+        modifier = modifier
+            .padding(top = if (top) offset else 0.dp, bottom = if (top) 0.dp else offset)
+            .padding(PixaTheme.spacing.lg),
         verticalArrangement = Arrangement.spacedBy(PixaTheme.spacing.sm),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        state.toasts.forEach { toast ->
-            key(toast.id) { ToastItem(toast, onGone = { state.remove(toast) }) }
+        val toasts = if (top) state.toasts.asReversed() else state.toasts
+        toasts.forEach { toast ->
+            key(toast.id) { ToastItem(toast, fromTop = top, onGone = { state.remove(toast) }) }
         }
     }
 }
 
 @Composable
-private fun ToastItem(toast: PixaToastData, onGone: () -> Unit) {
+private fun ToastItem(toast: PixaToastData, fromTop: Boolean, onGone: () -> Unit) {
     val visibility = remember { MutableTransitionState(false).apply { targetState = true } }
     LaunchedEffect(Unit) {
         delay(toast.durationMillis)
@@ -100,10 +117,11 @@ private fun ToastItem(toast: PixaToastData, onGone: () -> Unit) {
     val colors = PixaTheme.colors
     val spec = PixaTheme.motion.overlay
     val destructive = toast.variant == PixaToastVariant.Destructive
+    val slide = if (fromTop) -1 else 1
     AnimatedVisibility(
         visibleState = visibility,
-        enter = fadeIn(spec.spec()) + slideInVertically(spec.spec()) { it / 2 },
-        exit = fadeOut(spec.spec()) + slideOutVertically(spec.spec()) { it / 2 },
+        enter = fadeIn(spec.spec()) + slideInVertically(spec.spec()) { slide * it / 2 },
+        exit = fadeOut(spec.spec()) + slideOutVertically(spec.spec()) { slide * it / 2 },
     ) {
         PixaSurface(
             modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth(),
@@ -113,17 +131,30 @@ private fun ToastItem(toast: PixaToastData, onGone: () -> Unit) {
             border = if (destructive) filledBorder() else outlinedBorder(),
             shadow = PixaTheme.decoration.containerShadow,
         ) {
-            Column(
+            Row(
                 modifier = Modifier.padding(horizontal = PixaTheme.spacing.lg, vertical = PixaTheme.spacing.md),
-                verticalArrangement = Arrangement.spacedBy(PixaTheme.spacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(PixaTheme.spacing.md),
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                PixaText(toast.title, style = PixaTheme.typography.label)
-                if (toast.description != null) {
-                    PixaText(
-                        toast.description,
-                        style = PixaTheme.typography.bodySmall,
-                        color = if (destructive) colors.destructiveForeground else colors.mutedForeground,
-                    )
+                if (toast.variant == PixaToastVariant.Success) {
+                    PixaSurface(
+                        modifier = Modifier.size(24.dp),
+                        color = colors.success,
+                        contentColor = colors.successForeground,
+                        shape = PixaTheme.shapes.full,
+                        border = filledBorder(),
+                        contentAlignment = Alignment.Center,
+                    ) { PixaIcon(PixaIcons.Check, contentDescription = null, size = 14.dp) }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(PixaTheme.spacing.xs)) {
+                    PixaText(toast.title, style = PixaTheme.typography.label)
+                    if (toast.description != null) {
+                        PixaText(
+                            toast.description,
+                            style = PixaTheme.typography.bodySmall,
+                            color = if (destructive) colors.destructiveForeground else colors.mutedForeground,
+                        )
+                    }
                 }
             }
         }

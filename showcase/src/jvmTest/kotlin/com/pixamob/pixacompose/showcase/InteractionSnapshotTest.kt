@@ -1,7 +1,9 @@
 package com.pixamob.pixacompose.showcase
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
@@ -19,6 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.use
 import com.pixamob.pixacompose.charts.PixaBarChart
 import com.pixamob.pixacompose.charts.PixaLineChart
+import com.pixamob.pixacompose.components.PixaButton
+import com.pixamob.pixacompose.components.PixaButtonVariant
 import com.pixamob.pixacompose.components.PixaSlider
 import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.styles.PixaStyles
@@ -69,6 +73,36 @@ class InteractionSnapshotTest {
                     save(scene, "${style.name.lowercase()}-chart-$name")
                 }
             }
+        }
+    }
+
+    @Test
+    fun lineChartMarkerFollowsDrag() {
+        for (style in PixaStyles.all) {
+            scene(style, height = 480) { PixaLineChart(Steps) }.use { scene ->
+                scene.render()
+                scene.sendPointerEvent(PointerEventType.Press, Offset(200f, 240f))
+                scene.render(nanoTime = 50_000_000)
+                for (x in 220..620 step 40) {
+                    scene.sendPointerEvent(PointerEventType.Move, Offset(x.toFloat(), 240f))
+                    scene.render(nanoTime = 50_000_000L + x * 100_000L)
+                }
+                // Still pressed: the marker shows the point under the finger, not the first one.
+                save(scene, "${style.name.lowercase()}-chart-line-drag")
+            }
+        }
+    }
+
+    @Test
+    fun buttonShowsLoadingLight() {
+        for (style in PixaStyles.all) {
+            scene(style, height = 200) {
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    PixaButton(onClick = {}, loading = true) { PixaText("Saving") }
+                    PixaButton(onClick = {}, variant = PixaButtonVariant.Outline, loading = true) { PixaText("Uploading") }
+                    PixaButton(onClick = {}, variant = PixaButtonVariant.Destructive, loading = true) { PixaText("Deleting") }
+                }
+            }.use { save(it, "${style.name.lowercase()}-button-loading") }
         }
     }
 

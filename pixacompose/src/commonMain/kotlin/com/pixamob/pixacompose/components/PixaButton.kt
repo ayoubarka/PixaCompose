@@ -10,6 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -17,6 +18,7 @@ import com.pixamob.pixacompose.primitives.ProvideContentStyle
 import com.pixamob.pixacompose.primitives.PixaSurface
 import com.pixamob.pixacompose.theme.PixaShadow
 import com.pixamob.pixacompose.theme.PixaTheme
+import kotlin.math.abs
 
 public enum class PixaButtonVariant { Primary, Secondary, Outline, Ghost, Destructive }
 
@@ -35,6 +37,9 @@ public enum class PixaButtonSize(internal val minHeight: Dp, internal val paddin
  *     PixaText("Add")
  * }
  * ```
+ *
+ * @param loading runs a light around the button's edge and ignores taps, for an action that
+ * is in progress. The content stays, so the button keeps its size.
  */
 @Composable
 public fun PixaButton(
@@ -43,6 +48,7 @@ public fun PixaButton(
     variant: PixaButtonVariant = PixaButtonVariant.Primary,
     size: PixaButtonSize = PixaButtonSize.Md,
     enabled: Boolean = true,
+    loading: Boolean = false,
     content: @Composable RowScope.() -> Unit,
 ) {
     val colors = PixaTheme.colors
@@ -64,7 +70,7 @@ public fun PixaButton(
     }
 
     PixaSurface(
-        onClick = onClick,
+        onClick = { if (!loading) onClick() },
         modifier = modifier.defaultMinSize(minHeight = size.minHeight),
         enabled = enabled,
         role = Role.Button,
@@ -74,6 +80,7 @@ public fun PixaButton(
         border = border,
         shadow = if (variant == PixaButtonVariant.Ghost) PixaShadow.None else decoration.controlShadow,
         contentAlignment = Alignment.Center,
+        loadingColor = if (loading) loadingLight(border?.color ?: container, contentColor) else Color.Unspecified,
     ) {
         ProvideContentStyle(contentColor, PixaTheme.typography.label) {
             Row(
@@ -84,4 +91,15 @@ public fun PixaButton(
             )
         }
     }
+}
+
+/**
+ * Color of the loading light: it must stand out from the edge it runs along, the border if
+ * there is one, else the fill. Picks whichever theme color differs most from it in lightness.
+ */
+@Composable
+private fun loadingLight(edgeColor: Color, contentColor: Color): Color {
+    val colors = PixaTheme.colors
+    val edge = edgeColor.takeIf { it.alpha > 0f } ?: colors.background
+    return listOf(contentColor, colors.primary, colors.ring).maxBy { abs(it.luminance() - edge.luminance()) }
 }

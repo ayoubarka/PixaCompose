@@ -11,6 +11,14 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -26,6 +34,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.primitives.Modal
@@ -43,7 +52,12 @@ private val Overhang = 48.dp
 /** Downward speed, in pixels per second, that dismisses the sheet however far it has moved. */
 private const val FlingDismissVelocity = 1800f
 
-/** A modal panel that slides up from the bottom edge. Drive it with [visible], like [PixaDialog]. */
+/**
+ * A modal panel that slides up from the bottom edge. Drive it with [visible], like [PixaDialog].
+ *
+ * The panel keeps its content above the gesture bar and rides up with the keyboard, so a form
+ * inside keeps its fields and buttons in view. Closing it also closes the keyboard.
+ */
 @Composable
 public fun PixaSheet(
     visible: Boolean,
@@ -65,9 +79,14 @@ public fun PixaSheet(
         contentAlignment = Alignment.BottomCenter,
         enter = slideInVertically(spec.spec()) { it },
         exit = slideOutVertically(spec.spec()) { it },
+        edgeToEdge = true,
     ) {
+        val focus = LocalFocusManager.current
+        LaunchedEffect(visible) { if (!visible) focus.clearFocus() }
         PixaSurface(
             modifier = modifier
+                // Never taller than the space under the status bar.
+                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
                 .widthIn(max = 640.dp)
                 .fillMaxWidth()
                 .offset(y = Overhang)
@@ -90,12 +109,14 @@ public fun PixaSheet(
             shadow = PixaTheme.decoration.containerShadow,
         ) {
             Column(
-                modifier = Modifier.padding(
-                    start = spacing.xl,
-                    end = spacing.xl,
-                    top = spacing.md,
-                    bottom = spacing.xl + Overhang,
-                ),
+                modifier = Modifier
+                    // The keyboard's inset includes the gesture bar while it is open.
+                    .windowInsetsPadding(
+                        WindowInsets.ime
+                            .union(WindowInsets.navigationBars)
+                            .union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+                    )
+                    .padding(start = spacing.xl, end = spacing.xl, top = spacing.md, bottom = spacing.xl + Overhang),
                 verticalArrangement = Arrangement.spacedBy(spacing.md),
             ) {
                 Box(
