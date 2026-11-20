@@ -3,6 +3,7 @@ package com.pixamob.pixacompose.components
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.compositeOver
+import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.max
 import com.pixamob.pixacompose.primitives.PixaBorder
@@ -18,6 +19,17 @@ private const val TintFillAlpha = 0.16f
 @Composable
 internal fun tintFill(color: Color): Color =
     color.copy(alpha = color.alpha * TintFillAlpha).compositeOver(PixaTheme.colors.card)
+
+/** How much an accent is darkened when drawn on a light theme. */
+private const val LightThemeDarken = 0.3f
+
+/**
+ * An accent [color] as icon or text on its own [tintFill]. On a light theme it is darkened so
+ * mid-tone accents (yellow, orange, light green) keep at least 3:1 contrast with the fill.
+ */
+@Composable
+internal fun tintContent(color: Color): Color =
+    if (PixaTheme.isDark) color else lerp(color, Color.Black.copy(alpha = color.alpha), LightThemeDarken)
 
 /** Outline of a selected tile: at least 2dp so selection reads even in thin-lined styles. */
 @Composable

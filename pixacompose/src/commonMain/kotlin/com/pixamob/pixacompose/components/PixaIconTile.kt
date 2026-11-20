@@ -22,7 +22,8 @@ public enum class PixaIconTileSize(internal val edge: Dp, internal val iconSize:
 
 /**
  * An icon on a soft square of its own color, to mark a kind of thing: a category, a log type,
- * a list row. The icon is drawn in [color] on a faint fill of it.
+ * a list row. The icon is drawn in [color] on a faint fill of it; on a light theme the icon is
+ * a darker shade of [color] so it stays readable.
  *
  * ```
  * PixaIconTile(color = categoryColor) { PixaIcon(AppIcons.Pill, contentDescription = null) }
@@ -38,12 +39,12 @@ public fun PixaIconTile(
     PixaSurface(
         modifier = modifier.size(size.edge),
         color = tintFill(color),
-        contentColor = color,
+        contentColor = tintContent(color),
         shape = PixaTheme.shapes.md,
         border = filledBorder(),
         contentAlignment = Alignment.Center,
     ) {
-        ProvideContentStyle(color, PixaTheme.typography.label) {
+        ProvideContentStyle(tintContent(color), PixaTheme.typography.label) {
             ProvideIconSize(size.iconSize) { content() }
         }
     }
