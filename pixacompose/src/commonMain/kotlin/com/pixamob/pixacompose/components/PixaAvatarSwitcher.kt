@@ -23,8 +23,7 @@ import com.pixamob.pixacompose.primitives.PixaSurface
 import com.pixamob.pixacompose.primitives.ProvideContentStyle
 import com.pixamob.pixacompose.theme.PixaTheme
 
-/** Edge of the avatar in the pill and in each menu row; the avatar slot is fitted to it. */
-private val PillAvatarEdge = 32.dp
+/** Edge of the avatar in each menu row; the avatar slot is fitted to it. */
 private val MenuAvatarEdge = 28.dp
 
 /**
@@ -49,6 +48,9 @@ private val MenuAvatarEdge = 28.dp
  * @param showLabel shows the current item's [label] in the pill; false keeps only the avatar
  * and the chevron, for a tight spot such as a top bar.
  * @param contentDescription what the pill does, for screen readers, such as "Switch pet".
+ * @param avatarSize edge of the avatar in the pill. The menu rows keep a small one.
+ * @param menuLabel the label in each menu row, when it should differ from the pill's [label],
+ * for example a large name in the pill and a plain one in the menu.
  * @param avatar draws one item's avatar; `current` is true for the selected item. It is fitted
  * into a small square, so any [PixaAvatarSize] works.
  */
@@ -65,7 +67,9 @@ public fun <T> PixaAvatarSwitcher(
     showLabel: Boolean = true,
     onAdd: (() -> Unit)? = null,
     addLabel: @Composable RowScope.() -> Unit = {},
+    avatarSize: PixaAvatarSize = PixaAvatarSize.Sm,
     label: @Composable RowScope.(item: T) -> Unit,
+    menuLabel: @Composable RowScope.(item: T) -> Unit = label,
     avatar: @Composable (item: T, current: Boolean) -> Unit,
 ) {
     if (items.isEmpty()) return
@@ -89,7 +93,7 @@ public fun <T> PixaAvatarSwitcher(
                 horizontalArrangement = Arrangement.spacedBy(spacing.sm),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Box(Modifier.size(PillAvatarEdge), contentAlignment = Alignment.Center) { avatar(current, true) }
+                Box(Modifier.size(avatarSize.edge), contentAlignment = Alignment.Center) { avatar(current, true) }
                 if (showLabel) {
                     ProvideContentStyle(PixaTheme.colors.foreground, PixaTheme.typography.label) {
                         Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { label(current) }
@@ -108,7 +112,7 @@ public fun <T> PixaAvatarSwitcher(
                 val isCurrent = item == current
                 PixaMenuItem(onClick = { onExpandedChange(false); onSelect(item) }) {
                     Box(Modifier.size(MenuAvatarEdge), contentAlignment = Alignment.Center) { avatar(item, isCurrent) }
-                    Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { label(item) }
+                    Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { menuLabel(item) }
                     if (isCurrent) PixaIcon(PixaIcons.Check, contentDescription = "Selected", size = 18.dp)
                 }
             }
