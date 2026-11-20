@@ -10,6 +10,9 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -117,52 +120,55 @@ public fun PixaTimeInput(
         focused = hourFocused || minuteFocused,
         contentAlignment = Alignment.CenterStart,
     ) {
-        Row(
-            modifier = Modifier.padding(horizontal = PixaTheme.spacing.sm, vertical = PixaTheme.spacing.xs),
-            horizontalArrangement = Arrangement.spacedBy(PixaTheme.spacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Segment(
-                text = hour,
-                placeholder = "--",
-                range = hourRange,
-                description = labels.hours,
-                enabled = enabled,
-                source = hourSource,
-                modifier = Modifier.focusRequester(hourFocus),
-                onTextChange = { hour = it; emit() },
-                onFilled = { minuteFocus.requestFocus() },
-                onBackOut = {},
-                onLeave = { hour = complete(hour, hourRange); emit() },
-            )
-            PixaText(":", style = PixaTheme.typography.body, color = colors.mutedForeground)
-            Segment(
-                text = minute,
-                placeholder = "--",
-                range = 0..59,
-                description = labels.minutes,
-                enabled = enabled,
-                source = minuteSource,
-                modifier = Modifier.focusRequester(minuteFocus),
-                onTextChange = { minute = it; emit() },
-                onFilled = {},
-                onBackOut = { hourFocus.requestFocus() },
-                onLeave = { minute = complete(minute, 0..59); emit() },
-            )
-            if (!use24Hour) {
-                PixaSurface(
-                    onClick = { pm = !pm; emit() },
+        // A time reads hours first in every language, so the segments never swap sides.
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+            Row(
+                modifier = Modifier.padding(horizontal = PixaTheme.spacing.sm, vertical = PixaTheme.spacing.xs),
+                horizontalArrangement = Arrangement.spacedBy(PixaTheme.spacing.xs),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Segment(
+                    text = hour,
+                    placeholder = "--",
+                    range = hourRange,
+                    description = labels.hours,
                     enabled = enabled,
-                    role = Role.Switch,
-                    color = Color.Transparent,
-                    contentColor = colors.foreground,
-                    shape = PixaTheme.shapes.sm,
-                ) {
-                    PixaText(
-                        if (pm) labels.pm else labels.am,
-                        Modifier.padding(horizontal = PixaTheme.spacing.xs, vertical = 2.dp),
-                        style = PixaTheme.typography.body,
-                    )
+                    source = hourSource,
+                    modifier = Modifier.focusRequester(hourFocus),
+                    onTextChange = { hour = it; emit() },
+                    onFilled = { minuteFocus.requestFocus() },
+                    onBackOut = {},
+                    onLeave = { hour = complete(hour, hourRange); emit() },
+                )
+                PixaText(":", style = PixaTheme.typography.body, color = colors.mutedForeground)
+                Segment(
+                    text = minute,
+                    placeholder = "--",
+                    range = 0..59,
+                    description = labels.minutes,
+                    enabled = enabled,
+                    source = minuteSource,
+                    modifier = Modifier.focusRequester(minuteFocus),
+                    onTextChange = { minute = it; emit() },
+                    onFilled = {},
+                    onBackOut = { hourFocus.requestFocus() },
+                    onLeave = { minute = complete(minute, 0..59); emit() },
+                )
+                if (!use24Hour) {
+                    PixaSurface(
+                        onClick = { pm = !pm; emit() },
+                        enabled = enabled,
+                        role = Role.Switch,
+                        color = Color.Transparent,
+                        contentColor = colors.foreground,
+                        shape = PixaTheme.shapes.sm,
+                    ) {
+                        PixaText(
+                            if (pm) labels.pm else labels.am,
+                            Modifier.padding(horizontal = PixaTheme.spacing.xs, vertical = 2.dp),
+                            style = PixaTheme.typography.body,
+                        )
+                    }
                 }
             }
         }
