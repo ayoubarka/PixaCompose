@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.PixaActionTile
 import com.pixamob.pixacompose.components.PixaAvatar
 import com.pixamob.pixacompose.components.PixaAvatarSize
+import com.pixamob.pixacompose.components.PixaAvatarRow
 import com.pixamob.pixacompose.components.PixaAvatarSwitcher
 import com.pixamob.pixacompose.components.PixaButton
 import com.pixamob.pixacompose.components.PixaCard
@@ -87,6 +88,24 @@ fun TilesSection(switcherInitiallyOpen: Boolean = false) {
             ) { PixaText(profile.name.take(1)) }
         }
         PixaAvatar(size = PixaAvatarSize.Xl, color = colors.primary, contentColor = colors.primaryForeground) { PixaText("AO") }
+    }
+
+    PixaText("Avatar row", style = PixaTheme.typography.h3)
+    PixaAvatarRow(
+        items = profiles,
+        selected = current,
+        onSelect = { current = it },
+        onAdd = {},
+        addLabel = { PixaText("Add") },
+        label = { PixaText(it.name) },
+    ) { profile, isCurrent ->
+        PixaAvatar(
+            size = PixaAvatarSize.Lg,
+            color = profile.color.copy(alpha = 0.18f),
+            contentColor = profile.color,
+            ringColor = profile.color,
+            selected = isCurrent,
+        ) { PixaText(profile.name.take(1)) }
     }
 
     PixaText("Avatar switcher", style = PixaTheme.typography.h3)
