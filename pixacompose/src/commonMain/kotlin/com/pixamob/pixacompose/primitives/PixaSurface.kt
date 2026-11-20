@@ -174,7 +174,8 @@ private fun InteractiveSurface(
         animationSpec = PixaTheme.motion.press.spec(),
     )
     Box(
-        modifier = modifier
+        // Outermost, so a size set by the caller is the drawn size, not the touch area.
+        modifier = Modifier.minimumTouchTarget().then(modifier)
             // Disabled surfaces are flat: the alpha layer clips to bounds, which would cut a shadow.
             .graphicsLayer { alpha = if (enabled) 1f else DisabledAlpha }
             .surface(color, shape, border, if (enabled) shadow else PixaShadow.None, press, focused, overlay) { pressFraction }

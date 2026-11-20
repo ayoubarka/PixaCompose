@@ -8,6 +8,8 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import com.pixamob.pixacompose.primitives.LocalPixaMinimumTouchTarget
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -115,38 +117,41 @@ public fun PixaCalendar(
                 }
             }
         }
-        // Always six rows, so the calendar keeps its height from month to month.
-        repeat(WeekRows) { row ->
-            Row {
-                repeat(DaysInWeek) { column ->
-                    val day = row * DaysInWeek + column - leadingBlanks + 1
-                    if (day in 1..daysInMonth) {
-                        val date = LocalDate(month.year, month.month, day)
-                        val isSelected = date == selected
-                        val isToday = date == today
-                        val contentColor = when {
-                            isSelected -> colors.primaryForeground
-                            isToday -> colors.accentForeground
-                            else -> colors.foreground
+        // Always six rows, so the calendar keeps its height from month to month. The cells
+        // touch, so each cell is its own touch area and needs no extra room around it.
+        CompositionLocalProvider(LocalPixaMinimumTouchTarget provides 0.dp) {
+            repeat(WeekRows) { row ->
+                Row {
+                    repeat(DaysInWeek) { column ->
+                        val day = row * DaysInWeek + column - leadingBlanks + 1
+                        if (day in 1..daysInMonth) {
+                            val date = LocalDate(month.year, month.month, day)
+                            val isSelected = date == selected
+                            val isToday = date == today
+                            val contentColor = when {
+                                isSelected -> colors.primaryForeground
+                                isToday -> colors.accentForeground
+                                else -> colors.foreground
+                            }
+                            PixaSurface(
+                                selected = isSelected,
+                                onClick = { onSelect(date) },
+                                modifier = Modifier
+                                    .size(CellSize)
+                                    .semantics { contentDescription = "$day ${labels.months[month.month.number - 1]} ${month.year}" },
+                                enabled = isEnabled(date),
+                                color = when {
+                                    isSelected -> colors.primary
+                                    isToday -> colors.accent
+                                    else -> Color.Transparent
+                                },
+                                contentColor = contentColor,
+                                shape = PixaTheme.shapes.sm,
+                                contentAlignment = Alignment.Center,
+                            ) { PixaText(day.toString(), style = typography.bodySmall) }
+                        } else {
+                            Spacer(Modifier.size(CellSize))
                         }
-                        PixaSurface(
-                            selected = isSelected,
-                            onClick = { onSelect(date) },
-                            modifier = Modifier
-                                .size(CellSize)
-                                .semantics { contentDescription = "$day ${labels.months[month.month.number - 1]} ${month.year}" },
-                            enabled = isEnabled(date),
-                            color = when {
-                                isSelected -> colors.primary
-                                isToday -> colors.accent
-                                else -> Color.Transparent
-                            },
-                            contentColor = contentColor,
-                            shape = PixaTheme.shapes.sm,
-                            contentAlignment = Alignment.Center,
-                        ) { PixaText(day.toString(), style = typography.bodySmall) }
-                    } else {
-                        Spacer(Modifier.size(CellSize))
                     }
                 }
             }

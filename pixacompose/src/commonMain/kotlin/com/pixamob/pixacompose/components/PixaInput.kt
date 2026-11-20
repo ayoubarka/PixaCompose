@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.primitives.DisabledAlpha
 import com.pixamob.pixacompose.primitives.PixaSurface
 import com.pixamob.pixacompose.primitives.PixaText
+import com.pixamob.pixacompose.primitives.minimumTouchTarget
 import com.pixamob.pixacompose.theme.PixaShadow
 import com.pixamob.pixacompose.theme.PixaTheme
 
@@ -100,7 +101,7 @@ private fun TextFieldImpl(
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier.fieldLabel(),
+        modifier = Modifier.minimumTouchTarget().then(modifier).fieldLabel(),
         enabled = enabled,
         readOnly = readOnly,
         textStyle = textStyle,

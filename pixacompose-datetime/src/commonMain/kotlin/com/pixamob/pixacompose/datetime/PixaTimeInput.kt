@@ -39,6 +39,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
+import com.pixamob.pixacompose.primitives.LocalPixaMinimumTouchTarget
 import com.pixamob.pixacompose.primitives.PixaBorder
 import com.pixamob.pixacompose.primitives.PixaSurface
 import com.pixamob.pixacompose.primitives.PixaText
@@ -121,7 +122,8 @@ public fun PixaTimeInput(
         contentAlignment = Alignment.CenterStart,
     ) {
         // A time reads hours first in every language, so the segments never swap sides.
-        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        // The AM/PM toggle sits inside the field, whose own height is its touch area.
+        CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr, LocalPixaMinimumTouchTarget provides 0.dp) {
             Row(
                 modifier = Modifier.padding(horizontal = PixaTheme.spacing.sm, vertical = PixaTheme.spacing.xs),
                 horizontalArrangement = Arrangement.spacedBy(PixaTheme.spacing.xs),
