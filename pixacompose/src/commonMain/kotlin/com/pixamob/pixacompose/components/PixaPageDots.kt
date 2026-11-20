@@ -17,16 +17,22 @@ import com.pixamob.pixacompose.theme.PixaTheme
 private val DotSize = 8.dp
 private val CurrentDotWidth = 22.dp
 
-/** A row of dots showing which of [count] pages is showing; the [current] one is a wider pill. */
+/**
+ * A row of dots showing which of [count] pages is showing; the [current] one is a wider pill.
+ *
+ * @param contentDescription what a screen reader says, in the app's language. Defaults to
+ * "Page 2 of 4" in English.
+ */
 @Composable
 public fun PixaPageDots(
     count: Int,
     current: Int,
     modifier: Modifier = Modifier,
+    contentDescription: String = "Page ${current + 1} of $count",
 ) {
     val colors = PixaTheme.colors
     Row(
-        modifier.semantics { contentDescription = "Page ${current + 1} of $count" },
+        modifier.semantics { this.contentDescription = contentDescription },
         horizontalArrangement = Arrangement.spacedBy(PixaTheme.spacing.xs + PixaTheme.spacing.xs / 2),
         verticalAlignment = Alignment.CenterVertically,
     ) {
