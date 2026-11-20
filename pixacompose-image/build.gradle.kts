@@ -14,7 +14,7 @@ version = libs.versions.pixacompose.get()
 kotlin {
     explicitApi()
 
-    androidLibrary {
+    android {
         namespace = "com.pixamob.pixacompose.image"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()

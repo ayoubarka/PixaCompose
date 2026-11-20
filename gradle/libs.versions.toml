@@ -2,17 +2,16 @@
 pixacompose = "2.0.0-alpha02"
 
 android-minSdk = "24"
-android-compileSdk = "36"
+android-compileSdk = "37"
 android-targetSdk = "36"
 
-agp = "9.1.0"
-kotlin = "2.3.20"
-compose = "1.10.3"
+agp = "9.5.2"
+kotlin = "2.4.21"
+compose = "1.12.2"
 androidx-activityCompose = "1.13.0"
-# Newer Coil releases need Compose 1.11+ and Kotlin 2.4; move together with those.
-coil = "3.4.0"
+coil = "3.6.3"
 ktor = "3.1.0"
-vico = "2.4.3"
+vico = "3.3.1"
 kotlinx-datetime = "0.7.1"
 
 [libraries]
@@ -24,7 +23,7 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coil" 
 coil-network-ktor = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil" }
 ktor-client-okhttp = { module = "io.ktor:ktor-client-okhttp", version.ref = "ktor" }
 ktor-client-darwin = { module = "io.ktor:ktor-client-darwin", version.ref = "ktor" }
-vico-multiplatform = { module = "com.patrykandpatrick.vico:multiplatform", version.ref = "vico" }
+vico-compose = { module = "com.patrykandpatrick.vico:compose", version.ref = "vico" }
 kotlinx-datetime = { module = "org.jetbrains.kotlinx:kotlinx-datetime", version.ref = "kotlinx-datetime" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
 

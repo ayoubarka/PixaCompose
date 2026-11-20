@@ -14,7 +14,7 @@ version = libs.versions.pixacompose.get()
 kotlin {
     explicitApi()
 
-    androidLibrary {
+    android {
         namespace = "com.pixamob.pixacompose.charts"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
@@ -35,7 +35,7 @@ kotlin {
         commonMain.dependencies {
             api(project(":pixacompose"))
             // Vico's core artifact: Compose foundation only, no Material.
-            implementation(libs.vico.multiplatform)
+            implementation(libs.vico.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)
@@ -52,7 +52,7 @@ mavenPublishing {
 
     pom {
         name.set("PixaCompose Charts")
-        description.set("Line and bar charts for PixaCompose, drawn with Vico.")
+        description.set("Line, bar and scatter charts for PixaCompose, drawn with Vico.")
         inceptionYear.set("2026")
         url.set("https://github.com/ayoubarka/PixaCompose")
 

@@ -22,40 +22,40 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.patrykandpatrick.vico.multiplatform.cartesian.CartesianChartHost
-import com.patrykandpatrick.vico.multiplatform.cartesian.Zoom
-import com.patrykandpatrick.vico.multiplatform.cartesian.axis.HorizontalAxis
-import com.patrykandpatrick.vico.multiplatform.cartesian.axis.VerticalAxis
-import com.patrykandpatrick.vico.multiplatform.cartesian.axis.rememberAxisGuidelineComponent
-import com.patrykandpatrick.vico.multiplatform.cartesian.axis.rememberAxisLabelComponent
-import com.patrykandpatrick.vico.multiplatform.cartesian.data.CartesianChartModel
-import com.patrykandpatrick.vico.multiplatform.cartesian.data.CartesianLayerRangeProvider
-import com.patrykandpatrick.vico.multiplatform.cartesian.data.CartesianValueFormatter
-import com.patrykandpatrick.vico.multiplatform.cartesian.data.ColumnCartesianLayerModel
-import com.patrykandpatrick.vico.multiplatform.cartesian.data.LineCartesianLayerModel
-import com.patrykandpatrick.vico.multiplatform.cartesian.layer.CartesianLayer
-import com.patrykandpatrick.vico.multiplatform.cartesian.layer.ColumnCartesianLayer
-import com.patrykandpatrick.vico.multiplatform.cartesian.layer.LineCartesianLayer
-import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberColumnCartesianLayer
-import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberLine
-import com.patrykandpatrick.vico.multiplatform.cartesian.layer.rememberLineCartesianLayer
-import com.patrykandpatrick.vico.multiplatform.cartesian.marker.CartesianMarker
-import com.patrykandpatrick.vico.multiplatform.cartesian.marker.CartesianMarkerController
-import com.patrykandpatrick.vico.multiplatform.cartesian.marker.Interaction
-import com.patrykandpatrick.vico.multiplatform.cartesian.marker.DefaultCartesianMarker
-import com.patrykandpatrick.vico.multiplatform.cartesian.marker.ColumnCartesianLayerMarkerTarget
-import com.patrykandpatrick.vico.multiplatform.cartesian.marker.LineCartesianLayerMarkerTarget
-import com.patrykandpatrick.vico.multiplatform.cartesian.marker.rememberDefaultCartesianMarker
-import com.patrykandpatrick.vico.multiplatform.cartesian.rememberCartesianChart
-import com.patrykandpatrick.vico.multiplatform.cartesian.rememberVicoScrollState
-import com.patrykandpatrick.vico.multiplatform.cartesian.rememberVicoZoomState
-import com.patrykandpatrick.vico.multiplatform.common.Fill
-import com.patrykandpatrick.vico.multiplatform.common.Insets
-import com.patrykandpatrick.vico.multiplatform.common.component.ShapeComponent
-import com.patrykandpatrick.vico.multiplatform.common.component.rememberLineComponent
-import com.patrykandpatrick.vico.multiplatform.common.component.rememberShapeComponent
-import com.patrykandpatrick.vico.multiplatform.common.component.rememberTextComponent
-import com.patrykandpatrick.vico.multiplatform.common.data.ExtraStore
+import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.Zoom
+import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisGuidelineComponent
+import com.patrykandpatrick.vico.compose.cartesian.axis.rememberAxisLabelComponent
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianChartModel
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianLayerRangeProvider
+import com.patrykandpatrick.vico.compose.cartesian.data.CartesianValueFormatter
+import com.patrykandpatrick.vico.compose.cartesian.data.ColumnCartesianLayerModel
+import com.patrykandpatrick.vico.compose.cartesian.data.LineCartesianLayerModel
+import com.patrykandpatrick.vico.compose.cartesian.layer.CartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.ColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.LineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberColumnCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLine
+import com.patrykandpatrick.vico.compose.cartesian.layer.rememberLineCartesianLayer
+import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarker
+import com.patrykandpatrick.vico.compose.cartesian.marker.CartesianMarkerController
+import com.patrykandpatrick.vico.compose.cartesian.marker.Interaction
+import com.patrykandpatrick.vico.compose.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.compose.cartesian.marker.ColumnCartesianLayerMarkerTarget
+import com.patrykandpatrick.vico.compose.cartesian.marker.LineCartesianLayerMarkerTarget
+import com.patrykandpatrick.vico.compose.cartesian.marker.rememberDefaultCartesianMarker
+import com.patrykandpatrick.vico.compose.cartesian.rememberCartesianChart
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoScrollState
+import com.patrykandpatrick.vico.compose.cartesian.rememberVicoZoomState
+import com.patrykandpatrick.vico.compose.common.Fill
+import com.patrykandpatrick.vico.compose.common.Insets
+import com.patrykandpatrick.vico.compose.common.component.ShapeComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberLineComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberShapeComponent
+import com.patrykandpatrick.vico.compose.common.component.rememberTextComponent
+import com.patrykandpatrick.vico.compose.common.data.ExtraStore
 import com.pixamob.pixacompose.theme.PixaTheme
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -98,7 +98,7 @@ public fun PixaLineChart(
         areaFill = LineCartesianLayer.AreaFill.single(
             Fill(Brush.verticalGradient(listOf(primary.copy(alpha = 0.25f), Color.Transparent))),
         ),
-        pointConnector = if (smooth) LineCartesianLayer.PointConnector.cubic() else LineCartesianLayer.PointConnector.Sharp,
+        interpolator = if (smooth) LineCartesianLayer.Interpolator.cubic() else LineCartesianLayer.Interpolator.Sharp,
     )
     val layer = rememberLineCartesianLayer(
         LineCartesianLayer.LineProvider.series(line),
