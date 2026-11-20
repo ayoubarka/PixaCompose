@@ -51,8 +51,10 @@ private val MenuAvatarEdge = 28.dp
  * @param avatarSize edge of the avatar in the pill. The menu rows keep a small one.
  * @param menuLabel the label in each menu row, when it should differ from the pill's [label],
  * for example a large name in the pill and a plain one in the menu.
- * @param avatar draws one item's avatar; `current` is true for the selected item. It is fitted
- * into a small square, so any [PixaAvatarSize] works.
+ * @param menuAvatar draws one item's avatar in a menu row, fitted into a small square. Null
+ * uses [avatar]; pass a smaller avatar when the pill's one is large.
+ * @param avatar draws one item's avatar in the pill; `current` is true for the selected item.
+ * It is fitted into an [avatarSize] square.
  */
 @Composable
 public fun <T> PixaAvatarSwitcher(
@@ -70,8 +72,10 @@ public fun <T> PixaAvatarSwitcher(
     avatarSize: PixaAvatarSize = PixaAvatarSize.Sm,
     label: @Composable RowScope.(item: T) -> Unit,
     menuLabel: @Composable RowScope.(item: T) -> Unit = label,
+    menuAvatar: (@Composable (item: T, current: Boolean) -> Unit)? = null,
     avatar: @Composable (item: T, current: Boolean) -> Unit,
 ) {
+    val rowAvatar = menuAvatar ?: avatar
     if (items.isEmpty()) return
     val spacing = PixaTheme.spacing
     val current = selected ?: items.first()
@@ -111,7 +115,7 @@ public fun <T> PixaAvatarSwitcher(
             items.forEach { item ->
                 val isCurrent = item == current
                 PixaMenuItem(onClick = { onExpandedChange(false); onSelect(item) }) {
-                    Box(Modifier.size(MenuAvatarEdge), contentAlignment = Alignment.Center) { avatar(item, isCurrent) }
+                    Box(Modifier.size(MenuAvatarEdge), contentAlignment = Alignment.Center) { rowAvatar(item, isCurrent) }
                     Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) { menuLabel(item) }
                     if (isCurrent) PixaIcon(PixaIcons.Check, contentDescription = "Selected", size = 18.dp)
                 }

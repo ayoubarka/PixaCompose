@@ -100,9 +100,21 @@ fun TilesSection(switcherInitiallyOpen: Boolean = false) {
         showLabel = false,
         onAdd = {},
         addLabel = { PixaText("Add pet") },
+        avatarSize = PixaAvatarSize.Lg,
         label = { PixaText(it.name) },
+        // A large avatar in the pill, a small one in the menu rows.
+        menuAvatar = { profile, isCurrent ->
+            PixaAvatar(
+                color = profile.color.copy(alpha = 0.18f),
+                contentColor = profile.color,
+                ringColor = profile.color,
+                ringWidth = 2.dp,
+                selected = isCurrent,
+            ) { PixaText(profile.name.take(1), style = PixaTheme.typography.caption) }
+        },
     ) { profile, isCurrent ->
         PixaAvatar(
+            size = PixaAvatarSize.Lg,
             color = profile.color.copy(alpha = 0.18f),
             contentColor = profile.color,
             ringColor = profile.color,
