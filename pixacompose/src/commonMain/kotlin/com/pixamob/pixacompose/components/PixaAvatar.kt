@@ -11,6 +11,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.primitives.PixaBorder
@@ -37,6 +40,8 @@ private val IdleRingWidth = 1.dp
  * @param ringWidth width of the ring while [selected].
  * @param selected with a ring, false thins it to a hairline in the border color, so a row of
  * avatars can show which one is current.
+ * @param onClick makes the avatar a button, such as an owner avatar that opens settings.
+ * @param contentDescription what tapping does, for screen readers; used with [onClick].
  */
 @Composable
 public fun PixaAvatar(
@@ -47,6 +52,8 @@ public fun PixaAvatar(
     ringColor: Color = Color.Unspecified,
     ringWidth: Dp = 3.dp,
     selected: Boolean = true,
+    onClick: (() -> Unit)? = null,
+    contentDescription: String? = null,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val textStyle = when (size) {
@@ -66,19 +73,34 @@ public fun PixaAvatar(
             ProvideContentStyle(contentColor, textStyle) { content() }
         }
     }
-    if (!ringColor.isSpecified) {
-        face(modifier.size(size.edge))
+    val ring by animateDpAsState(if (selected) ringWidth else IdleRingWidth, PixaTheme.motion.state.spec())
+    val framed: @Composable (Modifier) -> Unit = { frameModifier ->
+        if (!ringColor.isSpecified) {
+            face(frameModifier)
+        } else {
+            PixaSurface(
+                modifier = frameModifier,
+                color = Color.Transparent,
+                shape = PixaTheme.shapes.full,
+                border = PixaBorder(ring, if (selected) ringColor else PixaTheme.colors.border),
+                contentAlignment = Alignment.Center,
+            ) {
+                // The face keeps its size while the ring animates, so nothing inside jumps.
+                face(Modifier.fillMaxSize().padding(ringWidth + RingGap))
+            }
+        }
+    }
+    if (onClick == null) {
+        framed(modifier.size(size.edge))
         return
     }
-    val ring by animateDpAsState(if (selected) ringWidth else IdleRingWidth, PixaTheme.motion.state.spec())
+    val described = if (contentDescription != null) Modifier.semantics { this.contentDescription = contentDescription } else Modifier
     PixaSurface(
-        modifier = modifier.size(size.edge),
+        onClick = onClick,
+        modifier = modifier.size(size.edge).then(described),
+        role = Role.Button,
         color = Color.Transparent,
         shape = PixaTheme.shapes.full,
-        border = PixaBorder(ring, if (selected) ringColor else PixaTheme.colors.border),
         contentAlignment = Alignment.Center,
-    ) {
-        // The face keeps its size while the ring animates, so nothing inside jumps.
-        face(Modifier.fillMaxSize().padding(ringWidth + RingGap))
-    }
+    ) { framed(Modifier.fillMaxSize()) }
 }
