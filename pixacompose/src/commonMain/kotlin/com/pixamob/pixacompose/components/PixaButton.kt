@@ -11,6 +11,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
+import androidx.compose.ui.graphics.takeOrElse
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -38,6 +39,10 @@ public enum class PixaButtonSize(internal val minHeight: Dp, internal val paddin
  * }
  * ```
  *
+ * @param color fill in place of the [variant]'s, for a button in a brand's own colors such as
+ * "Continue with Google". The variant still sets the outline and shadow, so pair a light
+ * [color] with [PixaButtonVariant.Outline].
+ * @param contentColor text and icon color to go with [color].
  * @param loading runs a light around the button's edge and ignores taps, for an action that
  * is in progress. The content stays, so the button keeps its size.
  */
@@ -49,20 +54,22 @@ public fun PixaButton(
     size: PixaButtonSize = PixaButtonSize.Md,
     enabled: Boolean = true,
     loading: Boolean = false,
+    color: Color = Color.Unspecified,
+    contentColor: Color = Color.Unspecified,
     content: @Composable RowScope.() -> Unit,
 ) {
     val colors = PixaTheme.colors
     val decoration = PixaTheme.decoration
 
-    val container: Color
-    val contentColor: Color
-    when (variant) {
-        PixaButtonVariant.Primary -> { container = colors.primary; contentColor = colors.primaryForeground }
-        PixaButtonVariant.Secondary -> { container = colors.secondary; contentColor = colors.secondaryForeground }
-        PixaButtonVariant.Destructive -> { container = colors.destructive; contentColor = colors.destructiveForeground }
-        PixaButtonVariant.Outline -> { container = colors.background; contentColor = colors.foreground }
-        PixaButtonVariant.Ghost -> { container = Color.Transparent; contentColor = colors.foreground }
+    val (variantContainer, variantContent) = when (variant) {
+        PixaButtonVariant.Primary -> colors.primary to colors.primaryForeground
+        PixaButtonVariant.Secondary -> colors.secondary to colors.secondaryForeground
+        PixaButtonVariant.Destructive -> colors.destructive to colors.destructiveForeground
+        PixaButtonVariant.Outline -> colors.background to colors.foreground
+        PixaButtonVariant.Ghost -> Color.Transparent to colors.foreground
     }
+    val container = color.takeOrElse { variantContainer }
+    val onContainer = contentColor.takeOrElse { variantContent }
     val border = when (variant) {
         PixaButtonVariant.Ghost -> null
         PixaButtonVariant.Outline -> outlinedBorder()
@@ -75,14 +82,14 @@ public fun PixaButton(
         enabled = enabled,
         role = Role.Button,
         color = container,
-        contentColor = contentColor,
+        contentColor = onContainer,
         shape = PixaTheme.shapes.md,
         border = border,
         shadow = if (variant == PixaButtonVariant.Ghost) PixaShadow.None else decoration.controlShadow,
         contentAlignment = Alignment.Center,
-        loadingColor = if (loading) loadingLight(border?.color ?: container, contentColor) else Color.Unspecified,
+        loadingColor = if (loading) loadingLight(border?.color ?: container, onContainer) else Color.Unspecified,
     ) {
-        ProvideContentStyle(contentColor, PixaTheme.typography.label) {
+        ProvideContentStyle(onContainer, PixaTheme.typography.label) {
             Row(
                 modifier = Modifier.padding(size.padding),
                 horizontalArrangement = Arrangement.spacedBy(PixaTheme.spacing.sm, Alignment.CenterHorizontally),
