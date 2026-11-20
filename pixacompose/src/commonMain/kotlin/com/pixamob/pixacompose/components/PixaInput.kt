@@ -100,7 +100,7 @@ private fun TextFieldImpl(
     BasicTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
+        modifier = modifier.fieldLabel(),
         enabled = enabled,
         readOnly = readOnly,
         textStyle = textStyle,

@@ -43,7 +43,7 @@ public fun PixaSelect(
     Box(modifier) {
         PixaSurface(
             onClick = { onExpandedChange(!expanded) },
-            modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 40.dp),
+            modifier = Modifier.fillMaxWidth().defaultMinSize(minHeight = 40.dp).fieldLabel(),
             enabled = enabled,
             role = Role.DropdownList,
             color = colors.background,

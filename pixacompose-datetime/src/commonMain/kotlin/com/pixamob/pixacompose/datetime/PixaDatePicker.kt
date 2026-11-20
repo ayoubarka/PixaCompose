@@ -1,5 +1,8 @@
 package com.pixamob.pixacompose.datetime
 
+import com.pixamob.pixacompose.components.LocalPixaFieldLabel
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
@@ -44,7 +47,9 @@ public fun PixaDatePicker(
     Box(modifier) {
         PixaButton(
             onClick = { onExpandedChange(!expanded) },
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth().then(
+                LocalPixaFieldLabel.current?.let { label -> Modifier.semantics { contentDescription = label } } ?: Modifier,
+            ),
             variant = PixaButtonVariant.Outline,
             enabled = enabled,
         ) {
