@@ -7,7 +7,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -40,6 +43,8 @@ import com.patrykandpatrick.vico.multiplatform.cartesian.marker.CartesianMarker
 import com.patrykandpatrick.vico.multiplatform.cartesian.marker.CartesianMarkerController
 import com.patrykandpatrick.vico.multiplatform.cartesian.marker.Interaction
 import com.patrykandpatrick.vico.multiplatform.cartesian.marker.DefaultCartesianMarker
+import com.patrykandpatrick.vico.multiplatform.cartesian.marker.ColumnCartesianLayerMarkerTarget
+import com.patrykandpatrick.vico.multiplatform.cartesian.marker.LineCartesianLayerMarkerTarget
 import com.patrykandpatrick.vico.multiplatform.cartesian.marker.rememberDefaultCartesianMarker
 import com.patrykandpatrick.vico.multiplatform.cartesian.rememberCartesianChart
 import com.patrykandpatrick.vico.multiplatform.cartesian.rememberVicoScrollState
@@ -68,6 +73,11 @@ private val DefaultChartHeight = 180.dp
  * @param fittedYAxis fits the vertical axis to the values instead of starting it at 0, so
  * small changes in large numbers, such as a body weight, show as a slope rather than a flat line.
  * @param drawIn draws the chart in from the left when it appears and when [values] change.
+ * @param formatValue writes the numbers on the vertical axis and in the tap marker. Pass one
+ * that follows the app's locale, such as "12,5" in French.
+ *
+ * Charts read left to right in every layout direction, so time runs the same way in a
+ * right-to-left app.
  */
 @Composable
 public fun PixaLineChart(
@@ -78,6 +88,7 @@ public fun PixaLineChart(
     smooth: Boolean = true,
     fittedYAxis: Boolean = false,
     drawIn: Boolean = false,
+    formatValue: (Double) -> String = ::plainNumber,
 ) {
     if (values.isEmpty()) return
     val fitted = remember(values, fittedYAxis) { if (fittedYAxis) FittedRange.of(values) else null }
@@ -95,7 +106,7 @@ public fun PixaLineChart(
     )
     val model = remember(values) { CartesianChartModel(LineCartesianLayerModel.build { series(values) }) }
     val reveal = if (drawIn) drawInModifier(values) else Modifier
-    Chart(layer, model, labels, modifier.then(reveal), yStep = fitted?.step)
+    Chart(layer, model, labels, modifier.then(reveal), formatValue, yStep = fitted?.step)
 }
 
 /** Clips the chart to a growing width from the left, keyed on [key]. */
@@ -144,6 +155,7 @@ public fun PixaBarChart(
     modifier: Modifier = Modifier,
     labels: List<String> = emptyList(),
     barWidth: Dp = 16.dp,
+    formatValue: (Double) -> String = ::plainNumber,
 ) {
     if (values.isEmpty()) return
     val bar = rememberLineComponent(
@@ -153,7 +165,59 @@ public fun PixaBarChart(
     )
     val layer = rememberColumnCartesianLayer(ColumnCartesianLayer.ColumnProvider.series(bar))
     val model = remember(values) { CartesianChartModel(ColumnCartesianLayerModel.build { series(values) }) }
-    Chart(layer, model, labels, modifier)
+    Chart(layer, model, labels, modifier, formatValue)
+}
+
+/** One dot of a [PixaScatterChart]: [x] is the position along the bottom, such as a day index. */
+public data class PixaChartPoint(val x: Number, val y: Number)
+
+/**
+ * Dots of values over time, several allowed at the same [PixaChartPoint.x], such as symptom
+ * scores logged a few times a day. [labels] name the x positions 0, 1, 2, …; see [PixaLineChart]
+ * for [fittedYAxis] and [formatValue].
+ */
+@Composable
+public fun PixaScatterChart(
+    points: List<PixaChartPoint>,
+    modifier: Modifier = Modifier,
+    labels: List<String> = emptyList(),
+    fittedYAxis: Boolean = false,
+    dotSize: Dp = 8.dp,
+    formatValue: (Double) -> String = ::plainNumber,
+) {
+    if (points.isEmpty()) return
+    val fitted = remember(points, fittedYAxis) { if (fittedYAxis) FittedRange.of(points.map { it.y }) else null }
+    val dot = LineCartesianLayer.Point(
+        rememberShapeComponent(fill = Fill(PixaTheme.colors.primary), shape = CircleShape),
+        dotSize,
+    )
+    val line = LineCartesianLayer.rememberLine(
+        fill = LineCartesianLayer.LineFill.single(Fill(Color.Transparent)),
+        areaFill = null,
+        pointProvider = LineCartesianLayer.PointProvider.single(dot),
+    )
+    val layer = rememberLineCartesianLayer(
+        LineCartesianLayer.LineProvider.series(line),
+        rangeProvider = fitted ?: remember { CartesianLayerRangeProvider.auto() },
+    )
+    // A series holds one value per x, so the n-th dot of every x goes in the n-th series.
+    val model = remember(points) {
+        val rounds = points.groupBy { it.x.toDouble() }.values.let { groups ->
+            (0 until groups.maxOf { it.size }).map { n -> groups.mapNotNull { it.getOrNull(n) } }
+        }
+        CartesianChartModel(
+            LineCartesianLayerModel.build {
+                rounds.forEach { round -> series(x = round.map { it.x }, y = round.map { it.y }) }
+            },
+        )
+    }
+    Chart(layer, model, labels, modifier, formatValue, yStep = fitted?.step)
+}
+
+/** "12.5", "3", without trailing zeros. */
+private fun plainNumber(value: Double): String {
+    val rounded = kotlin.math.round(value * 100) / 100
+    return if (rounded == kotlin.math.floor(rounded)) rounded.toLong().toString() else rounded.toString()
 }
 
 /** Axes, guidelines and labels shared by every chart. This is the only place they are styled. */
@@ -163,6 +227,7 @@ private fun Chart(
     model: CartesianChartModel,
     labels: List<String>,
     modifier: Modifier,
+    formatValue: (Double) -> String,
     /** Distance between vertical axis labels; null lets Vico choose. */
     yStep: Double? = null,
 ) {
@@ -184,7 +249,17 @@ private fun Chart(
             background = rememberShapeComponent(fill = Fill(colors.foreground), shape = PixaTheme.shapes.sm),
         ),
         // Plain text: by default Vico tints the value with the series color.
-        valueFormatter = remember { DefaultCartesianMarker.ValueFormatter.default(colorCode = false) },
+        valueFormatter = remember(formatValue) {
+            DefaultCartesianMarker.ValueFormatter { _, targets ->
+                targets.flatMap { target ->
+                    when (target) {
+                        is LineCartesianLayerMarkerTarget -> target.points.map { it.entry.y }
+                        is ColumnCartesianLayerMarkerTarget -> target.columns.map { it.entry.y }
+                        else -> emptyList()
+                    }
+                }.joinToString(", ") { formatValue(it) }
+            }
+        },
         labelPosition = DefaultCartesianMarker.LabelPosition.AbovePoint,
         indicator = { _ ->
             ShapeComponent(
@@ -207,19 +282,23 @@ private fun Chart(
             tick = null,
             guideline = guideline,
             itemPlacer = remember(yStep) { VerticalAxis.ItemPlacer.step({ yStep }) },
+            valueFormatter = remember(formatValue) { CartesianValueFormatter { _, value, _ -> formatValue(value) } },
         ),
         bottomAxis = HorizontalAxis.rememberBottom(
             line = null, label = label, tick = null, guideline = null, valueFormatter = bottomFormatter,
         ),
     )
-    CartesianChartHost(
-        chart = chart,
-        model = model,
-        // The caller's size wins; these only apply when none is given.
-        modifier = modifier.fillMaxWidth().height(DefaultChartHeight).holdHorizontalDrag(),
-        scrollState = rememberVicoScrollState(scrollEnabled = false),
-        zoomState = rememberVicoZoomState(zoomEnabled = false, initialZoom = Zoom.Content),
-    )
+    // Time runs left to right in every language, so the chart is not mirrored.
+    CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
+        CartesianChartHost(
+            chart = chart,
+            model = model,
+            // The caller's size wins; these only apply when none is given.
+            modifier = modifier.fillMaxWidth().height(DefaultChartHeight).holdHorizontalDrag(),
+            scrollState = rememberVicoScrollState(scrollEnabled = false),
+            zoomState = rememberVicoZoomState(zoomEnabled = false, initialZoom = Zoom.Content),
+        )
+    }
 }
 
 /**

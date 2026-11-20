@@ -4,7 +4,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.pixamob.pixacompose.charts.PixaBarChart
+import com.pixamob.pixacompose.charts.PixaChartPoint
 import com.pixamob.pixacompose.charts.PixaLineChart
+import com.pixamob.pixacompose.charts.PixaScatterChart
 import com.pixamob.pixacompose.components.PixaCard
 import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.theme.PixaTheme
@@ -32,5 +34,15 @@ fun ChartsSection() {
     PixaCard(Modifier.fillMaxWidth()) {
         PixaText("Steps", style = PixaTheme.typography.caption, color = PixaTheme.colors.mutedForeground)
         PixaBarChart(values = listOf(6200, 7400, 8752, 5100, 9300, 4000, 7800), labels = Days)
+    }
+    PixaCard(Modifier.fillMaxWidth()) {
+        PixaText("Itching, several logs a day", style = PixaTheme.typography.caption, color = PixaTheme.colors.mutedForeground)
+        PixaScatterChart(
+            points = listOf(0 to 3, 0 to 5, 1 to 4, 2 to 2, 2 to 6, 2 to 4, 3 to 3, 4 to 1, 5 to 2, 5 to 3, 6 to 1)
+                .map { (day, score) -> PixaChartPoint(day, score) },
+            labels = Days,
+            // A comma decimal, as in French.
+            formatValue = { (kotlin.math.round(it * 10) / 10).toString().removeSuffix(".0").replace('.', ',') },
+        )
     }
 }
