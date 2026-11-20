@@ -7,6 +7,8 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
@@ -14,6 +16,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Stable
@@ -30,6 +36,7 @@ import com.pixamob.pixacompose.primitives.PixaSurface
 import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.theme.PixaTheme
 import kotlinx.coroutines.delay
+import kotlin.time.TimeSource
 
 public enum class PixaToastVariant { Default, Success, Destructive }
 
@@ -43,7 +50,11 @@ public class PixaToastData internal constructor(
     public val description: String?,
     public val variant: PixaToastVariant,
     public val durationMillis: Long,
-)
+) {
+    /** Kept with the toast, so it neither restarts its timer nor animates in again when it moves to another layer. */
+    internal val shownAt = TimeSource.Monotonic.markNow()
+    internal val visibility = MutableTransitionState(false).apply { targetState = true }
+}
 
 private const val MaxVisibleToasts = 3
 
@@ -77,6 +88,8 @@ public fun rememberPixaToastState(): PixaToastState = remember { PixaToastState(
 /**
  * Draws the toasts of [state]. Align it yourself in the root layout to match [position], for
  * example `Modifier.align(Alignment.TopCenter)` inside a `Box` for [PixaToastPosition.Top].
+ * While a [PixaSheet] or [PixaDialog] is open the toasts move into it, so they show above its
+ * dimmed backdrop.
  *
  * @param offset extra distance from that edge, for example the height of a top bar the toasts
  * should not cover.
@@ -88,7 +101,46 @@ public fun PixaToastHost(
     position: PixaToastPosition = PixaToastPosition.Bottom,
     offset: Dp = 0.dp,
 ) {
-    val top = position == PixaToastPosition.Top
+    val host = remember(state, position, offset) { ToastLayer.Host(state, position, offset) }
+    DisposableEffect(host) {
+        ToastLayer.host = host
+        onDispose { if (ToastLayer.host === host) ToastLayer.host = null }
+    }
+    if (ToastLayer.modals.isEmpty()) ToastColumn(host, modifier)
+}
+
+/**
+ * Where toasts are drawn: by the app's [PixaToastHost], or by the topmost open modal, whose
+ * window would otherwise cover them.
+ */
+internal object ToastLayer {
+    class Host(val state: PixaToastState, val position: PixaToastPosition, val offset: Dp)
+
+    var host: Host? by mutableStateOf(null)
+
+    /** Open modals, the topmost last. */
+    val modals = mutableStateListOf<Any>()
+}
+
+/** Draws the app's toasts inside a modal while it is the topmost one. Call it in the modal's full-screen box. */
+@Composable
+internal fun BoxScope.ModalToasts() {
+    val token = remember { Any() }
+    DisposableEffect(token) {
+        ToastLayer.modals += token
+        onDispose { ToastLayer.modals -= token }
+    }
+    val host = ToastLayer.host ?: return
+    if (ToastLayer.modals.lastOrNull() !== token) return
+    val alignment = if (host.position == PixaToastPosition.Top) Alignment.TopCenter else Alignment.BottomCenter
+    ToastColumn(host, Modifier.align(alignment).safeDrawingPadding())
+}
+
+@Composable
+private fun ToastColumn(host: ToastLayer.Host, modifier: Modifier) {
+    val state = host.state
+    val offset = host.offset
+    val top = host.position == PixaToastPosition.Top
     Column(
         modifier = modifier
             .padding(top = if (top) offset else 0.dp, bottom = if (top) 0.dp else offset)
@@ -105,9 +157,9 @@ public fun PixaToastHost(
 
 @Composable
 private fun ToastItem(toast: PixaToastData, fromTop: Boolean, onGone: () -> Unit) {
-    val visibility = remember { MutableTransitionState(false).apply { targetState = true } }
+    val visibility = toast.visibility
     LaunchedEffect(Unit) {
-        delay(toast.durationMillis)
+        delay(toast.durationMillis - toast.shownAt.elapsedNow().inWholeMilliseconds)
         visibility.targetState = false
     }
     if (visibility.isIdle && !visibility.currentState) {

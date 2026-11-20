@@ -12,7 +12,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.dismiss
+import androidx.compose.ui.semantics.onClick
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.window.Dialog
+import com.pixamob.pixacompose.components.ModalToasts
 import androidx.compose.ui.window.DialogProperties
 
 /**
@@ -42,13 +46,20 @@ internal fun Modal(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .pointerInput(onDismissRequest) { detectTapGestures { onDismissRequest() } },
+                .pointerInput(onDismissRequest) { detectTapGestures { onDismissRequest() } }
+                // Screen readers can reach the backdrop tap too.
+                .semantics { onClick { onDismissRequest(); true } },
             contentAlignment = contentAlignment,
         ) {
             AnimatedVisibility(visibleState = state, enter = enter, exit = exit) {
                 // Swallow taps on the panel itself so they do not reach the dismiss handler.
-                Box(Modifier.pointerInput(Unit) { detectTapGestures { } }) { content() }
+                Box(
+                    Modifier
+                        .pointerInput(Unit) { detectTapGestures { } }
+                        .semantics { dismiss { onDismissRequest(); true } },
+                ) { content() }
             }
+            ModalToasts()
         }
     }
 }

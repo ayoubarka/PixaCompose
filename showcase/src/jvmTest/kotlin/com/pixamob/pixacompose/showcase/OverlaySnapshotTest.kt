@@ -16,6 +16,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.use
 import com.pixamob.pixacompose.components.PixaButton
 import com.pixamob.pixacompose.components.PixaToastHost
+import com.pixamob.pixacompose.components.PixaToastPosition
+import com.pixamob.pixacompose.components.PixaToastVariant
+import androidx.compose.runtime.LaunchedEffect
 import com.pixamob.pixacompose.components.PixaTooltip
 import com.pixamob.pixacompose.components.rememberPixaToastState
 import com.pixamob.pixacompose.primitives.PixaText
@@ -49,6 +52,25 @@ class OverlaySnapshotTest {
                     }
                 }.use { save(it, "${style.name.lowercase()}-${demo.name.lowercase()}") }
             }
+        }
+    }
+
+    /** A toast shown while a sheet is open draws above the sheet's backdrop, not under it. */
+    @Test
+    fun rendersToastOverSheet() {
+        for (style in PixaStyles.all) {
+            ImageComposeScene(Width, Height, Density(2f)) {
+                PixaTheme(style, darkTheme = false) {
+                    val toasts = rememberPixaToastState()
+                    LaunchedEffect(Unit) { toasts.show("Profile photo saved", variant = PixaToastVariant.Success) }
+                    Box(Modifier.fillMaxSize().background(PixaTheme.colors.background)) {
+                        Column(Modifier.padding(20.dp), verticalArrangement = Arrangement.spacedBy(20.dp)) {
+                            OverlaysSection(toasts, initiallyOpen = OverlayDemo.FormSheet)
+                        }
+                        PixaToastHost(toasts, Modifier.align(Alignment.BottomCenter), position = PixaToastPosition.Top)
+                    }
+                }
+            }.use { save(it, "${style.name.lowercase()}-toast-over-sheet") }
         }
     }
 
