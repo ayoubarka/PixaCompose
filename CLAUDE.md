@@ -14,7 +14,7 @@ pixacompose/src/commonMain/kotlin/com/pixamob/pixacompose/
 ├── components/   one small file per component
 └── styles/       built-in styles; the only place raw colors are allowed
 pixacompose-image/  optional module: PixaImage on Coil
-pixacompose-charts/ optional module: PixaLineChart, PixaBarChart on Vico
+pixacompose-charts/ optional module: line, bar, scatter, combo, candlestick, pie charts on Vico
 pixacompose-datetime/ optional module: PixaCalendar, PixaDatePicker on kotlinx-datetime
 showcase/         shared showcase UI, desktop main, snapshot test
 androidApp/       thin Android wrapper

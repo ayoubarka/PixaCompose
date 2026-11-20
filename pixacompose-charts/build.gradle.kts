@@ -52,7 +52,7 @@ mavenPublishing {
 
     pom {
         name.set("PixaCompose Charts")
-        description.set("Line, bar and scatter charts for PixaCompose, drawn with Vico.")
+        description.set("Line, bar, scatter, combo, candlestick and pie charts for PixaCompose, drawn with Vico.")
         inceptionYear.set("2026")
         url.set("https://github.com/ayoubarka/PixaCompose")
 

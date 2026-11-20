@@ -37,7 +37,7 @@ through `typography.copy(...)`.
 |---|---|
 | `:pixacompose` | The published library (`com.pixamob:pixacompose`) |
 | `:pixacompose-image` | Optional. `PixaImage`, loaded with Coil (`com.pixamob:pixacompose-image`) |
-| `:pixacompose-charts` | Optional. `PixaLineChart` and `PixaBarChart`, drawn with Vico (`com.pixamob:pixacompose-charts`) |
+| `:pixacompose-charts` | Optional. Line, bar, scatter, combo, candlestick and pie charts, drawn with Vico (`com.pixamob:pixacompose-charts`) |
 | `:pixacompose-datetime` | Optional. `PixaCalendar` and `PixaDatePicker` (`com.pixamob:pixacompose-datetime`) |
 | `:showcase` | Shared showcase UI, desktop entry point, snapshot test |
 | `:androidApp` | Thin Android wrapper around `:showcase` |
