@@ -19,6 +19,9 @@ import com.pixamob.pixacompose.theme.PressEffect
 private val Ink = Color(0xFF1A1A1A)
 private val Cream = Color(0xFFFFF8E7)
 
+/** Category hues, shared by the light and dark colors. */
+private val Categories = listOf(Color(0xFFFF8C42), Color(0xFF06D6A0), Color(0xFF9B5DE5), Color(0xFFFFD23F), Color(0xFFFF5D8F), Color(0xFF3A86FF))
+
 internal fun cartoonStyle() = PixaStyle(
     name = "Cartoon",
     lightColors = PixaColors(
@@ -41,6 +44,7 @@ internal fun cartoonStyle() = PixaStyle(
         border = Ink,
         input = Ink,
         ring = Color(0xFF3A86FF),
+        categories = Categories,
     ),
     darkColors = PixaColors(
         background = Color(0xFF1F1B2E),
@@ -62,6 +66,7 @@ internal fun cartoonStyle() = PixaStyle(
         border = Cream,
         input = Cream,
         ring = Color(0xFF7BDFF2),
+        categories = Categories,
     ),
     shapes = PixaShapes(
         sm = RoundedCornerShape(8.dp),

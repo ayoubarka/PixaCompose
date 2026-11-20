@@ -32,6 +32,7 @@ import com.pixamob.pixacompose.primitives.PixaIcon
 import com.pixamob.pixacompose.primitives.PixaIcons
 import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.theme.PixaTheme
+import com.pixamob.pixacompose.theme.category
 
 private class Profile(val name: String, val color: Color)
 
@@ -40,8 +41,8 @@ private class Profile(val name: String, val color: Color)
 fun TilesSection(switcherInitiallyOpen: Boolean = false) {
     val colors = PixaTheme.colors
     val gap = Arrangement.spacedBy(12.dp)
-    // Accent colors are the app's choice; the showcase borrows the theme's roles.
-    val accents = listOf(colors.primary, colors.success, colors.destructive, colors.mutedForeground)
+    // Category hues come from the style.
+    val accents = List(4) { colors.category(it) }
 
     PixaText("Icon tile", style = PixaTheme.typography.h3)
     Row(horizontalArrangement = gap, verticalAlignment = Alignment.CenterVertically) {

@@ -32,4 +32,14 @@ public data class PixaColors(
     val input: Color,
     /** Focus indicator. */
     val ring: Color,
+    /**
+     * Distinct hues for telling things apart by category: a pet's ring, a log type, a tag.
+     * Each is drawn at full strength as an icon or ring and as a soft fill behind it, so one
+     * list can serve both themes. Read them with [category].
+     */
+    val categories: List<Color> = emptyList(),
 )
+
+/** The [index]-th category hue, wrapping around; [PixaColors.primary] when the style has none. */
+public fun PixaColors.category(index: Int): Color =
+    if (categories.isEmpty()) primary else categories[index.mod(categories.size)]

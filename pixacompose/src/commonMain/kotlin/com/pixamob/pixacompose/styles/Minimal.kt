@@ -11,6 +11,9 @@ import com.pixamob.pixacompose.theme.PixaShapes
 import com.pixamob.pixacompose.theme.PixaStyle
 import com.pixamob.pixacompose.theme.PressEffect
 
+/** Category hues, shared by the light and dark colors. */
+private val Categories = listOf(Color(0xFF2563EB), Color(0xFF0D9488), Color(0xFF7C3AED), Color(0xFFD97706), Color(0xFFDB2777), Color(0xFF65A30D))
+
 internal fun minimalStyle() = PixaStyle(
     name = "Minimal",
     lightColors = PixaColors(
@@ -33,6 +36,7 @@ internal fun minimalStyle() = PixaStyle(
         border = Color(0xFFE4E4E7),
         input = Color(0xFFE4E4E7),
         ring = Color(0xFFA1A1AA),
+        categories = Categories,
     ),
     darkColors = PixaColors(
         background = Color(0xFF09090B),
@@ -54,6 +58,7 @@ internal fun minimalStyle() = PixaStyle(
         border = Color(0xFF27272A),
         input = Color(0xFF3F3F46),
         ring = Color(0xFFD4D4D8),
+        categories = Categories,
     ),
     shapes = PixaShapes(
         sm = RoundedCornerShape(6.dp),
