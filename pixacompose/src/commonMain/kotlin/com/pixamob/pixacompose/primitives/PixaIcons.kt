@@ -13,6 +13,10 @@ import androidx.compose.ui.unit.dp
 /**
  * The few icons the library's own components need (a check mark, a chevron, a close cross).
  * This is not an icon pack: apps bring their own icons as [ImageVector] or `Painter`.
+ *
+ * [ChevronLeft] and [ChevronRight] mirror themselves in right-to-left layouts. An app's own
+ * directional icon, such as a back arrow, does the same when built with
+ * `ImageVector.Builder(autoMirror = true)`.
  */
 public object PixaIcons {
     public val Check: ImageVector by lazy { strokeIcon("Check") { moveTo(5f, 12.5f); lineTo(10f, 17.5f); lineTo(19f, 7f) } }
@@ -32,17 +36,19 @@ public object PixaIcons {
     }
 
     public val ChevronRight: ImageVector by lazy {
-        strokeIcon("ChevronRight") { moveTo(9f, 6f); lineTo(15f, 12f); lineTo(9f, 18f) }
+        strokeIcon("ChevronRight", directional = true) { moveTo(9f, 6f); lineTo(15f, 12f); lineTo(9f, 18f) }
     }
 
     public val ChevronLeft: ImageVector by lazy {
-        strokeIcon("ChevronLeft") { moveTo(15f, 6f); lineTo(9f, 12f); lineTo(15f, 18f) }
+        strokeIcon("ChevronLeft", directional = true) { moveTo(15f, 6f); lineTo(9f, 12f); lineTo(15f, 18f) }
     }
 }
 
-private fun strokeIcon(name: String, block: PathBuilder.() -> Unit): ImageVector =
+/** A [directional] icon points along the reading direction, so it is mirrored in right-to-left layouts. */
+private fun strokeIcon(name: String, directional: Boolean = false, block: PathBuilder.() -> Unit): ImageVector =
     ImageVector.Builder(
         name = name,
+        autoMirror = directional,
         defaultWidth = 24.dp,
         defaultHeight = 24.dp,
         viewportWidth = 24f,
