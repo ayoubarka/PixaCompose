@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -12,6 +13,7 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import com.patrykandpatrick.vico.compose.cartesian.CartesianChartHost
+import com.patrykandpatrick.vico.compose.cartesian.Scroll
 import com.patrykandpatrick.vico.compose.cartesian.Zoom
 import com.patrykandpatrick.vico.compose.cartesian.axis.HorizontalAxis
 import com.patrykandpatrick.vico.compose.cartesian.axis.VerticalAxis
@@ -67,7 +69,7 @@ internal fun valueFormatter(formatValue: (Double) -> String): CartesianValueForm
  *
  * @param endAxisFormat draws a second vertical axis at the end for layers placed there,
  * with labels [endYStep] apart.
- * @param visiblePoints shows this many x positions and scrolls and zooms through the rest;
+ * @param visiblePoints shows this many x positions, opening on the latest, and scrolls and zooms through the rest;
  * null fits every point.
  */
 @Composable
@@ -114,6 +116,10 @@ internal fun ChartFrame(
         ),
     )
     // Time runs left to right in every language, so the chart is not mirrored.
+    // Opens on the latest points, the ones a chart is read for, and again when the data or the
+    // window changes: the state outlives a switch from a fitted chart to a scrolling one.
+    val scrollState = rememberVicoScrollState(scrollEnabled = visiblePoints != null, initialScroll = Scroll.Absolute.End)
+    LaunchedEffect(model, visiblePoints) { if (visiblePoints != null) scrollState.scroll(Scroll.Absolute.End) }
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Ltr) {
         val sized = modifier.fillMaxWidth().height(DefaultChartHeight)
         CartesianChartHost(
@@ -121,7 +127,7 @@ internal fun ChartFrame(
             model = model,
             // The caller's size wins; these only apply when none is given.
             modifier = if (visiblePoints == null) sized.holdHorizontalDrag() else sized,
-            scrollState = rememberVicoScrollState(scrollEnabled = visiblePoints != null),
+            scrollState = scrollState,
             zoomState = rememberVicoZoomState(
                 zoomEnabled = visiblePoints != null,
                 initialZoom = if (visiblePoints == null) Zoom.Content else Zoom.max(Zoom.x(visiblePoints.toDouble()), Zoom.Content),
