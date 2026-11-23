@@ -1,6 +1,8 @@
 package com.pixamob.pixacompose.components
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
@@ -73,12 +75,16 @@ public fun PixaSheet(
     val scope = rememberCoroutineScope()
     var height by remember { mutableIntStateOf(0) }
     LaunchedEffect(visible) { if (visible) drag.snapTo(0f) }
+    val overhangPx = with(LocalDensity.current) { Overhang.roundToPx() }
     Modal(
         visible = visible,
         onDismissRequest = onDismissRequest,
         contentAlignment = Alignment.BottomCenter,
-        enter = slideInVertically(spec.spec()) { it },
-        exit = slideOutVertically(spec.spec()) { it },
+        enter = slideInVertically(spec.spec(IntOffset.VisibilityThreshold)) { it },
+        // The window and its backdrop stay until the slide ends, so it ends as soon as the panel
+        // is out of sight: within the overhang of the end it is below the screen edge. Settling
+        // to Compose's default hundredth of a pixel kept them up for most of a second more.
+        exit = slideOutVertically(spec.exitSpec(IntOffset(0, overhangPx))) { it },
         edgeToEdge = true,
     ) {
         val focus = LocalFocusManager.current

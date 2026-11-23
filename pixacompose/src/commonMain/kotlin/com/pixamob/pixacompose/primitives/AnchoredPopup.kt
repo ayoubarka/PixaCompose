@@ -67,7 +67,7 @@ internal fun AnchoredPopup(
         AnimatedVisibility(
             visibleState = state,
             enter = fadeIn(spec.spec()) + scaleIn(spec.spec(), initialScale = 0.92f),
-            exit = fadeOut(spec.spec()) + scaleOut(spec.spec(), targetScale = 0.92f),
+            exit = fadeOut(spec.exitSpec()) + scaleOut(spec.exitSpec(), targetScale = 0.92f),
         ) {
             Box(
                 Modifier

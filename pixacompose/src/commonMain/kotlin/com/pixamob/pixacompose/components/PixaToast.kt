@@ -2,6 +2,8 @@ package com.pixamob.pixacompose.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.MutableTransitionState
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
@@ -172,8 +174,8 @@ private fun ToastItem(toast: PixaToastData, fromTop: Boolean, onGone: () -> Unit
     val slide = if (fromTop) -1 else 1
     AnimatedVisibility(
         visibleState = visibility,
-        enter = fadeIn(spec.spec()) + slideInVertically(spec.spec()) { slide * it / 2 },
-        exit = fadeOut(spec.spec()) + slideOutVertically(spec.spec()) { slide * it / 2 },
+        enter = fadeIn(spec.spec()) + slideInVertically(spec.spec(IntOffset.VisibilityThreshold)) { slide * it / 2 },
+        exit = fadeOut(spec.exitSpec()) + slideOutVertically(spec.exitSpec(IntOffset.VisibilityThreshold)) { slide * it / 2 },
     ) {
         PixaSurface(
             modifier = Modifier.widthIn(max = 420.dp).fillMaxWidth(),

@@ -38,7 +38,7 @@ public fun PixaDialog(
         onDismissRequest = onDismissRequest,
         contentAlignment = Alignment.Center,
         enter = fadeIn(spec.spec()) + scaleIn(spec.spec(), initialScale = 0.92f),
-        exit = fadeOut(spec.spec()) + scaleOut(spec.spec(), targetScale = 0.92f),
+        exit = fadeOut(spec.exitSpec()) + scaleOut(spec.exitSpec(), targetScale = 0.92f),
     ) {
         PixaSurface(
             modifier = modifier.padding(PixaTheme.spacing.xl).widthIn(max = 420.dp).fillMaxWidth(),

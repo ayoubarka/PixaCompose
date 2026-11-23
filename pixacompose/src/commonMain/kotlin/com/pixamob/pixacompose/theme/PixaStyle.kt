@@ -108,6 +108,13 @@ public data class PixaSpring(
 ) {
     public fun <T> spec(visibilityThreshold: T? = null): SpringSpec<T> =
         spring(dampingRatio, stiffness, visibilityThreshold)
+
+    /**
+     * For something leaving the screen: the same speed without the bounce, so it does not swing
+     * back into view and its window, backdrop included, goes as soon as it is out of sight.
+     */
+    public fun <T> exitSpec(visibilityThreshold: T? = null): SpringSpec<T> =
+        spring(dampingRatio.coerceAtLeast(1f), stiffness, visibilityThreshold)
 }
 
 public sealed interface PixaShadow {
