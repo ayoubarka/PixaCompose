@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
-import com.pixamob.pixacompose.datetime.PixaTimeInput
+import com.pixamob.pixacompose.components.PixaTimeInput
 import kotlinx.datetime.LocalTime
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -14,8 +14,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import com.pixamob.pixacompose.components.PixaCard
-import com.pixamob.pixacompose.datetime.PixaCalendar
-import com.pixamob.pixacompose.datetime.PixaDatePicker
+import com.pixamob.pixacompose.components.PixaCalendar
+import com.pixamob.pixacompose.components.PixaDatePicker
 import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.theme.PixaTheme
 import kotlinx.datetime.DayOfWeek

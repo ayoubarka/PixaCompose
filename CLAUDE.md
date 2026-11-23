@@ -13,9 +13,8 @@ pixacompose/src/commonMain/kotlin/com/pixamob/pixacompose/
 │                 Modal and AnchoredPopup (internal bases for overlays)
 ├── components/   one small file per component
 └── styles/       built-in styles; the only place raw colors are allowed
-pixacompose-image/  optional module: PixaImage on Coil
+pixacompose-media/  optional module: PixaImage on Coil (other media types go here too)
 pixacompose-charts/ optional module: line, bar, scatter, combo, candlestick, pie charts on Vico
-pixacompose-datetime/ optional module: PixaCalendar, PixaDatePicker on kotlinx-datetime
 showcase/         shared showcase UI, desktop main, snapshot test
 androidApp/       thin Android wrapper
 ```
@@ -23,7 +22,7 @@ androidApp/       thin Android wrapper
 ## Hard rules
 
 - **A new style must never require editing a component.** If it does, the missing knob belongs in `PixaStyle` or `PixaSurface`, not in the component.
-- **Foundation only** in `:pixacompose`: no Material, no third-party UI libraries. Heavy features go in separate optional modules (`pixacompose-image`, ...), which may use a third-party library only if it has no Material dependency and no look of its own; check with `./gradlew :<module>:dependencies`.
+- **Foundation only** in `:pixacompose`: no Material, no third-party UI libraries. The one exception is `kotlinx-datetime`, which has no UI and backs PixaCalendar, PixaDatePicker and PixaTimeInput. Heavy features go in separate optional modules (`pixacompose-media`, ...), which may use a third-party library only if it has no Material dependency and no look of its own; check with `./gradlew :<module>:dependencies`.
 - **No raw colors outside `styles/`.** Components read `PixaTheme.colors.*`; `Color.Transparent` is the only literal allowed.
 - **Anything with a background is built on `PixaSurface`.** It has four forms: static, clickable (`onClick`), two-state (`checked`/`onCheckedChange`) and one-of-many (`selected`/`onClick`). Borders come from `outlinedBorder()` and `filledBorder()` in `components/Borders.kt`. Do not draw borders, shadows or press feedback anywhere else.
 - **Add nothing until a real app needs it.** Two built-in styles only (Minimal, Cartoon); other looks are an app's own `PixaStyle`. Bento is a layout made of `PixaCard`s, not a style or a component.

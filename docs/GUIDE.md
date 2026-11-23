@@ -14,9 +14,8 @@ not older ones.
 // shared/build.gradle.kts
 commonMain.dependencies {
     implementation("com.pixamob:pixacompose:2.0.0-alpha02")           // core, always
-    implementation("com.pixamob:pixacompose-image:2.0.0-alpha02")     // PixaImage (Coil 3.4.0)
+    implementation("com.pixamob:pixacompose-media:2.0.0-alpha02")     // PixaImage (Coil)
     implementation("com.pixamob:pixacompose-charts:2.0.0-alpha02")    // charts (Vico 2.4.3)
-    implementation("com.pixamob:pixacompose-datetime:2.0.0-alpha02")  // calendar, date picker, time input
 }
 ```
 
@@ -137,16 +136,16 @@ All take `visible` and `onDismissRequest` and stay composed so they can animate 
 
 | Component | Module | Use |
 |---|---|---|
-| `PixaImage(model, contentDescription, shape, contentScale, placeholder, error)` | `pixacompose-image` | URL, file or bytes. It has no size of its own; give it one. |
+| `PixaImage(model, contentDescription, shape, contentScale, placeholder, error)` | `pixacompose-media` | URL, file or bytes. It has no size of its own; give it one. |
 | `PixaLineChart(values, labels, smooth, fittedYAxis, drawIn)` / `PixaBarChart(values, labels, barWidth)` | `pixacompose-charts` | One series. Touch or slide a finger across to show the value nearest it; the value stays after release, and a tap on the same point hides it. A sideways slide, or a slide after a long press, keeps a scrolling screen still; a drag that starts vertically scrolls it. `fittedYAxis` fits the axis to the values instead of starting at 0; `drawIn` draws the line in from the left. |
 | `PixaLineChart(series, …)` / `PixaBarChart(series, stacked, …)` | `pixacompose-charts` | Several `PixaChartSeries` (name, color, `dashed`), colored by the style's category hues unless set. Bars sit side by side or `stacked`. Both, and the one-series forms, take `showValues`, `guides` (`PixaChartGuide.Line` for a goal, `.Band` for a range) and `visiblePoints` (scroll and pinch through longer data); the line also takes `area` and `showPoints`. |
 | `PixaComboChart(bars, lines, separateAxes)` | `pixacompose-charts` | Bars and lines over the same x positions; `separateAxes` measures the lines on their own, fitted axis at the end. |
 | `PixaCandlestickChart(candles)` | `pixacompose-charts` | `PixaCandle(open, close, low, high)` per period; rises in the success color, falls in the destructive one. |
 | `PixaPieChart(values, colors, donut, showValues) { center }` | `pixacompose-charts` | Slices in category hues; a donut draws `center` in its hole. Vico marks pies experimental. |
 | `PixaChartLegend(series)` / `PixaChartLegend(names, colors)` | `pixacompose-charts` | A dot and a name per series or slice, wrapping; place it next to the chart. |
-| `PixaCalendar(selected, onSelect, today, firstDayOfWeek, isEnabled, labels)` | `pixacompose-datetime` | One month, single date. Uses `kotlinx.datetime.LocalDate`. |
-| `PixaDatePicker(value, onValueChange, expanded, onExpandedChange, placeholder, format, ...)` | `pixacompose-datetime` | Field that opens the calendar. |
-| `PixaTimeInput(value, onValueChange, use24Hour, isError, labels)` | `pixacompose-datetime` | Hour and minute segments, plus AM/PM when `use24Hour = false`. Uses `kotlinx.datetime.LocalTime`; gives null while a segment is empty. Typing moves to the next segment; arrow keys step a segment. |
+| `PixaCalendar(selected, onSelect, today, firstDayOfWeek, isEnabled, labels)` | `pixacompose` | One month, single date. Uses `kotlinx.datetime.LocalDate`. |
+| `PixaDatePicker(value, onValueChange, expanded, onExpandedChange, placeholder, format, ...)` | `pixacompose` | Field that opens the calendar. |
+| `PixaTimeInput(value, onValueChange, use24Hour, isError, labels)` | `pixacompose` | Hour and minute segments, plus AM/PM when `use24Hour = false`. Uses `kotlinx.datetime.LocalTime`; gives null while a segment is empty. Typing moves to the next segment; arrow keys step a segment. |
 
 ## Rules for app code
 

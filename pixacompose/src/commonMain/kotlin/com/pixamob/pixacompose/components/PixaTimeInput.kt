@@ -1,4 +1,4 @@
-package com.pixamob.pixacompose.datetime
+package com.pixamob.pixacompose.components
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsFocusedAsState

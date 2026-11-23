@@ -15,7 +15,7 @@ kotlin {
     explicitApi()
 
     android {
-        namespace = "com.pixamob.pixacompose.image"
+        namespace = "com.pixamob.pixacompose.media"
         compileSdk = libs.versions.android.compileSdk.get().toInt()
         minSdk = libs.versions.android.minSdk.get().toInt()
 
@@ -51,13 +51,13 @@ kotlin {
 mavenPublishing {
     coordinates(
         groupId = group.toString(),
-        artifactId = "pixacompose-image",
+        artifactId = "pixacompose-media",
         version = version.toString(),
     )
 
     pom {
-        name.set("PixaCompose Image")
-        description.set("Remote images for PixaCompose, loaded with Coil.")
+        name.set("PixaCompose Media")
+        description.set("Images and other media for PixaCompose, loaded with Coil.")
         inceptionYear.set("2026")
         url.set("https://github.com/ayoubarka/PixaCompose")
 

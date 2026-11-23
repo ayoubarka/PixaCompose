@@ -11,7 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.components.PixaAvatar
 import com.pixamob.pixacompose.components.PixaAvatarSize
-import com.pixamob.pixacompose.image.PixaImage
+import com.pixamob.pixacompose.media.PixaImage
 import com.pixamob.pixacompose.primitives.PixaIcon
 import com.pixamob.pixacompose.primitives.PixaIcons
 import com.pixamob.pixacompose.primitives.PixaText
