@@ -35,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.IntOffset
@@ -76,26 +77,37 @@ public fun PixaSheet(
     var height by remember { mutableIntStateOf(0) }
     LaunchedEffect(visible) { if (visible) drag.snapTo(0f) }
     val overhangPx = with(LocalDensity.current) { Overhang.roundToPx() }
+    val topInset = WindowInsets.safeDrawing.only(WindowInsetsSides.Top)
     Modal(
         visible = visible,
         onDismissRequest = onDismissRequest,
         contentAlignment = Alignment.BottomCenter,
-        enter = slideInVertically(spec.spec(IntOffset.VisibilityThreshold)) { it },
+        // The panel's layout height leaves out the overhang, so the slide adds it to travel the whole panel.
+        enter = slideInVertically(spec.spec(IntOffset.VisibilityThreshold)) { it + overhangPx },
         // The window and its backdrop stay until the slide ends, so it ends as soon as the panel
         // is out of sight: within the overhang of the end it is below the screen edge. Settling
         // to Compose's default hundredth of a pixel kept them up for most of a second more.
-        exit = slideOutVertically(spec.exitSpec(IntOffset(0, overhangPx))) { it },
+        exit = slideOutVertically(spec.exitSpec(IntOffset(0, overhangPx))) { it + overhangPx },
         edgeToEdge = true,
     ) {
         val focus = LocalFocusManager.current
         LaunchedEffect(visible) { if (!visible) focus.clearFocus() }
         PixaSurface(
             modifier = modifier
-                // Never taller than the space under the status bar.
-                .windowInsetsPadding(WindowInsets.safeDrawing.only(WindowInsetsSides.Top))
                 .widthIn(max = 640.dp)
                 .fillMaxWidth()
-                .offset(y = Overhang)
+                // The overhang hangs below the screen edge without counting in the layout. An
+                // offset would leave the layout box, and with it the modal's tap-swallowing area,
+                // an overhang above the visible panel, so taps just above the sheet did not dismiss.
+                // Never taller than the space under the status bar. A height cap, not top padding:
+                // padding would also widen the tap-swallowing area above the panel.
+                .layout { measurable, constraints ->
+                    val maxHeight = if (constraints.hasBoundedHeight) {
+                        (constraints.maxHeight - topInset.getTop(this) + overhangPx).coerceIn(0, constraints.maxHeight + overhangPx)
+                    } else constraints.maxHeight
+                    val placeable = measurable.measure(constraints.copy(minHeight = 0, maxHeight = maxHeight))
+                    layout(placeable.width, (placeable.height - overhangPx).coerceAtLeast(0)) { placeable.place(0, 0) }
+                }
                 .offset { IntOffset(0, drag.value.roundToInt()) }
                 .onSizeChanged { height = it.height }
                 .draggable(
