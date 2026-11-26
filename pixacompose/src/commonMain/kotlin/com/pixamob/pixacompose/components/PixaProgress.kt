@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.takeOrElse
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
@@ -51,7 +53,7 @@ public fun PixaProgress(
 
 /**
  * A ring showing how far along something is. [value] is clamped to 0..1. [content] sits in the
- * middle, for a percentage or an icon.
+ * middle, for a percentage or an icon. [color] tints the ring; the primary colour by default.
  */
 @Composable
 public fun PixaCircularProgress(
@@ -59,12 +61,13 @@ public fun PixaCircularProgress(
     modifier: Modifier = Modifier,
     size: Dp = 56.dp,
     strokeWidth: Dp = 6.dp,
+    color: Color = Color.Unspecified,
     content: @Composable BoxScope.() -> Unit = {},
 ) {
     val target = value.coerceIn(0f, 1f)
     val fraction by animateFloatAsState(target, PixaTheme.motion.state.spec())
     val track = PixaTheme.colors.muted
-    val indicator = PixaTheme.colors.primary
+    val indicator = color.takeOrElse { PixaTheme.colors.primary }
     Box(
         modifier = modifier
             .size(size)

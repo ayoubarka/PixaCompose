@@ -25,7 +25,7 @@ public fun PixaCard(
         modifier = modifier,
         color = color,
         contentColor = contentColor,
-        border = outlinedBorder(),
+        border = containerBorder(),
         shadow = decoration.containerShadow,
     ) {
         Column(

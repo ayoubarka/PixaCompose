@@ -53,7 +53,7 @@ public fun PixaActionTile(
         color = if (selected) tintFill(color) else colors.card,
         contentColor = colors.cardForeground,
         shape = PixaTheme.shapes.lg,
-        border = if (selected) selectedBorder(color) else outlinedBorder(),
+        border = if (selected) selectedBorder(color) else containerBorder(),
         shadow = PixaTheme.decoration.controlShadow,
         contentAlignment = Alignment.Center,
     ) {

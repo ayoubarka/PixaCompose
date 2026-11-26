@@ -23,6 +23,7 @@ import com.pixamob.pixacompose.components.PixaMenuItem
 import com.pixamob.pixacompose.components.PixaSelect
 import com.pixamob.pixacompose.components.PixaSlider
 import com.pixamob.pixacompose.components.PixaStepper
+import com.pixamob.pixacompose.components.PixaTimeline
 import com.pixamob.pixacompose.components.PixaTab
 import com.pixamob.pixacompose.components.PixaTabs
 import com.pixamob.pixacompose.components.PixaTopBar
@@ -69,6 +70,15 @@ fun NavigationSection(selectInitiallyOpen: Boolean = false) {
     Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         PixaButton(onClick = { if (step > 0) step-- }, variant = PixaButtonVariant.Outline, size = PixaButtonSize.Sm) { PixaText("Back") }
         PixaButton(onClick = { if (step < 4) step++ }, size = PixaButtonSize.Sm) { PixaText("Next") }
+    }
+
+    PixaText("Timeline", style = PixaTheme.typography.h3)
+    val order = listOf("Ordered" to "Monday, 9:12", "Packed" to "Tuesday, 14:30", "On its way" to "Expected Thursday", "Delivered" to "")
+    PixaTimeline(steps = order.size, current = step.coerceAtMost(order.size)) { index ->
+        Column {
+            PixaText(order[index].first, style = PixaTheme.typography.label)
+            if (order[index].second.isNotEmpty()) PixaText(order[index].second, style = PixaTheme.typography.caption, color = PixaTheme.colors.mutedForeground)
+        }
     }
 
     PixaText("Accordion", style = PixaTheme.typography.h3)

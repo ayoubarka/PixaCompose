@@ -66,6 +66,11 @@ public data class PixaDecoration(
     val press: PressEffect,
     /** Outline shown around a control that has keyboard focus, in the `ring` color. */
     val focusRing: PixaFocusRing = PixaFocusRing(),
+    /**
+     * Outline width of resting containers: cards and action tiles. 0 makes them flat, set apart
+     * by their fill alone. Inputs, outlined buttons and floating surfaces keep [borderWidth].
+     */
+    val containerBorderWidth: Dp = borderWidth,
 )
 
 @Immutable

@@ -71,6 +71,8 @@ internal fun valueFormatter(formatValue: (Double) -> String): CartesianValueForm
  * with labels [endYStep] apart.
  * @param visiblePoints shows this many x positions, opening on the latest, and scrolls and zooms through the rest;
  * null fits every point.
+ * @param interactive false draws a picture only: no marker under the finger and no hold on
+ * sideways drags, so the chart can sit in a pager or a tappable card.
  */
 @Composable
 internal fun ChartFrame(
@@ -84,6 +86,7 @@ internal fun ChartFrame(
     endAxisFormat: ((Double) -> String)? = null,
     endYStep: Double? = null,
     visiblePoints: Int? = null,
+    interactive: Boolean = true,
 ) {
     val colors = PixaTheme.colors
     val label = rememberAxisLabelComponent(PixaTheme.typography.caption.copy(color = colors.mutedForeground))
@@ -93,7 +96,7 @@ internal fun ChartFrame(
     }
     val chart = rememberCartesianChart(
         *layers.toTypedArray(),
-        marker = rememberMarker(formatValue),
+        marker = if (interactive) rememberMarker(formatValue) else null,
         markerController = if (visiblePoints == null) remember { ScrubMarkerController() } else CartesianMarkerController.rememberShowOnPress(),
         decorations = rememberDecorations(guides, formatValue),
         startAxis = VerticalAxis.rememberStart(
@@ -126,7 +129,7 @@ internal fun ChartFrame(
             chart = chart,
             model = model,
             // The caller's size wins; these only apply when none is given.
-            modifier = if (visiblePoints == null) sized.holdHorizontalDrag() else sized,
+            modifier = if (visiblePoints == null && interactive) sized.holdHorizontalDrag() else sized,
             scrollState = scrollState,
             zoomState = rememberVicoZoomState(
                 zoomEnabled = visiblePoints != null,

@@ -45,12 +45,13 @@ public fun PixaLineChart(
     guides: List<PixaChartGuide> = emptyList(),
     visiblePoints: Int? = null,
     formatValue: (Double) -> String = ::plainNumber,
+    interactive: Boolean = true,
 ) {
     PixaLineChart(
         series = remember(values) { listOf(PixaChartSeries(values)) },
         modifier = modifier, labels = labels, smooth = smooth, fittedYAxis = fittedYAxis, drawIn = drawIn,
         area = area, showPoints = showPoints, showValues = showValues, guides = guides,
-        visiblePoints = visiblePoints, formatValue = formatValue,
+        visiblePoints = visiblePoints, formatValue = formatValue, interactive = interactive,
     )
 }
 
@@ -65,6 +66,8 @@ public fun PixaLineChart(
  * @param guides lines and bands across the chart, such as a goal or a normal range.
  * @param visiblePoints shows this many x positions at a time; the rest scroll sideways and a
  * pinch zooms. Null fits every point.
+ * @param interactive false draws a picture only (no marker, no hold on sideways drags), for a
+ * chart inside a pager or a tappable card.
  */
 @Composable
 @JvmName("PixaLineChartOfSeries")
@@ -81,6 +84,7 @@ public fun PixaLineChart(
     guides: List<PixaChartGuide> = emptyList(),
     visiblePoints: Int? = null,
     formatValue: (Double) -> String = ::plainNumber,
+    interactive: Boolean = true,
 ) {
     val shown = series.filter { it.values.isNotEmpty() }
     if (shown.isEmpty()) return
@@ -100,7 +104,7 @@ public fun PixaLineChart(
     val reveal = if (drawIn) drawInModifier(shown) else Modifier
     ChartFrame(
         listOf(layer), model, labels, modifier.then(reveal), formatValue,
-        yStep = fitted?.step, guides = guides, visiblePoints = visiblePoints,
+        yStep = fitted?.step, guides = guides, visiblePoints = visiblePoints, interactive = interactive,
     )
 }
 

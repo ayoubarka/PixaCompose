@@ -27,11 +27,12 @@ public fun PixaBarChart(
     guides: List<PixaChartGuide> = emptyList(),
     visiblePoints: Int? = null,
     formatValue: (Double) -> String = ::plainNumber,
+    interactive: Boolean = true,
 ) {
     PixaBarChart(
         series = remember(values) { listOf(PixaChartSeries(values)) },
         modifier = modifier, labels = labels, barWidth = barWidth, showValues = showValues,
-        guides = guides, visiblePoints = visiblePoints, formatValue = formatValue,
+        guides = guides, visiblePoints = visiblePoints, formatValue = formatValue, interactive = interactive,
     )
 }
 
@@ -43,6 +44,7 @@ public fun PixaBarChart(
  * @param stacked piles each x position's bars into one, so the top shows the total.
  * @param showValues writes each value above its bar. Side-by-side bars of several series only
  * show a value that fits in their width, so widen [barWidth] or stack them for room.
+ * @param interactive false draws a picture only, as in [PixaLineChart].
  */
 @Composable
 @JvmName("PixaBarChartOfSeries")
@@ -56,6 +58,7 @@ public fun PixaBarChart(
     guides: List<PixaChartGuide> = emptyList(),
     visiblePoints: Int? = null,
     formatValue: (Double) -> String = ::plainNumber,
+    interactive: Boolean = true,
 ) {
     val shown = series.filter { it.values.isNotEmpty() }
     if (shown.isEmpty()) return
@@ -63,7 +66,7 @@ public fun PixaBarChart(
     val model = remember(shown) {
         CartesianChartModel(ColumnCartesianLayerModel.build { shown.forEach { series(it.values) } })
     }
-    ChartFrame(listOf(layer), model, labels, modifier, formatValue, guides = guides, visiblePoints = visiblePoints)
+    ChartFrame(listOf(layer), model, labels, modifier, formatValue, guides = guides, visiblePoints = visiblePoints, interactive = interactive)
 }
 
 /** The bars of [series], styled from the theme. Shared with [PixaComboChart]. */

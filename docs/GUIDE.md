@@ -93,6 +93,7 @@ Trailing lambdas are content slots.
 | `PixaProgress(value)` / `PixaCircularProgress(value, size, strokeWidth) { }` | Known progress, 0..1. The ring has a center slot. |
 | `PixaPageDots(count, current)` | Pager indicator. |
 | `PixaStepper(steps, current)` | Numbered steps of a flow. |
+| `PixaTimeline(steps, current, indicator) { index -> }` | Vertical stepper: a dot and line per step with content beside it. |
 | `PixaAccordionItem(expanded, onExpandedChange, title) { }` | Collapsible section. |
 
 ### Forms

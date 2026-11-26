@@ -15,3 +15,8 @@ internal fun outlinedBorder(color: Color = PixaTheme.colors.border): PixaBorder?
 @Composable
 internal fun filledBorder(color: Color = PixaTheme.colors.border): PixaBorder? =
     PixaTheme.decoration.filledBorderWidth.let { if (it > 0.dp) PixaBorder(it, color) else null }
+
+/** Border of a resting container (card, action tile); none when the style makes them flat. */
+@Composable
+internal fun containerBorder(color: Color = PixaTheme.colors.border): PixaBorder? =
+    PixaTheme.decoration.containerBorderWidth.let { if (it > 0.dp) PixaBorder(it, color) else null }
