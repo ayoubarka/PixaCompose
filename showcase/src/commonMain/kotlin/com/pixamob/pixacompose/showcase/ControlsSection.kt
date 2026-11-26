@@ -34,6 +34,7 @@ import com.pixamob.pixacompose.primitives.PixaIcon
 import com.pixamob.pixacompose.primitives.PixaIcons
 import com.pixamob.pixacompose.primitives.PixaText
 import com.pixamob.pixacompose.theme.PixaTheme
+import com.pixamob.pixacompose.theme.category
 
 @Composable
 fun ControlsSection() {
@@ -100,6 +101,7 @@ fun ControlsSection() {
         PixaCircularProgress(0.75f) { PixaText("75%") }
         PixaCircularProgress(0.3f, size = 40.dp, strokeWidth = 4.dp)
         PixaCircularProgress(1f) { PixaIcon(PixaIcons.Check, contentDescription = null, size = 16.dp) }
+        PixaCircularProgress(0.5f, color = PixaTheme.colors.category(2)) { PixaText("50%") }
     }
 
     PixaText("Chip", style = PixaTheme.typography.h3)

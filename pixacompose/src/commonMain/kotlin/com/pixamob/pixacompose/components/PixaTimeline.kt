@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.coerceAtLeast
 import androidx.compose.ui.unit.dp
 import com.pixamob.pixacompose.primitives.PixaIcon
@@ -52,8 +53,12 @@ public fun PixaTimeline(
             val done = index < current
             val active = index == current
             val last = index == steps - 1
+            // One screen-reader item per step: the dot's number and the content read together.
             // Intrinsic height so the connector stretches to however tall the content is.
-            Row(Modifier.fillMaxWidth().height(IntrinsicSize.Min), horizontalArrangement = Arrangement.spacedBy(spacing.md)) {
+            Row(
+                Modifier.fillMaxWidth().height(IntrinsicSize.Min).semantics(mergeDescendants = true) {},
+                horizontalArrangement = Arrangement.spacedBy(spacing.md),
+            ) {
                 Column(Modifier.width(DotSize).fillMaxHeight(), horizontalAlignment = Alignment.CenterHorizontally) {
                     PixaSurface(
                         modifier = Modifier.size(DotSize),

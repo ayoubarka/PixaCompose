@@ -32,6 +32,7 @@ import com.pixamob.pixacompose.components.PixaRatingPicker
 import com.pixamob.pixacompose.primitives.PixaIcon
 import com.pixamob.pixacompose.primitives.PixaIcons
 import com.pixamob.pixacompose.primitives.PixaText
+import com.pixamob.pixacompose.theme.PixaShadow
 import com.pixamob.pixacompose.theme.PixaTheme
 import com.pixamob.pixacompose.theme.category
 
@@ -173,6 +174,19 @@ fun TilesSection(switcherInitiallyOpen: Boolean = false) {
             PixaIcon(PixaIcons.Plus, contentDescription = "Add", modifier = Modifier.graphicsLayer { rotationZ = turn })
         }
         PixaFab(onClick = {}, size = PixaFabSize.Lg) { PixaIcon(PixaIcons.Check, contentDescription = "Done") }
+    }
+
+    PixaText("Flat cards", style = PixaTheme.typography.h3)
+    // containerShadow = None and containerBorderWidth = 0.dp: cards set apart by their fill alone.
+    val style = PixaTheme.style
+    val flat = remember(style) {
+        style.copy(decoration = style.decoration.copy(containerShadow = PixaShadow.None, containerBorderWidth = 0.dp))
+    }
+    PixaTheme(style = flat, darkTheme = PixaTheme.isDark) {
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            PixaCard(Modifier.weight(1f), color = PixaTheme.colors.muted) { PixaText("Flat card") }
+            PixaCard(Modifier.weight(1f), color = PixaTheme.colors.category(1)) { PixaText("Flat tile") }
+        }
     }
 
     PixaText("Empty state", style = PixaTheme.typography.h3)

@@ -1,5 +1,5 @@
 [versions]
-pixacompose = "2.0.0-alpha02"
+pixacompose = "2.0.0-alpha03"
 
 android-minSdk = "24"
 android-compileSdk = "37"
